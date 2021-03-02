@@ -1,10 +1,17 @@
-use std::env;
-use std::error::Error;
-use std::process;
-use std::fs::File;
+use std::{env};
 use std::collections::BTreeMap;
+use std::error::Error;
+use std::fs::File;
+use std::process;
+
+use async_std::task as async_task;
 use serde_yaml::Value;
 
+use model::TaskContext;
+mod model;
+mod case;
+mod point;
+mod task;
 
 fn load_data(path: &str) -> Result<Vec<BTreeMap<String,String>>, Box<dyn Error>> {
     let mut rdr = csv::Reader::from_path(path).unwrap();
@@ -18,12 +25,11 @@ fn load_data(path: &str) -> Result<Vec<BTreeMap<String,String>>, Box<dyn Error>>
 
 
 fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
-    let mut file = File::open(path).unwrap();
+    let file = File::open(path).unwrap();
 
     let deserialized: Value= serde_yaml::from_reader(file)?;
     Ok(deserialized)
 }
-
 
 
 fn main() {
@@ -42,29 +48,34 @@ fn main() {
 
     let data_path = matches.opt_str("d").unwrap();
 
-    match load_data(
-        &data_path) {
+    let data = match load_data(
+        &data_path
+    ) {
         Err(_e) => {
             process::exit(1);
         },
         Ok(vec) => {
-            for data in vec {
-                println!("{:?}", data)
-            }
+            vec
         }
-    }
+    };
 
 
     let flow_path = matches.opt_str("f").unwrap();
 
-    match load_flow(
-        &flow_path) {
+    let flow = match load_flow(
+        &flow_path
+    ) {
         Err(_e) => {
             println!("{:?}", _e);
             process::exit(1);
         },
         Ok(value) => {
-            println!("{:?}", value);
+            value
         }
-    }
+    };
+
+    let task_context = TaskContext::new(flow, data);
+    async_task::block_on(async {
+        let _ = task::run_task(task_context).await;
+    });
 }

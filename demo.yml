@@ -11,5 +11,7 @@ point:
         config:
             url: https://{{domain}}?name={{科目名称}}
         assert: |+
-            (eq 科目编号 科目编号)
-
+              (and
+                  (eq domain "www.baidu.com")
+                  (eq 科目编号 "FWZL016002")
+              )

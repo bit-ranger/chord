@@ -8,6 +8,8 @@ use async_std::task as async_task;
 use serde_yaml::Value;
 
 use model::TaskContext;
+use async_std::sync::Arc;
+
 mod model;
 mod case;
 mod point;
@@ -76,6 +78,6 @@ fn main() {
 
     let task_context = TaskContext::new(flow, data);
     async_task::block_on(async {
-        let _ = task::run_task(task_context).await;
+        let _ = task::run_task(Arc::new(task_context)).await;
     });
 }

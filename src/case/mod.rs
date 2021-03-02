@@ -16,7 +16,7 @@ pub async fn run_case(context: Arc<CaseContext>) -> Result<(),()>{
         let _ = run_point(point.clone()).await;
     }
 
-    println!("{:?}", point_vec);
+    // println!("{:?}", point_vec);
     // println!("run_case on thread {:?}", thread::current().id());
     return Ok(());
 }

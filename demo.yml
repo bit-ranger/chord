@@ -9,7 +9,7 @@ point:
     api1:
         type: http
         config:
-            url: https://{{domain}}?name={{科目名称}}
+            url: https://{{domain}}
         assert: |+
               (and
                   (eq domain "www.baidu.com")

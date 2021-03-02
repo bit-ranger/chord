@@ -33,8 +33,7 @@ fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
     Ok(deserialized)
 }
 
-
-fn main() {
+ fn main() {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
     opts.reqopt("d", "data_file", "data file path", "data_file");

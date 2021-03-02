@@ -91,6 +91,7 @@ impl PointContext {
         return self.case_context.task_context.config["point"][&self.point_id].borrow();
     }
 
+
     pub fn render(&self, text: &str, more_data: Option<HashMap<String,String>>) -> String{
         let mut handlebars = Handlebars::new();
         let mut data :HashMap<String,String> = HashMap::new();

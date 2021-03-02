@@ -91,7 +91,7 @@ impl PointContext {
         return self.case_context.task_context.config["point"][&self.point_id].borrow();
     }
 
-    pub fn render_placeholder(&self, text: &str, more_data: Option<HashMap<String,String>>) -> String{
+    pub fn render(&self, text: &str, more_data: Option<HashMap<String,String>>) -> String{
         let mut handlebars = Handlebars::new();
         let mut data :HashMap<String,String> = HashMap::new();
 
@@ -127,6 +127,16 @@ impl PointContext {
 
         let render = handlebars.render_template(text, &data).unwrap();
         return render;
+    }
+
+    pub fn assert(&self, condition: &str, more_data: Option<HashMap<String,String>>) -> bool{
+        let template = format!(
+            "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
+            condition = condition
+        );
+
+        let result = self.render(&template, more_data);
+        return if result.eq("true") {true} else {false};
     }
 
 }

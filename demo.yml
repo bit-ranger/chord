@@ -6,5 +6,10 @@ task:
 
 
 point:
-  api1:
-    url: https://{{domain}}?name={{科目名称}}
+    api1:
+        type: http
+        config:
+            url: https://{{domain}}?name={{科目名称}}
+        assert: |+
+            (eq 科目编号 科目编号)
+

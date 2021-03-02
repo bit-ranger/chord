@@ -12,6 +12,6 @@ pub async fn run_case(context: CaseContext) -> Result<(),()>{
         let _ = run_point(point).await;
     }
 
-    println!("run_case on thread {:?}", thread::current().id());
+    // println!("run_case on thread {:?}", thread::current().id());
     return Ok(());
 }

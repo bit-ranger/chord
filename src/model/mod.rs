@@ -1,19 +1,20 @@
 use std::collections::BTreeMap;
 use async_std::sync::Arc;
 use serde_yaml::Value;
+use std::borrow::Borrow;
 
 #[derive(Debug)]
 pub struct TaskContext {
     data: Vec<BTreeMap<String,String>>,
-    flow: Value
+    config: Value
 }
 
 
 impl TaskContext {
 
-    pub fn new(flow: Value, data: Vec<BTreeMap<String,String>>) -> TaskContext {
+    pub fn new(config: Value, data: Vec<BTreeMap<String,String>>) -> TaskContext {
         let context = TaskContext {
-            flow,
+            config,
             data
         };
         return context;
@@ -44,7 +45,7 @@ pub struct CaseContext {
 impl CaseContext {
 
     pub fn get_point_vec(&self) -> Vec<&str>{
-        let task_point_chain_seq = self.task_context.flow["task"]["point"]["chain"].as_sequence().unwrap();
+        let task_point_chain_seq = self.task_context.config["task"]["point"]["chain"].as_sequence().unwrap();
         let task_point_chain_vec:Vec<&str> = task_point_chain_seq.iter()
             .map(|e| {
                 e.as_str().unwrap()
@@ -56,6 +57,7 @@ impl CaseContext {
 
     pub fn create_point(self: Arc<CaseContext>) -> Vec<PointContext>{
         return self.get_point_vec().into_iter()
+            .filter(|point_id| self.task_context.config["point"][point_id].as_mapping().is_some())
             .map(|point_id| {
                 PointContext{
                     case_context: self.clone(),
@@ -73,5 +75,12 @@ pub struct PointContext{
 }
 
 
+impl PointContext {
+
+    pub fn get_config(&self) -> &Value{
+        return self.case_context.task_context.config["point"][&self.point_id].borrow();
+    }
+
+}
 
 

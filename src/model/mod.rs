@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use async_std::sync::{Arc, RwLock};
 use std::borrow::Borrow;
-use std::ops::Index;
+use std::ops::{Index, Deref};
 use handlebars::Handlebars;
 use serde::Serialize;
 use serde_json::{Value, to_value};
@@ -132,9 +132,9 @@ impl PointContext {
 
     pub async fn get_config_str(self: &PointContext, path: Vec<&str>) -> Option<String>
     {
-        let config = self.case_context.read().await
-            .task_context.read().await
-            .config["point"][&self.point_id]["config"].borrow();
+        let case_ctx = self.case_context.read().await;
+        let task_ctx = case_ctx.task_context.read().await;
+        let config = task_ctx.config["point"][&self.point_id]["config"].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -150,16 +150,19 @@ impl PointContext {
 
     pub async fn get_meta_str(&self, path: Vec<&str>) ->Option<String>
     {
-        let config = self.case_context.read().await
-            .task_context.read().await
-            .config["point"][&self.point_id].borrow();
+        let case_ctx = self.case_context.read().await;
+        let task_ctx = case_ctx.task_context.read().await;
+        let config =task_ctx.config["point"][&self.point_id].borrow();
 
         let raw_config = path.iter()
             .fold(config,
                   |acc, k| acc[k].borrow()
             );
 
-        return raw_config.as_str().map(|x| async {self.render(x, &Value::Null).await});
+        match raw_config.as_str(){
+            Some(s) => Some(self.render(s, &Value::Null).await),
+            None=> None
+        }
     }
 
 
@@ -169,9 +172,9 @@ impl PointContext {
     {
         let mut data :HashMap<&str, Value> = HashMap::new();
 
-        let config_def = self.case_context.read().await
-            .task_context.read().await
-            .config["task"]["def"].as_object();
+        let case_ctx = self.case_context.read().await;
+        let task_ctx = case_ctx.task_context.read().await;
+        let config_def = task_ctx.config["task"]["def"].as_object();
         match config_def{
             Some(def) => {
                 data.insert("def", to_value(def).unwrap());
@@ -179,7 +182,8 @@ impl PointContext {
             None => {}
         }
 
-        let case_data = self.case_context.read().await.task_context.data[self.case_context.data_index].borrow();
+        let case_data = task_ctx
+            .data[self.case_context.read().await.data_index].borrow();
         data.insert("data", to_value(case_data).unwrap());
 
 

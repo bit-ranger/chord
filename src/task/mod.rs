@@ -7,7 +7,7 @@ use crate::model::{TaskContext, CaseContext, SharedCaseContext};
 use futures::future::join_all;
 use async_std::sync::Arc;
 
-pub async fn run_task(task_context: Arc<TaskContext>) -> Result<(),()>{
+pub async fn run_task(task_context: TaskContext) -> Result<(),()>{
     let share = task_context.share();
     let tc_context_vec: Vec<SharedCaseContext> = TaskContext::create_case(share).await
         .into_iter()

@@ -76,6 +76,6 @@ fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
 
     let task_context = TaskContext::new(flow, data);
     async_task::block_on(async {
-        let _ = task::run_task(Arc::new(task_context)).await;
+        let _ = task::run_task(task_context).await;
     });
 }

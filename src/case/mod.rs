@@ -2,18 +2,24 @@
 
 use crate::model::{CaseContext, PointContext};
 use std::thread;
-use async_std::sync::Arc;
+use async_std::sync::{Arc, RwLock};
 use crate::point::run_point;
+use futures::TryFutureExt;
+use std::ops::{Deref, DerefMut};
 
 pub async fn run_case(context: Arc<CaseContext>) -> Result<(),()>{
-    let point_vec: Vec<Arc<PointContext>> = context
+    let point_vec: Vec<Arc<RwLock<PointContext>>> = context
         .create_point()
         .into_iter()
-        .map(|point_ctx| Arc::new(point_ctx))
+        .map(|point_ctx| Arc::new(RwLock::new(point_ctx)))
         .collect();
 
-    for point in point_vec.iter() {
-        let _ = run_point(point.clone()).await;
+    for mut point in point_vec.into_iter() {
+        let result = run_point(point.read().await.deref()).await;
+        match result {
+            Ok(r) => point.write().await.deref_mut().register_context(String::from("result"), r),
+            Err(_) => break
+        }
     }
 
     // println!("{:?}", point_vec);

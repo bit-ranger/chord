@@ -7,7 +7,7 @@ use serde_json::Value;
 use serde::Serialize;
 use std::borrow::Borrow;
 
-pub async fn run_point(context: Arc<PointContext>) -> PointResult{
+pub async fn run_point(context: &PointContext) -> PointResult{
     let url = context.get_config_str(vec!["url"]).unwrap();
 
     let json :surf::Result<Value> = surf::get(&url)

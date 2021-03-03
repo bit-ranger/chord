@@ -84,16 +84,16 @@ impl CaseContext {
             .task_context.read().await
             .get_point_vec().await
             .into_iter()
-            .filter(|point_id| async {
-                let none = case_ctx.read().await
-                    .task_context.read().await
-                    .config["point"][point_id].as_object().is_none();
-                if none {
-                    panic!("missing point config {}", point_id);
-                } else {
-                    return true;
-                }
-            })
+            // .filter(|point_id| async {
+            //     let none = case_ctx.read().await
+            //         .task_context.read().await
+            //         .config["point"][point_id].as_object().is_none();
+            //     if none {
+            //         panic!("missing point config {}", point_id);
+            //     } else {
+            //         return true;
+            //     }
+            // })
             .map(|point_id| {
                 PointContext::new(
                     case_ctx.clone(),
@@ -132,14 +132,20 @@ impl PointContext {
 
     pub async fn get_config_str(self: &PointContext, path: Vec<&str>) -> Option<String>
     {
-        let config = self.case_context.read().await.task_context.config["point"][&self.point_id]["config"].borrow();
+        let config = self.case_context.read().await
+            .task_context.read().await
+            .config["point"][&self.point_id]["config"].borrow();
 
         let raw_config = path.iter()
             .fold(config,
                   |acc, k| acc[k].borrow()
             );
 
-        return raw_config.as_str().map(|x| async {self.render(x, &Value::Null).await});
+        match raw_config.as_str(){
+            Some(s) => Some(self.render(s, &Value::Null).await),
+            None=> None
+        }
+
     }
 
     pub async fn get_meta_str(&self, path: Vec<&str>) ->Option<String>

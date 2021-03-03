@@ -52,9 +52,9 @@ fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
     let data = match load_data(
         &data_path
     ) {
-        Err(_e) => {
-            process::exit(1);
-        },
+        Err(e) => {
+            panic!("{:?}", e)
+        }
         Ok(vec) => {
             vec
         }
@@ -66,10 +66,9 @@ fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
     let flow = match load_flow(
         &flow_path
     ) {
-        Err(_e) => {
-            println!("{:?}", _e);
-            process::exit(1);
-        },
+        Err(e) => {
+            panic!("{:?}", e);
+        }
         Ok(value) => {
             value
         }

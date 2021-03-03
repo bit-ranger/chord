@@ -2,11 +2,11 @@ use crate::model::PointContext;
 use std::thread;
 use async_std::sync::Arc;
 use std::collections::HashMap;
-mod http;
+mod restapi;
 
 async fn run_point_type(point_type: &str, context: Arc<PointContext>) ->  Result<(),()>{
-    return if point_type.trim().eq("http") {
-        http::run_point(context).await
+    return if point_type.trim().eq("restapi") {
+        restapi::run_point(context).await
     } else {
         Result::Err(())
     }

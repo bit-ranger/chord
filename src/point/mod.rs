@@ -6,6 +6,7 @@ use crate::model::PointResult;
 use serde::Serialize;
 use std::borrow::Borrow;
 use serde_json::Value;
+use std::ops::{Deref, DerefMut};
 
 mod restapi;
 mod md5;
@@ -21,22 +22,27 @@ async fn run_point_type(point_type: &str, context: &PointContext) ->  PointResul
     }
 }
 
-pub async fn run_point(context: &mut PointContext) -> PointResult
+pub async fn run_point(context: Arc<RwLock<PointContext>>) -> PointResult
 {
-    let point_type = context.get_meta_str(vec!["type"]).unwrap();
-    let result = run_point_type(point_type.as_str(), context).await;
+
+    let point_type = context.read().await.deref().get_meta_str(vec!["type"]).unwrap();
+    let result = run_point_type(
+        point_type.as_str(),
+        context.read().await.deref())
+        .await;
     if result.is_err() {
         return PointResult::Err(());
     }
 
     let value = result.unwrap();
-    context.register_context(String::from("result"), &value);
-    let assert_condition = context.get_meta_str(vec!["assert"]);
+    context.write().await.deref_mut().register_context(String::from("result"), &value);
+    let assert_condition = context.read().await.deref().get_meta_str(vec!["assert"]);
     match assert_condition{
         Some(con) =>  {
-            let assert_result = context.assert(con.as_str(), &Value::Null);
+            let assert_result = context.read().await.deref().assert(con.as_str(), &Value::Null);
             if assert_result {PointResult::Ok(value)} else {PointResult::Err(())}
         },
         None => return Ok(Value::Null)
     }
 }
+

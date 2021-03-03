@@ -15,11 +15,11 @@ pub async fn run_case(context: Arc<CaseContext>) -> Result<(),()>{
         .collect();
 
     for mut point in point_vec.into_iter() {
-        let result = run_point(point.read().await.deref()).await;
-        match result {
-            Ok(r) => point.write().await.deref_mut().register_context(String::from("result"), r),
-            Err(_) => break
-        }
+        let result = run_point(point.write().await.deref_mut()).await;
+        // match result {
+        //     Ok(r) =>
+        //     Err(_) => break
+        // }
     }
 
     // println!("{:?}", point_vec);

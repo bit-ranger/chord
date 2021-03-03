@@ -1,6 +1,6 @@
 use crate::model::PointContext;
 use std::thread;
-use async_std::sync::Arc;
+use async_std::sync::{Arc, RwLock};
 use std::collections::HashMap;
 use crate::model::PointResult;
 use serde::Serialize;
@@ -21,20 +21,20 @@ async fn run_point_type(point_type: &str, context: &PointContext) ->  PointResul
     }
 }
 
-pub async fn run_point(context: &PointContext) -> PointResult
+pub async fn run_point(context: &mut PointContext) -> PointResult
 {
     let point_type = context.get_meta_str(vec!["type"]).unwrap();
-    let result = run_point_type(point_type.as_str(), context.clone()).await;
+    let result = run_point_type(point_type.as_str(), context).await;
     if result.is_err() {
         return PointResult::Err(());
     }
 
     let value = result.unwrap();
-
+    context.register_context(String::from("result"), &value);
     let assert_condition = context.get_meta_str(vec!["assert"]);
     match assert_condition{
         Some(con) =>  {
-            let assert_result = context.assert(con.as_str(), &value);
+            let assert_result = context.assert(con.as_str(), &Value::Null);
             if assert_result {PointResult::Ok(value)} else {PointResult::Err(())}
         },
         None => return Ok(Value::Null)

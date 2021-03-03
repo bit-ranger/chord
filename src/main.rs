@@ -5,10 +5,10 @@ use std::fs::File;
 use std::process;
 
 use async_std::task as async_task;
-use serde_yaml::Value;
 
 use model::TaskContext;
 use async_std::sync::Arc;
+use serde_json::Value;
 
 mod model;
 mod case;

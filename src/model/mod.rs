@@ -4,7 +4,7 @@ use std::borrow::Borrow;
 use std::ops::Index;
 use handlebars::Handlebars;
 use serde::Serialize;
-use serde_yaml::{Value, to_value};
+use serde_json::{Value, to_value};
 
 #[derive(Debug)]
 pub struct TaskContext {
@@ -59,8 +59,8 @@ impl CaseContext {
 
 
     pub fn get_point_vec(&self) -> Vec<&str>{
-        let task_point_chain_seq = self.task_context.config["task"]["chain"].as_sequence().unwrap();
-        let task_point_chain_vec:Vec<&str> = task_point_chain_seq.iter()
+        let task_point_chain_arr = self.task_context.config["task"]["chain"].as_array().unwrap();
+        let task_point_chain_vec:Vec<&str> = task_point_chain_arr.iter()
             .map(|e| {
                 e.as_str().unwrap()
             })
@@ -72,7 +72,7 @@ impl CaseContext {
     pub fn create_point(self: Arc<CaseContext>) -> Vec<PointContext>{
         return self.get_point_vec().into_iter()
             .filter(|point_id| {
-                let none = self.task_context.config["point"][point_id].as_mapping().is_none();
+                let none = self.task_context.config["point"][point_id].as_object().is_none();
                 if none {
                     panic!("missing point config {}", point_id);
                 } else {
@@ -113,10 +113,24 @@ impl PointContext {
 
     pub fn get_config_str(&self, path: Vec<&str>) -> Option<String>
     {
+        let config = self.case_context.task_context.config["point"][&self.point_id]["config"].borrow();
+
+        let raw_config = path.iter()
+            .fold(config,
+                  |acc, k| acc[k].borrow()
+            );
+
+        return raw_config.as_str().map(|x| self.render(x, &Value::Null));
+    }
+
+    pub fn get_meta_str(&self, path: Vec<&str>) ->Option<String>
+    {
         let config = self.case_context.task_context.config["point"][&self.point_id].borrow();
 
         let raw_config = path.iter()
-            .fold(config, |acc, k| acc[k].borrow());
+            .fold(config,
+                  |acc, k| acc[k].borrow()
+            );
 
         return raw_config.as_str().map(|x| self.render(x, &Value::Null));
     }
@@ -128,7 +142,7 @@ impl PointContext {
     {
         let mut data :HashMap<&str, Value> = HashMap::new();
 
-        let config_def = self.case_context.task_context.config["task"]["def"].as_mapping();
+        let config_def = self.case_context.task_context.config["task"]["def"].as_object();
         match config_def{
             Some(def) => {
                 data.insert("def", to_value(def).unwrap());
@@ -170,4 +184,5 @@ impl PointContext {
 }
 
 
+pub type PointResult = std::result::Result<Value, ()>;
 

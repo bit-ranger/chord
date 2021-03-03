@@ -3,15 +3,15 @@ use core::result::Result;
 use core::result::Result::Ok;
 use std::thread;
 use crate::case::run_case;
-use crate::model::{TaskContext, CaseContext};
+use crate::model::{TaskContext, CaseContext, SharedCaseContext};
 use futures::future::join_all;
 use async_std::sync::Arc;
 
 pub async fn run_task(task_context: Arc<TaskContext>) -> Result<(),()>{
-    let tc_context_vec: Vec<Arc<CaseContext>> = task_context
-        .create_case()
+    let share = task_context.share();
+    let tc_context_vec: Vec<SharedCaseContext> = TaskContext::create_case(share).await
         .into_iter()
-        .map(|tc_ctx| Arc::new(tc_ctx))
+        .map(|tc_ctx| tc_ctx.share())
         .collect();
 
     join_all(tc_context_vec

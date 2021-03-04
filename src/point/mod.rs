@@ -1,6 +1,7 @@
 use crate::model::{PointContext};
 use crate::model::PointResult;
 use serde_json::Value;
+use std::collections::HashMap;
 
 mod restapi;
 mod md5;
@@ -16,10 +17,11 @@ async fn run_point_type(point_type: &str, context: &PointContext<'_,'_>) ->  Poi
     }
 }
 
-pub async fn run_point(context: &PointContext<'_, '_>) -> PointResult
+pub async fn run_point(context: &PointContext<'_, '_>, point_value_register: &Vec<(String, PointResult)>) -> PointResult
 {
     let point_type = context.get_meta_str(vec!["type"]).await.unwrap();
     let result = run_point_type(point_type.as_str(), context).await;
+
     if result.is_err() {
         return PointResult::Err(());
     }
@@ -28,7 +30,7 @@ pub async fn run_point(context: &PointContext<'_, '_>) -> PointResult
     let assert_condition = context.get_meta_str(vec!["assert"]).await;
     match assert_condition{
         Some(con) =>  {
-            let assert_result = context.assert(con.as_str(), &Value::Null).await;
+            let assert_result = context.assert(con.as_str(), Some(("result", &value))).await;
             if assert_result {PointResult::Ok(value)} else {PointResult::Err(())}
         },
         None => return Ok(Value::Null)

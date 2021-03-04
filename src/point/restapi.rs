@@ -11,9 +11,14 @@ pub async fn run_point(context: &PointContext<'_,'_>) -> PointResult{
         .await;
 
     match json {
-        Ok(value) => println!("{}", value),
-        Err(e) => println!("{}, {}, {}", url, "not a json", e)
+        Ok(value) => {
+            println!("{}", value);
+            return Ok(value);
+        },
+        Err(e) => {
+            println!("{}, {}, {}", url, "not a json", e);
+            return Err(());
+        }
     }
 
-    return Ok(Value::Null);
 }

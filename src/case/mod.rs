@@ -6,26 +6,26 @@ use serde::Serialize;
 
 pub async fn run_case(context: &CaseContext<'_>) -> CaseResult {
     let mut point_vec: Vec<PointContext> = context.create_point();
-    let mut point_value_register = Vec::<(String, PointResult)>::new();
+
 
     for mut point in point_vec.iter() {
         let result = run_point(&point).await;
 
-        if !result.is_ok(){
-            register_value(&mut point_value_register, String::from(point.get_id()), result);
-            return Err(());
-        } else {
-            register_value(&mut point_value_register, String::from(point.get_id()), result);
+        match result {
+            Ok(r) => {
+                context.register_value(point.get_id(), to_value(&r).unwrap());
+            },
+            Err(_) =>  {
+                break;
+            }
         }
-
-
 
     }
 
-    return Ok(point_value_register);
+    return Ok();
 }
 
-
-pub fn register_value(point_value_register: &mut Vec<(String, PointResult)>, name: String, result: PointResult) {
-    point_value_register.push((name, result));
-}
+//
+// pub fn register_value(point_value_register: &mut Vec<(String, PointResult)>, name: String, result: PointResult) {
+//     point_value_register.push((name, result));
+// }

@@ -58,6 +58,7 @@ impl TaskContext {
 pub struct CaseContext<'t> {
     task_context: &'t TaskContext,
     data_index: usize,
+    point_value_register : HashMap<String, Value>,
 }
 
 
@@ -66,7 +67,8 @@ impl <'t> CaseContext <'t>{
     fn new(task_context: &'t TaskContext, data_index: usize) -> CaseContext{
         let context = CaseContext {
             task_context,
-            data_index
+            data_index,
+            point_value_register: HashMap::new(),
         };
 
         return context;
@@ -100,6 +102,10 @@ impl <'t> CaseContext <'t>{
 
     fn get_data(self: &CaseContext<'t>) -> &BTreeMap<String, String> {
         return &(self.task_context.get_data()[self.data_index]);
+    }
+
+    pub fn register_value(self: &mut CaseContext, point_id: &str, value: Value){
+        self.point_value_register.insert(String::from(point_id), value);
     }
 
 }
@@ -140,7 +146,7 @@ impl <'t, 'c> PointContext<'t , 'c> {
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render(s, &Value::Null)),
+            Some(s) => Some(self.render(s, Option::<(&str,&Value)>::None)),
             None=> None
         }
 
@@ -156,14 +162,14 @@ impl <'t, 'c> PointContext<'t , 'c> {
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render(s, &Value::Null)),
+            Some(s) => Some(self.render(s, Option::<(&str,&Value)>::None)),
             None=> None
         }
     }
 
 
 
-    fn render<T>(self: &PointContext<'t, 'c>, text: &str, ext_data: &T) -> String
+    fn render<T>(self: &PointContext<'t, 'c>, text: &str,  ext_data: Option<(&str, &T)>) -> String
         where
             T: Serialize
     {
@@ -180,14 +186,17 @@ impl <'t, 'c> PointContext<'t , 'c> {
         let case_data = self.case_context.get_data();
         data.insert("data", to_value(case_data).unwrap());
 
-        data.insert("ext", to_value(ext_data).unwrap());
+        if ext_data.is_some(){
+            let (n, d) = ext_data.unwrap();
+            data.insert(n, to_value(d).unwrap());
+        }
 
         let handlebars = Handlebars::new();
         let render = handlebars.render_template(text, &data).unwrap();
         return render;
     }
 
-    pub async fn assert <T>(&self, condition: &str, ext_data: &T) -> bool
+    pub async fn assert <T>(&self, condition: &str, ext_data: Option<(&str, &T)>) -> bool
         where
             T: Serialize
     {
@@ -197,6 +206,9 @@ impl <'t, 'c> PointContext<'t , 'c> {
         );
 
         let result = self.render(&template, ext_data);
+
+        println!("assert {:?}", result);
+
         return if result.eq("true") {true} else {false};
     }
 

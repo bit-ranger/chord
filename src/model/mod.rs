@@ -56,10 +56,8 @@ impl TaskContext {
 
 #[derive(Debug)]
 pub struct CaseContext<'t> {
-
     task_context: &'t TaskContext,
     data_index: usize,
-    point_value_register: HashMap<String, HashMap<String,Value>>
 }
 
 
@@ -68,8 +66,7 @@ impl <'t> CaseContext <'t>{
     fn new(task_context: &'t TaskContext, data_index: usize) -> CaseContext{
         let context = CaseContext {
             task_context,
-            data_index,
-            point_value_register: HashMap::new()
+            data_index
         };
 
         return context;
@@ -99,7 +96,9 @@ impl <'t> CaseContext <'t>{
             .collect();
     }
 
-    fn get_data(self: &CaseContext<'t>) -> &BTreeMap<String,String> {
+
+
+    fn get_data(self: &CaseContext<'t>) -> &BTreeMap<String, String> {
         return &(self.task_context.get_data()[self.data_index]);
     }
 
@@ -112,8 +111,7 @@ where 't: 'c
 {
     task_context: &'t TaskContext,
     case_context: &'c CaseContext<'t>,
-    point_id: String,
-    context_register: HashMap<String,Value>
+    point_id: String
 }
 
 
@@ -123,10 +121,13 @@ impl <'t, 'c> PointContext<'t , 'c> {
         let context = PointContext {
             task_context,
             case_context,
-            point_id: String::from(point_id),
-            context_register: HashMap::new()
+            point_id: String::from(point_id)
         };
         return context;
+    }
+
+    pub fn get_id(self :&PointContext<'t,'c>) -> &str{
+        return self.point_id.as_str();
     }
 
     pub async fn get_config_str(self: &PointContext<'t, 'c>, path: Vec<&str>) -> Option<String>
@@ -199,14 +200,11 @@ impl <'t, 'c> PointContext<'t , 'c> {
         return if result.eq("true") {true} else {false};
     }
 
-    pub async fn register_context<T>(&mut self, name: String, context: T)
-        where
-            T: Serialize{
-        self.context_register.insert(name, to_value(context).unwrap());
-    }
 
 
 }
 
 
 pub type PointResult = std::result::Result<Value, ()>;
+pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, ()>;
+pub type TaskResult = std::result::Result<Vec<CaseResult>, ()>;

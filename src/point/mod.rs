@@ -16,7 +16,7 @@ async fn run_point_type(point_type: &str, context: &PointContext<'_,'_>) ->  Poi
     }
 }
 
-pub async fn run_point(context: &mut PointContext<'_, '_>) -> PointResult
+pub async fn run_point(context: &PointContext<'_, '_>) -> PointResult
 {
     let point_type = context.get_meta_str(vec!["type"]).await.unwrap();
     let result = run_point_type(point_type.as_str(), context).await;
@@ -25,7 +25,6 @@ pub async fn run_point(context: &mut PointContext<'_, '_>) -> PointResult
     }
 
     let value = result.unwrap();
-    context.register_context(String::from("result"), &value).await;
     let assert_condition = context.get_meta_str(vec!["assert"]).await;
     match assert_condition{
         Some(con) =>  {

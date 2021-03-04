@@ -13,7 +13,7 @@ pub async fn run_case(context: &mut CaseContext<'_,'_>) -> CaseResult {
 
         match &result {
             Ok(r) => {
-                // context.register_dynamic_context(point.get_id(), r);
+                context.register_dynamic_context(point.get_id(), r);
             },
             Err(_) =>  {
                 break;

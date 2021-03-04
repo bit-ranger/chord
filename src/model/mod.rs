@@ -3,6 +3,9 @@ use std::borrow::Borrow;
 use handlebars::Handlebars;
 use serde::Serialize;
 use serde_json::{Value, to_value};
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::ops::Deref;
 
 #[derive(Debug)]
 pub struct TaskContext {
@@ -47,7 +50,7 @@ impl TaskContext {
 pub struct CaseContext<'c, 'd> {
     config: &'c Value,
     data: &'d BTreeMap<String,String>,
-    dynamic_context_register : HashMap<String, Value>
+    dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>
 }
 
 
@@ -57,7 +60,7 @@ impl <'c, 'd> CaseContext <'c, 'd>{
         let context = CaseContext {
             config,
             data,
-            dynamic_context_register: HashMap::new()
+            dynamic_context_register: Rc::new(RefCell::new(HashMap::new()))
         };
 
         return context;
@@ -65,7 +68,7 @@ impl <'c, 'd> CaseContext <'c, 'd>{
 
 
 
-    pub fn create_point(self: &CaseContext<'c, 'd>) -> Vec<PointContext<'c, 'd, '_>>{
+    pub fn create_point(self: &CaseContext<'c, 'd>) -> Vec<PointContext<'c, 'd>>{
         return self.get_point_vec()
             .into_iter()
             .filter(|point_id| {
@@ -81,18 +84,14 @@ impl <'c, 'd> CaseContext <'c, 'd>{
                     self.config,
                     self.data,
                     point_id,
-                    self.dynamic_context_register.borrow()
+                    self.dynamic_context_register.clone()
                 )
             })
             .collect();
     }
 
-    pub fn register_dynamic_context(self: &mut CaseContext<'c, 'd>, name: &str, result: &Value) {
-        self.dynamic_context_register.insert(String::from(name),to_value(result).unwrap());
-    }
-
-    pub fn get_dynamic_context_register(self: &CaseContext<'c, 'd>) -> &HashMap<String, Value>{
-        return self.dynamic_context_register.borrow();
+    pub fn register_dynamic_context(self: &CaseContext<'c, 'd>, name: &str, result: &Value) {
+        self.dynamic_context_register.deref().borrow_mut().insert(String::from(name),to_value(result).unwrap());
     }
 
     fn get_point_vec(self: &CaseContext<'c,'d>) -> Vec<String>{
@@ -110,22 +109,22 @@ impl <'c, 'd> CaseContext <'c, 'd>{
 
 
 #[derive(Debug)]
-pub struct PointContext<'c, 'd, 'r>
+pub struct PointContext<'c, 'd>
 {
     config: &'c Value,
     data: &'d BTreeMap<String,String>,
     point_id: String,
-    dynamic_context_register : &'r HashMap<String, Value>
+    dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>
 }
 
 
-impl <'c, 'd, 'r> PointContext<'c , 'd, 'r> {
+impl <'c, 'd> PointContext<'c , 'd> {
 
     fn new(config: &'c Value,
            data: &'d BTreeMap<String,String>,
            point_id: String,
-           dynamic_context_register : &'r HashMap<String, Value>
-    ) -> PointContext<'c, 'd, 'r>{
+           dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>
+    ) -> PointContext<'c, 'd>{
         let context = PointContext {
             config,
             data,
@@ -135,11 +134,11 @@ impl <'c, 'd, 'r> PointContext<'c , 'd, 'r> {
         return context;
     }
 
-    pub fn get_id(self :&PointContext<'c,'d, 'r>) -> &str{
+    pub fn get_id(self :&PointContext<'c,'d>) -> &str{
         return self.point_id.as_str();
     }
 
-    pub async fn get_config_str(self: &PointContext<'c, 'd, 'r>, path: Vec<&str>) -> Option<String>
+    pub async fn get_config_str(self: &PointContext<'c, 'd>, path: Vec<&str>) -> Option<String>
     {
         let config = self.config["point"][&self.point_id]["config"].borrow();
 
@@ -155,7 +154,7 @@ impl <'c, 'd, 'r> PointContext<'c , 'd, 'r> {
 
     }
 
-    pub async fn get_meta_str(self : &PointContext<'c, 'd, 'r>, path: Vec<&str>) ->Option<String>
+    pub async fn get_meta_str(self : &PointContext<'c, 'd>, path: Vec<&str>) ->Option<String>
     {
         let config = self.config["point"][&self.point_id].borrow();
 
@@ -170,11 +169,11 @@ impl <'c, 'd, 'r> PointContext<'c , 'd, 'r> {
         }
     }
 
-    fn render(self: &PointContext<'c, 'd, 'r>, text: &str) -> String {
+    fn render(self: &PointContext<'c, 'd>, text: &str) -> String {
         return self.render_with(text, Option::<(&str, &Value)>::None);
     }
 
-    fn render_with<T>(self: &PointContext<'c, 'd, 'r>, text: &str, with_data: Option<(&str, &T)>) -> String
+    fn render_with<T>(self: &PointContext<'c, 'd>, text: &str, with_data: Option<(&str, &T)>) -> String
         where
             T: Serialize
     {
@@ -190,7 +189,7 @@ impl <'c, 'd, 'r> PointContext<'c , 'd, 'r> {
 
         data.insert("data", to_value(self.data).unwrap());
 
-        data.insert("dyn", to_value(self.dynamic_context_register).unwrap());
+        data.insert("dyn", to_value(self.dynamic_context_register.deref().borrow().deref()).unwrap());
 
         if with_data.is_some(){
             let (n, d) = with_data.unwrap();

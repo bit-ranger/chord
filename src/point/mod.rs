@@ -6,7 +6,7 @@ use std::collections::HashMap;
 mod restapi;
 mod md5;
 
-async fn run_point_type(point_type: &str, context: &PointContext<'_,'_,'_>) ->  PointResult
+async fn run_point_type(point_type: &str, context: &PointContext<'_,'_>) ->  PointResult
 {
     return if point_type.trim().eq("restapi") {
         restapi::run_point(context).await
@@ -17,7 +17,7 @@ async fn run_point_type(point_type: &str, context: &PointContext<'_,'_,'_>) ->  
     }
 }
 
-pub async fn run_point(context: &PointContext<'_, '_, '_>) -> PointResult
+pub async fn run_point(context: &PointContext<'_, '_>) -> PointResult
 {
     let point_type = context.get_meta_str(vec!["type"]).await.unwrap();
     let result = run_point_type(point_type.as_str(), context).await;

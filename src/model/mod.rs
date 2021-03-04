@@ -196,6 +196,8 @@ impl <'c, 'd> PointContext<'c , 'd> {
             data.insert(n, to_value(d).unwrap());
         }
 
+        println!("{}", to_value(&data).unwrap());
+
         let handlebars = Handlebars::new();
         let render = handlebars.render_template(text, &data).unwrap();
         return render;

@@ -33,7 +33,7 @@ pub async fn run_point(context: &PointContext<'_, '_>) -> PointResult
             let assert_result = context.assert(con.as_str(), &value).await;
             if assert_result {PointResult::Ok(value)} else {PointResult::Err(())}
         },
-        None => return Ok(Value::Null)
+        None => return Ok(value)
     }
 }
 

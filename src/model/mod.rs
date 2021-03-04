@@ -22,27 +22,16 @@ impl TaskContext {
     }
 
 
-    pub fn create_case<'t>(self: &'t TaskContext) -> Vec<CaseContext<'t>> {
+    pub fn create_case(self: &TaskContext) -> Vec<CaseContext<'_, '_>> {
         return self.data.iter()
             .enumerate()
-            .map(|(idx, _d)| {
+            .map(|(idx,_)| {
                 CaseContext::new(
-                    self.clone(),
-                    idx
+                    &self.config,
+                    &self.data[idx]
                 )
             })
             .collect();
-    }
-
-    pub fn get_point_vec(self: &TaskContext) -> Vec<String>{
-        let task_point_chain_arr = self.config["task"]["chain"].as_array().unwrap();
-        let task_point_chain_vec:Vec<String> = task_point_chain_arr.iter()
-            .map(|e| {
-                e.as_str().map(|s|String::from(s)).unwrap()
-            })
-            .collect();
-
-        return task_point_chain_vec;
     }
 
     fn get_config(self : &TaskContext) -> &Value{
@@ -55,20 +44,20 @@ impl TaskContext {
 }
 
 #[derive(Debug)]
-pub struct CaseContext<'t> {
-    task_context: &'t TaskContext,
-    data_index: usize,
-    point_value_register : HashMap<String, Value>,
+pub struct CaseContext<'c, 'd> {
+    config: &'c Value,
+    data: &'d BTreeMap<String,String>,
+    dynamic_context_register : HashMap<String, Value>
 }
 
 
-impl <'t> CaseContext <'t>{
+impl <'c, 'd> CaseContext <'c, 'd>{
 
-    fn new(task_context: &'t TaskContext, data_index: usize) -> CaseContext{
+    fn new(config: &'c Value, data: &'d BTreeMap<String,String>) -> CaseContext<'c, 'd>{
         let context = CaseContext {
-            task_context,
-            data_index,
-            point_value_register: HashMap::new(),
+            config,
+            data,
+            dynamic_context_register: HashMap::new()
         };
 
         return context;
@@ -76,12 +65,11 @@ impl <'t> CaseContext <'t>{
 
 
 
-    pub fn create_point<'c>(self: &'c CaseContext<'t>) -> Vec<PointContext<'t, 'c>>{
-        return self.task_context.get_point_vec()
+    pub fn create_point(self: &CaseContext<'c, 'd>) -> Vec<PointContext<'c, 'd, '_>>{
+        return self.get_point_vec()
             .into_iter()
             .filter(|point_id| {
-                let none = self.task_context
-                    .config["point"][point_id].as_object().is_none();
+                let none = self.config["point"][point_id].as_object().is_none();
                 if none {
                     panic!("missing point config {}", point_id);
                 } else {
@@ -90,55 +78,70 @@ impl <'t> CaseContext <'t>{
             })
             .map(|point_id| {
                 PointContext::new(
-                    self.task_context,
-                    self,
-                    String::from(point_id)
+                    self.config,
+                    self.data,
+                    point_id,
+                    self.dynamic_context_register.borrow()
                 )
             })
             .collect();
     }
 
-
-
-    fn get_data(self: &CaseContext<'t>) -> &BTreeMap<String, String> {
-        return &(self.task_context.get_data()[self.data_index]);
+    pub fn register_dynamic_context(self: &mut CaseContext<'c, 'd>, name: &str, result: &Value) {
+        self.dynamic_context_register.insert(String::from(name),to_value(result).unwrap());
     }
 
-    pub fn register_value(self: &mut CaseContext, point_id: &str, value: Value){
-        self.point_value_register.insert(String::from(point_id), value);
+    pub fn get_dynamic_context_register(self: &CaseContext<'c, 'd>) -> &HashMap<String, Value>{
+        return self.dynamic_context_register.borrow();
+    }
+
+    fn get_point_vec(self: &CaseContext<'c,'d>) -> Vec<String>{
+        let task_point_chain_arr = self.config["task"]["chain"].as_array().unwrap();
+        let task_point_chain_vec:Vec<String> = task_point_chain_arr.iter()
+            .map(|e| {
+                e.as_str().map(|s|String::from(s)).unwrap()
+            })
+            .collect();
+
+        return task_point_chain_vec;
     }
 
 }
 
 
 #[derive(Debug)]
-pub struct PointContext<'t, 'c>
-where 't: 'c
+pub struct PointContext<'c, 'd, 'r>
 {
-    task_context: &'t TaskContext,
-    case_context: &'c CaseContext<'t>,
-    point_id: String
+    config: &'c Value,
+    data: &'d BTreeMap<String,String>,
+    point_id: String,
+    dynamic_context_register : &'r HashMap<String, Value>
 }
 
 
-impl <'t, 'c> PointContext<'t , 'c> {
+impl <'c, 'd, 'r> PointContext<'c , 'd, 'r> {
 
-    fn new(task_context: &'t TaskContext, case_context: &'c CaseContext<'t>, point_id: String) -> PointContext<'t, 'c>{
+    fn new(config: &'c Value,
+           data: &'d BTreeMap<String,String>,
+           point_id: String,
+           dynamic_context_register : &'r HashMap<String, Value>
+    ) -> PointContext<'c, 'd, 'r>{
         let context = PointContext {
-            task_context,
-            case_context,
-            point_id: String::from(point_id)
+            config,
+            data,
+            point_id: String::from(point_id),
+            dynamic_context_register
         };
         return context;
     }
 
-    pub fn get_id(self :&PointContext<'t,'c>) -> &str{
+    pub fn get_id(self :&PointContext<'c,'d, 'r>) -> &str{
         return self.point_id.as_str();
     }
 
-    pub async fn get_config_str(self: &PointContext<'t, 'c>, path: Vec<&str>) -> Option<String>
+    pub async fn get_config_str(self: &PointContext<'c, 'd, 'r>, path: Vec<&str>) -> Option<String>
     {
-        let config = self.task_context.get_config()["point"][&self.point_id]["config"].borrow();
+        let config = self.config["point"][&self.point_id]["config"].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -146,15 +149,15 @@ impl <'t, 'c> PointContext<'t , 'c> {
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render(s, Option::<(&str,&Value)>::None)),
+            Some(s) => Some(self.render(s)),
             None=> None
         }
 
     }
 
-    pub async  fn get_meta_str(&self, path: Vec<&str>) ->Option<String>
+    pub async fn get_meta_str(self : &PointContext<'c, 'd, 'r>, path: Vec<&str>) ->Option<String>
     {
-        let config = self.task_context.get_config()["point"][&self.point_id].borrow();
+        let config = self.config["point"][&self.point_id].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -162,20 +165,22 @@ impl <'t, 'c> PointContext<'t , 'c> {
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render(s, Option::<(&str,&Value)>::None)),
+            Some(s) => Some(self.render(s)),
             None=> None
         }
     }
 
+    fn render(self: &PointContext<'c, 'd, 'r>, text: &str) -> String {
+        return self.render_with(text, Option::<(&str, &Value)>::None);
+    }
 
-
-    fn render<T>(self: &PointContext<'t, 'c>, text: &str,  ext_data: Option<(&str, &T)>) -> String
+    fn render_with<T>(self: &PointContext<'c, 'd, 'r>, text: &str, with_data: Option<(&str, &T)>) -> String
         where
             T: Serialize
     {
         let mut data :HashMap<&str, Value> = HashMap::new();
 
-        let config_def = self.task_context.get_config()["task"]["def"].as_object();
+        let config_def = self.config["task"]["def"].as_object();
         match config_def{
             Some(def) => {
                 data.insert("def", to_value(def).unwrap());
@@ -183,11 +188,12 @@ impl <'t, 'c> PointContext<'t , 'c> {
             None => {}
         }
 
-        let case_data = self.case_context.get_data();
-        data.insert("data", to_value(case_data).unwrap());
+        data.insert("data", to_value(self.data).unwrap());
 
-        if ext_data.is_some(){
-            let (n, d) = ext_data.unwrap();
+        data.insert("dyn", to_value(self.dynamic_context_register).unwrap());
+
+        if with_data.is_some(){
+            let (n, d) = with_data.unwrap();
             data.insert(n, to_value(d).unwrap());
         }
 
@@ -196,7 +202,7 @@ impl <'t, 'c> PointContext<'t , 'c> {
         return render;
     }
 
-    pub async fn assert <T>(&self, condition: &str, ext_data: Option<(&str, &T)>) -> bool
+    pub async fn assert <T>(&self, condition: &str, with_data: &T) -> bool
         where
             T: Serialize
     {
@@ -205,7 +211,7 @@ impl <'t, 'c> PointContext<'t , 'c> {
             condition = condition
         );
 
-        let result = self.render(&template, ext_data);
+        let result = self.render_with(&template, Some(("result", with_data)));
 
         println!("assert {:?}", result);
 

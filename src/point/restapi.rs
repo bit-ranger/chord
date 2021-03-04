@@ -2,7 +2,7 @@ use crate::model::PointContext;
 use crate::model::PointResult;
 use serde_json::Value;
 
-pub async fn run_point(context: &PointContext<'_,'_>) -> PointResult{
+pub async fn run_point(context: &PointContext<'_,'_,'_>) -> PointResult{
     let url = context.get_config_str(vec!["url"]).await.unwrap();
 
     let json :surf::Result<Value> = surf::get(&url)

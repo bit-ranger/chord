@@ -1,25 +1,25 @@
-use async_std::task::spawn;
+// use async_std::task::spawn;
 use core::result::Result;
 use core::result::Result::Ok;
-use std::thread;
 use crate::case::run_case;
-use crate::model::{TaskContext, CaseContext, SharedCaseContext};
+use crate::model::{TaskContext, CaseContext};
 use futures::future::join_all;
-use async_std::sync::Arc;
 
-pub async fn run_task(task_context: TaskContext) -> Result<(),()>{
-    let share = task_context.share();
-    let tc_context_vec: Vec<SharedCaseContext> = TaskContext::create_case(share).await
-        .into_iter()
-        .map(|tc_ctx| tc_ctx.share())
-        .collect();
+pub async fn run_task(task_context: &mut TaskContext) -> Result<(),()>{
+    let mut case_vec: Vec<CaseContext> = task_context.create_case();
 
-    join_all(tc_context_vec
-        .iter()
-        .map(|tc_context| run_case(tc_context.clone()))
-        .map(|tc_future| spawn(tc_future))
-    ).await;
+    let mut futures = Vec::new();
+    for case in case_vec.iter_mut(){
+        futures.push(
+        // spawn(async move {
+                run_case(case)
+        // })
+        );
+    }
 
-    println!("run_task on thread {:?}", thread::current().id());
+
+
+    join_all(futures).await;
+
     return Ok(());
 }

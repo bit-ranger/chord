@@ -1,14 +1,9 @@
 use crate::model::PointContext;
 use crate::model::PointResult;
-use std::thread;
-use async_std::sync::Arc;
-use std::collections::HashMap;
 use serde_json::Value;
-use serde::Serialize;
-use std::borrow::Borrow;
 
-pub async fn run_point(context: &PointContext) -> PointResult{
-    let url = context.get_config_str(vec!["url"]).unwrap();
+pub async fn run_point(context: &PointContext<'_,'_>) -> PointResult{
+    let url = context.get_config_str(vec!["url"]).await.unwrap();
 
     let json :surf::Result<Value> = surf::get(&url)
         .header("Content-Type", "application/json")

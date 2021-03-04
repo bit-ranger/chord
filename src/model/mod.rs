@@ -1,7 +1,5 @@
 use std::collections::{BTreeMap, HashMap};
-use async_std::sync::{Arc, RwLock};
 use std::borrow::Borrow;
-use std::ops::{Index, Deref};
 use handlebars::Handlebars;
 use serde::Serialize;
 use serde_json::{Value, to_value};
@@ -23,23 +21,20 @@ impl TaskContext {
         return context;
     }
 
-    pub fn share(self: TaskContext) -> SharedTaskContext{
-        Arc::new(RwLock::new(self))
-    }
 
-    pub async fn create_case(task_ctx: SharedTaskContext) -> Vec<CaseContext>{
-        return task_ctx.read().await.data.iter()
+    pub fn create_case<'t>(self: &'t TaskContext) -> Vec<CaseContext<'t>> {
+        return self.data.iter()
             .enumerate()
             .map(|(idx, _d)| {
                 CaseContext::new(
-                    task_ctx.clone(),
+                    self.clone(),
                     idx
                 )
             })
             .collect();
     }
 
-    pub async fn get_point_vec(self: &TaskContext) -> Vec<String>{
+    pub fn get_point_vec(self: &TaskContext) -> Vec<String>{
         let task_point_chain_arr = self.config["task"]["chain"].as_array().unwrap();
         let task_point_chain_vec:Vec<String> = task_point_chain_arr.iter()
             .map(|e| {
@@ -49,76 +44,84 @@ impl TaskContext {
 
         return task_point_chain_vec;
     }
+
+    fn get_config(self : &TaskContext) -> &Value{
+        return self.config.borrow();
+    }
+
+    fn get_data(self : &TaskContext) -> &Vec<BTreeMap<String,String>>{
+        return &self.data;
+    }
 }
 
 #[derive(Debug)]
-pub struct CaseContext {
+pub struct CaseContext<'t> {
 
-    task_context: SharedTaskContext,
+    task_context: &'t TaskContext,
     data_index: usize,
-    point_context_register: HashMap<String, HashMap<String,Value>>
+    point_value_register: HashMap<String, HashMap<String,Value>>
 }
 
 
-impl CaseContext {
+impl <'t> CaseContext <'t>{
 
-    fn new(task_context: SharedTaskContext, data_index: usize) -> CaseContext{
+    fn new(task_context: &'t TaskContext, data_index: usize) -> CaseContext{
         let context = CaseContext {
             task_context,
             data_index,
-            point_context_register: HashMap::new()
+            point_value_register: HashMap::new()
         };
 
         return context;
     }
 
-    pub fn share(self: CaseContext) -> SharedCaseContext{
-        Arc::new(RwLock::new(self))
-    }
 
 
-
-
-    pub async fn create_point(case_ctx: SharedCaseContext) -> Vec<PointContext>{
-        return case_ctx.read().await
-            .task_context.read().await
-            .get_point_vec().await
+    pub fn create_point<'c>(self: &'c CaseContext<'t>) -> Vec<PointContext<'t, 'c>>{
+        return self.task_context.get_point_vec()
             .into_iter()
-            // .filter(|point_id| async {
-            //     let none = case_ctx.read().await
-            //         .task_context.read().await
-            //         .config["point"][point_id].as_object().is_none();
-            //     if none {
-            //         panic!("missing point config {}", point_id);
-            //     } else {
-            //         return true;
-            //     }
-            // })
+            .filter(|point_id| {
+                let none = self.task_context
+                    .config["point"][point_id].as_object().is_none();
+                if none {
+                    panic!("missing point config {}", point_id);
+                } else {
+                    return true;
+                }
+            })
             .map(|point_id| {
                 PointContext::new(
-                    case_ctx.clone(),
+                    self.task_context,
+                    self,
                     String::from(point_id)
                 )
             })
             .collect();
     }
 
+    fn get_data(self: &CaseContext<'t>) -> &BTreeMap<String,String> {
+        return &(self.task_context.get_data()[self.data_index]);
+    }
 
 }
 
 
 #[derive(Debug)]
-pub struct PointContext{
-    case_context: SharedCaseContext,
+pub struct PointContext<'t, 'c>
+where 't: 'c
+{
+    task_context: &'t TaskContext,
+    case_context: &'c CaseContext<'t>,
     point_id: String,
     context_register: HashMap<String,Value>
 }
 
 
-impl PointContext {
+impl <'t, 'c> PointContext<'t , 'c> {
 
-    fn new(case_context: SharedCaseContext, point_id: String) -> PointContext{
+    fn new(task_context: &'t TaskContext, case_context: &'c CaseContext<'t>, point_id: String) -> PointContext<'t, 'c>{
         let context = PointContext {
+            task_context,
             case_context,
             point_id: String::from(point_id),
             context_register: HashMap::new()
@@ -126,15 +129,9 @@ impl PointContext {
         return context;
     }
 
-    pub fn share(self: PointContext) -> SharedPointContext{
-        Arc::new(RwLock::new(self))
-    }
-
-    pub async fn get_config_str(self: &PointContext, path: Vec<&str>) -> Option<String>
+    pub async fn get_config_str(self: &PointContext<'t, 'c>, path: Vec<&str>) -> Option<String>
     {
-        let case_ctx = self.case_context.read().await;
-        let task_ctx = case_ctx.task_context.read().await;
-        let config = task_ctx.config["point"][&self.point_id]["config"].borrow();
+        let config = self.task_context.get_config()["point"][&self.point_id]["config"].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -142,17 +139,15 @@ impl PointContext {
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render(s, &Value::Null).await),
+            Some(s) => Some(self.render(s, &Value::Null)),
             None=> None
         }
 
     }
 
-    pub async fn get_meta_str(&self, path: Vec<&str>) ->Option<String>
+    pub async  fn get_meta_str(&self, path: Vec<&str>) ->Option<String>
     {
-        let case_ctx = self.case_context.read().await;
-        let task_ctx = case_ctx.task_context.read().await;
-        let config =task_ctx.config["point"][&self.point_id].borrow();
+        let config = self.task_context.get_config()["point"][&self.point_id].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -160,21 +155,20 @@ impl PointContext {
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render(s, &Value::Null).await),
+            Some(s) => Some(self.render(s, &Value::Null)),
             None=> None
         }
     }
 
 
-    async fn render<T>(self: &PointContext, text: &str, ext_data: &T) -> String
+
+    fn render<T>(self: &PointContext<'t, 'c>, text: &str, ext_data: &T) -> String
         where
             T: Serialize
     {
         let mut data :HashMap<&str, Value> = HashMap::new();
 
-        let case_ctx = self.case_context.read().await;
-        let task_ctx = case_ctx.task_context.read().await;
-        let config_def = task_ctx.config["task"]["def"].as_object();
+        let config_def = self.task_context.get_config()["task"]["def"].as_object();
         match config_def{
             Some(def) => {
                 data.insert("def", to_value(def).unwrap());
@@ -182,14 +176,12 @@ impl PointContext {
             None => {}
         }
 
-        let case_data = task_ctx
-            .data[self.case_context.read().await.data_index].borrow();
+        let case_data = self.case_context.get_data();
         data.insert("data", to_value(case_data).unwrap());
-
 
         data.insert("ext", to_value(ext_data).unwrap());
 
-        let mut handlebars = Handlebars::new();
+        let handlebars = Handlebars::new();
         let render = handlebars.render_template(text, &data).unwrap();
         return render;
     }
@@ -203,11 +195,11 @@ impl PointContext {
             condition = condition
         );
 
-        let result = self.render(&template, ext_data).await;
+        let result = self.render(&template, ext_data);
         return if result.eq("true") {true} else {false};
     }
 
-    pub fn register_context<T>(&mut self, name: String, context: T)
+    pub async fn register_context<T>(&mut self, name: String, context: T)
         where
             T: Serialize{
         self.context_register.insert(name, to_value(context).unwrap());
@@ -218,6 +210,3 @@ impl PointContext {
 
 
 pub type PointResult = std::result::Result<Value, ()>;
-pub type SharedPointContext = Arc<RwLock<PointContext>>;
-pub type SharedCaseContext = Arc<RwLock<CaseContext>>;
-pub type SharedTaskContext = Arc<RwLock<TaskContext>>;

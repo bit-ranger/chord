@@ -2,12 +2,10 @@ use std::{env};
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fs::File;
-use std::process;
 
 use async_std::task as async_task;
 
 use model::TaskContext;
-use async_std::sync::Arc;
 use serde_json::Value;
 
 mod model;
@@ -74,8 +72,8 @@ fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
         }
     };
 
-    let task_context = TaskContext::new(flow, data);
+    let mut task_context = TaskContext::new(flow, data);
     async_task::block_on(async {
-        let _ = task::run_task(task_context).await;
+        let _ = task::run_task(&mut task_context).await;
     });
 }

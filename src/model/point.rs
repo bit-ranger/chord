@@ -5,8 +5,10 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use serde::Serialize;
-use serde_json::{to_value, Value};
+use serde_json::{to_value};
 use handlebars::{Handlebars, Context};
+use crate::model::Json;
+use crate::model::Error;
 
 
 pub trait PointContext{
@@ -19,7 +21,7 @@ pub trait PointContext{
 #[derive(Debug)]
 pub struct PointContextStruct<'c, 'd>
 {
-    config: &'c Value,
+    config: &'c Json,
     data: &'d BTreeMap<String,String>,
     point_id: String,
     render_context: Rc<RefCell<Context>>
@@ -29,10 +31,10 @@ pub struct PointContextStruct<'c, 'd>
 impl <'c, 'd> PointContextStruct<'c , 'd> {
 
 
-    pub fn new(config: &'c Value,
-           data: &'d BTreeMap<String,String>,
-           point_id: String,
-           render_context: Rc<RefCell<Context>>
+    pub fn new(config: &'c Json,
+               data: &'d BTreeMap<String,String>,
+               point_id: String,
+               render_context: Rc<RefCell<Context>>
     ) -> PointContextStruct<'c, 'd>{
 
         let context = PointContextStruct {
@@ -82,7 +84,7 @@ impl <'c, 'd> PointContextStruct<'c , 'd> {
     {
         let mut ctx = self.render_context.borrow_mut().data().clone();
 
-        if let Value::Object(data) = &mut ctx{
+        if let Json::Object(data) = &mut ctx{
             let (n, d) = with_data;
             data.insert(String::from(n), to_value(d).unwrap());
         }
@@ -110,10 +112,10 @@ impl <'c, 'd> PointContextStruct<'c , 'd> {
         return if result.eq("true") {true} else {false};
     }
 
-    pub async fn register_dynamic(self: &PointContextStruct<'c, 'd>, result: &Value) {
+    pub async fn register_dynamic(self: &PointContextStruct<'c, 'd>, result: &Json) {
         let mut x = self.render_context.borrow_mut();
         let y = x.data_mut();
-        if let Value::Object(data) = y{
+        if let Json::Object(data) = y{
             data["dyn"][self.point_id.as_str()] = to_value(result).unwrap();
         }
     }
@@ -142,4 +144,4 @@ impl <'c, 'd> PointContext for PointContextStruct<'c,'d> {
 }
 
 
-pub type PointResult = std::result::Result<Value, ()>;
+pub type PointResult = std::result::Result<Json, Error>;

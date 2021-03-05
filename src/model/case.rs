@@ -2,21 +2,23 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 
-use serde_json::{Value, to_value};
+use serde_json::{to_value};
+use crate::model::Json;
 
 use crate::model::point::{PointContextStruct, PointResult};
 use handlebars::Context;
+use crate::model::Error;
 
 #[derive(Debug)]
 pub struct CaseContextStruct<'c, 'd> {
-    config: &'c Value,
+    config: &'c Json,
     data: &'d BTreeMap<String,String>
 }
 
 
 impl <'c, 'd> CaseContextStruct<'c, 'd>{
 
-    pub fn new(config: &'c Value, data: &'d BTreeMap<String,String>) -> CaseContextStruct<'c, 'd>{
+    pub fn new(config: &'c Json, data: &'d BTreeMap<String,String>) -> CaseContextStruct<'c, 'd>{
         let context = CaseContextStruct {
             config,
             data
@@ -28,7 +30,7 @@ impl <'c, 'd> CaseContextStruct<'c, 'd>{
 
 
     pub fn create_point(self: &CaseContextStruct<'c, 'd>) -> Vec<PointContextStruct<'c, 'd>>{
-        let mut render_data:HashMap<&str, Value> = HashMap::new();
+        let mut render_data:HashMap<&str, Json> = HashMap::new();
         let config_def = self.config["task"]["def"].as_object();
         match config_def{
             Some(def) => {
@@ -37,7 +39,7 @@ impl <'c, 'd> CaseContextStruct<'c, 'd>{
             None => {}
         }
         render_data.insert("data", to_value(self.data).unwrap());
-        render_data.insert("dyn", to_value(HashMap::<String, Value>::new()).unwrap());
+        render_data.insert("dyn", to_value(HashMap::<String, Json>::new()).unwrap());
 
         let render_context  = Rc::new(RefCell::new(Context::wraps(render_data).unwrap()));
 
@@ -77,4 +79,4 @@ impl <'c, 'd> CaseContextStruct<'c, 'd>{
 
 }
 
-pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, ()>;
+pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, Error>;

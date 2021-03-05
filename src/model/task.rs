@@ -1,19 +1,20 @@
 use std::collections::BTreeMap;
 
-use serde_json::Value;
+use crate::model::Json;
+use crate::model::Error;
 
 use crate::model::case::{CaseContextStruct, CaseResult};
 
 #[derive(Debug)]
 pub struct TaskContextStruct {
     data: Vec<BTreeMap<String,String>>,
-    config: Value
+    config: Json
 }
 
 
 impl TaskContextStruct {
 
-    pub fn new(config: Value, data: Vec<BTreeMap<String,String>>) -> TaskContextStruct {
+    pub fn new(config: Json, data: Vec<BTreeMap<String,String>>) -> TaskContextStruct {
         let context = TaskContextStruct {
             config,
             data
@@ -36,4 +37,4 @@ impl TaskContextStruct {
 
 }
 
-pub type TaskResult = std::result::Result<Vec<CaseResult>, ()>;
+pub type TaskResult = std::result::Result<Vec<CaseResult>, Error>;

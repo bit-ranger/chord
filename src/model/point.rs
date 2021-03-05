@@ -128,7 +128,7 @@ impl <'c, 'd> PointContext for PointContextStruct<'c,'d> {
 
     fn get_config_str(self: &PointContextStruct<'c, 'd>, path: Vec<&str>) -> Option<String>
     {
-        let config = self.config["point"][&self.point_id]["property"].borrow();
+        let config = self.config["point"][&self.point_id]["config"].borrow();
 
         let raw_config = path.iter()
             .fold(config,

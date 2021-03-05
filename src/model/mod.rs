@@ -49,8 +49,7 @@ impl TaskContext {
 #[derive(Debug)]
 pub struct CaseContext<'c, 'd> {
     config: &'c Value,
-    data: &'d BTreeMap<String,String>,
-    dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>
+    data: &'d BTreeMap<String,String>
 }
 
 
@@ -59,8 +58,7 @@ impl <'c, 'd> CaseContext <'c, 'd>{
     fn new(config: &'c Value, data: &'d BTreeMap<String,String>) -> CaseContext<'c, 'd>{
         let context = CaseContext {
             config,
-            data,
-            dynamic_context_register: Rc::new(RefCell::new(HashMap::new()))
+            data
         };
 
         return context;
@@ -68,7 +66,7 @@ impl <'c, 'd> CaseContext <'c, 'd>{
 
 
 
-    pub fn create_point(self: &CaseContext<'c, 'd>) -> Vec<PointContext<'c, 'd>>{
+    pub fn create_point(self: &CaseContext<'c, 'd>, dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>) -> Vec<PointContext<'c, 'd>>{
         return self.get_point_vec()
             .into_iter()
             .filter(|point_id| {
@@ -84,15 +82,13 @@ impl <'c, 'd> CaseContext <'c, 'd>{
                     self.config,
                     self.data,
                     point_id,
-                    self.dynamic_context_register.clone()
+                    dynamic_context_register.clone()
                 )
             })
             .collect();
     }
 
-    pub fn register_dynamic_context(self: &CaseContext<'c, 'd>, name: &str, result: &Value) {
-        self.dynamic_context_register.deref().borrow_mut().insert(String::from(name),to_value(result).unwrap());
-    }
+
 
     fn get_point_vec(self: &CaseContext<'c,'d>) -> Vec<String>{
         let task_point_chain_arr = self.config["task"]["chain"].as_array().unwrap();

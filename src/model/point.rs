@@ -8,8 +8,16 @@ use serde::Serialize;
 use serde_json::{to_value, Value};
 use handlebars::{Handlebars, Context};
 
+
+pub trait PointContext{
+
+
+    fn get_config_str(&self, path: Vec<&str>) -> Option<String>;
+}
+
+
 #[derive(Debug)]
-pub struct PointContext<'c, 'd>
+pub struct PointContextStruct<'c, 'd>
 {
     config: &'c Value,
     data: &'d BTreeMap<String,String>,
@@ -18,15 +26,16 @@ pub struct PointContext<'c, 'd>
 }
 
 
-impl <'c, 'd> PointContext<'c , 'd> {
+impl <'c, 'd> PointContextStruct<'c , 'd> {
+
 
     pub fn new(config: &'c Value,
            data: &'d BTreeMap<String,String>,
            point_id: String,
            render_context: Rc<RefCell<Context>>
-    ) -> PointContext<'c, 'd>{
+    ) -> PointContextStruct<'c, 'd>{
 
-        let context = PointContext {
+        let context = PointContextStruct {
             config,
             data,
             point_id: String::from(point_id),
@@ -36,27 +45,13 @@ impl <'c, 'd> PointContext<'c , 'd> {
         return context;
     }
 
-    pub fn get_id(self :&PointContext<'c,'d>) -> &str{
+    pub fn get_id(self :&PointContextStruct<'c,'d>) -> &str{
         return self.point_id.as_str();
     }
 
-    pub async fn get_config_str(self: &PointContext<'c, 'd>, path: Vec<&str>) -> Option<String>
-    {
-        let config = self.config["point"][&self.point_id]["config"].borrow();
 
-        let raw_config = path.iter()
-            .fold(config,
-                  |acc, k| acc[k].borrow()
-            );
 
-        match raw_config.as_str(){
-            Some(s) => Some(self.render(s)),
-            None=> None
-        }
-
-    }
-
-    pub async fn get_meta_str(self : &PointContext<'c, 'd>, path: Vec<&str>) ->Option<String>
+    pub async fn get_meta_str(self : &PointContextStruct<'c, 'd>, path: Vec<&str>) ->Option<String>
     {
         let config = self.config["point"][&self.point_id].borrow();
 
@@ -71,7 +66,7 @@ impl <'c, 'd> PointContext<'c , 'd> {
         }
     }
 
-    fn render(self: &PointContext<'c, 'd>, text: &str) -> String {
+    fn render(self: &PointContextStruct<'c, 'd>, text: &str) -> String {
         let render_context = self.render_context.deref().borrow();
         let render_context = render_context.borrow().deref();
 
@@ -81,7 +76,7 @@ impl <'c, 'd> PointContext<'c , 'd> {
         return render;
     }
 
-    fn render_with<T>(self: &PointContext<'c, 'd>, text: &str, with_data: (&str, &T)) -> String
+    fn render_with<T>(self: &PointContextStruct<'c, 'd>, text: &str, with_data: (&str, &T)) -> String
         where
             T: Serialize
     {
@@ -115,15 +110,35 @@ impl <'c, 'd> PointContext<'c , 'd> {
         return if result.eq("true") {true} else {false};
     }
 
-    pub async fn register_dynamic(self: &PointContext<'c, 'd>, result: &Value) {
+    pub async fn register_dynamic(self: &PointContextStruct<'c, 'd>, result: &Value) {
         let mut x = self.render_context.borrow_mut();
         let y = x.data_mut();
         if let Value::Object(data) = y{
             data["dyn"][self.point_id.as_str()] = to_value(result).unwrap();
         }
-        println!("dyn {}", y);
     }
 
+}
+
+
+impl <'c, 'd> PointContext for PointContextStruct<'c,'d> {
+
+
+    fn get_config_str(self: &PointContextStruct<'c, 'd>, path: Vec<&str>) -> Option<String>
+    {
+        let config = self.config["point"][&self.point_id]["config"].borrow();
+
+        let raw_config = path.iter()
+            .fold(config,
+                  |acc, k| acc[k].borrow()
+            );
+
+        match raw_config.as_str(){
+            Some(s) => Some(self.render(s)),
+            None=> None
+        }
+
+    }
 }
 
 

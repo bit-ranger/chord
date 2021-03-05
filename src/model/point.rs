@@ -14,7 +14,7 @@ use crate::model::Error;
 pub trait PointContext{
 
 
-    fn get_property_str(&self, path: Vec<&str>) -> Option<String>;
+    fn get_config_str(&self, path: Vec<&str>) -> Option<String>;
 }
 
 
@@ -126,7 +126,7 @@ impl <'c, 'd> PointContextStruct<'c , 'd> {
 impl <'c, 'd> PointContext for PointContextStruct<'c,'d> {
 
 
-    fn get_property_str(self: &PointContextStruct<'c, 'd>, path: Vec<&str>) -> Option<String>
+    fn get_config_str(self: &PointContextStruct<'c, 'd>, path: Vec<&str>) -> Option<String>
     {
         let config = self.config["point"][&self.point_id]["property"].borrow();
 

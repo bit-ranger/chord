@@ -9,6 +9,7 @@ use serde_json::{to_value};
 use handlebars::{Handlebars, Context};
 use crate::model::Json;
 use crate::model::Error;
+use async_std::sync::Arc;
 
 
 pub trait PointContext{
@@ -19,41 +20,44 @@ pub trait PointContext{
 
 
 #[derive(Debug)]
-pub struct PointContextStruct<'c, 'd>
+pub struct PointContextStruct<'c, 'd, 'h, 'reg>
 {
     config: &'c Json,
     data: &'d BTreeMap<String,String>,
     point_id: String,
-    render_context: Rc<RefCell<Context>>
+    handlebars: &'h Handlebars<'reg>,
+    render_context: Rc<RefCell<Context>>,
 }
 
 
-impl <'c, 'd> PointContextStruct<'c , 'd> {
+impl <'c, 'd, 'h, 'reg> PointContextStruct<'c, 'd, 'h, 'reg> {
 
 
     pub fn new(config: &'c Json,
                data: &'d BTreeMap<String,String>,
                point_id: String,
+               handlebars: &'h Handlebars<'reg>,
                render_context: Rc<RefCell<Context>>
-    ) -> PointContextStruct<'c, 'd>{
+    ) -> PointContextStruct<'c, 'd, 'h, 'reg>{
 
         let context = PointContextStruct {
             config,
             data,
             point_id: String::from(point_id),
+            handlebars,
             render_context
         };
 
         return context;
     }
 
-    pub fn get_id(self :&PointContextStruct<'c,'d>) -> &str{
+    pub fn get_id(self :&PointContextStruct<'c, 'd, 'h, 'reg>) -> &str{
         return self.point_id.as_str();
     }
 
 
 
-    pub async fn get_meta_str(self : &PointContextStruct<'c, 'd>, path: Vec<&str>) ->Option<String>
+    pub async fn get_meta_str(self : &PointContextStruct<'c, 'd, 'h, 'reg>, path: Vec<&str>) ->Option<String>
     {
         let config = self.config["point"][&self.point_id].borrow();
 
@@ -68,17 +72,17 @@ impl <'c, 'd> PointContextStruct<'c , 'd> {
         }
     }
 
-    fn render(self: &PointContextStruct<'c, 'd>, text: &str) -> String {
+    fn render(self: &PointContextStruct<'c, 'd, 'h, 'reg>, text: &str) -> String {
         let render_context = self.render_context.deref().borrow();
         let render_context = render_context.borrow().deref();
 
-        let handlebars = Handlebars::new();
-        let render = handlebars.render_template_with_context(
+        // let handlebars = Handlebars::new();
+        let render = self.handlebars.render_template_with_context(
             text, render_context).unwrap();
         return render;
     }
 
-    fn render_with<T>(self: &PointContextStruct<'c, 'd>, text: &str, with_data: (&str, &T)) -> String
+    fn render_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg>, text: &str, with_data: (&str, &T)) -> String
         where
             T: Serialize
     {
@@ -89,8 +93,8 @@ impl <'c, 'd> PointContextStruct<'c , 'd> {
             data.insert(String::from(n), to_value(d).unwrap());
         }
 
-        let handlebars = Handlebars::new();
-        let render = handlebars.render_template(
+        // let handlebars = Handlebars::new();
+        let render = self.handlebars.render_template(
             text, &ctx).unwrap();
         return render;
 
@@ -112,7 +116,7 @@ impl <'c, 'd> PointContextStruct<'c , 'd> {
         return if result.eq("true") {true} else {false};
     }
 
-    pub async fn register_dynamic(self: &PointContextStruct<'c, 'd>, result: &Json) {
+    pub async fn register_dynamic(self: &PointContextStruct<'c, 'd, 'h, 'reg>, result: &Json) {
         let mut x = self.render_context.borrow_mut();
         let y = x.data_mut();
         if let Json::Object(data) = y{
@@ -123,10 +127,10 @@ impl <'c, 'd> PointContextStruct<'c , 'd> {
 }
 
 
-impl <'c, 'd> PointContext for PointContextStruct<'c,'d> {
+impl <'c, 'd, 'h, 'reg> PointContext for PointContextStruct<'c, 'd, 'h, 'reg> {
 
 
-    fn get_config_str(self: &PointContextStruct<'c, 'd>, path: Vec<&str>) -> Option<String>
+    fn get_config_str(self: &PointContextStruct<'c, 'd, 'h, 'reg>, path: Vec<&str>) -> Option<String>
     {
         let config = self.config["point"][&self.point_id]["config"].borrow();
 

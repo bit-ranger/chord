@@ -7,13 +7,14 @@ use async_std::task as async_task;
 
 use model::task::TaskContextStruct;
 use serde_json::Value;
+use handlebars::Handlebars;
 
 mod model;
 mod case;
 mod point;
 mod task;
 
-fn load_data(path: &str) -> Result<Vec<BTreeMap<String,String>>, Box<dyn Error>> {
+fn load_data(path: &str) -> Result<Vec<BTreeMap<String, String>>, Box<dyn Error>> {
     let mut rdr = csv::Reader::from_path(path).unwrap();
     let mut hashmap_vec = Vec::new();
     for result in rdr.deserialize() {
@@ -24,14 +25,14 @@ fn load_data(path: &str) -> Result<Vec<BTreeMap<String,String>>, Box<dyn Error>>
 }
 
 
-fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
+fn load_flow(path: &str) -> Result<Value, Box<dyn Error>> {
     let file = File::open(path).unwrap();
 
-    let deserialized: Value= serde_yaml::from_reader(file)?;
+    let deserialized: Value = serde_yaml::from_reader(file)?;
     Ok(deserialized)
 }
 
- fn main() {
+fn main() {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
     opts.reqopt("d", "data_file", "data file path", "data_file");
@@ -72,8 +73,9 @@ fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
         }
     };
 
-    let mut task_context = TaskContextStruct::new(flow, data);
+    let handlebars = Handlebars::new();
+    let task_context = TaskContextStruct::new(flow, data);
     async_task::block_on(async {
-        let _ = task::run_task(&mut task_context).await;
+        let _ = task::run_task(&handlebars, &task_context).await;
     });
 }

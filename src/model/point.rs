@@ -9,7 +9,6 @@ use serde_json::{to_value};
 use handlebars::{Handlebars, Context};
 use crate::model::Json;
 use crate::model::Error;
-use async_std::sync::Arc;
 
 
 pub trait PointContext{

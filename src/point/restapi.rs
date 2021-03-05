@@ -1,6 +1,7 @@
 use crate::model::point::{PointContext};
 use crate::model::point::PointResult;
 use serde_json::Value;
+use crate::model::Error;
 
 pub async fn run_point(context: &dyn PointContext) -> PointResult{
     let url = context.get_config_str(vec!["url"]).unwrap();
@@ -19,7 +20,7 @@ pub async fn run_point(context: &dyn PointContext) -> PointResult{
         },
         Err(e) => {
             println!("{}, {}, {}", url, "not a json", e);
-            return Err(());
+            return Err(Error::new("000", "response is not a json"));
         }
     }
 

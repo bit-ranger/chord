@@ -1,6 +1,7 @@
 use crate::model::case::{CaseContextStruct, CaseResult};
 use crate::model::point::{PointContextStruct, PointResult};
 use crate::point::run_point;
+use crate::model::Error;
 
 pub async fn run_case(context: &mut CaseContextStruct<'_,'_>) -> CaseResult {
 
@@ -15,7 +16,7 @@ pub async fn run_case(context: &mut CaseContextStruct<'_,'_>) -> CaseResult {
                 point.register_dynamic(r).await;
             },
             Err(_) =>  {
-                break;
+                return Err(Error::new("000", "point failure"));
             }
         }
 

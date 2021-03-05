@@ -6,6 +6,7 @@ use futures::future::join_all;
 use crate::case::run_case;
 use crate::model::case::CaseContextStruct;
 use crate::model::task::{TaskContextStruct, TaskResult};
+use crate::model::Error;
 
 pub async fn run_task(task_context: &TaskContextStruct) -> TaskResult {
     let mut case_vec: Vec<CaseContextStruct> = task_context.create_case();
@@ -25,7 +26,7 @@ pub async fn run_task(task_context: &TaskContextStruct) -> TaskResult {
         .any(|case| !case.is_ok());
 
     return if any_err {
-        Err(())
+        Err(Error::new("000", "any case failure"))
     } else {
         Ok(case_value_vec)
     }

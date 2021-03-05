@@ -8,6 +8,7 @@ use crate::model::Json;
 use crate::model::point::{PointContextStruct, PointResult};
 use handlebars::{Context, Handlebars};
 use crate::model::Error;
+use crate::model::app::AppContext;
 
 #[derive(Debug)]
 pub struct CaseContextStruct<'c, 'd> {
@@ -29,7 +30,8 @@ impl <'c, 'd> CaseContextStruct<'c, 'd>{
 
 
 
-    pub fn create_point<'h, 'reg>(self: &CaseContextStruct<'c, 'd>, handlebars: &'h Handlebars<'reg>) -> Vec<PointContextStruct<'c, 'd, 'h, 'reg>>{
+    pub fn create_point<'h, 'reg>(self: &CaseContextStruct<'c, 'd>, handlebars: &'h Handlebars<'reg>) -> Vec<PointContextStruct<'c, 'd, 'h, 'reg>>
+    {
         let mut render_data:HashMap<&str, Json> = HashMap::new();
         let config_def = self.config["task"]["def"].as_object();
         match config_def{

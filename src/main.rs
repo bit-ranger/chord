@@ -8,6 +8,7 @@ use async_std::task as async_task;
 use model::task::TaskContextStruct;
 use serde_json::Value;
 use handlebars::Handlebars;
+use crate::model::app::AppContextStruct;
 
 mod model;
 mod case;
@@ -73,9 +74,9 @@ fn main() {
         }
     };
 
-    let handlebars = Handlebars::new();
+    let app_context = AppContextStruct::new();
     let task_context = TaskContextStruct::new(flow, data);
     async_task::block_on(async {
-        let _ = task::run_task(&handlebars, &task_context).await;
+        let _ = task::run_task(&app_context, &task_context).await;
     });
 }

@@ -7,16 +7,16 @@ use crate::case::run_case;
 use crate::model::case::CaseContextStruct;
 use crate::model::task::{TaskContextStruct, TaskResult};
 use crate::model::Error;
-use handlebars::Handlebars;
+use crate::model::app::AppContext;
 
-pub async fn run_task(handlebars: &Handlebars<'_>, task_context: &TaskContextStruct) -> TaskResult {
+pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextStruct) -> TaskResult {
     let mut case_vec: Vec<CaseContextStruct> = task_context.create_case();
 
     let mut futures = Vec::new();
     for case in case_vec.iter_mut(){
         futures.push(
         // spawn(async move {
-                run_case(handlebars,case)
+                run_case(app_context,case)
         // })
         );
     }

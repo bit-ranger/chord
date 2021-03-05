@@ -6,7 +6,7 @@ use serde_json::{to_value};
 use crate::model::Json;
 
 use crate::model::point::{PointContextStruct, PointResult};
-use handlebars::{Context, Handlebars};
+use handlebars::{Context};
 use crate::model::Error;
 use crate::model::app::AppContext;
 
@@ -30,7 +30,8 @@ impl <'c, 'd> CaseContextStruct<'c, 'd>{
 
 
 
-    pub fn create_point<'h, 'reg>(self: &CaseContextStruct<'c, 'd>, handlebars: &'h Handlebars<'reg>) -> Vec<PointContextStruct<'c, 'd, 'h, 'reg>>
+    pub fn create_point<'h, 'reg, 'app>(self: &CaseContextStruct<'c, 'd>, app_context: &'app dyn AppContext) -> Vec<PointContextStruct<'c, 'd, 'h, 'reg>>
+    where 'app: 'h, 'app:'reg
     {
         let mut render_data:HashMap<&str, Json> = HashMap::new();
         let config_def = self.config["task"]["def"].as_object();
@@ -60,7 +61,7 @@ impl <'c, 'd> CaseContextStruct<'c, 'd>{
                     self.config,
                     self.data,
                     point_id,
-                    handlebars,
+                    app_context.get_handlebars(),
                     render_context.clone()
                 )
             })

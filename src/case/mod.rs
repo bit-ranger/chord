@@ -2,12 +2,11 @@ use crate::model::case::{CaseContextStruct, CaseResult};
 use crate::model::point::{PointContextStruct, PointResult};
 use crate::point::run_point;
 use crate::model::Error;
-use handlebars::Handlebars;
 use crate::model::app::AppContext;
 
 pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStruct<'_,'_>) -> CaseResult {
 
-    let point_vec: Vec<PointContextStruct> = context.create_point(app_context.get_handlebars());
+    let point_vec: Vec<PointContextStruct> = context.create_point(app_context);
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
 
     for  point in point_vec.iter() {

@@ -7,7 +7,6 @@ use async_std::task as async_task;
 
 use model::task::TaskContextStruct;
 use serde_json::Value;
-use handlebars::Handlebars;
 use crate::model::app::AppContextStruct;
 
 mod model;

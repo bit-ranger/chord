@@ -5,7 +5,7 @@ use std::fs::File;
 
 use async_std::task as async_task;
 
-use model::task::TaskContext;
+use model::task::TaskContextStruct;
 use serde_json::Value;
 
 mod model;
@@ -72,7 +72,7 @@ fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
         }
     };
 
-    let mut task_context = TaskContext::new(flow, data);
+    let mut task_context = TaskContextStruct::new(flow, data);
     async_task::block_on(async {
         let _ = task::run_task(&mut task_context).await;
     });

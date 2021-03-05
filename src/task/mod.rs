@@ -4,11 +4,11 @@ use core::result::Result::Ok;
 use futures::future::join_all;
 
 use crate::case::run_case;
-use crate::model::case::CaseContext;
-use crate::model::task::{TaskContext, TaskResult};
+use crate::model::case::CaseContextStruct;
+use crate::model::task::{TaskContextStruct, TaskResult};
 
-pub async fn run_task(task_context: &TaskContext) -> TaskResult {
-    let mut case_vec: Vec<CaseContext> = task_context.create_case();
+pub async fn run_task(task_context: &TaskContextStruct) -> TaskResult {
+    let mut case_vec: Vec<CaseContextStruct> = task_context.create_case();
 
     let mut futures = Vec::new();
     for case in case_vec.iter_mut(){

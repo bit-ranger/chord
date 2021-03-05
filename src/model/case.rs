@@ -8,16 +8,16 @@ use crate::model::point::{PointContextStruct, PointResult};
 use handlebars::Context;
 
 #[derive(Debug)]
-pub struct CaseContext<'c, 'd> {
+pub struct CaseContextStruct<'c, 'd> {
     config: &'c Value,
     data: &'d BTreeMap<String,String>
 }
 
 
-impl <'c, 'd> CaseContext <'c, 'd>{
+impl <'c, 'd> CaseContextStruct<'c, 'd>{
 
-    pub fn new(config: &'c Value, data: &'d BTreeMap<String,String>) -> CaseContext<'c, 'd>{
-        let context = CaseContext {
+    pub fn new(config: &'c Value, data: &'d BTreeMap<String,String>) -> CaseContextStruct<'c, 'd>{
+        let context = CaseContextStruct {
             config,
             data
         };
@@ -27,7 +27,7 @@ impl <'c, 'd> CaseContext <'c, 'd>{
 
 
 
-    pub fn create_point(self: &CaseContext<'c, 'd>) -> Vec<PointContextStruct<'c, 'd>>{
+    pub fn create_point(self: &CaseContextStruct<'c, 'd>) -> Vec<PointContextStruct<'c, 'd>>{
         let mut render_data:HashMap<&str, Value> = HashMap::new();
         let config_def = self.config["task"]["def"].as_object();
         match config_def{
@@ -64,7 +64,7 @@ impl <'c, 'd> CaseContext <'c, 'd>{
 
 
 
-    fn get_point_vec(self: &CaseContext<'c,'d>) -> Vec<String>{
+    fn get_point_vec(self: &CaseContextStruct<'c,'d>) -> Vec<String>{
         let task_point_chain_arr = self.config["task"]["chain"].as_array().unwrap();
         let task_point_chain_vec:Vec<String> = task_point_chain_arr.iter()
             .map(|e| {

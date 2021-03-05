@@ -1,13 +1,13 @@
-use crate::model::point::{PointContextStruct, PointContext};
+use crate::model::point::{PointContext};
 use crate::model::point::PointResult;
 use serde_json::Value;
 
 pub async fn run_point(context: &dyn PointContext) -> PointResult{
-    let url = context.get_config_str(vec!["url"]).unwrap();
+    let url = context.get_property_str(vec!["url"]).unwrap();
 
     println!("url {}", url);
 
-    let json :surf::Result<Value> = surf::get(&url)
+    let json :surf::Result<Value> = surf::get(url.as_str())
         .header("Content-Type", "application/json")
         .recv_json()
         .await;

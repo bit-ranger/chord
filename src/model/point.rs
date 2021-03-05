@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap};
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -12,7 +12,7 @@ use handlebars::{Handlebars, Context};
 pub trait PointContext{
 
 
-    fn get_config_str(&self, path: Vec<&str>) -> Option<String>;
+    fn get_property_str(&self, path: Vec<&str>) -> Option<String>;
 }
 
 
@@ -124,9 +124,9 @@ impl <'c, 'd> PointContextStruct<'c , 'd> {
 impl <'c, 'd> PointContext for PointContextStruct<'c,'d> {
 
 
-    fn get_config_str(self: &PointContextStruct<'c, 'd>, path: Vec<&str>) -> Option<String>
+    fn get_property_str(self: &PointContextStruct<'c, 'd>, path: Vec<&str>) -> Option<String>
     {
-        let config = self.config["point"][&self.point_id]["config"].borrow();
+        let config = self.config["point"][&self.point_id]["property"].borrow();
 
         let raw_config = path.iter()
             .fold(config,

@@ -2,19 +2,19 @@ use std::collections::BTreeMap;
 
 use serde_json::Value;
 
-use crate::model::case::{CaseContext, CaseResult};
+use crate::model::case::{CaseContextStruct, CaseResult};
 
 #[derive(Debug)]
-pub struct TaskContext {
+pub struct TaskContextStruct {
     data: Vec<BTreeMap<String,String>>,
     config: Value
 }
 
 
-impl TaskContext {
+impl TaskContextStruct {
 
-    pub fn new(config: Value, data: Vec<BTreeMap<String,String>>) -> TaskContext {
-        let context = TaskContext {
+    pub fn new(config: Value, data: Vec<BTreeMap<String,String>>) -> TaskContextStruct {
+        let context = TaskContextStruct {
             config,
             data
         };
@@ -22,11 +22,11 @@ impl TaskContext {
     }
 
 
-    pub fn create_case(self: &TaskContext) -> Vec<CaseContext<'_, '_>> {
+    pub fn create_case(self: &TaskContextStruct) -> Vec<CaseContextStruct<'_, '_>> {
         return self.data.iter()
             .enumerate()
             .map(|(idx,_)| {
-                CaseContext::new(
+                CaseContextStruct::new(
                     &self.config,
                     &self.data[idx]
                 )

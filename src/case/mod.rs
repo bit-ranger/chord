@@ -1,13 +1,8 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
-
-use crate::model::case::{CaseContext, CaseResult};
+use crate::model::case::{CaseContextStruct, CaseResult};
 use crate::model::point::{PointContextStruct, PointResult};
 use crate::point::run_point;
-use handlebars::Context;
 
-pub async fn run_case(context: &mut CaseContext<'_,'_>) -> CaseResult {
+pub async fn run_case(context: &mut CaseContextStruct<'_,'_>) -> CaseResult {
 
     let point_vec: Vec<PointContextStruct> = context.create_point();
     let mut point_result_vec = Vec::<(String, PointResult)>::new();

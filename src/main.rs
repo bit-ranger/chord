@@ -5,7 +5,7 @@ use std::fs::File;
 
 use async_std::task as async_task;
 
-use model::TaskContext;
+use model::task::TaskContext;
 use serde_json::Value;
 
 mod model;
@@ -35,7 +35,7 @@ fn load_flow(path: &str) -> Result<Value, Box<dyn Error>>{
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
     opts.reqopt("d", "data_file", "data file path", "data_file");
-    opts.reqopt("f", "flow_file", "flow file path", "flow_file");
+    opts.reqopt("f", "flow_file", "case file path", "flow_file");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,

@@ -1,8 +1,11 @@
 // use async_std::task::spawn;
 use core::result::Result::Ok;
-use crate::case::run_case;
-use crate::model::{TaskContext, CaseContext, TaskResult};
+
 use futures::future::join_all;
+
+use crate::case::run_case;
+use crate::model::case::CaseContext;
+use crate::model::task::{TaskContext, TaskResult};
 
 pub async fn run_task(task_context: &TaskContext) -> TaskResult {
     let mut case_vec: Vec<CaseContext> = task_context.create_case();

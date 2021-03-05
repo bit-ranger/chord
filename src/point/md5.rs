@@ -1,5 +1,5 @@
-use crate::model::PointContext;
-use crate::model::PointResult;
+use crate::model::point::PointContext;
+use crate::model::point::PointResult;
 use serde_json::Value;
 
 

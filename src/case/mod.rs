@@ -1,11 +1,12 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use serde_json::{to_value, Value};
 
-use crate::model::{CaseContext, CaseResult, PointContext, PointResult};
+use crate::model::case::{CaseContext, CaseResult};
+use crate::model::point::{PointContext, PointResult};
 use crate::point::run_point;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 pub async fn run_case(context: &mut CaseContext<'_,'_>) -> CaseResult {
     let dynamic_context_register = Rc::new(RefCell::new(HashMap::new()));

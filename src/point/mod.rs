@@ -1,5 +1,6 @@
-use crate::model::{PointContext};
-use crate::model::PointResult;
+use crate::model::point::PointContext;
+use crate::model::point::PointResult;
+
 mod restapi;
 mod md5;
 

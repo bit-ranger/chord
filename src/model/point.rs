@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use serde::Serialize;
 use serde_json::{to_value, Value};
-use handlebars::Handlebars;
+use handlebars::{Handlebars, Context};
 
 #[derive(Debug)]
 pub struct PointContext<'c, 'd>
@@ -14,7 +14,7 @@ pub struct PointContext<'c, 'd>
     config: &'c Value,
     data: &'d BTreeMap<String,String>,
     point_id: String,
-    dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>
+    render_context: Rc<RefCell<Context>>
 }
 
 
@@ -23,14 +23,16 @@ impl <'c, 'd> PointContext<'c , 'd> {
     pub fn new(config: &'c Value,
            data: &'d BTreeMap<String,String>,
            point_id: String,
-           dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>
+           render_context: Rc<RefCell<Context>>
     ) -> PointContext<'c, 'd>{
+
         let context = PointContext {
             config,
             data,
             point_id: String::from(point_id),
-            dynamic_context_register
+            render_context
         };
+
         return context;
     }
 
@@ -70,37 +72,31 @@ impl <'c, 'd> PointContext<'c , 'd> {
     }
 
     fn render(self: &PointContext<'c, 'd>, text: &str) -> String {
-        return self.render_with(text, Option::<(&str, &Value)>::None);
+        let render_context = self.render_context.deref().borrow();
+        let render_context = render_context.borrow().deref();
+
+        let handlebars = Handlebars::new();
+        let render = handlebars.render_template_with_context(
+            text, render_context).unwrap();
+        return render;
     }
 
-    fn render_with<T>(self: &PointContext<'c, 'd>, text: &str, with_data: Option<(&str, &T)>) -> String
+    fn render_with<T>(self: &PointContext<'c, 'd>, text: &str, with_data: (&str, &T)) -> String
         where
             T: Serialize
     {
-        let mut data :HashMap<&str, Value> = HashMap::new();
+        let mut ctx = self.render_context.borrow_mut().data().clone();
 
-        let config_def = self.config["task"]["def"].as_object();
-        match config_def{
-            Some(def) => {
-                data.insert("def", to_value(def).unwrap());
-            },
-            None => {}
+        if let Value::Object(data) = &mut ctx{
+            let (n, d) = with_data;
+            data.insert(String::from(n), to_value(d).unwrap());
         }
-
-        data.insert("data", to_value(self.data).unwrap());
-
-        data.insert("dyn", to_value(self.dynamic_context_register.deref().borrow().deref()).unwrap());
-
-        if with_data.is_some(){
-            let (n, d) = with_data.unwrap();
-            data.insert(n, to_value(d).unwrap());
-        }
-
-        // println!("{}", to_value(&data).unwrap());
 
         let handlebars = Handlebars::new();
-        let render = handlebars.render_template(text, &data).unwrap();
+        let render = handlebars.render_template(
+            text, &ctx).unwrap();
         return render;
+
     }
 
     pub async fn assert <T>(&self, condition: &str, with_data: &T) -> bool
@@ -112,14 +108,21 @@ impl <'c, 'd> PointContext<'c , 'd> {
             condition = condition
         );
 
-        let result = self.render_with(&template, Some(("result", with_data)));
+        let result = self.render_with(&template, ("result", with_data));
 
         println!("assert {:?}", result);
 
         return if result.eq("true") {true} else {false};
     }
 
-
+    pub async fn register_dynamic(self: &PointContext<'c, 'd>, result: &Value) {
+        let mut x = self.render_context.borrow_mut();
+        let y = x.data_mut();
+        if let Value::Object(data) = y{
+            data["dyn"][self.point_id.as_str()] = to_value(result).unwrap();
+        }
+        println!("dyn {}", y);
+    }
 
 }
 

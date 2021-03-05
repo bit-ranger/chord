@@ -2,9 +2,10 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 
-use serde_json::Value;
+use serde_json::{Value, to_value};
 
 use crate::model::point::{PointContext, PointResult};
+use handlebars::Context;
 
 #[derive(Debug)]
 pub struct CaseContext<'c, 'd> {
@@ -26,7 +27,20 @@ impl <'c, 'd> CaseContext <'c, 'd>{
 
 
 
-    pub fn create_point(self: &CaseContext<'c, 'd>, dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>) -> Vec<PointContext<'c, 'd>>{
+    pub fn create_point(self: &CaseContext<'c, 'd>) -> Vec<PointContext<'c, 'd>>{
+        let mut render_data:HashMap<&str, Value> = HashMap::new();
+        let config_def = self.config["task"]["def"].as_object();
+        match config_def{
+            Some(def) => {
+                render_data.insert("def", to_value(def).unwrap());
+            },
+            None => {}
+        }
+        render_data.insert("data", to_value(self.data).unwrap());
+        render_data.insert("dyn", to_value(HashMap::<String, Value>::new()).unwrap());
+
+        let render_context  = Rc::new(RefCell::new(Context::wraps(render_data).unwrap()));
+
         return self.get_point_vec()
             .into_iter()
             .filter(|point_id| {
@@ -42,7 +56,7 @@ impl <'c, 'd> CaseContext <'c, 'd>{
                     self.config,
                     self.data,
                     point_id,
-                    dynamic_context_register.clone()
+                    render_context.clone()
                 )
             })
             .collect();

@@ -2,15 +2,14 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use serde_json::{to_value, Value};
-
 use crate::model::case::{CaseContext, CaseResult};
 use crate::model::point::{PointContext, PointResult};
 use crate::point::run_point;
+use handlebars::Context;
 
 pub async fn run_case(context: &mut CaseContext<'_,'_>) -> CaseResult {
-    let dynamic_context_register = Rc::new(RefCell::new(HashMap::new()));
-    let point_vec: Vec<PointContext> = context.create_point(dynamic_context_register.clone());
+
+    let point_vec: Vec<PointContext> = context.create_point();
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
 
     for  point in point_vec.iter() {
@@ -18,7 +17,7 @@ pub async fn run_case(context: &mut CaseContext<'_,'_>) -> CaseResult {
 
         match &result {
             Ok(r) => {
-                register_dynamic_context(dynamic_context_register.clone(), point.get_id(), r);
+                point.register_dynamic(r).await;
             },
             Err(_) =>  {
                 break;
@@ -33,7 +32,3 @@ pub async fn run_case(context: &mut CaseContext<'_,'_>) -> CaseResult {
 
 
 
-
-pub fn register_dynamic_context(dynamic_context_register : Rc<RefCell<HashMap<String, Value>>>, name: &str, result: &Value) {
-    dynamic_context_register.borrow_mut().insert(String::from(name),to_value(result).unwrap());
-}

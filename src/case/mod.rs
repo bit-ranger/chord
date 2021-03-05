@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use serde::Serialize;
 use serde_json::{to_value, Value};
 
 use crate::model::{CaseContext, CaseResult, PointContext, PointResult};
@@ -10,7 +9,7 @@ use std::cell::RefCell;
 
 pub async fn run_case(context: &mut CaseContext<'_,'_>) -> CaseResult {
     let dynamic_context_register = Rc::new(RefCell::new(HashMap::new()));
-    let mut point_vec: Vec<PointContext> = context.create_point(dynamic_context_register.clone());
+    let point_vec: Vec<PointContext> = context.create_point(dynamic_context_register.clone());
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
 
     for  point in point_vec.iter() {

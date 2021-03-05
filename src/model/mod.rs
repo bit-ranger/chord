@@ -37,13 +37,6 @@ impl TaskContext {
             .collect();
     }
 
-    fn get_config(self : &TaskContext) -> &Value{
-        return self.config.borrow();
-    }
-
-    fn get_data(self : &TaskContext) -> &Vec<BTreeMap<String,String>>{
-        return &self.data;
-    }
 }
 
 #[derive(Debug)]

@@ -16,7 +16,7 @@ async fn run_point_type(point_type: &str, context: &dyn PointContext) ->  PointR
     }
 }
 
-pub async fn run_point(context: &PointContextStruct<'_, '_, '_, '_>) -> PointResult
+pub async fn run_point(context: &PointContextStruct<'_, '_, '_, '_, '_>) -> PointResult
 {
     let point_type = context.get_meta_str(vec!["type"]).await.unwrap();
     let result = run_point_type(point_type.as_str(), context).await;

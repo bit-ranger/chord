@@ -5,8 +5,8 @@ use crate::model::Error;
 use crate::model::app::AppContext;
 
 pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStruct<'_,'_>) -> CaseResult {
-
-    let point_vec: Vec<PointContextStruct> = context.create_point(app_context);
+    let render_context = context.create_render_context();
+    let point_vec: Vec<PointContextStruct> = context.create_point(app_context, &render_context);
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
 
     for  point in point_vec.iter() {

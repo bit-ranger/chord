@@ -1,51 +1,52 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
-use std::rc::Rc;
 
-use serde_json::{to_value};
-use crate::model::Json;
+use handlebars::Context;
+use serde_json::to_value;
 
-use crate::model::point::{PointContextStruct, PointResult};
-use handlebars::{Context};
-use crate::model::Error;
 use crate::model::app::AppContext;
+use crate::model::point::{PointContextStruct, PointResult};
+use crate::model::Error;
+use crate::model::Json;
 
 #[derive(Debug)]
 pub struct CaseContextStruct<'c, 'd> {
     config: &'c Json,
-    data: &'d BTreeMap<String,String>
+    data: &'d BTreeMap<String, String>,
 }
 
 
-impl <'c, 'd> CaseContextStruct<'c, 'd>{
-
-    pub fn new(config: &'c Json, data: &'d BTreeMap<String,String>) -> CaseContextStruct<'c, 'd>{
+impl<'c, 'd> CaseContextStruct<'c, 'd> {
+    pub fn new(config: &'c Json, data: &'d BTreeMap<String, String>) -> CaseContextStruct<'c, 'd> {
         let context = CaseContextStruct {
             config,
-            data
+            data,
         };
 
         return context;
     }
 
-
-
-    pub fn create_point<'h, 'reg, 'app>(self: &CaseContextStruct<'c, 'd>, app_context: &'app dyn AppContext) -> Vec<PointContextStruct<'c, 'd, 'h, 'reg>>
-    where 'app: 'h, 'app:'reg
-    {
-        let mut render_data:HashMap<&str, Json> = HashMap::new();
+    pub fn create_render_context(self: &CaseContextStruct<'c, 'd>) -> RenderContext{
+        let mut render_data: HashMap<&str, Json> = HashMap::new();
         let config_def = self.config["task"]["def"].as_object();
-        match config_def{
+        match config_def {
             Some(def) => {
                 render_data.insert("def", to_value(def).unwrap());
-            },
+            }
             None => {}
         }
         render_data.insert("data", to_value(self.data).unwrap());
         render_data.insert("dyn", to_value(HashMap::<String, Json>::new()).unwrap());
+        return RefCell::new(Context::wraps(render_data).unwrap());
+    }
 
-        let render_context  = Rc::new(RefCell::new(Context::wraps(render_data).unwrap()));
 
+    pub fn create_point<'h, 'reg, 'app, 'r>(self: &CaseContextStruct<'c, 'd>,
+                                        app_context: &'app dyn AppContext,
+                                        render_context: &'r RenderContext
+    ) -> Vec<PointContextStruct<'c, 'd, 'h, 'reg, 'r>>
+        where 'app: 'h, 'app: 'reg
+    {
         return self.get_point_vec()
             .into_iter()
             .filter(|point_id| {
@@ -62,25 +63,25 @@ impl <'c, 'd> CaseContextStruct<'c, 'd>{
                     self.data,
                     point_id,
                     app_context.get_handlebars(),
-                    render_context.clone()
+                    render_context,
                 )
             })
             .collect();
     }
 
 
-
-    fn get_point_vec(self: &CaseContextStruct<'c,'d>) -> Vec<String>{
+    fn get_point_vec(self: &CaseContextStruct<'c, 'd>) -> Vec<String> {
         let task_point_chain_arr = self.config["task"]["chain"].as_array().unwrap();
-        let task_point_chain_vec:Vec<String> = task_point_chain_arr.iter()
+        let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()
             .map(|e| {
-                e.as_str().map(|s|String::from(s)).unwrap()
+                e.as_str().map(|s| String::from(s)).unwrap()
             })
             .collect();
 
         return task_point_chain_vec;
     }
-
 }
 
 pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, Error>;
+
+pub type RenderContext = RefCell<Context>;

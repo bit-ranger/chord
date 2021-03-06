@@ -1,15 +1,14 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 use std::ops::Deref;
-use std::rc::Rc;
 
+use handlebars::{Handlebars};
 use serde::Serialize;
-use serde_json::{to_value};
-use handlebars::{Handlebars, Context};
-use crate::model::Json;
-use crate::model::Error;
+use serde_json::to_value;
 
+use crate::model::case::RenderContext;
+use crate::model::Error;
+use crate::model::Json;
 
 pub trait PointContext{
 
@@ -19,25 +18,25 @@ pub trait PointContext{
 
 
 #[derive(Debug)]
-pub struct PointContextStruct<'c, 'd, 'h, 'reg>
+pub struct PointContextStruct<'c, 'd, 'h, 'reg, 'r>
 {
     config: &'c Json,
     data: &'d BTreeMap<String,String>,
     point_id: String,
     handlebars: &'h Handlebars<'reg>,
-    render_context: Rc<RefCell<Context>>,
+    render_context: &'r RenderContext,
 }
 
 
-impl <'c, 'd, 'h, 'reg> PointContextStruct<'c, 'd, 'h, 'reg> {
+impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
 
 
     pub fn new(config: &'c Json,
                data: &'d BTreeMap<String,String>,
                point_id: String,
                handlebars: &'h Handlebars<'reg>,
-               render_context: Rc<RefCell<Context>>
-    ) -> PointContextStruct<'c, 'd, 'h, 'reg>{
+               render_context: &'r RenderContext
+    ) -> PointContextStruct<'c, 'd, 'h, 'reg, 'r>{
 
         let context = PointContextStruct {
             config,
@@ -50,13 +49,13 @@ impl <'c, 'd, 'h, 'reg> PointContextStruct<'c, 'd, 'h, 'reg> {
         return context;
     }
 
-    pub fn get_id(self :&PointContextStruct<'c, 'd, 'h, 'reg>) -> &str{
+    pub fn get_id(self :&PointContextStruct<'c, 'd, 'h, 'reg, 'r>) -> &str{
         return self.point_id.as_str();
     }
 
 
 
-    pub async fn get_meta_str(self : &PointContextStruct<'c, 'd, 'h, 'reg>, path: Vec<&str>) ->Option<String>
+    pub async fn get_meta_str(self : &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) ->Option<String>
     {
         let config = self.config["point"][&self.point_id].borrow();
 
@@ -71,7 +70,7 @@ impl <'c, 'd, 'h, 'reg> PointContextStruct<'c, 'd, 'h, 'reg> {
         }
     }
 
-    fn render(self: &PointContextStruct<'c, 'd, 'h, 'reg>, text: &str) -> String {
+    fn render(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> String {
         let render_context = self.render_context.deref().borrow();
         let render_context = render_context.borrow().deref();
 
@@ -81,7 +80,7 @@ impl <'c, 'd, 'h, 'reg> PointContextStruct<'c, 'd, 'h, 'reg> {
         return render;
     }
 
-    fn render_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg>, text: &str, with_data: (&str, &T)) -> String
+    fn render_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> String
         where
             T: Serialize
     {
@@ -115,7 +114,7 @@ impl <'c, 'd, 'h, 'reg> PointContextStruct<'c, 'd, 'h, 'reg> {
         return if result.eq("true") {true} else {false};
     }
 
-    pub async fn register_dynamic(self: &PointContextStruct<'c, 'd, 'h, 'reg>, result: &Json) {
+    pub async fn register_dynamic(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, result: &Json) {
         let mut x = self.render_context.borrow_mut();
         let y = x.data_mut();
         if let Json::Object(data) = y{
@@ -126,10 +125,10 @@ impl <'c, 'd, 'h, 'reg> PointContextStruct<'c, 'd, 'h, 'reg> {
 }
 
 
-impl <'c, 'd, 'h, 'reg> PointContext for PointContextStruct<'c, 'd, 'h, 'reg> {
+impl <'c, 'd, 'h, 'reg, 'r> PointContext for PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
 
 
-    fn get_config_str(self: &PointContextStruct<'c, 'd, 'h, 'reg>, path: Vec<&str>) -> Option<String>
+    fn get_config_str(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
     {
         let config = self.config["point"][&self.point_id]["config"].borrow();
 

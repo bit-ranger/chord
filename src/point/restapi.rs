@@ -45,26 +45,59 @@ pub async fn run(context: &dyn PointContext) -> PointResult {
         }
     }
 
-    let response: surf::Result<Response> = rb.send().await;
-    return match response {
-        Ok(mut res) => {
-            let mut res_data = Map::new();
-            res_data.insert(String::from("status"), Json::Number(Number::from_str(res.status().to_string().as_str()).unwrap()));
+    let mut res: Response = rb.send().await?;
+    let mut res_data = Map::new();
+    res_data.insert(String::from("status"), Json::Number(Number::from_str(res.status().to_string().as_str()).unwrap()));
 
-            let mut header_data = Map::new();
-            for header_name in res.header_names() {
-                header_data.insert(header_name.to_string(), Json::String(res.header(header_name).unwrap().to_string()));
-            }
+    let mut header_data = Map::new();
+    for header_name in res.header_names() {
+        header_data.insert(header_name.to_string(), Json::String(res.header(header_name).unwrap().to_string()));
+    }
 
-            res_data.insert(String::from("header"), Json::Object(header_data));
+    res_data.insert(String::from("header"), Json::Object(header_data));
 
-            let body: Json = res.body_json().await.unwrap();
-            res_data.insert(String::from("body"), body);
-            Ok(Json::Object(res_data))
-        }
-        Err(e) => {
-            Err(Error::new("000", format!("http error: {}", e).as_str()))
-        }
-    };
+    let body: Json = res.body_json().await?;
+    res_data.insert(String::from("body"), body);
+    return Ok(Json::Object(res_data))
+
+    // return match response {
+    //     Ok(mut res) => {
+    //         let mut res_data = Map::new();
+    //         res_data.insert(String::from("status"), Json::Number(Number::from_str(res.status().to_string().as_str()).unwrap()));
+    //
+    //         let mut header_data = Map::new();
+    //         for header_name in res.header_names() {
+    //             header_data.insert(header_name.to_string(), Json::String(res.header(header_name).unwrap().to_string()));
+    //         }
+    //
+    //         res_data.insert(String::from("header"), Json::Object(header_data));
+    //
+    //         let body: Json = res.body_json().await?;
+    //         res_data.insert(String::from("body"), body);
+    //         Ok(Json::Object(res_data))
+    //     }
+    //     Err(e) => {
+    //         Err(Error::new("000", format!("http error: {}", e).as_str()))
+    //     }
+    // };
 
 }
+
+// impl std::error::Error for surf::Error {
+//     fn description(&self) -> &str {
+//         // format!("{} \"code\": \"{}\", \"message\": \"{}\" {}", "{", self.code, self.message, "}").as_str()
+//         "surf error"
+//     }
+//
+//     fn cause(self: &surf::Error) -> Option<&dyn std::error::Error> {
+//         None
+//     }
+// }
+
+impl From<surf::Error> for Error {
+    fn from(err: surf::Error) -> Error {
+        Error::new(err.status().to_string().as_str(), err.status().canonical_reason())
+    }
+}
+
+

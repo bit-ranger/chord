@@ -1,9 +1,8 @@
 use std::collections::BTreeMap;
 
 use crate::model::Json;
-use crate::model::Error;
+use crate::flow::case::model::CaseContextStruct;
 
-use crate::model::case::{CaseContextStruct, CaseResult};
 
 #[derive(Debug)]
 pub struct TaskContextStruct {
@@ -37,4 +36,4 @@ impl TaskContextStruct {
 
 }
 
-pub type TaskResult = std::result::Result<Vec<CaseResult>, Error>;
+

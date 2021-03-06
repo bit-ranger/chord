@@ -1,42 +1,19 @@
-use std::{env};
-use std::collections::BTreeMap;
-use std::error::Error;
-use std::fs::File;
-
+use std::env;
 use async_std::task as async_task;
 
-use model::task::TaskContextStruct;
-use serde_json::Value;
+
 use crate::model::app::AppContextStruct;
 
 mod model;
-mod case;
+mod loader;
+mod flow;
 mod point;
-mod task;
-
-fn load_data(path: &str) -> Result<Vec<BTreeMap<String, String>>, Box<dyn Error>> {
-    let mut rdr = csv::Reader::from_path(path).unwrap();
-    let mut hashmap_vec = Vec::new();
-    for result in rdr.deserialize() {
-        let record: BTreeMap<String, String> = result?;
-        hashmap_vec.push(record);
-    }
-    Ok(hashmap_vec)
-}
-
-
-fn load_flow(path: &str) -> Result<Value, Box<dyn Error>> {
-    let file = File::open(path).unwrap();
-
-    let deserialized: Value = serde_yaml::from_reader(file)?;
-    Ok(deserialized)
-}
 
 fn main() {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
-    opts.reqopt("d", "data_file", "data file path", "data_file");
-    opts.reqopt("f", "flow_file", "case file path", "flow_file");
+    opts.reqopt("d", "data", "data file path", "data_file");
+    opts.reqopt("c", "config", "config file path", "config_file");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -48,7 +25,7 @@ fn main() {
 
     let data_path = matches.opt_str("d").unwrap();
 
-    let data = match load_data(
+    let data = match loader::load_data(
         &data_path
     ) {
         Err(e) => {
@@ -60,10 +37,10 @@ fn main() {
     };
 
 
-    let flow_path = matches.opt_str("f").unwrap();
+    let config_path = matches.opt_str("c").unwrap();
 
-    let flow = match load_flow(
-        &flow_path
+    let config = match loader::load_flow(
+        &config_path
     ) {
         Err(e) => {
             panic!("{:?}", e);
@@ -74,8 +51,8 @@ fn main() {
     };
 
     let app_context = AppContextStruct::new();
-    let task_context = TaskContextStruct::new(flow, data);
+
     async_task::block_on(async {
-        let _ = task::run_task(&app_context, &task_context).await;
+        let _ = flow::run(&app_context, config, data ).await;
     });
 }

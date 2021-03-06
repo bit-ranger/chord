@@ -1,6 +1,4 @@
-use crate::model::{Error, Json};
-use crate::model::point::PointContext;
-use crate::model::point::PointResult;
+use crate::model::{Error, Json, PointResult, PointContext};
 
 pub async fn run_point(context: &dyn PointContext) -> PointResult{
     let url = context.get_config_str(vec!["url"]).unwrap();

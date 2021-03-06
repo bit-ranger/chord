@@ -3,11 +3,13 @@ use core::result::Result::Ok;
 
 use futures::future::join_all;
 
-use crate::case::run_case;
-use crate::model::case::CaseContextStruct;
-use crate::model::task::{TaskContextStruct, TaskResult};
-use crate::model::Error;
+use crate::model::{Error, TaskResult};
 use crate::model::app::AppContext;
+use crate::flow::case::model::CaseContextStruct;
+use crate::flow::case::run_case;
+use crate::flow::task::model::TaskContextStruct;
+
+pub mod model;
 
 pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextStruct) -> TaskResult {
     let mut case_vec: Vec<CaseContextStruct> = task_context.create_case();
@@ -32,3 +34,5 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextSt
         Ok(case_value_vec)
     }
 }
+
+

@@ -5,9 +5,8 @@ use handlebars::Context;
 use serde_json::to_value;
 
 use crate::model::app::AppContext;
-use crate::model::point::{PointContextStruct, PointResult};
-use crate::model::Error;
 use crate::model::Json;
+use crate::flow::point::model::PointContextStruct;
 
 #[derive(Debug)]
 pub struct CaseContextStruct<'c, 'd> {
@@ -82,6 +81,6 @@ impl<'c, 'd> CaseContextStruct<'c, 'd> {
     }
 }
 
-pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, Error>;
+
 
 pub type RenderContext = RefCell<Context>;

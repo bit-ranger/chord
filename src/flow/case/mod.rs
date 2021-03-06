@@ -1,8 +1,10 @@
-use crate::model::case::{CaseContextStruct, CaseResult};
-use crate::model::point::{PointContextStruct, PointResult};
-use crate::point::run_point;
-use crate::model::Error;
 use crate::model::app::AppContext;
+use crate::model::{Error, PointResult, CaseResult};
+use crate::flow::case::model::{CaseContextStruct,};
+use crate::flow::point::model::{PointContextStruct,};
+use crate::flow::point::run_point;
+
+pub mod model;
 
 pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStruct<'_,'_>) -> CaseResult {
     let render_context = context.create_render_context();

@@ -2,20 +2,12 @@ use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
-use handlebars::{Handlebars};
+use handlebars::Handlebars;
 use serde::Serialize;
 use serde_json::to_value;
 
-use crate::model::case::RenderContext;
-use crate::model::Error;
-use crate::model::Json;
-
-pub trait PointContext{
-
-
-    fn get_config_str(&self, path: Vec<&str>) -> Option<String>;
-}
-
+use crate::flow::case::model::RenderContext;
+use crate::model::{Json, PointContext};
 
 #[derive(Debug)]
 pub struct PointContextStruct<'c, 'd, 'h, 'reg, 'r>
@@ -144,6 +136,3 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContext for PointContextStruct<'c, 'd, 'h, 'reg
 
     }
 }
-
-
-pub type PointResult = std::result::Result<Json, Error>;

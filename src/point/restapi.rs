@@ -17,11 +17,10 @@ pub async fn run(context: &dyn PointContext) -> PointResult{
                                      Url::from_str(url.as_str()).unwrap());
 
     if let Some(header) = context.get_config()["header"].as_object() {
-        // let rb0 = &mut rb;
-        // for (k,v) in header.iter() {
-        //     rb0.borrow_mut().header(HeaderName::from_str(context.render(k).as_str()).unwrap(),
-        //               HeaderValue::from_str(context.render(v.as_str().unwrap()).as_str()).unwrap());
-        // }
+        for (k,v) in header.iter() {
+            rb = rb.header(HeaderName::from_str(context.render(k).as_str()).unwrap(),
+                      HeaderValue::from_str(context.render(v.as_str().unwrap()).as_str()).unwrap());
+        }
     }
 
     let mut response: surf::Result<Response> = rb.send().await;

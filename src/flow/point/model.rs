@@ -7,7 +7,8 @@ use serde::Serialize;
 use serde_json::to_value;
 
 use crate::flow::case::model::RenderContext;
-use crate::model::{Json, PointContext};
+use crate::model::context::PointContext;
+use crate::model::value::Json;
 
 #[derive(Debug)]
 pub struct PointContextStruct<'c, 'd, 'h, 'reg, 'r>

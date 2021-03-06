@@ -1,5 +1,23 @@
-use handlebars::{Handlebars};
 use std::borrow::Borrow;
+
+use handlebars::Handlebars;
+
+use crate::model::error::Error;
+use crate::model::value::Json;
+
+pub type PointResult = std::result::Result<Json, Error>;
+pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, Error>;
+pub type TaskResult = std::result::Result<Vec<CaseResult>, Error>;
+
+pub trait PointContext{
+
+
+    fn get_config_rendered(&self, path: Vec<&str>) -> Option<String>;
+
+    fn get_config(&self) -> &Json;
+
+    fn render(&self, text: &str) -> String;
+}
 
 pub trait AppContext{
 
@@ -34,4 +52,3 @@ impl <'reg> AppContext for AppContextStruct <'reg>{
 
 
 }
-

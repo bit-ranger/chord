@@ -1,6 +1,7 @@
-use crate::model::{Error, PointResult};
-use crate::flow::point::model::{PointContextStruct};
-use crate::point::{run_point_type};
+use crate::flow::point::model::PointContextStruct;
+use crate::model::error::Error;
+use crate::model::context::PointResult;
+use crate::point::run_point_type;
 
 pub mod model;
 

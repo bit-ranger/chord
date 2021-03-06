@@ -1,4 +1,5 @@
-use crate::model::{PointContext, PointResult, Error};
+use crate::model::context::{PointContext, PointResult};
+use crate::model::error::Error;
 
 mod restapi;
 mod md5;

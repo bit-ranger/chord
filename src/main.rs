@@ -2,7 +2,7 @@ use std::env;
 use async_std::task as async_task;
 
 
-use crate::model::app::AppContextStruct;
+use model::context::AppContextStruct;
 
 mod model;
 mod loader;

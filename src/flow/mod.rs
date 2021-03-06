@@ -1,7 +1,10 @@
-use crate::model::app::AppContext;
 use std::collections::BTreeMap;
+
+use crate::model::context::AppContext;
+use crate::model::context::TaskResult;
+use crate::model::value::Json;
+
 use self::task::model::TaskContextStruct;
-use crate::model::{Json, TaskResult};
 
 mod task;
 mod case;

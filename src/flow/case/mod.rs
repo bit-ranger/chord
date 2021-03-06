@@ -1,8 +1,9 @@
-use crate::model::app::AppContext;
-use crate::model::{Error, PointResult, CaseResult};
-use crate::flow::case::model::{CaseContextStruct,};
-use crate::flow::point::model::{PointContextStruct,};
+use crate::flow::case::model::CaseContextStruct;
+use crate::flow::point::model::PointContextStruct;
 use crate::flow::point::run_point;
+use crate::model::context::AppContext;
+use crate::model::context::{CaseResult, PointResult};
+use crate::model::error::Error;
 
 pub mod model;
 

@@ -3,11 +3,12 @@ use core::result::Result::Ok;
 
 use futures::future::join_all;
 
-use crate::model::{Error, TaskResult};
-use crate::model::app::AppContext;
 use crate::flow::case::model::CaseContextStruct;
 use crate::flow::case::run_case;
 use crate::flow::task::model::TaskContextStruct;
+use crate::model::context::AppContext;
+use crate::model::error::Error;
+use crate::model::context::TaskResult;
 
 pub mod model;
 

@@ -4,8 +4,8 @@ use std::collections::{BTreeMap, HashMap};
 use handlebars::Context;
 use serde_json::to_value;
 
-use crate::model::app::AppContext;
-use crate::model::Json;
+use crate::model::context::AppContext;
+use crate::model::value::Json;
 use crate::flow::point::model::PointContextStruct;
 
 #[derive(Debug)]

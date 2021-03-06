@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::model::Json;
+use crate::model::value::Json;
 use crate::flow::case::model::CaseContextStruct;
 
 

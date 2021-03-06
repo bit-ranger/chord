@@ -14,3 +14,5 @@ impl ErrorStruct{
     }
 
 }
+
+pub type Error = ErrorStruct;

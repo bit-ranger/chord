@@ -1,20 +1,11 @@
-use crate::model::{Error, PointResult, PointContext};
+use crate::model::{Error, PointResult};
 use crate::flow::point::model::{PointContextStruct};
-use crate::point::{restapi, md5};
+use crate::point::{run_point_type};
 
 pub mod model;
 
 
-async fn run_point_type(point_type: &str, context: &dyn PointContext) ->  PointResult
-{
-    return if point_type.trim().eq("restapi") {
-        restapi::run_point(context).await
-    }else if point_type.trim().eq("md5") {
-        md5::run_point(context).await
-    } else {
-        PointResult::Err(Error::new("002", format!("unsupported point type {}", point_type).as_str()))
-    }
-}
+
 
 pub async fn run_point(context: &PointContextStruct<'_, '_, '_, '_, '_>) -> PointResult
 {

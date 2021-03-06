@@ -57,12 +57,12 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render(s)),
+            Some(s) => Some(self.render_inner(s)),
             None=> None
         }
     }
 
-    fn render(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> String {
+    fn render_inner(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> String {
         let render_context = self.render_context.deref().borrow();
         let render_context = render_context.borrow().deref();
 
@@ -72,7 +72,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
         return render;
     }
 
-    fn render_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> String
+    fn render_inner_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> String
         where
             T: Serialize
     {
@@ -99,7 +99,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
             condition = condition
         );
 
-        let result = self.render_with(&template, ("result", with_data));
+        let result = self.render_inner_with(&template, ("result", with_data));
 
         println!("assert {:?}", result);
 
@@ -120,7 +120,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
 impl <'c, 'd, 'h, 'reg, 'r> PointContext for PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
 
 
-    fn get_config_str(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
+    fn get_config_rendered(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
     {
         let config = self.config["point"][&self.point_id]["config"].borrow();
 
@@ -130,9 +130,18 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContext for PointContextStruct<'c, 'd, 'h, 'reg
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render(s)),
+            Some(s) => Some(self.render_inner(s)),
             None=> None
         }
 
+    }
+
+    fn get_config(&self) -> &Json {
+        let config = self.config["point"][&self.point_id]["config"].borrow();
+        return config;
+    }
+
+    fn render(&self, text: &str) -> String {
+        return self.render_inner(text);
     }
 }

@@ -13,7 +13,11 @@ pub type TaskResult = std::result::Result<Vec<CaseResult>, Error>;
 pub trait PointContext{
 
 
-    fn get_config_str(&self, path: Vec<&str>) -> Option<String>;
+    fn get_config_rendered(&self, path: Vec<&str>) -> Option<String>;
+
+    fn get_config(&self) -> &Json;
+
+    fn render(&self, text: &str) -> String;
 }
 
 

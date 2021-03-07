@@ -10,7 +10,12 @@ pub mod model;
 
 pub async fn run_point(context: &PointContextStruct<'_, '_, '_, '_, '_>) -> PointResult
 {
-    let point_type = context.get_meta_str(vec!["type"]).await.unwrap();
+    let point_type = context.get_meta_str(vec!["type"]).await;
+    if point_type.is_none(){
+        return PointResult::Err(Error::new("001", "missing type"));
+    }
+    let point_type = point_type.unwrap();
+
     let result = run_point_type(point_type.as_str(), context).await;
 
     if result.is_err() {

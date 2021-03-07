@@ -3,6 +3,7 @@ use async_std::task as async_task;
 
 
 use model::context::AppContextStruct;
+use log::info;
 
 mod model;
 mod loader;
@@ -53,6 +54,7 @@ fn main() {
     let app_context = AppContextStruct::new();
 
     async_task::block_on(async {
-        let _ = flow::run(&app_context, config, data ).await;
+        let task_result = flow::run(&app_context, config, data ).await;
+        info!("task result {:?}", task_result);
     });
 }

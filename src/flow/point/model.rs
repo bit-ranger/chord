@@ -97,8 +97,6 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
 
         let result = self.render_inner_with(&template, ("result", with_data));
 
-        println!("assert {:?}", result);
-
         return if result.eq("true") {true} else {false};
     }
 

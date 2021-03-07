@@ -3,18 +3,20 @@ use async_std::task as async_task;
 
 
 use model::context::AppContextStruct;
-use log::info;
+use log::{info, error};
 
 mod model;
 mod loader;
 mod flow;
 mod point;
+mod logger;
 
 fn main() {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
-    opts.reqopt("d", "data", "data file path", "data_file");
-    opts.reqopt("c", "config", "config file path", "config_file");
+    opts.reqopt("d", "data", "data file path", "data");
+    opts.reqopt("c", "config", "config file path", "config");
+    opts.reqopt("l", "log", "log file path", "log");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -50,6 +52,13 @@ fn main() {
             value
         }
     };
+
+    let log_path = matches.opt_str("l").unwrap();
+
+    logger::init(log::Level::Info,
+                 log_path,
+                 1,
+                 2000000).unwrap();
 
     let app_context = AppContextStruct::new();
 

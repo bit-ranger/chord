@@ -1,6 +1,5 @@
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
-use std::ops::Deref;
 
 use handlebars::Handlebars;
 use serde::Serialize;
@@ -26,7 +25,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
 
     pub fn new(config: &'c Json,
                data: &'d BTreeMap<String,String>,
-               point_id: String,
+               point_id: &str,
                handlebars: &'h Handlebars<'reg>,
                render_context: &'r RenderContext
     ) -> PointContextStruct<'c, 'd, 'h, 'reg, 'r>{
@@ -64,12 +63,8 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
     }
 
     fn render_inner(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> String {
-        let render_context = self.render_context.deref().borrow();
-        let render_context = render_context.borrow().deref();
-
-        // let handlebars = Handlebars::new();
         let render = self.handlebars.render_template_with_context(
-            text, render_context).unwrap();
+            text, self.render_context).unwrap();
         return render;
     }
 
@@ -77,7 +72,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
         where
             T: Serialize
     {
-        let mut ctx = self.render_context.borrow_mut().data().clone();
+        let mut ctx = self.render_context.data().clone();
 
         if let Json::Object(data) = &mut ctx{
             let (n, d) = with_data;
@@ -107,13 +102,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
         return if result.eq("true") {true} else {false};
     }
 
-    pub async fn register_dynamic(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, result: &Json) {
-        let mut x = self.render_context.borrow_mut();
-        let y = x.data_mut();
-        if let Json::Object(data) = y{
-            data["dyn"][self.point_id.as_str()] = to_value(result).unwrap();
-        }
-    }
+
 
 }
 

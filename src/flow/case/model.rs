@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 
 use handlebars::Context;
@@ -36,40 +35,30 @@ impl<'c, 'd> CaseContextStruct<'c, 'd> {
         }
         render_data.insert("data", to_value(self.data).unwrap());
         render_data.insert("dyn", to_value(HashMap::<String, Json>::new()).unwrap());
-        return RefCell::new(Context::wraps(render_data).unwrap());
+        return Context::wraps(render_data).unwrap();
     }
 
 
     pub fn create_point<'h, 'reg, 'app, 'r>(self: &CaseContextStruct<'c, 'd>,
-                                        app_context: &'app dyn AppContext,
-                                        render_context: &'r RenderContext
-    ) -> Vec<PointContextStruct<'c, 'd, 'h, 'reg, 'r>>
+                                            point_id: &str,
+                                            app_context: &'app dyn AppContext,
+                                            render_context: &'r RenderContext
+
+    ) -> Option<PointContextStruct<'c, 'd, 'h, 'reg, 'r>>
         where 'app: 'h, 'app: 'reg
     {
-        return self.get_point_vec()
-            .into_iter()
-            .filter(|point_id| {
-                let none = self.config["point"][point_id].as_object().is_none();
-                if none {
-                    panic!("missing point config {}", point_id);
-                } else {
-                    return true;
-                }
-            })
-            .map(|point_id| {
-                PointContextStruct::new(
-                    self.config,
-                    self.data,
-                    point_id,
-                    app_context.get_handlebars(),
-                    render_context,
-                )
-            })
-            .collect();
+        let _ = self.config["point"][point_id].as_object()?;
+
+        Some(PointContextStruct::new(
+            self.config,
+            self.data,
+            point_id,
+            app_context.get_handlebars(),
+            render_context))
     }
 
 
-    fn get_point_vec(self: &CaseContextStruct<'c, 'd>) -> Vec<String> {
+    pub fn get_point_id_vec(self: &CaseContextStruct<'c, 'd>) -> Vec<String> {
         let task_point_chain_arr = self.config["task"]["chain"].as_array().unwrap();
         let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()
             .map(|e| {
@@ -83,4 +72,4 @@ impl<'c, 'd> CaseContextStruct<'c, 'd> {
 
 
 
-pub type RenderContext = RefCell<Context>;
+pub type RenderContext = Context;

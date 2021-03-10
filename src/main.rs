@@ -3,7 +3,7 @@ use async_std::task as async_task;
 
 
 use model::context::AppContextStruct;
-use log::{info, error};
+use log::{info};
 
 mod model;
 mod loader;

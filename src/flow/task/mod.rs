@@ -18,9 +18,9 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextSt
     let mut futures = Vec::new();
     for case in case_vec.iter_mut(){
         futures.push(
-        // spawn(async move {
-                run_case(app_context,case)
-        // })
+            // spawn(async move {
+                run_case(app_context, case)
+            // })
         );
     }
 

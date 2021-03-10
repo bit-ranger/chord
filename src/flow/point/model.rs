@@ -41,6 +41,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
         return context;
     }
 
+    #[allow(dead_code)]
     pub fn get_id(self :&PointContextStruct<'c, 'd, 'h, 'reg, 'r>) -> &str{
         return self.point_id.as_str();
     }

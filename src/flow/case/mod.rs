@@ -1,5 +1,5 @@
 use crate::flow::case::model::{CaseContextStruct, RenderContext};
-use crate::flow::point::run_point;
+use crate::flow::point::{run_point, assert};
 use crate::model::context::AppContext;
 use crate::model::context::{CaseResult, PointResult};
 use crate::model::error::Error;
@@ -21,14 +21,22 @@ pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStr
 
         match &result {
             Ok(r) => {
-                register_dynamic(&mut render_context, point_id, r).await;
+                let assert_true = assert(&point, r).await;
+                if assert_true {
+                    register_dynamic(&mut render_context, point_id, r).await;
+                    point_result_vec.push((String::from(point_id), result));
+                } else {
+                    point_result_vec.push((String::from(point_id),
+                                           Err(Error::new("000", "assert failure"))));
+                    return Err(Error::new("002", format!("point assert failure {}", point_id).as_str()));
+                }
             },
             Err(_) =>  {
-                return Err(Error::new("001", "point failure"));
+                point_result_vec.push((String::from(point_id), result));
+                return Err(Error::new("001", format!("point run failure {}", point_id).as_str()));
             }
         }
 
-        point_result_vec.push((String::from(point_id), result));
     }
 
     return Ok(point_result_vec);

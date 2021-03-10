@@ -2,6 +2,7 @@ use crate::flow::point::model::PointContextStruct;
 use crate::model::error::Error;
 use crate::model::context::PointResult;
 use crate::point::run_point_type;
+use crate::model::value::Json;
 
 pub mod model;
 
@@ -16,20 +17,16 @@ pub async fn run_point(context: &PointContextStruct<'_, '_, '_, '_, '_>) -> Poin
     }
     let point_type = point_type.unwrap();
 
-    let result = run_point_type(point_type.as_str(), context).await;
+    return run_point_type(point_type.as_str(), context).await;
+}
 
-    if result.is_err() {
-        return PointResult::Err(Error::new("000", "run point failure"));
-    }
-
-    let value = result.unwrap();
+pub async fn assert(context: &PointContextStruct<'_, '_, '_, '_, '_>, result: &Json) -> bool{
     let assert_condition = context.get_meta_str(vec!["assert"]).await;
-    match assert_condition{
+    return match assert_condition{
         Some(con) =>  {
-            let assert_result = context.assert(con.as_str(), &value).await;
-            if assert_result {PointResult::Ok(value)} else {PointResult::Err(Error::new("001", "assert point failure"))}
+            context.assert(con.as_str(), &result).await
         },
-        None => return Ok(value)
+        None => true
     }
 }
 

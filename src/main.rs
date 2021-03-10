@@ -27,6 +27,8 @@ fn main() {
     };
 
     let data_path = matches.opt_str("d").unwrap();
+    let log_path = matches.opt_str("l").unwrap();
+    let config_path = matches.opt_str("c").unwrap();
 
     let data = match loader::load_data(
         &data_path
@@ -40,8 +42,6 @@ fn main() {
     };
 
 
-    let config_path = matches.opt_str("c").unwrap();
-
     let config = match loader::load_flow(
         &config_path
     ) {
@@ -52,8 +52,6 @@ fn main() {
             value
         }
     };
-
-    let log_path = matches.opt_str("l").unwrap();
 
     logger::init(log::Level::Info,
                  log_path,

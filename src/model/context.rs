@@ -3,7 +3,8 @@ use std::borrow::Borrow;
 use handlebars::Handlebars;
 
 use crate::model::error::Error;
-use crate::model::value::Json;
+use crate::model::value::{Json, Number};
+use crate::model::helper::NUM_HELPER;
 
 pub type PointResult = std::result::Result<Json, Error>;
 pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, (Error, Vec<(String, PointResult)>)>;
@@ -34,8 +35,11 @@ pub struct AppContextStruct<'reg> {
 impl <'reg> AppContextStruct<'reg> {
 
     pub fn new() -> AppContextStruct<'reg>{
+        let mut  handlebars = Handlebars::new();
+        handlebars.register_helper("num", Box::new(NUM_HELPER));
+
         AppContextStruct{
-            handlebars: Handlebars::new()
+            handlebars
         }
     }
 

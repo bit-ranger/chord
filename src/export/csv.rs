@@ -52,6 +52,7 @@ fn case_result_to_value_vec(cr: &CaseResult, len: usize) -> Vec<String> {
         Ok(_) => {
             vec.push(String::from("O"));
             vec.push(String::from(""));
+            vec.push(String::from(""));
         },
         Err((e, _)) => {
             vec.push(String::from("X"));

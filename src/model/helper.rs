@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use handlebars::{Context, Handlebars, Helper, HelperDef, HelperResult, Output, Renderable, RenderContext, RenderError, ScopedJson};
+use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
 use crate::model::value::{Json, Number};
 use serde_json::Value;

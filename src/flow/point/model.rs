@@ -96,7 +96,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
             condition = condition
         );
 
-        let result = self.render_inner_with(&template, ("result", with_data));
+        let result = self.render_inner_with(&template, ("res", with_data));
 
         return if result.eq("true") {true} else {false};
     }

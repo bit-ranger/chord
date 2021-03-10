@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use handlebars::Handlebars;
 
 use crate::model::error::Error;
-use crate::model::value::{Json, Number};
+use crate::model::value::{Json};
 use crate::model::helper::NUM_HELPER;
 
 pub type PointResult = std::result::Result<Json, Error>;

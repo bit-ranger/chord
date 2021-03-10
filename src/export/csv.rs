@@ -23,6 +23,7 @@ pub async fn export(task_result: &TaskResult, path: &str) -> Result<(), Error> {
         .map(|cr| case_result_to_value_vec(cr, name_vec.len()))
         .for_each(|sv| rwr.write_record(&sv).unwrap());
 
+    rwr.flush()?;
     return Ok(());
 }
 
@@ -95,4 +96,11 @@ fn to_name_vec(cr_vec: &Vec<CaseResult>) -> Vec<String> {
     vec.push(String::from("caseInfo"));
     vec.push(String::from("lastPointInfo"));
     vec
+}
+
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Error {
+        Error::new("000", err.to_string().as_str())
+    }
 }

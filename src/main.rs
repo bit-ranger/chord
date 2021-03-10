@@ -21,7 +21,7 @@ fn main() {
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(_) => {
-            println!("{}", opts.short_usage("sqlgen"));
+            println!("{}", opts.short_usage("runner"));
             return;
         }
     };

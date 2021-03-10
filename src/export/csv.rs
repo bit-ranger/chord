@@ -1,7 +1,12 @@
 use crate::model::context::{TaskResult, CaseResult};
+use crate::model::error::Error;
 
-pub async fn export(task_result: &TaskResult, path: &str) -> Result<(), ()> {
-    let mut rwr = csv::Writer::from_path(path).unwrap();
+pub async fn export(task_result: &TaskResult, path: &str) -> Result<(), Error> {
+    let rwr = csv::Writer::from_path(path);
+    let mut rwr = match rwr{
+        Ok(w) => w,
+        Err(_) => return Err(Error::new("000", "path error"))
+    };
 
     let cr_vec = match task_result {
         Ok(cr_vec) => cr_vec,

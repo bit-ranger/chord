@@ -14,26 +14,33 @@ pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStr
     for point_id in context.get_point_id_vec().iter() {
         let point = context.create_point(point_id, app_context, &render_context);
         if point.is_none(){
-            return Err(Error::new("000", format!("invalid point {}", point_id).as_str()));
+            return Err((
+                Error::new("000", format!("invalid point {}", point_id).as_str()),
+                Vec::new()
+            ));
         }
         let point = point.unwrap();
         let result = run_point(&point).await;
+        point_result_vec.push((String::from(point_id), result));
+        let (point_id, result) = point_result_vec.last().unwrap();
 
-        match &result {
+        match result {
             Ok(r) => {
                 let assert_true = assert(&point, r).await;
                 if assert_true {
                     register_dynamic(&mut render_context, point_id, r).await;
-                    point_result_vec.push((String::from(point_id), result));
                 } else {
-                    point_result_vec.push((String::from(point_id),
-                                           Err(Error::new("000", "assert failure"))));
-                    return Err(Error::new("002", format!("point assert failure {}", point_id).as_str()));
+                    return Err((
+                        Error::new("002", format!("assert failure {}", point_id).as_str()),
+                        point_result_vec
+                    ));
                 }
             },
             Err(_) =>  {
-                point_result_vec.push((String::from(point_id), result));
-                return Err(Error::new("001", format!("point run failure {}", point_id).as_str()));
+                return Err((
+                    Error::new("001", format!("run failure {}", point_id).as_str()),
+                    point_result_vec
+                ));
             }
         }
 

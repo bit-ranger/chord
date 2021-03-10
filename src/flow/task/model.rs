@@ -33,7 +33,6 @@ impl TaskContextStruct {
             })
             .collect();
     }
-
 }
 
 

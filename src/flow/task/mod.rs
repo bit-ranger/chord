@@ -30,7 +30,10 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextSt
         .any(|case| !case.is_ok());
 
     return if any_err {
-        Err(Error::new("000", "any case failure"))
+        Err((
+            Error::new("000", "any case failure"),
+            case_value_vec
+        ))
     } else {
         Ok(case_value_vec)
     }

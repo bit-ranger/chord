@@ -6,8 +6,8 @@ use crate::model::error::Error;
 use crate::model::value::Json;
 
 pub type PointResult = std::result::Result<Json, Error>;
-pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, Error>;
-pub type TaskResult = std::result::Result<Vec<CaseResult>, Error>;
+pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, (Error, Vec<(String, PointResult)>)>;
+pub type TaskResult = std::result::Result<Vec<CaseResult>, (Error, Vec<CaseResult>)>;
 
 pub trait PointContext{
 

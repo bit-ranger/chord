@@ -10,6 +10,7 @@ mod loader;
 mod flow;
 mod point;
 mod logger;
+mod export;
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -17,6 +18,7 @@ fn main() {
     opts.reqopt("d", "data", "data file path", "data");
     opts.reqopt("c", "config", "config file path", "config");
     opts.reqopt("l", "log", "log file path", "log");
+    opts.reqopt("e", "export", "export file path", "export");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -29,6 +31,7 @@ fn main() {
     let data_path = matches.opt_str("d").unwrap();
     let log_path = matches.opt_str("l").unwrap();
     let config_path = matches.opt_str("c").unwrap();
+    let export_path = matches.opt_str("e").unwrap();
 
     let data = match loader::load_data(
         &data_path
@@ -62,6 +65,7 @@ fn main() {
 
     async_task::block_on(async {
         let task_result = flow::run(&app_context, config, data ).await;
+        let _ = export::csv::export(&task_result, &export_path).await;
         info!("task result {:?}", task_result);
     });
 }

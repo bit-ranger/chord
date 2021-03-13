@@ -96,7 +96,7 @@ pub async fn run(context: &dyn PointContext) -> PointResult {
 
 impl From<surf::Error> for Error {
     fn from(err: surf::Error) -> Error {
-        Error::new(err.status().to_string().as_str(), err.status().canonical_reason())
+        Error::new("http", format!("{}", err.status()).as_str())
     }
 }
 

@@ -1,7 +1,8 @@
 use crate::model::context::{TaskResult, CaseResult};
 use crate::model::error::Error;
+use std::path::Path;
 
-pub async fn export(task_result: &TaskResult, path: &str) -> Result<(), Error> {
+pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), Error> {
     let rwr = csv::Writer::from_path(path);
     let mut rwr = match rwr{
         Ok(w) => w,
@@ -98,9 +99,3 @@ fn to_name_vec(cr_vec: &Vec<CaseResult>) -> Vec<String> {
     vec
 }
 
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Error {
-        Error::new("000", err.to_string().as_str())
-    }
-}

@@ -3,7 +3,7 @@ use std::fmt;
 pub type Error = ErrorStruct;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ErrorStruct{
     code: String,
     message: String
@@ -45,11 +45,11 @@ impl std::error::Error for ErrorStruct {
     }
 }
 
-// impl From<ErrorStruct> for ErrorStruct {
-//     fn from(err: ErrorStruct) -> ErrorStruct {
-//         ErrorStruct::from_err("021", "invalid method", Box::new(err))
-//     }
-// }
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Error {
+        Error::new("io", format!("{:?}", err.kind()).as_str())
+    }
+}
 
 
 // impl From<NoneError> for ErrorStruct {

@@ -9,6 +9,7 @@ use crate::flow::case::model::RenderContext;
 use crate::model::context::PointContext;
 use crate::model::value::Json;
 use crate::model::error::Error;
+use log::info;
 
 #[derive(Debug)]
 pub struct PointContextStruct<'c, 'd, 'h, 'reg, 'r>
@@ -105,7 +106,10 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
         let result = self.render_inner_with(&template, ("res", with_data));
         match result {
             Ok(result) => if result.eq("true") {true} else {false},
-            Err(_) => false
+            Err(e) => {
+                info!("assert failure: {} >>> {}", condition, e);
+                false
+            }
         }
     }
 

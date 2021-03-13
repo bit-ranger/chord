@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::fmt;
+
 pub type Error = ErrorStruct;
 
 
@@ -58,6 +59,12 @@ impl From<std::io::Error> for Error {
 //     }
 // }
 
+
+// impl From<ErrorStruct> for NoneError {
+//     fn from(err: ErrorStruct) -> Self {
+//         ErrorStruct::new("021", "invalid method")
+//     }
+// }
 
 
 

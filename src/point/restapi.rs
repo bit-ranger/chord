@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use surf::{RequestBuilder, Response, Url};
+use surf::{RequestBuilder, Response, Url, Body};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 
@@ -16,7 +16,7 @@ pub async fn run(context: &dyn PointContext) -> PointResult {
 
     let url = match Url::from_str(url.as_str()) {
         Ok(url) => url,
-        Err(_) => return Err(Error::new("011", "invalid url"))
+        Err(_) => return Err(Error::new("011", format!("invalid url: {}", url).as_str()))
     };
 
     let method = match context.get_config_rendered(vec!["method"]) {
@@ -29,20 +29,27 @@ pub async fn run(context: &dyn PointContext) -> PointResult {
         Err(_) => return Err(Error::new("021", "invalid method"))
     };
 
+
+
     let mut rb = RequestBuilder::new(method, url);
 
     if let Some(header) = context.get_config()["header"].as_object() {
         for (k, v) in header.iter() {
-            let hn = HeaderName::from_str(context.render(k).as_str());
+            let hn = HeaderName::from_str(context.render(k)?.as_str());
             if hn.is_err() {
                 return Err(Error::new("030", "invalid header name"));
             }
-            let hv = HeaderValue::from_str(context.render(v.as_str().unwrap()).as_str());
+            let hv = HeaderValue::from_str(context.render(v.as_str().unwrap())?.as_str());
             if hv.is_err() {
                 return Err(Error::new("031", "invalid header value"));
             }
             rb = rb.header(hn.unwrap(), hv.unwrap());
         }
+    }
+
+    if let Some(body) = context.get_config_rendered(vec!["body"]){
+        println!("{}", body);
+        rb = rb.body(Body::from_string(body));
     }
 
     let mut res: Response = rb.send().await?;

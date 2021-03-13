@@ -1,13 +1,14 @@
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
 
-use handlebars::Handlebars;
+use handlebars::{Handlebars, TemplateRenderError};
 use serde::Serialize;
 use serde_json::to_value;
 
 use crate::flow::case::model::RenderContext;
 use crate::model::context::PointContext;
 use crate::model::value::Json;
+use crate::model::error::Error;
 
 #[derive(Debug)]
 pub struct PointContextStruct<'c, 'd, 'h, 'reg, 'r>
@@ -58,18 +59,23 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render_inner(s)),
+            Some(s) => {
+                match self.render_inner(s){
+                    Ok(s) => Some(s),
+                    Err(_) => None
+                }
+            },
             None=> None
         }
     }
 
-    fn render_inner(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> String {
+    fn render_inner(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> Result<String,Error> {
         let render = self.handlebars.render_template_with_context(
-            text, self.render_context).unwrap();
-        return render;
+            text, self.render_context)?;
+        return Ok(render);
     }
 
-    fn render_inner_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> String
+    fn render_inner_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> Result<String,Error>
         where
             T: Serialize
     {
@@ -82,8 +88,8 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
 
         // let handlebars = Handlebars::new();
         let render = self.handlebars.render_template(
-            text, &ctx).unwrap();
-        return render;
+            text, &ctx)?;
+        return Ok(render);
 
     }
 
@@ -97,11 +103,11 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
         );
 
         let result = self.render_inner_with(&template, ("res", with_data));
-
-        return if result.eq("true") {true} else {false};
+        match result {
+            Ok(result) => if result.eq("true") {true} else {false},
+            Err(_) => false
+        }
     }
-
-
 
 }
 
@@ -119,7 +125,12 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContext for PointContextStruct<'c, 'd, 'h, 'reg
             );
 
         match raw_config.as_str(){
-            Some(s) => Some(self.render_inner(s)),
+            Some(s) => {
+                match self.render_inner(s){
+                    Ok(s) => Some(s),
+                    Err(_) => None
+                }
+            },
             None=> None
         }
 
@@ -130,7 +141,14 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContext for PointContextStruct<'c, 'd, 'h, 'reg
         return config;
     }
 
-    fn render(&self, text: &str) -> String {
+    fn render(&self, text: &str) -> Result<String,Error> {
         return self.render_inner(text);
+    }
+}
+
+
+impl From<TemplateRenderError> for Error{
+    fn from(e: TemplateRenderError) -> Self {
+        Error::new("tpl", format!("{}", e).as_str())
     }
 }

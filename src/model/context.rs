@@ -17,7 +17,7 @@ pub trait PointContext{
 
     fn get_config(&self) -> &Json;
 
-    fn render(&self, text: &str) -> String;
+    fn render(&self, text: &str) -> Result<String,Error>;
 }
 
 pub trait AppContext{

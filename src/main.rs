@@ -11,6 +11,7 @@ use model::context::AppContextStruct;
 use crate::model::context::TaskResult;
 use crate::model::error::Error;
 
+
 mod model;
 mod loader;
 mod flow;
@@ -40,7 +41,7 @@ fn main() -> Result<(),usize> {
 
     let duration = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    let execution_id = duration.as_millis();
+    let execution_id = duration.as_millis().to_string();
 
     let job_path = matches.opt_str("j").unwrap();
     let job_path = Path::new(&job_path);
@@ -49,13 +50,13 @@ fn main() -> Result<(),usize> {
     }
 
     async_task::block_on(async {
-        run_job(job_path, execution_id).await;
+        run_job(job_path, execution_id.as_str()).await;
     });
 
     return Ok(());
 }
 
-async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: u128) -> Vec<TaskResult>{
+async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskResult>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("running job {}", job_path_str);
@@ -84,7 +85,7 @@ async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: u128) -> Vec<TaskRes
     return task_result_vec;
 }
 
-async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: u128) -> TaskResult{
+async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResult{
     info!("running task {}", task_path.as_ref().to_str().unwrap());
     let task_path = Path::new(task_path.as_ref());
     let data_path = task_path.join("data.csv");

@@ -48,7 +48,6 @@ pub async fn run(context: &dyn PointContext) -> PointResult {
     }
 
     if let Some(body) = context.get_config_rendered(vec!["body"]){
-        println!("{}", body);
         rb = rb.body(Body::from_string(body));
     }
 

@@ -19,7 +19,8 @@ mod logger;
 mod report;
 mod load;
 
-fn main() -> Result<(),usize> {
+#[async_std::main]
+async fn main() -> Result<(),usize> {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
     opts.reqopt("j", "job", "job path", "job");
@@ -49,9 +50,9 @@ fn main() -> Result<(),usize> {
         panic!("job path is not a dir {}", job_path.to_str().unwrap());
     }
 
-    async_task::block_on(async {
+    // async_task::block_on(async {
         run_job(job_path, execution_id.as_str()).await;
-    });
+    // });
 
     return Ok(());
 }

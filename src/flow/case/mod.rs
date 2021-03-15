@@ -13,10 +13,8 @@ use log::info;
 pub mod model;
 
 pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStruct<'_,'_>) -> CaseResult {
-    let dt = Utc.ymd(2018, 1, 26).and_hms_micro(18, 30, 9, 453_829);
-    // info!("-----------  start {} {:?}", dt.format("%T"), std::thread::current().id());
-    async_std::task::sleep(Duration::from_secs(5)).await;
-
+    let now = Utc::now();
+    println!("-----------  start {} {:?}", now.format("%y-%m-%d·%T"), std::thread::current().id());
     let mut render_context = context.create_render_context();
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
     for point_id in context.get_point_id_vec().iter() {
@@ -54,7 +52,7 @@ pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStr
 
     }
 
-    // info!("--------------  end {} {:?}", dt.format("%T"), std::thread::current().id());
+    println!("--------------  end {} {:?}", now.format("%T"), std::thread::current().id());
     return Ok(point_result_vec);
 }
 

@@ -33,6 +33,20 @@ impl TaskContextStruct {
             })
             .collect();
     }
+
+    pub fn get_rate_limit(self: &TaskContextStruct) -> (usize, usize) {
+        let num = match self.config["task"]["rate-limit"]["num"].as_u64() {
+            Some(n) => n as usize,
+            None => 10
+        };
+
+        let sec = match self.config["task"]["rate-limit"]["sec"].as_u64() {
+            Some(n) => n as usize,
+            None => 1
+        };
+
+        return (num,sec);
+    }
 }
 
 

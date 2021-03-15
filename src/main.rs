@@ -6,18 +6,18 @@ use async_std::task as async_task;
 use futures::future::join_all;
 use log::info;
 
+use load::file;
 use model::context::AppContextStruct;
 
 use crate::model::context::TaskResult;
 use crate::model::error::Error;
 
-
 mod model;
-mod loader;
 mod flow;
 mod point;
 mod logger;
 mod report;
+mod load;
 
 fn main() -> Result<(),usize> {
     let args: Vec<_> = env::args().collect();
@@ -92,7 +92,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
     let config_path = task_path.join("config.yml");
     let export_path = task_path.join(format!("export_{}.csv", execution_id));
 
-    let data = match loader::load_data(
+    let data = match file::load_data(
         &data_path
     ) {
         Err(e) => {
@@ -104,7 +104,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
     };
 
 
-    let config = match loader::load_flow(
+    let config = match file::load_flow(
         &config_path
     ) {
         Err(e) => {

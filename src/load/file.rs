@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 use std::fs::File;
+use std::path::Path;
 
 use serde_json::Value;
-use std::path::Path;
+
 use crate::model::error::Error;
 
 pub fn load_data<P: AsRef<Path>>(path: P) -> Result<Vec<BTreeMap<String, String>>, Error> {

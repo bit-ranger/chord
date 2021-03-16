@@ -11,14 +11,16 @@ use crate::flow::point::model::PointContextStruct;
 pub struct CaseContextStruct<'c, 'd> {
     config: &'c Json,
     data: &'d BTreeMap<String, String>,
+    id: usize
 }
 
 
 impl<'c, 'd> CaseContextStruct<'c, 'd> {
-    pub fn new(config: &'c Json, data: &'d BTreeMap<String, String>) -> CaseContextStruct<'c, 'd> {
+    pub fn new(config: &'c Json, data: &'d BTreeMap<String, String>, id: usize) -> CaseContextStruct<'c, 'd> {
         let context = CaseContextStruct {
             config,
             data,
+            id
         };
 
         return context;
@@ -67,6 +69,11 @@ impl<'c, 'd> CaseContextStruct<'c, 'd> {
             .collect();
 
         return task_point_chain_vec;
+    }
+
+
+    pub fn id(&self) -> usize {
+        self.id
     }
 }
 

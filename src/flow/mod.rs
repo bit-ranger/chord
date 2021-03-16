@@ -12,9 +12,9 @@ mod point;
 
 pub async fn run(app_context: &dyn AppContext,
                  config: Json,
-                 data: Vec<BTreeMap<String,String>>,
-) -> TaskResult{
-
-    let task_context = TaskContextStruct::new(config, data);
+                 data: Vec<BTreeMap<String, String>>,
+                 id: &str,
+) -> TaskResult {
+    let task_context = TaskContextStruct::new(config, data, id);
     return task::run_task(app_context, &task_context).await;
 }

@@ -7,16 +7,18 @@ use crate::flow::case::model::CaseContextStruct;
 #[derive(Debug)]
 pub struct TaskContextStruct {
     data: Vec<BTreeMap<String,String>>,
-    config: Json
+    config: Json,
+    id: String
 }
 
 
 impl TaskContextStruct {
 
-    pub fn new(config: Json, data: Vec<BTreeMap<String,String>>) -> TaskContextStruct {
+    pub fn new(config: Json, data: Vec<BTreeMap<String,String>>, id: &str) -> TaskContextStruct {
         let context = TaskContextStruct {
             config,
-            data
+            data,
+            id: String::from(id)
         };
         return context;
     }
@@ -28,7 +30,8 @@ impl TaskContextStruct {
             .map(|(idx,_)| {
                 CaseContextStruct::new(
                     &self.config,
-                    &self.data[idx]
+                    &self.data[idx],
+                    idx
                 )
             })
             .collect();
@@ -41,6 +44,11 @@ impl TaskContextStruct {
         };
 
         return num;
+    }
+
+
+    pub fn id(&self) -> &str {
+        &self.id
     }
 }
 

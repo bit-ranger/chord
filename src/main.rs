@@ -78,8 +78,8 @@ async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskRes
 
     let task_result_vec = join_all(futures).await;
     let task_status = task_result_vec.iter()
-        .map(|r| r.as_ref().map_or_else(|e| Err(e.clone()), |_| Ok(true)))
-        .collect::<Vec<Result<bool, TaskError>>>();
+        .map(|r| r.as_ref().map_or_else(|e| Err(e.get_code()), |_| Ok(true)))
+        .collect::<Vec<Result<bool, &str>>>();
     info!("finish job {}, {:?}", job_path_str, task_status);
     return task_result_vec;
 }
@@ -95,7 +95,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         &data_path
     ) {
         Err(e) => {
-            return Err(TaskError::new("000", format!("load data failure {}", e).as_str()));
+            return TaskResult::Err(TaskError::new("000", format!("load data failure {}", e).as_str()));
         }
         Ok(vec) => {
             vec
@@ -107,7 +107,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         &config_path
     ) {
         Err(e) => {
-            return Err(TaskError::new("001", format!("load config failure {}", e).as_str()))
+            return TaskResult::Err(TaskError::new("001", format!("load config failure {}", e).as_str()))
         }
         Ok(value) => {
             value
@@ -115,7 +115,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
     };
 
     let app_context = AppContextStruct::new();
-    let task_result = flow::run(&app_context, config, data ).await;
+    let task_result = flow::run(&app_context, config, data, task_path.file_name().unwrap().to_str().unwrap()).await;
     let _ = report::csv::export(&task_result, &export_path).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());
     return task_result;

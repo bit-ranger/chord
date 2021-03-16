@@ -5,7 +5,6 @@ use handlebars::Handlebars;
 use crate::model::error::Error;
 use crate::model::value::{Json};
 use crate::model::helper::{NUM_HELPER, BOOL_HELPER};
-use serde_json::Value;
 
 pub type BasicError = Error<()>;
 pub type PointError = BasicError;

@@ -1,8 +1,6 @@
 use crate::model::context::{TaskResult, CaseResult, BasicError};
 use crate::model::error::Error;
 use std::path::Path;
-use std::ops::Deref;
-use std::borrow::Borrow;
 
 pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), BasicError> {
     let rwr = csv::Writer::from_path(path);

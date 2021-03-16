@@ -1,7 +1,6 @@
 use std::fmt::{Display, Formatter, Debug};
 use std::fmt;
 use std::ops::Deref;
-use std::borrow::Borrow;
 
 pub type Error<T> = ErrorStruct<T>;
 
@@ -48,6 +47,15 @@ impl<T> ErrorStruct<T>{
         }
     }
 
+    #[allow(dead_code)]
+    pub fn get_code(self: &ErrorStruct<T>) -> &str{
+        return &self.code
+    }
+
+    #[allow(dead_code)]
+    pub fn get_message(self: &ErrorStruct<T>) -> &str{
+        return &self.message
+    }
 }
 
 impl <T> Display for ErrorStruct<T> {

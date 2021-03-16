@@ -2,15 +2,13 @@ use std::{env, fs};
 use std::path::Path;
 use std::time::SystemTime;
 
-use async_std::task as async_task;
 use futures::future::join_all;
 use log::info;
 
 use load::file;
 use model::context::AppContextStruct;
 
-use crate::model::context::{TaskResult, CaseResult, TaskError};
-use crate::model::error::Error;
+use crate::model::context::{TaskResult, TaskError};
 
 mod model;
 mod flow;
@@ -97,7 +95,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         &data_path
     ) {
         Err(e) => {
-            return Err(Error::new("000", format!("load data failure {}", e).as_str()));
+            return Err(TaskError::new("000", format!("load data failure {}", e).as_str()));
         }
         Ok(vec) => {
             vec
@@ -109,7 +107,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         &config_path
     ) {
         Err(e) => {
-            return Err(Error::new("001", format!("load config failure {}", e).as_str()))
+            return Err(TaskError::new("001", format!("load config failure {}", e).as_str()))
         }
         Ok(value) => {
             value

@@ -1,21 +1,27 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Debug};
 use std::fmt;
+use std::ops::Deref;
+use std::borrow::Borrow;
 
-pub type Error = ErrorStruct;
+pub type Error<T> = ErrorStruct<T>;
 
 
 #[derive(Debug, Clone)]
-pub struct ErrorStruct{
+pub struct ErrorStruct<T>
+
+{
     code: String,
-    message: String
+    message: String,
+    attach: Option<Box<T>>
 }
 
-impl ErrorStruct{
+impl<T> ErrorStruct<T>{
 
-    pub fn new(code: &str, message: &str) -> ErrorStruct{
+    pub fn new(code: &str, message: &str) -> ErrorStruct<T>{
         ErrorStruct{
             code: String::from(code),
-            message: String::from(message)
+            message: String::from(message),
+            attach: None
         }
     }
 
@@ -27,27 +33,42 @@ impl ErrorStruct{
     //     }
     // }
 
+    pub fn attach(code: &str, message: &str, attach: T) -> ErrorStruct<T>{
+        ErrorStruct{
+            code: String::from(code),
+            message: String::from(message),
+            attach: Some(Box::new(attach))
+        }
+    }
+
+    pub fn get_attach(self: &ErrorStruct<T>) -> Option<&T>{
+        match &self.attach {
+            Some(x) => Some(Box::deref(x)),
+            None => None,
+        }
+    }
+
 }
 
-impl Display for ErrorStruct {
+impl <T> Display for ErrorStruct<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_fmt(format_args!("{} \"code\": \"{}\", \"message\": \"{}\" {}",
                                  "{", self.code, self.message, "}"))
     }
 }
 
-impl std::error::Error for ErrorStruct {
-    fn description(&self) -> &str {
-        &self.code
-    }
+// impl <T> std::error::Error for ErrorStruct<T> {
+//     fn description(&self) -> &str {
+//         &self.code
+//     }
+//
+//     fn cause(self: &ErrorStruct<T>) -> Option<&dyn std::error::Error> {
+//         None
+//     }
+// }
 
-    fn cause(self: &ErrorStruct) -> Option<&dyn std::error::Error> {
-        None
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Error {
+impl <T> From<std::io::Error> for Error<T> {
+    fn from(err: std::io::Error) -> Error<T> {
         Error::new("io", format!("{:?}", err.kind()).as_str())
     }
 }

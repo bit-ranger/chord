@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde_json::to_value;
 
 use crate::flow::case::model::RenderContext;
-use crate::model::context::PointContext;
+use crate::model::context::{PointContext, BasicError};
 use crate::model::value::Json;
 use crate::model::error::Error;
 use log::info;
@@ -70,13 +70,13 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContextStruct<'c, 'd, 'h, 'reg, 'r> {
         }
     }
 
-    fn render_inner(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> Result<String,Error> {
+    fn render_inner(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> Result<String, BasicError> {
         let render = self.handlebars.render_template_with_context(
             text, self.render_context)?;
         return Ok(render);
     }
 
-    fn render_inner_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> Result<String,Error>
+    fn render_inner_with<T>(self: &PointContextStruct<'c, 'd, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> Result<String, BasicError>
         where
             T: Serialize
     {
@@ -145,13 +145,13 @@ impl <'c, 'd, 'h, 'reg, 'r> PointContext for PointContextStruct<'c, 'd, 'h, 'reg
         return config;
     }
 
-    fn render(&self, text: &str) -> Result<String,Error> {
+    fn render(&self, text: &str) -> Result<String, Error<()>> {
         return self.render_inner(text);
     }
 }
 
 
-impl From<TemplateRenderError> for Error{
+impl From<TemplateRenderError> for Error<()>{
     fn from(e: TemplateRenderError) -> Self {
         Error::new("tpl", format!("{}", e).as_str())
     }

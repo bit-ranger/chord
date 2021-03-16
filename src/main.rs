@@ -9,7 +9,7 @@ use log::info;
 use load::file;
 use model::context::AppContextStruct;
 
-use crate::model::context::TaskResult;
+use crate::model::context::{TaskResult, CaseResult, TaskError};
 use crate::model::error::Error;
 
 mod model;
@@ -80,8 +80,8 @@ async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskRes
 
     let task_result_vec = join_all(futures).await;
     let task_status = task_result_vec.iter()
-        .map(|r| r.as_ref().map_or_else(|(e, _)| Err(e.clone()), |_| Ok(true)))
-        .collect::<Vec<Result<bool, Error>>>();
+        .map(|r| r.as_ref().map_or_else(|e| Err(e.clone()), |_| Ok(true)))
+        .collect::<Vec<Result<bool, TaskError>>>();
     info!("finish job {}, {:?}", job_path_str, task_status);
     return task_result_vec;
 }
@@ -97,7 +97,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         &data_path
     ) {
         Err(e) => {
-            return Err((Error::new("000", format!("load data failure {}", e).as_str()), Vec::new()))
+            return Err(Error::new("000", format!("load data failure {}", e).as_str()));
         }
         Ok(vec) => {
             vec
@@ -109,7 +109,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         &config_path
     ) {
         Err(e) => {
-            return Err((Error::new("001", format!("load config failure {}", e).as_str()), Vec::new()))
+            return Err(Error::new("001", format!("load config failure {}", e).as_str()))
         }
         Ok(value) => {
             value

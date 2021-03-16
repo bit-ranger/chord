@@ -1,8 +1,10 @@
-use crate::model::context::{TaskResult, CaseResult};
+use crate::model::context::{TaskResult, CaseResult, BasicError};
 use crate::model::error::Error;
 use std::path::Path;
+use std::ops::Deref;
+use std::borrow::Borrow;
 
-pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), Error> {
+pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), BasicError> {
     let rwr = csv::Writer::from_path(path);
     let mut rwr = match rwr{
         Ok(w) => w,
@@ -11,7 +13,10 @@ pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result
 
     let cr_vec = match task_result {
         Ok(cr_vec) => cr_vec,
-        Err((_, cr_vec)) => cr_vec
+        Err(e) => match e.get_attach() {
+            Some(attach) => attach,
+            None => return Ok(())
+        }
     };
 
     if cr_vec.len() == 0 {
@@ -34,7 +39,7 @@ fn case_result_to_value_vec(cr: &CaseResult, len: usize) -> Vec<String> {
 
     let pr_vec = match cr {
         Ok(pr_vec) => pr_vec,
-        Err((_, pr_vec)) => pr_vec
+        Err(e) => e.get_attach().unwrap()
     };
 
     let mut vec: Vec<String> = pr_vec.iter()
@@ -56,7 +61,7 @@ fn case_result_to_value_vec(cr: &CaseResult, len: usize) -> Vec<String> {
             vec.push(String::from(""));
             vec.push(String::from(""));
         },
-        Err((e, _)) => {
+        Err(e) => {
             vec.push(String::from("X"));
             vec.push(format!("{}", e));
             let (_, pr) = pr_vec.last().unwrap();
@@ -75,11 +80,11 @@ fn to_name_vec(cr_vec: &Vec<CaseResult>) -> Vec<String> {
         |x, y| {
             let x = match x {
                 Ok(pv) => pv.len(),
-                Err((_, pv)) => pv.len()
+                Err(e) => e.get_attach().unwrap().len()
             };
             let y = match y {
                 Ok(pv) => pv.len(),
-                Err((_, pv)) => pv.len()
+                Err(e) => e.get_attach().unwrap().len()
             };
             x.cmp(&y)
         })
@@ -87,7 +92,7 @@ fn to_name_vec(cr_vec: &Vec<CaseResult>) -> Vec<String> {
 
     let pr_vec =  match max_len_cr {
         Ok(pr_vec) => pr_vec,
-        Err((_, pr_vec)) => pr_vec
+        Err(e) => e.get_attach().unwrap()
     };
 
     let mut vec: Vec<String> = pr_vec.iter()

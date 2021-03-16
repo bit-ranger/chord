@@ -17,21 +17,21 @@ pub mod model;
 pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextStruct) -> TaskResult {
     let mut case_vec: Vec<CaseContextStruct> = task_context.create_case();
 
-    let (num, sec) = task_context.get_rate_limit();
-    let mut service = tower::ServiceBuilder::new()
-        .rate_limit(num as u64, Duration::from_secs(sec as u64)) // 100 requests every 10 seconds
-        .service_fn(run_case_wrap);
+    // let (num, sec) = task_context.get_rate_limit();
+    // let mut service = tower::ServiceBuilder::new()
+    //     .rate_limit(num as u64, Duration::from_secs(sec as u64)) // 100 requests every 10 seconds
+    //     .service_fn(run_case_wrap);
 
 
     // let mut futures = Vec::new();
-    let mut case_value_vec:Vec<CaseResult> = Vec::new();
-    for case in case_vec.iter_mut(){
-        let case_value = match service.ready().await {
-            Ok(r) => r.call((app_context, case)).await,
-            Err(_) => Err((Error::new("tower", "rate limit error"), Vec::new()))
-        };
-        case_value_vec.push(case_value);
-    }
+    // let mut case_value_vec:Vec<CaseResult> = Vec::new();
+    // for case in case_vec.iter_mut(){
+    //     let case_value = match service.ready().await {
+    //         Ok(r) => r.call((app_context, case)).await,
+    //         Err(_) => Err((Error::new("tower", "rate limit error"), Vec::new()))
+    //     };
+    //     case_value_vec.push(case_value);
+    // }
 
     // futures.reserve(0);
     // let mut case_value_vec = Vec::new();
@@ -47,14 +47,20 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextSt
     // }
 
 
+    let case_future_vec =
+        case_vec
+            .iter_mut()
+            .map(|case| run_case(app_context, case));
+
+    let case_value_vec = join_all(case_future_vec).await;
+
     let any_err = case_value_vec.iter()
         .any(|case| !case.is_ok());
 
     return if any_err {
-        Err((
-            Error::new("000", "any case failure"),
-            case_value_vec
-        ))
+        Err(
+            Error::attach("000", "any case failure",
+            case_value_vec))
     } else {
         Ok(case_value_vec)
     }

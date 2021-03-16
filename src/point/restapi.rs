@@ -4,7 +4,7 @@ use surf::{RequestBuilder, Response, Url, Body};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 
-use crate::model::context::{PointContext, PointResult};
+use crate::model::context::{PointContext, PointResult, BasicError};
 use crate::model::error::Error;
 use crate::model::value::{Json, Map, Number};
 
@@ -100,9 +100,9 @@ pub async fn run(context: &dyn PointContext) -> PointResult {
 //     }
 // }
 
-impl From<surf::Error> for Error {
-    fn from(err: surf::Error) -> Error {
-        Error::new("http", format!("{}", err.status()).as_str())
+impl From<surf::Error> for BasicError {
+    fn from(err: surf::Error) -> BasicError {
+        BasicError::new("http", format!("{}", err.status()).as_str())
     }
 }
 

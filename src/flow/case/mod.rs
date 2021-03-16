@@ -15,16 +15,13 @@ pub mod model;
 pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStruct<'_,'_>) -> CaseResult {
     let now = Utc::now();
     println!("-----------  start {} {:?}", now.format("%y-%m-%d·%T"), std::thread::current().id());
-    // async_std::task::sleep(Duration::from_secs(5));
+    async_std::task::sleep(Duration::from_secs(5)).await;
     let mut render_context = context.create_render_context();
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
     for point_id in context.get_point_id_vec().iter() {
         let point = context.create_point(point_id, app_context, &render_context);
         if point.is_none(){
-            return Err((
-                Error::new("000", format!("invalid point {}", point_id).as_str()),
-                Vec::new()
-            ));
+            return Err(Error::new("000", format!("invalid point {}", point_id).as_str()));
         }
         let point = point.unwrap();
         let result = run_point(&point).await;
@@ -37,17 +34,15 @@ pub async fn run_case(app_context: &dyn AppContext, context: &mut CaseContextStr
                 if assert_true {
                     register_dynamic(&mut render_context, point_id, r).await;
                 } else {
-                    return Err((
-                        Error::new("002", format!("assert failure {}", point_id).as_str()),
-                        point_result_vec
-                    ));
+                    return Err(
+                        Error::attach("002", format!("assert failure {}", point_id).as_str(),
+                                      point_result_vec));
                 }
             },
             Err(_) =>  {
-                return Err((
-                    Error::new("001", format!("run failure {}", point_id).as_str()),
-                    point_result_vec
-                ));
+                return Err(
+                    Error::attach("001", format!("run failure {}", point_id).as_str(),
+                    point_result_vec));
             }
         }
 

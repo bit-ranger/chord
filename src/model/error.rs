@@ -24,13 +24,6 @@ impl<T> ErrorStruct<T>{
         }
     }
 
-    // pub fn from_err(code: &str, message: &str, err: Box<dyn std::error::Error>) -> ErrorStruct{
-    //     ErrorStruct{
-    //         code: String::from(code),
-    //         message: String::from(message),
-    //         cause: Some(err)
-    //     }
-    // }
 
     pub fn attach(code: &str, message: &str, attach: T) -> ErrorStruct<T>{
         ErrorStruct{
@@ -65,15 +58,6 @@ impl <T> Display for ErrorStruct<T> {
     }
 }
 
-// impl <T> std::error::Error for ErrorStruct<T> {
-//     fn description(&self) -> &str {
-//         &self.code
-//     }
-//
-//     fn cause(self: &ErrorStruct<T>) -> Option<&dyn std::error::Error> {
-//         None
-//     }
-// }
 
 impl <T> From<std::io::Error> for Error<T> {
     fn from(err: std::io::Error) -> Error<T> {
@@ -82,18 +66,13 @@ impl <T> From<std::io::Error> for Error<T> {
 }
 
 
-// impl From<NoneError> for ErrorStruct {
-//     fn from(err: NoneError) -> Self {
-//         ErrorStruct::new("021", "invalid method")
-//     }
-// }
 
 
-// impl From<ErrorStruct> for NoneError {
-//     fn from(err: ErrorStruct) -> Self {
-//         ErrorStruct::new("021", "invalid method")
-//     }
-// }
+
+
+
+
+
 
 
 

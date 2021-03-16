@@ -7,8 +7,7 @@ use crate::model::value::{Json};
 use crate::model::helper::{NUM_HELPER, BOOL_HELPER};
 
 pub type BasicError = Error<()>;
-pub type PointError = BasicError;
-pub type PointResult = std::result::Result<Json, PointError>;
+pub type PointResult = std::result::Result<Json, BasicError>;
 pub type CaseError = Error<Vec<(String, PointResult)>>;
 pub type CaseResult = std::result::Result<Vec<(String, PointResult)>, CaseError>;
 pub type TaskError = Error<Vec<CaseResult>>;
@@ -58,4 +57,13 @@ impl <'reg> AppContext for AppContextStruct <'reg>{
     }
 
 
+}
+
+
+#[macro_export]
+macro_rules! err {
+    ($code:expr, $message:expr) => {{
+        let res = $crate::model::context::BasicError::new($code, $message);
+        std::result::Result::Err(res)
+    }}
 }

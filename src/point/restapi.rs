@@ -7,11 +7,12 @@ use surf::http::Method;
 use crate::model::context::{PointContext, PointResult, BasicError};
 use crate::model::error::Error;
 use crate::model::value::{Json, Map, Number};
+use crate::err;
 
 pub async fn run(context: &dyn PointContext) -> PointResult {
     let url = match context.get_config_rendered(vec!["url"]) {
         Some(url) => url,
-        None => return Err(Error::new("010", "missing url"))
+        None => return err!("010", "missing url")
     };
 
     let url = match Url::from_str(url.as_str()) {

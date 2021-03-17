@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter, Debug};
 use std::fmt;
-use std::ops::Deref;
 
 pub type Error = ErrorStruct;
 
@@ -11,7 +10,7 @@ pub struct ErrorStruct
 {
     code: String,
     message: String,
-    cause: Option<ErrorStruct>
+    cause: Option<Box<ErrorStruct>>
 }
 
 impl ErrorStruct{
@@ -28,7 +27,7 @@ impl ErrorStruct{
         ErrorStruct{
             code: String::from(code),
             message: String::from(message),
-            cause: Some(cause)
+            cause: Some(Box::new(cause))
         }
     }
 
@@ -58,12 +57,12 @@ impl  From<std::io::Error> for ErrorStruct {
 }
 
 
-impl  std::error::Error for ErrorStruct {
-
-    fn source(&self) -> Option<&ErrorStruct> {
-        return (&self).cause.map(|s| &s);
-    }
-}
+// impl  std::error::Error for ErrorStruct {
+//
+//     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+//         return (&self).cause.map(|s| s.as_ref());
+//     }
+// }
 
 
 

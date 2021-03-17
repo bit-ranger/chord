@@ -3,11 +3,10 @@ use futures::future::join_all;
 use crate::flow::case::model::CaseContextStruct;
 use crate::flow::case;
 use crate::flow::task::model::TaskContextStruct;
-use crate::model::context::{AppContext, TaskResultStruct, TaskState, CaseResultInner, CaseState};
+use crate::model::context::{AppContext, TaskResultStruct, TaskState, CaseResultInner};
 use crate::model::context::TaskResultInner;
 use itertools::Itertools;
 use chrono::Utc;
-use std::borrow::Borrow;
 
 pub mod model;
 
@@ -34,7 +33,7 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextSt
     }
 
     let err_case = case_result_vec.iter()
-        .filter(|(id, case)| case.is_err())
+        .filter(|(_, case)| case.is_err())
         .last();
 
     return match err_case {

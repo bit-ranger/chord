@@ -1,6 +1,7 @@
 use crate::model::context::{TaskResultInner, CaseResultInner };
 use crate::model::error::Error;
 use std::path::Path;
+use crate::model::context::CaseState;
 
 pub async fn export<P: AsRef<Path>>(task_result: &TaskResultInner, path: P) -> Result<(), Error> {
     let rwr = csv::Writer::from_path(path);
@@ -18,11 +19,11 @@ pub async fn export<P: AsRef<Path>>(task_result: &TaskResultInner, path: P) -> R
     if cr_vec.len() == 0 {
         return Ok(());
     }
-    let name_vec = to_name_vec(cr_vec);
+    let head_vec = to_head_vec(cr_vec);
 
-    let _ = rwr.write_record(&name_vec);
+    let _ = rwr.write_record(&head_vec);
     cr_vec.iter()
-        .map(|cr| case_result_to_value_vec(cr, name_vec.len()))
+        .map(|(_, cr)| to_value_vec(cr, head_vec.len()))
         .for_each(|sv| rwr.write_record(&sv).unwrap());
 
     rwr.flush()?;
@@ -31,71 +32,93 @@ pub async fn export<P: AsRef<Path>>(task_result: &TaskResultInner, path: P) -> R
 
 
 
-fn case_result_to_value_vec(cr: &CaseResultInner, len: usize) -> Vec<String> {
+fn to_value_vec(cr: &CaseResultInner, head_len: usize) -> Vec<String> {
 
     let empty = &vec![];
     let pr_vec = match cr {
         Ok(cr) => cr.result(),
-        Err(e) => match e.get_attach(){
-            Some(attach) => attach.result(),
-            None => empty
-        }
+        Err(_) =>  empty
     };
 
     let mut vec: Vec<String> = pr_vec.iter()
-        .map(|pr| match pr {
+        .map(|(_, pr)| match pr {
             Ok(_) => String::from("O"),
             Err(_) => String::from("X")
         })
         .collect();
 
-    if vec.len() < len-3 {
-        for _i in 0..len-3 - vec.len() {
+    if vec.len() < head_len -3 {
+        for _i in 0..head_len -3 - vec.len() {
             vec.push(String::from(""));
         }
     }
 
     match cr {
-        Ok(_) => {
-            vec.push(String::from("O"));
-            vec.push(String::from(""));
-            vec.push(String::from(""));
+        Ok(crs) => {
+            match crs.state() {
+                CaseState::Ok => {
+                    vec.push(String::from("O"));
+                    vec.push(String::from(""));
+                    vec.push(String::from(""));
+                },
+                CaseState::PointError(e) => {
+                    vec.push(String::from("X"));
+                    vec.push(String::from(""));
+                    vec.push(String::from(format!("{}", e)));
+                },
+                CaseState::PointFailure => {
+
+                    vec.push(String::from("X"));
+                    vec.push(String::from(""));
+                    let  (_, pr) = pr_vec.last().unwrap();
+                    match pr {
+                        Ok(pr) => {
+                            vec.push(String::from(format!("{}",pr.result())));
+                        },
+                        Err(e) => {
+                            vec.push(String::from(format!("{}", e)));
+                        }
+                    }
+
+                }
+            }
+
+
         },
         Err(e) => {
             vec.push(String::from("X"));
             vec.push(format!("{}", e));
-            let  pr = pr_vec.last().unwrap();
-            vec.push(match pr {
-                Ok(pr) => format!("{}", pr.result()),
-                Err(e) => format!("{}", e)
-            })
+            vec.push(String::from(""));
         }
     };
     vec
 }
 
-fn to_name_vec(cr_vec: &Vec<(usize, CaseResultInner)>) -> Vec<String> {
+fn to_head_vec(cr_vec: &Vec<(usize, CaseResultInner)>) -> Vec<String> {
 
-    let max_len_cr = cr_vec.iter().max_by(
-        |x, y| {
-            let x = x.len();
-            let y = y.len();
+    let (_, max_len_cr) = cr_vec.iter().max_by(
+        |(_, x), (_, y)| {
+            let x = match x {
+                Ok(pv) => pv.result().len(),
+                Err(_) => 0
+            };
+            let y = match y {
+                Ok(pv) => pv.result().len(),
+                Err(_) => 0
+            };
             x.cmp(&y)
         })
     .unwrap();
 
     let empty = &vec![];
     let pr_vec =  match max_len_cr {
-        Ok(pr_vec) => pr_vec.result(),
-        Err(e) => empty
+        Ok(cr) => cr.result(),
+        Err(_) => empty
     };
 
     let mut vec: Vec<String> = pr_vec.iter()
-        .map(|pr| match pr {
-            Ok(pr) => pr.id(),
-            Err(e) => e.get_attach().unwrap().id()
-        })
-        .map(|id| String::from(id))
+        .map(|(pid, _)| pid)
+        .map(|pid| String::from(pid))
         .collect();
     vec.push(String::from("caseResult"));
     vec.push(String::from("caseInfo"));

@@ -59,7 +59,10 @@ pub enum CaseState {
 impl CaseState {
 
     pub fn is_ok(&self) -> bool{
-        self == Ok
+        match self {
+            CaseState::Ok => true,
+            _ => false
+        }
     }
 }
 
@@ -112,6 +115,17 @@ pub enum TaskState {
     Ok,
     CaseError(Error),
     CaseFailure
+}
+
+impl TaskState{
+
+    #[allow(dead_code)]
+    pub fn is_ok(&self) -> bool{
+        match self {
+            TaskState::Ok => true,
+            _ => false
+        }
+    }
 }
 
 pub struct TaskResultStruct {

@@ -14,7 +14,6 @@ pub mod model;
 
 pub async fn run(app_context: &dyn AppContext, case_context: &mut CaseContextStruct<'_,'_>) -> CaseResultInner {
     let start = Utc::now();
-    async_std::task::sleep(Duration::from_secs(5)).await;
     let mut render_context = case_context.create_render_context();
     let mut point_result_vec = Vec::<(String, PointResultInner)>::new();
     for point_id in case_context.get_point_id_vec().iter() {

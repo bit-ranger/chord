@@ -2,56 +2,48 @@ use std::fmt::{Display, Formatter, Debug};
 use std::fmt;
 use std::ops::Deref;
 
-pub type Error<T> = ErrorStruct<T>;
+pub type Error = ErrorStruct;
 
 
 #[derive(Debug, Clone)]
-pub struct ErrorStruct<T>
+pub struct ErrorStruct
 
 {
     code: String,
     message: String,
-    attach: Option<Box<T>>
+    cause: Option<ErrorStruct>
 }
 
-impl<T> ErrorStruct<T>{
+impl ErrorStruct{
 
-    pub fn new(code: &str, message: &str) -> ErrorStruct<T>{
+    pub fn new(code: &str, message: &str) -> ErrorStruct{
         ErrorStruct{
             code: String::from(code),
             message: String::from(message),
-            attach: None
+            cause: None
         }
     }
 
-
-    pub fn attach(code: &str, message: &str, attach: T) -> ErrorStruct<T>{
+    pub fn cause(code: &str, message: &str, cause: ErrorStruct) -> ErrorStruct{
         ErrorStruct{
             code: String::from(code),
             message: String::from(message),
-            attach: Some(Box::new(attach))
-        }
-    }
-
-    pub fn get_attach(self: &ErrorStruct<T>) -> Option<&T>{
-        match &self.attach {
-            Some(x) => Some(Box::deref(x)),
-            None => None,
+            cause: Some(cause)
         }
     }
 
     #[allow(dead_code)]
-    pub fn get_code(self: &ErrorStruct<T>) -> &str{
+    pub fn get_code(self: &ErrorStruct) -> &str{
         return &self.code
     }
 
     #[allow(dead_code)]
-    pub fn get_message(self: &ErrorStruct<T>) -> &str{
+    pub fn get_message(self: &ErrorStruct) -> &str{
         return &self.message
     }
 }
 
-impl <T> Display for ErrorStruct<T> {
+impl  Display for ErrorStruct {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_fmt(format_args!("{} \"code\": \"{}\", \"message\": \"{}\" {}",
                                  "{", self.code, self.message, "}"))
@@ -59,12 +51,19 @@ impl <T> Display for ErrorStruct<T> {
 }
 
 
-impl <T> From<std::io::Error> for Error<T> {
-    fn from(err: std::io::Error) -> Error<T> {
+impl  From<std::io::Error> for ErrorStruct {
+    fn from(err: std::io::Error) -> ErrorStruct {
         Error::new("io", format!("{:?}", err.kind()).as_str())
     }
 }
 
+
+impl  std::error::Error for ErrorStruct {
+
+    fn source(&self) -> Option<&ErrorStruct> {
+        return (&self).cause.map(|s| &s);
+    }
+}
 
 
 

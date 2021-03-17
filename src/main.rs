@@ -8,7 +8,8 @@ use log::info;
 use load::file;
 use model::context::AppContextStruct;
 
-use crate::model::context::{TaskResult, TaskError};
+use crate::model::context::{TaskResultInner};
+use crate::model::error::Error;
 
 mod model;
 mod flow;
@@ -55,7 +56,7 @@ async fn main() -> Result<(),usize> {
     return Ok(());
 }
 
-async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskResult>{
+async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskResultInner>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("running job {}", job_path_str);
@@ -84,7 +85,7 @@ async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskRes
     return task_result_vec;
 }
 
-async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResult{
+async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResultInner {
     info!("running task {}", task_path.as_ref().to_str().unwrap());
     let task_path = Path::new(task_path.as_ref());
     let data_path = task_path.join("data.csv");
@@ -95,7 +96,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         &data_path
     ) {
         Err(e) => {
-            return TaskResult::Err(TaskError::new("000", format!("load data failure {}", e).as_str()));
+            return Err(Error::new("000", format!("load data failure {}", e).as_str()));
         }
         Ok(vec) => {
             vec
@@ -107,7 +108,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         &config_path
     ) {
         Err(e) => {
-            return TaskResult::Err(TaskError::new("001", format!("load config failure {}", e).as_str()))
+            return Err(Error::new("001", format!("load config failure {}", e).as_str()))
         }
         Ok(value) => {
             value

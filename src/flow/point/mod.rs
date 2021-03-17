@@ -1,6 +1,6 @@
 use crate::flow::point::model::PointContextStruct;
 use crate::model::error::Error;
-use crate::model::context::{PointResult, PointResultStruct, PointResultInner, PointErrorInner};
+use crate::model::context::{PointResult, PointResultStruct, PointResultInner};
 use crate::point::run_point_type;
 use crate::model::value::Json;
 use chrono::Utc;
@@ -10,14 +10,12 @@ pub mod model;
 
 
 
-pub async fn run_point(context: &PointContextStruct<'_, '_, '_, '_, '_>) -> PointResultInner
+pub async fn run(context: &PointContextStruct<'_, '_, '_, '_, '_>) -> PointResultInner
 {
     let start = Utc::now();
     let point_type = context.get_meta_str(vec!["type"]).await;
     if point_type.is_none(){
-        let end = Utc::now();
-        let result_struct = PointResultStruct::new(Json::Null, context.get_id(), start, end);
-        return PointResultInner::Err(Error::attach("001", "missing type", result_struct));
+        return PointResultInner::Err(Error::new("001", "missing type"));
     }
     let point_type = point_type.unwrap();
 
@@ -30,10 +28,7 @@ pub async fn run_point(context: &PointContextStruct<'_, '_, '_, '_, '_>) -> Poin
             PointResultInner::Ok(result_struct)
         },
         PointResult::Err(e) => {
-            let result_struct = PointResultStruct::new(Json::Null, context.get_id(), start, end);
-            PointResultInner::Err(PointErrorInner::attach("010",
-                                                format!("run failure cause: {}", e).as_str(),
-                                                result_struct))
+            PointResultInner::Err(Error::cause("010", "run failure", e))
         }
     };
 }

@@ -7,8 +7,7 @@ use crate::model::value::{Json};
 use crate::model::helper::{NUM_HELPER, BOOL_HELPER};
 use chrono::{Utc, DateTime};
 
-pub type BasicError = Error<()>;
-pub type PointResult = std::result::Result<Json, BasicError>;
+pub type PointResult = std::result::Result<Json, Error>;
 
 pub struct PointResultStruct {
     result: Json,
@@ -18,23 +17,18 @@ pub struct PointResultStruct {
 }
 
 impl PointResultStruct {
-
     pub fn new(result: Json,
-           id: &str,
-           start: DateTime<Utc>,
-           end: DateTime<Utc>) -> PointResultStruct {
+               id: &str,
+               start: DateTime<Utc>,
+               end: DateTime<Utc>) -> PointResultStruct {
         PointResultStruct {
             result,
             id: String::from(id),
             start,
-            end
+            end,
         }
     }
 
-    #[allow(dead_code)]
-    pub fn result(&self) -> &Json {
-        &self.result
-    }
     #[allow(dead_code)]
     pub fn id(&self) -> &str {
         &self.id
@@ -47,34 +41,50 @@ impl PointResultStruct {
     pub fn end(&self) -> DateTime<Utc> {
         self.end
     }
+    #[allow(dead_code)]
+    pub fn result(&self) -> &Json {
+        &self.result
+    }
 }
 
-pub type PointErrorInner = Error<PointResultStruct>;
-pub type PointResultInner = std::result::Result<PointResultStruct, PointErrorInner>;
+pub type PointResultInner = std::result::Result<PointResultStruct, Error>;
 
+#[derive(Debug)]
+pub enum CaseState {
+    Ok,
+    PointError(Error),
+    PointFailure
+}
+
+impl CaseState {
+
+    pub fn is_ok(&self) -> bool{
+        self == Ok
+    }
+}
 
 pub struct CaseResultStruct {
-    result: Vec<PointResultInner>,
+    result: Vec<(String,PointResultInner)>,
     id: usize,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
+    state: CaseState
 }
 
 impl CaseResultStruct {
 
-    pub fn new(result:Vec<PointResultInner>,
-           id: usize,
-           start: DateTime<Utc>,
-           end: DateTime<Utc>) -> CaseResultStruct {
+    pub fn new(result:Vec<(String, PointResultInner)>,
+               id: usize,
+               start: DateTime<Utc>,
+               end: DateTime<Utc>,
+               state: CaseState
+    ) -> CaseResultStruct {
         CaseResultStruct {
-            result,id,start,end
+            result,id,start,end,state
         }
     }
 
-    #[allow(dead_code)]
-    pub fn result(&self) -> &Vec<PointResultInner> {
-        &self.result
-    }
+
     #[allow(dead_code)]
     pub fn id(&self) -> usize {
         self.id
@@ -87,36 +97,45 @@ impl CaseResultStruct {
     pub fn end(&self) -> DateTime<Utc> {
         self.end
     }
+    pub fn state(&self) -> &CaseState {
+        &self.state
+    }
+    pub fn result(&self) -> &Vec<(String, PointResultInner)> {
+        &self.result
+    }
 }
 
 
-pub type CaseError = Error<CaseResultStruct>;
-pub type CaseResult = std::result::Result<CaseResultStruct, CaseError>;
+pub type CaseResultInner = std::result::Result<CaseResultStruct, Error>;
 
+pub enum TaskState {
+    Ok,
+    CaseError(Error),
+    CaseFailure
+}
 
 pub struct TaskResultStruct {
-    result: Vec<CaseResult>,
+    result: Vec<(usize, CaseResultInner)>,
     id: String,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
+    state: TaskState
 }
 impl TaskResultStruct{
 
-    pub fn new(result:Vec<CaseResult>,
-           id: &str,
-           start: DateTime<Utc>,
-           end: DateTime<Utc>) -> TaskResultStruct {
+    pub fn new(result:Vec<(usize, CaseResultInner)>,
+               id: &str,
+               start: DateTime<Utc>,
+               end: DateTime<Utc>,
+               state: TaskState
+    ) -> TaskResultStruct {
         TaskResultStruct {
             result,
             id: String::from(id),
             start,
-            end
+            end,
+            state
         }
-    }
-
-    #[allow(dead_code)]
-    pub fn result(&self) -> &Vec<CaseResult> {
-        &self.result
     }
 
     #[allow(dead_code)]
@@ -133,10 +152,19 @@ impl TaskResultStruct{
     pub fn end(&self) -> DateTime<Utc> {
         self.end
     }
+
+    #[allow(dead_code)]
+    pub fn state(&self) -> &TaskState {
+        &self.state
+    }
+
+    #[allow(dead_code)]
+    pub fn result(&self) -> &Vec<(usize, CaseResultInner)> {
+        &self.result
+    }
 }
 
-pub type TaskError = Error<TaskResultStruct>;
-pub type TaskResult = std::result::Result<TaskResultStruct, TaskError>;
+pub type TaskResultInner = std::result::Result<TaskResultStruct, Error>;
 
 
 pub trait PointContext{
@@ -145,7 +173,7 @@ pub trait PointContext{
 
     fn get_config(&self) -> &Json;
 
-    fn render(&self, text: &str) -> Result<String,Error<()>>;
+    fn render(&self, text: &str) -> Result<String,Error>;
 }
 
 pub trait AppContext{
@@ -176,7 +204,6 @@ impl <'reg> AppContextStruct<'reg> {
 
 impl <'reg> AppContext for AppContextStruct <'reg>{
 
-
     fn get_handlebars(self: &AppContextStruct<'reg>) -> &Handlebars<'reg>
     {
         self.handlebars.borrow()
@@ -191,7 +218,7 @@ impl <'reg> AppContext for AppContextStruct <'reg>{
 #[macro_export]
 macro_rules! err {
     ($code:expr, $message:expr) => {{
-        let res = $crate::model::context::BasicError::new($code, $message);
+        let res = $crate::model::error::Error::new($code, $message);
         std::result::Result::Err(res)
     }}
 }

@@ -1,8 +1,8 @@
-use crate::model::context::{TaskResult, CaseResult, BasicError};
+use crate::model::context::{TaskResultInner, CaseResultInner };
 use crate::model::error::Error;
 use std::path::Path;
 
-pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), BasicError> {
+pub async fn export<P: AsRef<Path>>(task_result: &TaskResultInner, path: P) -> Result<(), Error> {
     let rwr = csv::Writer::from_path(path);
     let mut rwr = match rwr{
         Ok(w) => w,
@@ -12,10 +12,7 @@ pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result
     let empty = &vec![];
     let cr_vec = match task_result {
         Ok(tr) => tr.result(),
-        Err(e) => match e.get_attach() {
-            Some(attach) => attach.result(),
-            None => empty
-        }
+        Err(_) => empty
     };
 
     if cr_vec.len() == 0 {
@@ -34,7 +31,7 @@ pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result
 
 
 
-fn case_result_to_value_vec(cr: &CaseResult, len: usize) -> Vec<String> {
+fn case_result_to_value_vec(cr: &CaseResultInner, len: usize) -> Vec<String> {
 
     let empty = &vec![];
     let pr_vec = match cr {
@@ -77,25 +74,20 @@ fn case_result_to_value_vec(cr: &CaseResult, len: usize) -> Vec<String> {
     vec
 }
 
-fn to_name_vec(cr_vec: &Vec<CaseResult>) -> Vec<String> {
+fn to_name_vec(cr_vec: &Vec<(usize, CaseResultInner)>) -> Vec<String> {
 
     let max_len_cr = cr_vec.iter().max_by(
         |x, y| {
-            let x = match x {
-                Ok(pv) => pv.result().len(),
-                Err(e) => e.get_attach().unwrap().result().len()
-            };
-            let y = match y {
-                Ok(pv) => pv.result().len(),
-                Err(e) => e.get_attach().unwrap().result().len()
-            };
+            let x = x.len();
+            let y = y.len();
             x.cmp(&y)
         })
     .unwrap();
 
+    let empty = &vec![];
     let pr_vec =  match max_len_cr {
         Ok(pr_vec) => pr_vec.result(),
-        Err(e) => e.get_attach().unwrap().result()
+        Err(e) => empty
     };
 
     let mut vec: Vec<String> = pr_vec.iter()

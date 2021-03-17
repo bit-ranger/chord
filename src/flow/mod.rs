@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::model::context::AppContext;
-use crate::model::context::TaskResult;
+use crate::model::context::TaskResultInner;
 use crate::model::value::Json;
 
 use self::task::model::TaskContextStruct;
@@ -14,7 +14,7 @@ pub async fn run(app_context: &dyn AppContext,
                  config: Json,
                  data: Vec<BTreeMap<String, String>>,
                  id: &str,
-) -> TaskResult {
+) -> TaskResultInner {
     let task_context = TaskContextStruct::new(config, data, id);
     return task::run_task(app_context, &task_context).await;
 }

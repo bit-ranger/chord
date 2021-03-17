@@ -1,5 +1,4 @@
 use chrono::Utc;
-use log::info;
 use serde_json::to_value;
 
 use result::CaseAssessStruct;

@@ -10,6 +10,7 @@ use model::app::AppContextStruct;
 
 use crate::model::error::Error;
 use crate::model::task::TaskResult;
+use crate::point::PointRunnerDefault;
 
 mod model;
 mod flow;
@@ -115,7 +116,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
         }
     };
 
-    let app_context = AppContextStruct::new();
+    let app_context = AppContextStruct::new(Box::new(PointRunnerDefault::new()));
     let task_result = flow::run(&app_context, config, data, task_path.file_name().unwrap().to_str().unwrap()).await;
     let _ = report::csv::export(&task_result, &export_path).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());

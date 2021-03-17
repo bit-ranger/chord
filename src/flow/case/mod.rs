@@ -1,21 +1,24 @@
-use crate::flow::case::model::{CaseContextStruct, RenderContext};
-use crate::flow::point;
-use crate::model::context::{AppContext, CaseResultStruct, PointResultInner, CaseState};
-use crate::model::context::{CaseResultInner};
-use crate::model::value::Json;
-use serde_json::to_value;
-use chrono::{Utc};
-use std::time::Duration;
+use chrono::Utc;
 use log::info;
+use serde_json::to_value;
+
+use result::CaseAssessStruct;
+
+use crate::flow::case::arg::{CaseArgStruct, RenderContext};
+use crate::flow::point;
+use crate::model::app::AppContext;
+use crate::model::case::{CaseState, CaseResult};
 use crate::model::error::Error;
+use crate::model::value::Json;
+use crate::model::point::PointResult;
 
+pub mod result;
+pub mod arg;
 
-pub mod model;
-
-pub async fn run(app_context: &dyn AppContext, case_context: &mut CaseContextStruct<'_,'_>) -> CaseResultInner {
+pub async fn run(app_context: &dyn AppContext, case_context: &mut CaseArgStruct<'_,'_>) -> CaseResult {
     let start = Utc::now();
     let mut render_context = case_context.create_render_context();
-    let mut point_result_vec = Vec::<(String, PointResultInner)>::new();
+    let mut point_result_vec = Vec::<(String, PointResult)>::new();
     for point_id in case_context.get_point_id_vec().iter() {
         let point_context = case_context.create_point(point_id, app_context, &render_context);
         if point_context.is_none(){
@@ -32,20 +35,20 @@ pub async fn run(app_context: &dyn AppContext, case_context: &mut CaseContextStr
                 if assert_true {
                     register_dynamic(&mut render_context, point_id, r.result()).await;
                 } else {
-                    let result_struct = CaseResultStruct::new(point_result_vec, case_context.id(), start, Utc::now(), CaseState::PointFailure);
-                    return Ok(result_struct);
+                    let result_struct = CaseAssessStruct::new(point_result_vec, case_context.id(), start, Utc::now(), CaseState::PointFailure);
+                    return Ok(Box::new(result_struct));
                 }
             },
             Err(e) =>  {
                 let state = CaseState::PointError(e.clone());
-                let result_struct = CaseResultStruct::new(point_result_vec, case_context.id(), start, Utc::now(), state);
-                return Ok(result_struct);
+                let result_struct = CaseAssessStruct::new(point_result_vec, case_context.id(), start, Utc::now(), state);
+                return Ok(Box::new(result_struct));
             }
         }
     }
 
-    let result_struct = CaseResultStruct::new(point_result_vec, case_context.id(), start, Utc::now(), CaseState::Ok);
-    return Ok(result_struct);
+    let result_struct = CaseAssessStruct::new(point_result_vec, case_context.id(), start, Utc::now(), CaseState::Ok);
+    return Ok(Box::new(result_struct));
 }
 
 

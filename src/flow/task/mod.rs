@@ -1,26 +1,30 @@
-use futures::future::join_all;
-
-use crate::flow::case::model::CaseContextStruct;
-use crate::flow::case;
-use crate::flow::task::model::TaskContextStruct;
-use crate::model::context::{AppContext, TaskResultStruct, TaskState, CaseResultInner};
-use crate::model::context::TaskResultInner;
-use itertools::Itertools;
 use chrono::Utc;
+use futures::future::join_all;
+use itertools::Itertools;
 
-pub mod model;
+use result::TaskResultStruct;
 
-pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextStruct) -> TaskResultInner {
+use crate::flow::case;
+use crate::flow::case::arg::CaseArgStruct;
+use crate::flow::task::arg::TaskArgStruct;
+use crate::model::app::AppContext;
+use crate::model::task::{TaskState, TaskResult};
+use crate::model::case::CaseResult;
+
+pub mod arg;
+pub mod result;
+
+pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct) -> TaskResult {
     let start = Utc::now();
 
-    let mut case_context_vec: Vec<CaseContextStruct> = task_context.create_case();
+    let mut case_context_vec: Vec<CaseArgStruct> = task_context.create_case();
 
     let mut futures = case_context_vec.iter_mut().
         map(|case_context| run_case(app_context, case_context))
         .collect_vec();
 
     futures.reserve(0);
-    let mut case_result_vec: Vec<(usize, CaseResultInner)> = Vec::new();
+    let mut case_result_vec: Vec<(usize, CaseResult)> = Vec::new();
     let limit_concurrency = task_context.get_limit_concurrency();
     loop {
         if futures.len() >  limit_concurrency{
@@ -40,7 +44,7 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextSt
         Some((_, ec)) => {
             let state = TaskState::CaseError(ec.as_ref().err().unwrap().clone());
             let result_struct = TaskResultStruct::new(case_result_vec, task_context.id(), start, Utc::now(), state);
-            Ok(result_struct)
+            Ok(Box::new(result_struct))
         }
         None => {
             let failure_case = case_result_vec.iter()
@@ -51,18 +55,18 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskContextSt
             match failure_case {
                 Some(_) => {
                     let result_struct = TaskResultStruct::new(case_result_vec, task_context.id(), start, Utc::now(), TaskState::CaseFailure);
-                    Ok(result_struct)
+                    Ok(Box::new(result_struct))
                 },
                 None => {
                     let result_struct = TaskResultStruct::new(case_result_vec, task_context.id(), start, Utc::now(), TaskState::Ok);
-                    Ok(result_struct)
+                    Ok(Box::new(result_struct))
                 }
             }
        }
     }
 }
 
-async fn run_case(app_context: &dyn AppContext, case_context: &mut CaseContextStruct<'_, '_>) -> (usize, CaseResultInner){
+async fn run_case(app_context: &dyn AppContext, case_context: &mut CaseArgStruct<'_, '_>) -> (usize, CaseResult){
     let case_result = case::run(app_context, case_context).await;
     return (case_context.id(), case_result);
 }

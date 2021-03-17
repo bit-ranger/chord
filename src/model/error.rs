@@ -65,7 +65,13 @@ impl  From<std::io::Error> for ErrorStruct {
 // }
 
 
-
+#[macro_export]
+macro_rules! err {
+    ($code:expr, $message:expr) => {{
+        let res = $crate::model::error::Error::new($code, $message);
+        std::result::Result::Err(res)
+    }}
+}
 
 
 

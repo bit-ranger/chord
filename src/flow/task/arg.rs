@@ -1,21 +1,21 @@
 use std::collections::BTreeMap;
 
 use crate::model::value::Json;
-use crate::flow::case::model::CaseContextStruct;
+use crate::flow::case::arg::CaseArgStruct;
 
 
 #[derive(Debug)]
-pub struct TaskContextStruct {
+pub struct TaskArgStruct {
     data: Vec<BTreeMap<String,String>>,
     config: Json,
     id: String
 }
 
 
-impl TaskContextStruct {
+impl TaskArgStruct {
 
-    pub fn new(config: Json, data: Vec<BTreeMap<String,String>>, id: &str) -> TaskContextStruct {
-        let context = TaskContextStruct {
+    pub fn new(config: Json, data: Vec<BTreeMap<String,String>>, id: &str) -> TaskArgStruct {
+        let context = TaskArgStruct {
             config,
             data,
             id: String::from(id)
@@ -24,11 +24,11 @@ impl TaskContextStruct {
     }
 
 
-    pub fn create_case(self: &TaskContextStruct) -> Vec<CaseContextStruct<'_, '_>> {
+    pub fn create_case(self: &TaskArgStruct) -> Vec<CaseArgStruct<'_, '_>> {
         return self.data.iter()
             .enumerate()
             .map(|(idx,_)| {
-                CaseContextStruct::new(
+                CaseArgStruct::new(
                     &self.config,
                     &self.data[idx],
                     idx
@@ -37,7 +37,7 @@ impl TaskContextStruct {
             .collect();
     }
 
-    pub fn get_limit_concurrency(self: &TaskContextStruct) -> usize {
+    pub fn get_limit_concurrency(self: &TaskArgStruct) -> usize {
         let num = match self.config["task"]["limit"]["concurrency"].as_u64() {
             Some(n) => n as usize,
             None => 10

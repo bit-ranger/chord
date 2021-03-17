@@ -1,9 +1,10 @@
-use crate::model::context::{TaskResultInner, CaseResultInner };
-use crate::model::error::Error;
 use std::path::Path;
-use crate::model::context::CaseState;
 
-pub async fn export<P: AsRef<Path>>(task_result: &TaskResultInner, path: P) -> Result<(), Error> {
+use crate::model::case::{CaseState, CaseResult};
+use crate::model::error::Error;
+use crate::model::task::TaskResult;
+
+pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), Error> {
     let rwr = csv::Writer::from_path(path);
     let mut rwr = match rwr{
         Ok(w) => w,
@@ -32,7 +33,7 @@ pub async fn export<P: AsRef<Path>>(task_result: &TaskResultInner, path: P) -> R
 
 
 
-fn to_value_vec(cr: &CaseResultInner, head_len: usize) -> Vec<String> {
+fn to_value_vec(cr: &CaseResult, head_len: usize) -> Vec<String> {
 
     let empty = &vec![];
     let pr_vec = match cr {
@@ -94,7 +95,7 @@ fn to_value_vec(cr: &CaseResultInner, head_len: usize) -> Vec<String> {
     vec
 }
 
-fn to_head_vec(cr_vec: &Vec<(usize, CaseResultInner)>) -> Vec<String> {
+fn to_head_vec(cr_vec: &Vec<(usize, CaseResult)>) -> Vec<String> {
 
     let (_, max_len_cr) = cr_vec.iter().max_by(
         |(_, x), (_, y)| {

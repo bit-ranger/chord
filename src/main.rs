@@ -6,16 +6,16 @@ use futures::future::join_all;
 use log::info;
 
 use load::file;
-use model::context::AppContextStruct;
+use model::app::AppContextStruct;
 
-use crate::model::context::{TaskResultInner};
 use crate::model::error::Error;
+use crate::model::task::TaskResult;
 
 mod model;
 mod flow;
 mod point;
 mod logger;
-mod report;
+// mod report;
 mod load;
 
 #[async_std::main]
@@ -56,7 +56,7 @@ async fn main() -> Result<(),usize> {
     return Ok(());
 }
 
-async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskResultInner>{
+async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskResult>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("running job {}", job_path_str);
@@ -85,7 +85,7 @@ async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str) -> Vec<TaskRes
     return task_result_vec;
 }
 
-async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResultInner {
+async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResult {
     info!("running task {}", task_path.as_ref().to_str().unwrap());
     let task_path = Path::new(task_path.as_ref());
     let data_path = task_path.join("data.csv");
@@ -117,7 +117,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
 
     let app_context = AppContextStruct::new();
     let task_result = flow::run(&app_context, config, data, task_path.file_name().unwrap().to_str().unwrap()).await;
-    let _ = report::csv::export(&task_result, &export_path).await;
+    // let _ = report::csv::export(&task_result, &export_path).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());
     return task_result;
 }

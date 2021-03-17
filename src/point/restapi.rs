@@ -1,15 +1,16 @@
 use std::str::FromStr;
 
-use surf::{RequestBuilder, Response, Url, Body};
+use surf::{Body, RequestBuilder, Response, Url};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 
-use crate::model::context::{PointContext, PointResult};
-use crate::model::error::Error;
-use crate::model::value::{Json, Map, Number};
 use crate::err;
+use crate::model::point::PointArg;
+use crate::model::error::Error;
+use crate::model::point::PointValue;
+use crate::model::value::{Json, Map, Number};
 
-pub async fn run(context: &dyn PointContext) -> PointResult {
+pub async fn run(context: &dyn PointArg) -> PointValue {
     let url = match context.get_config_rendered(vec!["url"]) {
         Some(url) => url,
         None => return err!("010", "missing url")

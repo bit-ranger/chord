@@ -15,7 +15,7 @@ mod model;
 mod flow;
 mod point;
 mod logger;
-// mod report;
+mod report;
 mod load;
 
 #[async_std::main]
@@ -117,7 +117,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str) -> TaskResul
 
     let app_context = AppContextStruct::new();
     let task_result = flow::run(&app_context, config, data, task_path.file_name().unwrap().to_str().unwrap()).await;
-    // let _ = report::csv::export(&task_result, &export_path).await;
+    let _ = report::csv::export(&task_result, &export_path).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());
     return task_result;
 }

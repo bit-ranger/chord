@@ -11,7 +11,7 @@ use crate::err;
 use crate::model::{Error, PointValue};
 
 pub async fn run(context: &dyn PointArg) -> PointValue{
-    let url = match context.get_config_rendered(vec!["url"]) {
+    let url = match context.config_rendered(vec!["url"]) {
         Some(url) => url,
         None => return err!("010", "missing url")
     };
@@ -21,7 +21,7 @@ pub async fn run(context: &dyn PointArg) -> PointValue{
         Err(_) => return err!("011", format!("invalid url: {}", url).as_str())
     };
 
-    let method = match context.get_config_rendered(vec!["method"]) {
+    let method = match context.config_rendered(vec!["method"]) {
         Some(method) => method,
         None => return err!("020", "missing method")
     };
@@ -34,7 +34,7 @@ pub async fn run(context: &dyn PointArg) -> PointValue{
 
     let mut rb = RequestBuilder::new(method, url);
 
-    if let Some(header) = context.get_config()["header"].as_object() {
+    if let Some(header) = context.config()["header"].as_object() {
         for (k, v) in header.iter() {
             let hn = HeaderName::from_str(context.render(k)?.as_str());
             if hn.is_err() {
@@ -48,7 +48,7 @@ pub async fn run(context: &dyn PointArg) -> PointValue{
         }
     }
 
-    if let Some(body) = context.get_config_rendered(vec!["body"]){
+    if let Some(body) = context.config_rendered(vec!["body"]){
         rb = rb.body(Body::from_string(body));
     }
 

@@ -16,7 +16,7 @@ pub mod result;
 pub async fn run(app_context: &dyn AppContext, point_arg: &PointArgStruct<'_, '_, '_, '_, '_>) -> PointResult
 {
     let start = Utc::now();
-    let point_type = point_arg.get_meta_str(vec!["type"]).await;
+    let point_type = point_arg.meta_str(vec!["type"]).await;
     if point_type.is_none(){
         return Err(Error::new("001", "missing type"));
     }
@@ -27,7 +27,7 @@ pub async fn run(app_context: &dyn AppContext, point_arg: &PointArgStruct<'_, '_
 
     return match result{
         PointValue::Ok(json) => {
-            let result_struct = PointAssessStruct::new(json, point_arg.get_id(), start, end);
+            let result_struct = PointAssessStruct::new(json, point_arg.id(), start, end);
             Ok(Box::new(result_struct))
         },
         PointValue::Err(e) => {
@@ -37,7 +37,7 @@ pub async fn run(app_context: &dyn AppContext, point_arg: &PointArgStruct<'_, '_
 }
 
 pub async fn assert(context: &PointArgStruct<'_, '_, '_, '_, '_>, result: &Json) -> bool{
-    let assert_condition = context.get_meta_str(vec!["assert"]).await;
+    let assert_condition = context.meta_str(vec!["assert"]).await;
     return match assert_condition{
         Some(con) =>  {
             context.assert(con.as_str(), &result).await

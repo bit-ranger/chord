@@ -10,9 +10,9 @@ pub type PointValue = std::result::Result<Json, Error>;
 
 pub trait PointArg {
 
-    fn get_config_rendered(&self, path: Vec<&str>) -> Option<String>;
+    fn config_rendered(&self, path: Vec<&str>) -> Option<String>;
 
-    fn get_config(&self) -> &Json;
+    fn config(&self) -> &Json;
 
     fn render(&self, text: &str) -> Result<String,Error>;
 }

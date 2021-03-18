@@ -18,7 +18,7 @@ pub struct PointArgStruct<'c, 'd, 'h, 'reg, 'r>
 {
     flow: &'c Json,
     data: &'d BTreeMap<String,String>,
-    point_id: String,
+    id: String,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
 }
@@ -29,7 +29,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
     pub fn new(flow: &'c Json,
                data: &'d BTreeMap<String,String>,
-               point_id: &str,
+               id: &str,
                handlebars: &'h Handlebars<'reg>,
                render_context: &'r RenderContext
     ) -> PointArgStruct<'c, 'd, 'h, 'reg, 'r>{
@@ -37,7 +37,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
         let context = PointArgStruct {
             flow,
             data,
-            point_id: String::from(point_id),
+            id: String::from(id),
             handlebars,
             render_context
         };
@@ -46,15 +46,15 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
     }
 
     #[allow(dead_code)]
-    pub fn get_id(self :&PointArgStruct<'c, 'd, 'h, 'reg, 'r>) -> &str{
-        return self.point_id.as_str();
+    pub fn id(self :&PointArgStruct<'c, 'd, 'h, 'reg, 'r>) -> &str{
+        return self.id.as_str();
     }
 
 
 
-    pub async fn get_meta_str(self : &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) ->Option<String>
+    pub async fn meta_str(self : &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) ->Option<String>
     {
-        let config = self.flow["point"][&self.point_id].borrow();
+        let config = self.flow["point"][&self.id].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -126,9 +126,9 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
 
-    fn get_config_rendered(self: &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
+    fn config_rendered(self: &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
     {
-        let config = self.flow["point"][&self.point_id]["config"].borrow();
+        let config = self.flow["point"][&self.id]["config"].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -147,8 +147,8 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
     }
 
-    fn get_config(&self) -> &Json {
-        let config = self.flow["point"][&self.point_id]["config"].borrow();
+    fn config(&self) -> &Json {
+        let config = self.flow["point"][&self.id]["config"].borrow();
         return config;
     }
 

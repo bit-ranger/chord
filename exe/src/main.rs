@@ -85,8 +85,8 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str, app_contex
 async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context: &AppContextStruct<'_>) -> TaskResult {
     info!("running task {}", task_path.as_ref().to_str().unwrap());
     let task_path = Path::new(task_path.as_ref());
-    let data_path = task_path.join("data.csv");
     let flow_path = task_path.join("flow.yml");
+    let data_path = task_path.join("data.csv");
 
     let flow = match file::load_flow(
         &flow_path

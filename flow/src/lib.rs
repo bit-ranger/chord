@@ -6,15 +6,12 @@ use common::error::Error;
 use crate::load::file;
 use crate::model::app::{AppContext};
 use crate::model::task::TaskResult;
-use common::point::PointRunner;
 use futures::future::join_all;
 
 mod model;
 pub mod flow;
 pub mod report;
 pub mod load;
-
-struct ErrorWrapper(Error);
 
 pub use crate::model::app::AppContextStruct;
 

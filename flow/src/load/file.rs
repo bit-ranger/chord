@@ -5,11 +5,10 @@ use std::path::Path;
 use serde_json::Value;
 
 use common::error::Error;
-use crate::ErrorWrapper;
 use common::err;
 
 pub fn load_data<P: AsRef<Path>>(path: P) -> Result<Vec<BTreeMap<String, String>>, Error> {
-    let mut rdr = csv::Reader::from_path(path);
+    let rdr = csv::Reader::from_path(path);
     let mut rdr = match rdr {
         Err(e) => return err!("csv", format!("{:?}", e.kind()).as_str()),
         Ok(r) => r

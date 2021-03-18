@@ -1,9 +1,8 @@
-use std::{env, fs};
+use std::{env};
 use std::path::Path;
 use std::time::SystemTime;
 
 use flow::{run_job, AppContextStruct};
-use log::info;
 use point::PointRunnerDefault;
 
 mod logger;

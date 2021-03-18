@@ -36,6 +36,7 @@ async fn run_point_type(point_type: &str, context: &dyn PointArg) -> common::poi
     let point_value = match point_type.trim() {
         "restapi" => ext::restapi::run(context).await,
         "md5" => ext::md5::run(context).await,
+        "dubbo" => ext::dubbo::run(context).await,
         _ => err!("002", format!("unsupported point type {}", point_type).as_str())
     };
 

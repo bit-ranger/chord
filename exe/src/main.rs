@@ -6,7 +6,7 @@ use flow::{AppContextStruct};
 use point::PointRunnerDefault;
 use port::load::file;
 use common::error::Error;
-use common::task::TaskResult;
+use common::task::{TaskResult, TaskState};
 
 mod logger;
 use log::info;
@@ -114,8 +114,16 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
 
     let task_result = flow::run(app_context, flow, data, task_path.file_name().unwrap().to_str().unwrap()).await;
 
+    let report_state = match &task_result {
+        Ok(ta) => match ta.state() {
+            TaskState::Ok => "OK",
+            _ => "FAILURE"
+        },
+        Err(_) => "ERROR"
+    };
 
-    let report_path = task_path.join(format!("report_{}.csv", execution_id));
+
+    let report_path = task_path.join(format!("report__{}__{}.csv", report_state, execution_id));
     let _ = port::report::csv::report(&task_result, &report_path).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());
     return task_result;

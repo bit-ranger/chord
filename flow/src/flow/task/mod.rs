@@ -49,7 +49,7 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct
         None => {
             let failure_case = case_result_vec.iter()
                 .filter(|(_, case)| case.is_ok())
-                .filter(|(_, case)| case.as_ref().unwrap().state().is_ok())
+                .filter(|(_, case)| !case.as_ref().unwrap().state().is_ok())
                 .last();
 
             match failure_case {

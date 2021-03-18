@@ -7,7 +7,7 @@ use result::PointAssessStruct;
 
 use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::AppContext;
-use crate::model::point::PointResult;
+use common::point::PointResult;
 
 pub mod arg;
 pub mod result;

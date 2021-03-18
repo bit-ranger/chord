@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 
 use common::value::Json;
 
-use crate::model::point::PointAssess;
+use common::point::PointAssess;
 
 pub struct PointAssessStruct {
     result: Json,

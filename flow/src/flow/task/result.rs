@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 
-use crate::model::task::{TaskState, TaskAssess};
-use crate::model::case::CaseResult;
+use common::task::{TaskState, TaskAssess};
+use common::case::CaseResult;
 
 
 pub struct TaskResultStruct {

@@ -1,11 +1,9 @@
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::path::Path;
-
-use serde_json::Value;
-
 use common::error::Error;
 use common::err;
+use common::value::Json;
 
 pub fn load_data<P: AsRef<Path>>(path: P) -> Result<Vec<BTreeMap<String, String>>, Error> {
     let rdr = csv::Reader::from_path(path);
@@ -28,14 +26,14 @@ pub fn load_data<P: AsRef<Path>>(path: P) -> Result<Vec<BTreeMap<String, String>
 }
 
 
-pub fn load_flow<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
+pub fn load_flow<P: AsRef<Path>>(path: P) -> Result<Json, Error> {
     let file = File::open(path);
     let file = match file {
         Err(e) => return err!("yaml", format!("{:?}", e).as_str()),
         Ok(r) => r
     };
 
-    let deserialized:Result<Value, serde_yaml::Error> = serde_yaml::from_reader(file);
+    let deserialized:Result<Json, serde_yaml::Error> = serde_yaml::from_reader(file);
     return match deserialized {
         Err(e) => return err!("yaml", format!("{:?}", e).as_str()),
         Ok(r) => Ok(r)

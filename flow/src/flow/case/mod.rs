@@ -8,8 +8,8 @@ use result::CaseAssessStruct;
 use crate::flow::case::arg::{CaseArgStruct, RenderContext};
 use crate::flow::point;
 use crate::model::app::AppContext;
-use crate::model::case::{CaseResult, CaseState};
-use crate::model::point::PointResult;
+use common::case::{CaseResult, CaseState};
+use common::point::PointResult;
 
 pub mod result;
 pub mod arg;

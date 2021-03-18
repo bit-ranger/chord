@@ -8,8 +8,8 @@ use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::task::arg::TaskArgStruct;
 use crate::model::app::AppContext;
-use crate::model::task::{TaskState, TaskResult};
-use crate::model::case::CaseResult;
+use common::task::{TaskState, TaskResult};
+use common::case::CaseResult;
 
 pub mod arg;
 pub mod result;

@@ -1,8 +1,10 @@
 use std::future::Future;
 use std::pin::Pin;
-use crate::value::Json;
-use crate::error::Error;
 
+
+use crate::error::Error;
+use crate::value::Json;
+use chrono::{DateTime, Utc};
 
 pub type PointValue = std::result::Result<Json, Error>;
 
@@ -18,4 +20,17 @@ pub trait PointArg {
 pub trait PointRunner{
 
     fn run<'a>(&self, point_type: &'a str, point_arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ 'a>>;
+}
+
+pub type PointResult = std::result::Result<Box<dyn PointAssess>, Error>;
+
+pub trait PointAssess {
+
+    fn id(&self) -> &str;
+
+    fn start(&self) -> DateTime<Utc>;
+
+    fn end(&self) -> DateTime<Utc>;
+
+    fn result(&self) -> &Json;
 }

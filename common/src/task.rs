@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 
-use common::error::Error;
+use crate::error::Error;
 
-use crate::model::case::CaseResult;
+use crate::case::CaseResult;
 
 pub type TaskResult = Result<Box<dyn TaskAssess>, Error>;
 

@@ -1,11 +1,9 @@
 use std::path::Path;
-
+use common::task::TaskResult;
+use common::case::{CaseResult, CaseState};
 use common::error::Error;
 
-use crate::model::case::{CaseResult, CaseState};
-use crate::model::task::TaskResult;
-
-pub async fn export<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), Error> {
+pub async fn report<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), Error> {
     let rwr = csv::Writer::from_path(path);
     let mut rwr = match rwr{
         Ok(w) => w,

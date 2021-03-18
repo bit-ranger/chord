@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 
-use crate::model::case::{CaseState, CaseAssess};
-use crate::model::point::PointResult;
+use common::case::{CaseState, CaseAssess};
+use common::point::PointResult;
 
 pub struct CaseAssessStruct {
     result: Vec<(String,PointResult)>,

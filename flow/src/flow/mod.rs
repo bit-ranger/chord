@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use common::value::Json;
 
 use crate::model::app::AppContext;
-use crate::model::task::TaskResult;
+use common::task::TaskResult;
 
 use self::task::arg::TaskArgStruct;
 

@@ -51,6 +51,7 @@ fn log_thread_func(
     log_path: String,
     rotate_count: usize,
     rotate_size: usize,
+    console_print: bool
 ) {
     let mut size = 0;
     let mut file = OpenOptions::new()
@@ -67,6 +68,9 @@ fn log_thread_func(
         }
 
         let data = queue.pop_front().unwrap();
+        if console_print {
+            println!("{}", String::from_utf8(data.clone()).unwrap());
+        }
         match file {
             Ok(ref mut f) => {
                 let _ = f.write_all(&data);
@@ -115,17 +119,18 @@ pub fn init(
     log_path: String,
     rotate_count: usize,
     rotate_size: usize,
+    console_print: bool
 ) -> Result<(), SetLoggerError> {
     let sender = Arc::new((Mutex::new(VecDeque::new()), Condvar::new()));
     let receiver = sender.clone();
 
     thread::spawn(move || {
-        log_thread_func(receiver, log_path, rotate_count, rotate_size);
+        log_thread_func(receiver, log_path, rotate_count, rotate_size, console_print);
     });
 
     log::set_max_level(LevelFilter::Info);
     log::set_boxed_logger(Box::new(ChannelLogger {
-        level: level,
+        level,
         msg_queue: sender,
     }))
 }

@@ -61,7 +61,7 @@ impl<'c, 'd> CaseArgStruct<'c, 'd> {
     }
 
 
-    pub fn get_point_id_vec(self: &CaseArgStruct<'c, 'd>) -> Vec<String> {
+    pub fn point_id_vec(self: &CaseArgStruct<'c, 'd>) -> Vec<String> {
         let task_point_chain_arr = self.flow["task"]["chain"].as_array().unwrap();
         let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()
             .map(|e| {

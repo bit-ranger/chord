@@ -25,7 +25,7 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct
 
     futures.reserve(0);
     let mut case_result_vec: Vec<(usize, CaseResult)> = Vec::new();
-    let limit_concurrency = task_context.get_limit_concurrency();
+    let limit_concurrency = task_context.limit_concurrency();
     loop {
         if futures.len() >  limit_concurrency{
             let off = futures.split_off(futures.len() - limit_concurrency);

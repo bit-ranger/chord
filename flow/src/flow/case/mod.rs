@@ -18,7 +18,7 @@ pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'
     let start = Utc::now();
     let mut render_context = case_arg.create_render_context();
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
-    for point_id in case_arg.get_point_id_vec().iter() {
+    for point_id in case_arg.point_id_vec().iter() {
         let point_context = case_arg.create_point(point_id, app_context, &render_context);
         if point_context.is_none(){
             return Err(Error::new("000", "invalid point"));

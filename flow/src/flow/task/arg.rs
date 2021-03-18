@@ -37,7 +37,7 @@ impl TaskArgStruct {
             .collect();
     }
 
-    pub fn get_limit_concurrency(self: &TaskArgStruct) -> usize {
+    pub fn limit_concurrency(self: &TaskArgStruct) -> usize {
         let num = match self.flow["task"]["limit"]["concurrency"].as_u64() {
             Some(n) => n as usize,
             None => 10

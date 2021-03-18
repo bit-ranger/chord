@@ -7,15 +7,17 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::vec::Vec;
 use time::{at, get_time, strftime};
+use regex::Regex;
 
 struct ChannelLogger {
     level: Level,
+    target: Regex,
     msg_queue: Arc<(Mutex<VecDeque<Vec<u8>>>, Condvar)>,
 }
 
 impl log::Log for ChannelLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= self.level
+        metadata.level() <= self.level && self.target.is_match(metadata.target())
     }
 
     fn log(&self, record: &Record) {
@@ -31,7 +33,7 @@ impl log::Log for ChannelLogger {
                 date,
                 microseconds,
                 record.level(),
-                record.file().unwrap(),
+                record.target(),
                 record.line().unwrap(),
                 record.args()
             );
@@ -116,6 +118,7 @@ fn rotate_file(log_path: &String, rotate_count: usize) {
 
 pub fn init(
     level: Level,
+    log_target: String,
     log_path: String,
     rotate_count: usize,
     rotate_size: usize,
@@ -131,6 +134,7 @@ pub fn init(
     log::set_max_level(LevelFilter::Info);
     log::set_boxed_logger(Box::new(ChannelLogger {
         level,
+        target: Regex::new(&log_target).unwrap(),
         msg_queue: sender,
     }))
 }

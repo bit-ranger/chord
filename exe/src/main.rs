@@ -20,6 +20,7 @@ async fn main() -> Result<(),usize> {
     opts.reqopt("j", "job", "job path", "job");
     opts.reqopt("l", "log", "log path", "log");
     opts.optopt("p", "print", "console print", "true/false");
+    opts.optopt("t", "target", "long target", ".*");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -31,10 +32,11 @@ async fn main() -> Result<(),usize> {
 
     let log_path = matches.opt_str("l").unwrap();
     logger::init(log::Level::Info,
+                 matches.opt_get_default("t", String::from(".*")).unwrap(),
                  log_path,
                  1,
                  2000000,
-                "true" == matches.opt_str("p").unwrap()
+                 matches.opt_get_default("p", false).unwrap()
     ).unwrap();
 
     let duration = SystemTime::now()

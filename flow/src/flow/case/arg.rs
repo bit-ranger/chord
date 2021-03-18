@@ -10,16 +10,16 @@ use crate::model::app::AppContext;
 
 #[derive(Debug)]
 pub struct CaseArgStruct<'c, 'd> {
-    config: &'c Json,
+    flow: &'c Json,
     data: &'d BTreeMap<String, String>,
     id: usize
 }
 
 
 impl<'c, 'd> CaseArgStruct<'c, 'd> {
-    pub fn new(config: &'c Json, data: &'d BTreeMap<String, String>, id: usize) -> CaseArgStruct<'c, 'd> {
+    pub fn new(flow: &'c Json, data: &'d BTreeMap<String, String>, id: usize) -> CaseArgStruct<'c, 'd> {
         let context = CaseArgStruct {
-            config,
+            flow,
             data,
             id
         };
@@ -29,7 +29,7 @@ impl<'c, 'd> CaseArgStruct<'c, 'd> {
 
     pub fn create_render_context(self: &CaseArgStruct<'c, 'd>) -> RenderContext{
         let mut render_data: HashMap<&str, Json> = HashMap::new();
-        let config_def = self.config["task"]["def"].as_object();
+        let config_def = self.flow["task"]["def"].as_object();
         match config_def {
             Some(def) => {
                 render_data.insert("def", to_value(def).unwrap());
@@ -50,10 +50,10 @@ impl<'c, 'd> CaseArgStruct<'c, 'd> {
     ) -> Option<PointArgStruct<'c, 'd, 'h, 'reg, 'r>>
         where 'app: 'h, 'app: 'reg
     {
-        let _ = self.config["point"][point_id].as_object()?;
+        let _ = self.flow["point"][point_id].as_object()?;
 
         Some(PointArgStruct::new(
-            self.config,
+            self.flow,
             self.data,
             point_id,
             app_context.get_handlebars(),
@@ -62,7 +62,7 @@ impl<'c, 'd> CaseArgStruct<'c, 'd> {
 
 
     pub fn get_point_id_vec(self: &CaseArgStruct<'c, 'd>) -> Vec<String> {
-        let task_point_chain_arr = self.config["task"]["chain"].as_array().unwrap();
+        let task_point_chain_arr = self.flow["task"]["chain"].as_array().unwrap();
         let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()
             .map(|e| {
                 e.as_str().map(|s| String::from(s)).unwrap()

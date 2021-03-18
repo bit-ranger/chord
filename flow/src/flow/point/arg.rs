@@ -16,7 +16,7 @@ use crate::flow::case::arg::RenderContext;
 #[derive(Debug)]
 pub struct PointArgStruct<'c, 'd, 'h, 'reg, 'r>
 {
-    config: &'c Json,
+    flow: &'c Json,
     data: &'d BTreeMap<String,String>,
     point_id: String,
     handlebars: &'h Handlebars<'reg>,
@@ -27,7 +27,7 @@ pub struct PointArgStruct<'c, 'd, 'h, 'reg, 'r>
 impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
 
-    pub fn new(config: &'c Json,
+    pub fn new(flow: &'c Json,
                data: &'d BTreeMap<String,String>,
                point_id: &str,
                handlebars: &'h Handlebars<'reg>,
@@ -35,7 +35,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
     ) -> PointArgStruct<'c, 'd, 'h, 'reg, 'r>{
 
         let context = PointArgStruct {
-            config,
+            flow,
             data,
             point_id: String::from(point_id),
             handlebars,
@@ -54,7 +54,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
     pub async fn get_meta_str(self : &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) ->Option<String>
     {
-        let config = self.config["point"][&self.point_id].borrow();
+        let config = self.flow["point"][&self.point_id].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -128,7 +128,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
     fn get_config_rendered(self: &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
     {
-        let config = self.config["point"][&self.point_id]["config"].borrow();
+        let config = self.flow["point"][&self.point_id]["config"].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -148,7 +148,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
     }
 
     fn get_config(&self) -> &Json {
-        let config = self.config["point"][&self.point_id]["config"].borrow();
+        let config = self.flow["point"][&self.point_id]["config"].borrow();
         return config;
     }
 

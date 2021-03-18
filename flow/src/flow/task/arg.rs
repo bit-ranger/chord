@@ -7,16 +7,16 @@ use crate::flow::case::arg::CaseArgStruct;
 #[derive(Debug)]
 pub struct TaskArgStruct {
     data: Vec<BTreeMap<String,String>>,
-    config: Json,
+    flow: Json,
     id: String
 }
 
 
 impl TaskArgStruct {
 
-    pub fn new(config: Json, data: Vec<BTreeMap<String,String>>, id: &str) -> TaskArgStruct {
+    pub fn new(flow: Json, data: Vec<BTreeMap<String,String>>, id: &str) -> TaskArgStruct {
         let context = TaskArgStruct {
-            config,
+            flow,
             data,
             id: String::from(id)
         };
@@ -29,7 +29,7 @@ impl TaskArgStruct {
             .enumerate()
             .map(|(idx,_)| {
                 CaseArgStruct::new(
-                    &self.config,
+                    &self.flow,
                     &self.data[idx],
                     idx
                 )
@@ -38,7 +38,7 @@ impl TaskArgStruct {
     }
 
     pub fn get_limit_concurrency(self: &TaskArgStruct) -> usize {
-        let num = match self.config["task"]["limit"]["concurrency"].as_u64() {
+        let num = match self.flow["task"]["limit"]["concurrency"].as_u64() {
             Some(n) => n as usize,
             None => 10
         };

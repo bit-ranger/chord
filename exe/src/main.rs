@@ -86,8 +86,19 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
     info!("running task {}", task_path.as_ref().to_str().unwrap());
     let task_path = Path::new(task_path.as_ref());
     let data_path = task_path.join("data.csv");
-    let config_path = task_path.join("flow.yml");
-    let report_path = task_path.join(format!("report_{}.csv", execution_id));
+    let flow_path = task_path.join("flow.yml");
+
+    let flow = match file::load_flow(
+        &flow_path
+    ) {
+        Err(e) => {
+            return Err(Error::new("001", format!("load config failure {}", e).as_str()))
+        }
+        Ok(value) => {
+            value
+        }
+    };
+
 
     let data = match file::load_data(
         &data_path
@@ -101,18 +112,10 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
     };
 
 
-    let config = match file::load_flow(
-        &config_path
-    ) {
-        Err(e) => {
-            return Err(Error::new("001", format!("load config failure {}", e).as_str()))
-        }
-        Ok(value) => {
-            value
-        }
-    };
+    let task_result = flow::run(app_context, flow, data, task_path.file_name().unwrap().to_str().unwrap()).await;
 
-    let task_result = flow::run(app_context, config, data, task_path.file_name().unwrap().to_str().unwrap()).await;
+
+    let report_path = task_path.join(format!("report_{}.csv", execution_id));
     let _ = port::report::csv::report(&task_result, &report_path).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());
     return task_result;

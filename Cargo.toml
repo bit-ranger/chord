@@ -1,25 +1,15 @@
-[package]
-name = "runner"
-version = "0.1.0"
-authors = ["bit-ranger <sincerebravefight@gmail.com>"]
-edition = "2018"
+[workspace]
+members = [
+    'common',
+    'flow',
+    'point',
+    'exe'
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-csv = "1.1.5"
-strfmt = "0.1.6"
-getopts = "0.2.21"
-itertools = "0.10.0"
-serde = "1.0"
-serde_yaml = "0.8"
-async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
-futures = "0.3.13"
-handlebars = "3.5.3"
-serde_json = "1.0"
-surf = "2.1.0"
-md5 = "0.7.0"
-log = { version = "0.4.14", features = ["std"]}
-time = "0.1.42"
-chrono = "0.4.19"
-#tower = {version = "0.4.6", features = ["util", "limit"]}
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+panic = 'abort'
+

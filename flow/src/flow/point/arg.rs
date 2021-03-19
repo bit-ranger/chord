@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use handlebars::{Handlebars};
 use log::info;
 use serde::Serialize;
-use serde_json::to_value;
+use common::value::to_json;
 
 use common::error::Error;
 use common::point::PointArg;
@@ -89,7 +89,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
         if let Json::Object(data) = &mut ctx{
             let (n, d) = with_data;
-            data.insert(String::from(n), to_value(d).unwrap());
+            data.insert(String::from(n), to_json(d).unwrap());
         }
 
         // let handlebars = Handlebars::new();

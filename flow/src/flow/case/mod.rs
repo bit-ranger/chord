@@ -1,5 +1,5 @@
 use chrono::Utc;
-use serde_json::to_value;
+use common::value::to_json;
 
 use common::error::Error;
 use common::value::Json;
@@ -53,7 +53,7 @@ pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'
 
 pub async fn register_dynamic(render_context: &mut RenderContext, point_id: &str, result: &Json) {
     if let Json::Object(data) = render_context.data_mut(){
-        data["dyn"][point_id] = to_value(result).unwrap();
+        data["dyn"][point_id] = to_json(result).unwrap();
     }
 }
 

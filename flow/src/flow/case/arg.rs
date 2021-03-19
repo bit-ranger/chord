@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 
 use handlebars::Context;
-use serde_json::to_value;
 
+use common::value::to_json;
 use common::value::Json;
 
 use crate::flow::point::arg::PointArgStruct;
@@ -32,12 +32,12 @@ impl<'c, 'd> CaseArgStruct<'c, 'd> {
         let config_def = self.flow["task"]["def"].as_object();
         match config_def {
             Some(def) => {
-                render_data.insert("def", to_value(def).unwrap());
+                render_data.insert("def", to_json(def).unwrap());
             }
             None => {}
         }
-        render_data.insert("data", to_value(self.data).unwrap());
-        render_data.insert("dyn", to_value(HashMap::<String, Json>::new()).unwrap());
+        render_data.insert("data", to_json(self.data).unwrap());
+        render_data.insert("dyn", to_json(HashMap::<String, Json>::new()).unwrap());
         return Context::wraps(render_data).unwrap();
     }
 
@@ -59,8 +59,7 @@ impl<'c, 'd> CaseArgStruct<'c, 'd> {
             app_context.get_handlebars(),
             render_context))
     }
-
-
+    
     pub fn point_id_vec(self: &CaseArgStruct<'c, 'd>) -> Vec<String> {
         let task_point_chain_arr = self.flow["task"]["chain"].as_array().unwrap();
         let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()

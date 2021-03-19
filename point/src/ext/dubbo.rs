@@ -1,9 +1,10 @@
 use common::point::PointArg;
 use crate::model::PointValue;
-use log::info;
+use log::debug;
 use crate::{err, err_raw};
 use async_std::net::TcpStream;
 use async_std::prelude::*;
+use common::value::to_json;
 
 
 pub async fn run(arg: &dyn PointArg) -> PointValue {
@@ -41,9 +42,12 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
     let i = value.rfind("\r\nelapsed:").ok_or(err_raw!("0", "elapsed"))?;
     value.truncate(i);
 
+    debug!("Data {}", value);
 
-    info!("Data {}", value);
-    return err!("Data", "");
+    return match to_json(value){
+        Ok(json) => PointValue::Ok(json),
+        Err(e) => err!("json", format!("{}", e).as_str())
+    }
 }
 
 

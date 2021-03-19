@@ -20,6 +20,12 @@ impl  From<std::io::Error> for Error {
     }
 }
 
+impl  From<serde_json::error::Error> for Error{
+    fn from(err: serde_json::error::Error) -> Error {
+        Error::new("json", format!("{:?}", err).as_str())
+    }
+}
+
 
 pub fn to_common_value(point_value: PointValue) -> common::point::PointValue{
     return match point_value {

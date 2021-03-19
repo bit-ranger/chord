@@ -1,11 +1,8 @@
 use common::point::PointArg;
 use crate::model::PointValue;
-use common::value::Json;
 use log::info;
 use crate::{err, err_raw};
 use async_std::net::TcpStream;
-use std::time::Duration;
-use async_std::io::{Read, Write};
 use async_std::prelude::*;
 
 
@@ -30,7 +27,7 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
         response.extend(&buf);
         match sub_vec_index(&response[seek_idx..], &suffix) {
             Some(i) => {
-                response.split_off(seek_idx + i);
+                response.truncate(seek_idx + i);
                 break;
             },
             None => {
@@ -42,7 +39,7 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
 
     let mut value = unsafe { String::from_utf8_unchecked(Vec::from(response)) };
     let i = value.rfind("\r\nelapsed:").ok_or(err_raw!("0", "elapsed"))?;
-    value.split_off(i);
+    value.truncate(i);
 
 
     info!("Data {}", value);
@@ -68,16 +65,12 @@ fn sub_vec_index(vec: &[u8], sub_vec: &[u8]) -> Option<usize> {
 }
 
 
-mod test {
-    use crate::ext::dubbo::sub_vec_index;
+#[test]
+fn sub_vec_index_test() {
+    let vec = vec![0,1,2,3,4,5,6,7,8];
+    assert_eq!(3, sub_vec_index(&vec, &vec![3,4,5]).unwrap());
 
-    #[test]
-    fn sub_vec_index_test() {
-        let vec = vec![0,1,2,3,4,5,6,7,8];
-        assert_eq!(3, sub_vec_index(&vec, &vec![3,4,5]).unwrap());
+    assert_eq!(6, sub_vec_index(&vec, &vec![6,7,8]).unwrap());
 
-        assert_eq!(6, sub_vec_index(&vec, &vec![6,7,8]).unwrap());
-
-        assert_eq!(true, sub_vec_index(&vec, &vec![7,8, 9]).is_none());
-    }
+    assert_eq!(true, sub_vec_index(&vec, &vec![7,8, 9]).is_none());
 }

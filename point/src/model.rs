@@ -20,8 +20,8 @@ impl  From<std::io::Error> for Error {
     }
 }
 
-impl  From<serde_json::error::Error> for Error{
-    fn from(err: serde_json::error::Error) -> Error {
+impl  From<common::value::JsonError> for Error{
+    fn from(err: common::value::JsonError) -> Error {
         Error::new("json", format!("{:?}", err).as_str())
     }
 }

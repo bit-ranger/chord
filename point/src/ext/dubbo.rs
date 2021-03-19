@@ -1,10 +1,11 @@
 use common::point::PointArg;
 use crate::model::PointValue;
-use log::debug;
+use log::{debug,info};
 use crate::{err, err_raw};
 use async_std::net::TcpStream;
 use async_std::prelude::*;
-use common::value::to_json;
+use common::value::{to_json, Json};
+use std::str::FromStr;
 
 
 pub async fn run(arg: &dyn PointArg) -> PointValue {
@@ -16,8 +17,9 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
         }
     };
 
-    let cmd = arg.config_rendered(vec!["cmd"]).unwrap();
-    server_stream.write_all(cmd.as_bytes()).await?;
+    let invoke = arg.config_rendered(vec!["invoke"]).unwrap();
+    let invoke = format!("invoke {}", invoke);
+    server_stream.write_all(invoke.as_bytes()).await?;
 
     let suffix ="dubbo>".as_bytes();
     let mut response = vec![0; 0];
@@ -37,17 +39,13 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
         }
     }
 
-
     let mut value = unsafe { String::from_utf8_unchecked(Vec::from(response)) };
     let i = value.rfind("\r\nelapsed:").ok_or(err_raw!("0", "elapsed"))?;
     value.truncate(i);
 
-    debug!("Data {}", value);
+    let json = Json::from_str(value.as_str())?;
 
-    return match to_json(value){
-        Ok(json) => PointValue::Ok(json),
-        Err(e) => err!("json", format!("{}", e).as_str())
-    }
+    PointValue::Ok(json)
 }
 
 

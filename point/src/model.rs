@@ -14,6 +14,12 @@ impl From<common::error::Error> for Error {
     }
 }
 
+impl  From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Error {
+        Error::new("io", format!("{:?}", err.kind()).as_str())
+    }
+}
+
 
 pub fn to_common_value(point_value: PointValue) -> common::point::PointValue{
     return match point_value {

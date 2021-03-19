@@ -14,6 +14,13 @@ macro_rules! err {
     }}
 }
 
+#[macro_export]
+macro_rules! err_raw {
+    ($code:expr, $message:expr) => {{
+        $crate::model::Error::new($code, $message)
+    }}
+}
+
 
 pub struct PointRunnerDefault;
 

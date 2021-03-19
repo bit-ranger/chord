@@ -2,16 +2,17 @@ use std::{env, fs};
 use std::path::Path;
 use std::time::SystemTime;
 
-use flow::{AppContextStruct};
-use point::PointRunnerDefault;
-use port::load::file;
+use async_std::fs::File;
+use futures::future::join_all;
+use log::info;
+
 use common::error::Error;
 use common::task::{TaskResult, TaskState};
+use flow::AppContextStruct;
+use point::PointRunnerDefault;
+use port::load::file;
 
 mod logger;
-use log::info;
-use futures::future::join_all;
-
 
 #[async_std::main]
 async fn main() -> Result<(),usize> {
@@ -90,8 +91,8 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str, app_contex
 async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context: &AppContextStruct<'_>) -> TaskResult {
     info!("running task {}", task_path.as_ref().to_str().unwrap());
     let task_path = Path::new(task_path.as_ref());
-    let flow_path = task_path.join("flow.yml");
-    let data_path = task_path.join("data.csv");
+    let flow_path = task_path.clone().join("flow.yml");
+    let data_path = task_path.clone().join("data.csv");
 
     let flow = match file::load_flow(
         &flow_path
@@ -119,17 +120,10 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
 
     let task_result = flow::run(app_context, flow, data, task_path.file_name().unwrap().to_str().unwrap()).await;
 
-    let report_state = match &task_result {
-        Ok(ta) => match ta.state() {
-            TaskState::Ok => "OK",
-            _ => "FAILURE"
-        },
-        Err(_) => "ERROR"
-    };
+    let report_dir_path = task_path.join(format!("{}", execution_id));
+    std::fs::create_dir(report_dir_path.clone())?;
 
-
-    let report_path = task_path.join(format!("report__{}__{}.csv", report_state, execution_id));
-    let _ = port::report::csv::report(&task_result, &report_path).await;
+    let _ = port::report::csv::report(&task_result, &report_dir_path).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());
     return task_result;
 }

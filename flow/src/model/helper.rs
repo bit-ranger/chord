@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
-use serde_json::Value;
 
 use common::value::{Json, Number};
 
@@ -27,11 +26,11 @@ impl HelperDef for NumHelper {
         let param = param.value();
 
         match param {
-            Value::String(x) => {
+            Json::String(x) => {
                 let n = Number::from_str(x.trim()).unwrap();
                 Ok(Some(ScopedJson::Derived(Json::Number(n))))
             },
-            Value::Number(n) => Ok(Some(ScopedJson::Derived(Json::Number(n.clone())))),
+            Json::Number(n) => Ok(Some(ScopedJson::Derived(Json::Number(n.clone())))),
             _ => Err(RenderError::new("\"num\" can not convert "))
         }
 
@@ -58,11 +57,11 @@ impl HelperDef for BoolHelper {
         let param = param.value();
 
         match param {
-            Value::String(x) => {
+            Json::String(x) => {
                 let n = bool::from_str(x.trim()).unwrap();
                 Ok(Some(ScopedJson::Derived(Json::Bool(n))))
             },
-            Value::Bool(n) => Ok(Some(ScopedJson::Derived(Json::Bool(n.clone())))),
+            Json::Bool(n) => Ok(Some(ScopedJson::Derived(Json::Bool(n.clone())))),
             _ => Err(RenderError::new("\"bool\" can not convert "))
         }
 

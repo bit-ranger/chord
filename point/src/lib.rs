@@ -3,6 +3,7 @@ mod ext;
 
 use std::future::Future;
 use std::pin::Pin;
+use log::{info, error};
 
 use common::point::{PointArg, PointRunner};
 
@@ -47,7 +48,13 @@ async fn run_point_type(point_type: &str, context: &dyn PointArg) -> common::poi
         _ => err!("002", format!("unsupported point type {}", point_type).as_str())
     };
 
-    return model::to_common_value(point_value);
+    let point_value = model::to_common_value(point_value);
+    match &point_value {
+        Ok(pv) =>  info!("PointValue: {} - OK  - {}", point_type, pv),
+        Err(e) => error!("PointValue: {} - ERR - {}", point_type, e),
+    }
+
+    return point_value;
 }
 
 

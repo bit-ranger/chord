@@ -104,6 +104,7 @@ fn to_value_vec(cr: &CaseResult, head_len: usize) -> Vec<String> {
         Err(_) =>  empty
     };
 
+    let mut last_point_info = String::from("");
     if !pr_vec.is_empty() {
         let p_vec: Vec<String> = pr_vec.iter()
             .flat_map(|(_, pr)| match pr {
@@ -116,16 +117,16 @@ fn to_value_vec(cr: &CaseResult, head_len: usize) -> Vec<String> {
                             ]
                         },
                         PointState::Error(e) => {
+                            last_point_info = format!("{}", e);
                             vec![String::from("E"),
                                  String::from(""),
-                                 String::from(""),
-                                 format!("{}", e)]
+                                 String::from("")]
                         },
                         PointState::Failure => {
+                            last_point_info = format!("{}", pa.result());
                             vec![String::from("F"),
                                  pa.start().format("%T").to_string(),
-                                 pa.end().format("%T").to_string(),
-                                 format!("{}", pa.result())]
+                                 pa.end().format("%T").to_string()]
                         },
                     }
                 },
@@ -144,6 +145,7 @@ fn to_value_vec(cr: &CaseResult, head_len: usize) -> Vec<String> {
         }
     }
 
+    vec.push(last_point_info);
     vec
 }
 

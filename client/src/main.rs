@@ -1,6 +1,6 @@
 use std::{env, fs};
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, BufWriter};
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -8,7 +8,7 @@ use futures::future::join_all;
 use log::info;
 
 use common::error::Error;
-use common::task::TaskResult;
+use common::task::{TaskResult, TaskState};
 use flow::AppContextStruct;
 use point::PointRunnerDefault;
 
@@ -120,7 +120,18 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
     let report_dir_path = task_path.join(format!("{}", execution_id));
     std::fs::create_dir(report_dir_path.clone())?;
 
-    let _ = port::report::csv::report(&task_result, &report_dir_path).await;
+    let result_state = match &task_result {
+        Ok(ta) => match ta.state() {
+            TaskState::Ok => "OK",
+            _ => "FAILURE"
+        },
+        Err(_) => "ERROR"
+    };
+
+    let result_path = report_dir_path.clone().join(format!("result_{}.csv", result_state));
+    let f = File::open(result_path)?;
+    let writer = BufWriter::new(f);
+    let _ = port::report::csv::report(&task_result, writer).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());
     return task_result;
 }

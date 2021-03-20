@@ -1,27 +1,10 @@
-use std::path::Path;
-
 use common::case::{CaseResult, CaseState};
 use common::error::Error;
-use common::task::{TaskResult, TaskState};
+use common::task::{TaskResult};
 
-pub async fn report<P: AsRef<Path>>(task_result: &TaskResult, path: P) -> Result<(), Error> {
+pub async fn report<W: std::io::Write>(task_result: &TaskResult, writer: W) -> Result<(), Error> {
 
-    let result_state = match &task_result {
-        Ok(ta) => match ta.state() {
-            TaskState::Ok => "OK",
-            _ => "FAILURE"
-        },
-        Err(_) => "ERROR"
-    };
-
-    let result_path = path.as_ref().clone().join(format!("result_{}.csv", result_state));
-
-    let rwr = csv::Writer::from_path(result_path);
-    let mut rwr = match rwr{
-        Ok(w) => w,
-        Err(_) => return Err(Error::new("000", "path error"))
-    };
-
+    let mut rwr = csv::WriterBuilder::new().from_writer(writer);
     let empty = &vec![];
     let cr_vec = match task_result {
         Ok(tr) => tr.result(),

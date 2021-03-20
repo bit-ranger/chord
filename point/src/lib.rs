@@ -45,6 +45,7 @@ async fn run_point_type(point_type: &str, point_arg: &dyn PointArg) -> common::p
         "restapi" => ext::restapi::run(point_arg).await,
         "md5" => ext::md5::run(point_arg).await,
         "dubbo" => ext::dubbo::run(point_arg).await,
+        "sleep" => ext::sleep::run(point_arg).await,
         _ => err!("002", format!("unsupported point type {}", point_type).as_str())
     };
 

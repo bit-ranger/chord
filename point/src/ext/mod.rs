@@ -1,6 +1,5 @@
 use common::point::PointArg;
 use std::str::FromStr;
-use crate::err;
 
 pub mod restapi;
 pub mod md5;

@@ -39,19 +39,25 @@ impl PointRunner for PointRunnerDefault {
 }
 
 
-async fn run_point_type(point_type: &str, context: &dyn PointArg) -> common::point::PointValue{
+async fn run_point_type(point_type: &str, point_arg: &dyn PointArg) -> common::point::PointValue{
 
     let point_value = match point_type.trim() {
-        "restapi" => ext::restapi::run(context).await,
-        "md5" => ext::md5::run(context).await,
-        "dubbo" => ext::dubbo::run(context).await,
+        "restapi" => ext::restapi::run(point_arg).await,
+        "md5" => ext::md5::run(point_arg).await,
+        "dubbo" => ext::dubbo::run(point_arg).await,
         _ => err!("002", format!("unsupported point type {}", point_type).as_str())
     };
 
     let point_value = model::to_common_value(point_value);
+    let config_text = point_arg.config();
+    let config_text = point_arg.render(&format!("{}", config_text));
     match &point_value {
-        Ok(pv) =>  info!("PointValue: {} - OK  - {}", point_type, pv),
-        Err(e) => error!("PointValue: {} - ERR - {}", point_type, e),
+        Ok(pv) =>   {
+            info!("PointValue: {} - OK  - {} \n>>> {}", point_type, pv, config_text.unwrap());
+        },
+        Err(e) => {
+            error!("PointValue: {} - ERR - {} \n>>> {}", point_type, e,  point_arg.config())
+        }
     }
 
     return point_value;

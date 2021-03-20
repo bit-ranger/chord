@@ -10,13 +10,14 @@ use crate::flow::point;
 use crate::model::app::AppContext;
 use common::case::{CaseResult, CaseState};
 use common::point::{PointResult, PointState};
-
+use log::info;
 pub mod result;
 pub mod arg;
 
 pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_,'_>) -> CaseResult {
     let start = Utc::now();
     let mut render_context = case_arg.create_render_context();
+    info!("render_context: {} - {}", case_arg.id(), render_context.data());
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
     for point_id in case_arg.point_id_vec().iter() {
         let point_arg = case_arg.create_point(point_id, app_context, &render_context);

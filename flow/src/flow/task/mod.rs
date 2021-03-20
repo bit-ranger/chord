@@ -13,6 +13,7 @@ use common::case::CaseResult;
 use common::err;
 use common::value::{Json, Map};
 use common::error::Error;
+use log::info;
 
 pub mod arg;
 pub mod result;
@@ -21,6 +22,7 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct
     let start = Utc::now();
 
     let case_ctx = pre_case(app_context, task_context).await?;
+    info!("pre_case: {:?}", case_ctx);
 
     let mut data_case_arg_vec: Vec<CaseArgStruct> = task_context.data_case(&case_ctx);
 

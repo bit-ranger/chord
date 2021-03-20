@@ -129,7 +129,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
 
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
     let mut task_state = TaskState::Ok;
-    let size_limit = 1;
+    let size_limit = 99999;
     loop{
         let data = match port::load::data::csv::load(&mut data_reader, size_limit) {
             Err(e) => {

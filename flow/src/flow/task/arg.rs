@@ -61,7 +61,11 @@ impl TaskArgStruct {
     }
 
     fn pre_point_id_vec(self: &TaskArgStruct) -> Vec<String> {
-        let task_point_chain_arr = self.flow.data()["task"]["pre"]["chain"].as_array().unwrap();
+        let task_point_chain_arr = self.flow.data()["task"]["pre"]["chain"].as_array();
+        if task_point_chain_arr.is_none() {
+            return vec![];
+        }
+        let task_point_chain_arr = task_point_chain_arr.unwrap();
         let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()
             .map(|e| {
                 e.as_str().map(|s| String::from(s)).unwrap()

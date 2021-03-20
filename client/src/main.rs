@@ -1,4 +1,6 @@
 use std::{env, fs};
+use std::fs::File;
+use std::io::BufReader;
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -6,10 +8,9 @@ use futures::future::join_all;
 use log::info;
 
 use common::error::Error;
-use common::task::{TaskResult};
+use common::task::TaskResult;
 use flow::AppContextStruct;
 use point::PointRunnerDefault;
-use port::load::file;
 
 mod logger;
 
@@ -93,9 +94,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
     let flow_path = task_path.clone().join("flow.yml");
     let data_path = task_path.clone().join("data.csv");
 
-    let flow = match file::load_flow(
-        &flow_path
-    ) {
+    let flow = match port::load::flow::yml::load(&flow_path) {
         Err(e) => {
             return Err(Error::new("001", format!("load config failure {}", e).as_str()))
         }
@@ -104,10 +103,9 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
         }
     };
 
-
-    let data = match file::load_data(
-        &data_path
-    ) {
+    let f = File::open(data_path)?;
+    let reader = BufReader::new(f);
+    let data = match port::load::data::csv::load(reader) {
         Err(e) => {
             return Err(Error::new("000", format!("load data failure {}", e).as_str()));
         }

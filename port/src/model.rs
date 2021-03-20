@@ -1,5 +1,3 @@
-use common::value::Json;
-
 pub struct Error(common::error::Error);
 
 impl Error {
@@ -31,15 +29,11 @@ impl  From<common::value::JsonError> for Error{
     }
 }
 
-
-pub fn to_common_value(point_value: PointValue) -> common::point::PointValue{
-    return match point_value {
-        Ok(pv) => Ok(pv),
-        Err(e) => Err(e.common())
+impl  From<csv::Error> for Error {
+    fn from(err: csv::Error) -> Error {
+        Error::new("io", format!("{:?}", err.kind()).as_str())
     }
 }
-
-pub type PointValue =  std::result::Result<Json, Error>;
 
 
 

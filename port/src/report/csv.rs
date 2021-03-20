@@ -2,9 +2,16 @@ use common::case::{CaseResult, CaseState};
 use common::error::Error;
 use common::task::{TaskResult};
 use common::point::PointState;
+use crate::model::Error as CurrError;
 
 pub async fn report<W: std::io::Write>(task_result: &TaskResult, writer: W) -> Result<(), Error> {
+    match report0(task_result, writer).await {
+        Ok(()) => Ok(()),
+        Err(e) => Err(e.common())
+    }
+}
 
+async fn report0<W: std::io::Write>(task_result: &TaskResult, writer: W) -> Result<(), CurrError> {
     let mut rwr = csv::WriterBuilder::new().from_writer(writer);
     let empty = &vec![];
     let cr_vec = match task_result {
@@ -17,13 +24,10 @@ pub async fn report<W: std::io::Write>(task_result: &TaskResult, writer: W) -> R
     }
     let head_vec = to_head_vec(cr_vec);
 
-    println!("{:?}", &head_vec);
-
     let _ = rwr.write_record(&head_vec);
-    cr_vec.iter()
-        .map(|(_, cr)| to_value_vec(cr, head_vec.len()))
-        .for_each(|sv| rwr.write_record(&sv).unwrap());
-
+    for sv in cr_vec.iter().map(|(_, cr)| to_value_vec(cr, head_vec.len())){
+        rwr.write_record(&sv)?
+    }
     rwr.flush()?;
     return Ok(());
 }

@@ -125,7 +125,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
     let flow = Flow::new(flow.clone());
     let point_id_vec =  flow.point_id_vec();
     let head = port::report::csv::mk_head(&point_id_vec).await;
-    port::report::csv::write_record(&mut result_writer, &head);
+    port::report::csv::write_record(&mut result_writer, &head).await?;
 
 
     let task_id = task_path.file_name().unwrap().to_str().unwrap();

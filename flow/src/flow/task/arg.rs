@@ -42,14 +42,22 @@ impl TaskArgStruct {
             .collect();
     }
 
-    pub fn pre_case(self: &TaskArgStruct) -> CaseArgStruct<'_, '_, '_> {
-        CaseArgStruct::new(
-            0,
-            &self.flow,
-            TaskArgStruct::EMPTY_DATA,
-            self.pre_point_id_vec(),
-            TaskArgStruct::EMPTY_VEC,
-        )
+    pub fn pre_case(self: &TaskArgStruct) -> Option<CaseArgStruct<'_, '_, '_>> {
+        let pre_point_id_vec = self.pre_point_id_vec();
+        return if pre_point_id_vec.is_empty() {
+            None
+        } else {
+            Some(
+                CaseArgStruct::new(
+                    0,
+                    &self.flow,
+                    TaskArgStruct::EMPTY_DATA,
+                    pre_point_id_vec,
+                    TaskArgStruct::EMPTY_VEC,
+                )
+            )
+        }
+
     }
 
     fn pre_point_id_vec(self: &TaskArgStruct) -> Vec<String> {

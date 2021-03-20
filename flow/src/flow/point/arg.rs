@@ -10,13 +10,14 @@ use common::error::Error;
 use common::point::PointArg;
 use common::value::Json;
 use common::err;
+use common::flow::Flow;
 
 use crate::flow::case::arg::RenderContext;
 
 #[derive(Debug)]
 pub struct PointArgStruct<'c, 'd, 'h, 'reg, 'r>
 {
-    flow: &'c Json,
+    flow: &'c Flow,
     data: &'d BTreeMap<String,String>,
     id: String,
     handlebars: &'h Handlebars<'reg>,
@@ -27,7 +28,7 @@ pub struct PointArgStruct<'c, 'd, 'h, 'reg, 'r>
 impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
 
-    pub fn new(flow: &'c Json,
+    pub fn new(flow: &'c Flow,
                data: &'d BTreeMap<String,String>,
                id: &str,
                handlebars: &'h Handlebars<'reg>,
@@ -54,7 +55,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
     pub async fn meta_str(self : &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) ->Option<String>
     {
-        let config = self.flow["point"][&self.id].borrow();
+        let config = self.flow.data()["point"][&self.id].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -128,7 +129,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
     fn config_rendered(self: &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
     {
-        let config = self.flow["point"][&self.id]["config"].borrow();
+        let config = self.flow.data()["point"][&self.id]["config"].borrow();
 
         let raw_config = path.iter()
             .fold(config,
@@ -148,7 +149,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
     }
 
     fn config(&self) -> &Json {
-        let config = self.flow["point"][&self.id]["config"].borrow();
+        let config = self.flow.data()["point"][&self.id]["config"].borrow();
         return config;
     }
 

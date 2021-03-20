@@ -1,20 +1,20 @@
 use std::collections::BTreeMap;
 
-use common::value::Json;
+use common::flow::Flow;
 
 use crate::flow::case::arg::CaseArgStruct;
 
 #[derive(Debug)]
 pub struct TaskArgStruct {
     data: Vec<BTreeMap<String,String>>,
-    flow: Json,
+    flow: Flow,
     id: String
 }
 
 
 impl TaskArgStruct {
 
-    pub fn new(flow: Json, data: Vec<BTreeMap<String,String>>, id: &str) -> TaskArgStruct {
+    pub fn new(flow: Flow, data: Vec<BTreeMap<String,String>>, id: &str) -> TaskArgStruct {
         let context = TaskArgStruct {
             flow,
             data,
@@ -38,7 +38,7 @@ impl TaskArgStruct {
     }
 
     pub fn limit_concurrency(self: &TaskArgStruct) -> usize {
-        let num = match self.flow["task"]["limit"]["concurrency"].as_u64() {
+        let num = match self.flow.data()["task"]["limit"]["concurrency"].as_u64() {
             Some(n) => n as usize,
             None => 9999
         };

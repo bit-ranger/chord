@@ -1,18 +1,24 @@
 use crate::value::Json;
+use std::borrow::Borrow;
 
+#[derive(Debug, Clone)]
 pub struct Flow {
     flow: Json
 }
 
 impl Flow{
 
-    pub async fn new(flow: Json) -> Flow{
+    pub fn new(flow: Json) -> Flow{
         Flow{
             flow
         }
     }
 
-    pub async fn point_id_vec(self: &Flow) -> Vec<String> {
+    pub fn data(self: &Flow) -> &Json {
+        self.flow.borrow()
+    }
+
+    pub fn point_id_vec(self: &Flow) -> Vec<String> {
         let task_point_chain_arr = self.flow["task"]["chain"].as_array().unwrap();
         let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()
             .map(|e| {

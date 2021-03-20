@@ -2,18 +2,18 @@ use std::collections::BTreeMap;
 
 use common::point::PointRunner;
 use common::task::TaskResult;
-use common::value::Json;
 
 use crate::model::app::{AppContext, AppContextStruct};
 
 use self::task::arg::TaskArgStruct;
+use common::flow::Flow;
 
 mod task;
 mod case;
 mod point;
 
 pub async fn run(app_context: &dyn AppContext,
-                 flow: Json,
+                 flow: Flow,
                  data: Vec<BTreeMap<String, String>>,
                  id: &str
 ) -> TaskResult {

@@ -1,6 +1,7 @@
 use common::case::{CaseResult, CaseState};
 use common::error::Error;
 use common::task::{TaskResult};
+use common::point::PointState;
 
 pub async fn report<W: std::io::Write>(task_result: &TaskResult, writer: W) -> Result<(), Error> {
 
@@ -16,6 +17,8 @@ pub async fn report<W: std::io::Write>(task_result: &TaskResult, writer: W) -> R
     }
     let head_vec = to_head_vec(cr_vec);
 
+    println!("{:?}", &head_vec);
+
     let _ = rwr.write_record(&head_vec);
     cr_vec.iter()
         .map(|(_, cr)| to_value_vec(cr, head_vec.len()))
@@ -26,8 +29,39 @@ pub async fn report<W: std::io::Write>(task_result: &TaskResult, writer: W) -> R
 }
 
 
-
 fn to_value_vec(cr: &CaseResult, head_len: usize) -> Vec<String> {
+
+    let mut vec = vec![];
+    match cr {
+        Ok(ca) => {
+            match ca.state() {
+                CaseState::Ok => {
+                    vec.push(String::from("O"));
+                    vec.push(String::from(""));
+                    vec.push(ca.start().format("%T").to_string());
+                    vec.push(ca.end().format("%T").to_string());
+                },
+                CaseState::PointError(e) => {
+                    vec.push(String::from("E"));
+                    vec.push(String::from(format!("{}", e)));
+                    vec.push(ca.start().format("%T").to_string());
+                    vec.push(ca.end().format("%T").to_string());
+                },
+                CaseState::PointFailure => {
+                    vec.push(String::from("F"));
+                    vec.push(String::from(""));
+                    vec.push(ca.start().format("%T").to_string());
+                    vec.push(ca.end().format("%T").to_string());
+                }
+            }
+        }
+        Err(e) => {
+            vec.push(String::from("E"));
+            vec.push(String::from(format!("{}", e)));
+            vec.push(String::from(""));
+            vec.push(String::from(""));
+        }
+    };
 
     let empty = &vec![];
     let pr_vec = match cr {
@@ -35,12 +69,39 @@ fn to_value_vec(cr: &CaseResult, head_len: usize) -> Vec<String> {
         Err(_) =>  empty
     };
 
-    let mut vec: Vec<String> = pr_vec.iter()
-        .map(|(_, pr)| match pr {
-            Ok(_) => String::from("O"),
-            Err(_) => String::from("X")
-        })
-        .collect();
+    if !pr_vec.is_empty() {
+        let p_vec: Vec<String> = pr_vec.iter()
+            .flat_map(|(_, pr)| match pr {
+                Ok(pa) => {
+                    match pa.state() {
+                        PointState::Ok => {
+                            vec![String::from("O"),
+                                 pa.start().format("%T").to_string(),
+                                 pa.end().format("%T").to_string(),
+                            ]
+                        },
+                        PointState::Error(e) => {
+                            vec![String::from("E"),
+                                 String::from(""),
+                                 String::from(""),
+                                 format!("{}", e)]
+                        },
+                        PointState::Failure => {
+                            vec![String::from("F"),
+                                 pa.start().format("%T").to_string(),
+                                 pa.end().format("%T").to_string(),
+                                 format!("{}", pa.result())]
+                        },
+                    }
+                },
+                Err(e) => vec![String::from("E"),
+                               String::from(""),
+                               String::from(""),
+                               format!("{}", e)]
+            })
+            .collect();
+        vec.extend(p_vec);
+    }
 
     if vec.len() < head_len -3 {
         for _i in 0..head_len -3 - vec.len() {
@@ -48,48 +109,15 @@ fn to_value_vec(cr: &CaseResult, head_len: usize) -> Vec<String> {
         }
     }
 
-    match cr {
-        Ok(crs) => {
-            match crs.state() {
-                CaseState::Ok => {
-                    vec.push(String::from("O"));
-                    vec.push(String::from(""));
-                    vec.push(String::from(""));
-                },
-                CaseState::PointError(e) => {
-                    vec.push(String::from("X"));
-                    vec.push(String::from(""));
-                    vec.push(String::from(format!("{}", e)));
-                },
-                CaseState::PointFailure => {
-
-                    vec.push(String::from("X"));
-                    vec.push(String::from(""));
-                    let  (_, pr) = pr_vec.last().unwrap();
-                    match pr {
-                        Ok(pr) => {
-                            vec.push(String::from(format!("{}",pr.result())));
-                        },
-                        Err(e) => {
-                            vec.push(String::from(format!("{}", e)));
-                        }
-                    }
-
-                }
-            }
-
-
-        },
-        Err(e) => {
-            vec.push(String::from("X"));
-            vec.push(format!("{}", e));
-            vec.push(String::from(""));
-        }
-    };
     vec
 }
 
 fn to_head_vec(cr_vec: &Vec<(usize, CaseResult)>) -> Vec<String> {
+    let mut vec:Vec<String> = vec![];
+    vec.push(String::from("case_state"));
+    vec.push(String::from("case_info"));
+    vec.push(String::from("case_start"));
+    vec.push(String::from("case_end"));
 
     let (_, max_len_cr) = cr_vec.iter().max_by(
         |(_, x), (_, y)| {
@@ -111,14 +139,11 @@ fn to_head_vec(cr_vec: &Vec<(usize, CaseResult)>) -> Vec<String> {
         Err(_) => empty
     };
 
-    let mut vec: Vec<String> = pr_vec.iter()
+    let ph_vec: Vec<String> = pr_vec.iter()
         .map(|(pid, _)| pid)
         .flat_map(|pid| vec![format!("{}_state", pid), format!("{}_start", pid), format!("{}_end",pid)])
         .collect();
-    vec.push(String::from("case_state"));
-    vec.push(String::from("case_start"));
-    vec.push(String::from("case_end"));
-    vec.push(String::from("case_info"));
+    vec.extend(ph_vec);
     vec.push(String::from("last_point_info"));
     vec
 }

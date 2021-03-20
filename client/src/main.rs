@@ -129,7 +129,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
     };
 
     let result_path = report_dir_path.clone().join(format!("result_{}.csv", result_state));
-    let f = File::open(result_path)?;
+    let f = File::create(result_path)?;
     let writer = BufWriter::new(f);
     let _ = port::report::csv::report(&task_result, writer).await;
     info!("finish task {} >>> {}", task_path.to_str().unwrap(), task_result.is_ok());

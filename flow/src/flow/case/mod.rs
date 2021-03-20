@@ -10,7 +10,6 @@ use crate::flow::point;
 use crate::model::app::AppContext;
 use common::case::{CaseResult, CaseState};
 use common::point::{PointResult, PointState};
-use log::info;
 pub mod result;
 pub mod arg;
 

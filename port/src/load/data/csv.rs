@@ -7,9 +7,7 @@ pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Resu
     let mut hashmap_vec = Vec::new();
     let mut curr_size = 0;
     for result in reader.deserialize() {
-        if curr_size == size_limit{
-            break;
-        }
+
         let result = match result  {
             Err(e)  => return err!("csv", format!("{:?}", e).as_str()),
             Ok(r) => r
@@ -18,7 +16,11 @@ pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Resu
         let record: BTreeMap<String, String> = result;
 
         hashmap_vec.push(record);
+
         curr_size += 1;
+        if curr_size == size_limit{
+            break;
+        }
     }
     Ok(hashmap_vec)
 }

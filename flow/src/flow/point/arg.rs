@@ -1,5 +1,5 @@
 use std::borrow::Borrow;
-use std::collections::BTreeMap;
+
 
 use handlebars::{Handlebars};
 use log::info;
@@ -18,7 +18,7 @@ use crate::flow::case::arg::RenderContext;
 pub struct PointArgStruct<'c, 'd, 'h, 'reg, 'r>
 {
     flow: &'c Flow,
-    data: &'d BTreeMap<String,String>,
+    data: &'d Json,
     id: String,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
@@ -29,7 +29,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
 
     pub fn new(flow: &'c Flow,
-               data: &'d BTreeMap<String,String>,
+               data: &'d Json,
                id: &str,
                handlebars: &'h Handlebars<'reg>,
                render_context: &'r RenderContext

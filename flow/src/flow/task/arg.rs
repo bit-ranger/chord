@@ -1,12 +1,11 @@
-use std::collections::BTreeMap;
-
 use common::flow::Flow;
 
 use crate::flow::case::arg::CaseArgStruct;
+use common::value::{Json};
 
 #[derive(Debug)]
 pub struct TaskArgStruct {
-    data: Vec<BTreeMap<String,String>>,
+    data: Vec<Json>,
     flow: Flow,
     id: String
 }
@@ -14,7 +13,10 @@ pub struct TaskArgStruct {
 
 impl TaskArgStruct {
 
-    pub fn new(flow: Flow, data: Vec<BTreeMap<String,String>>, id: &str) -> TaskArgStruct {
+    pub const EMPTY_VEC: &'static Vec<(String, Json)> = &Vec::new();
+    pub const EMPTY_DATA: &'static Json = &Json::Null;
+
+    pub fn new(flow: Flow, data: Vec<Json>, id: &str) -> TaskArgStruct {
         let context = TaskArgStruct {
             flow,
             data,
@@ -24,17 +26,41 @@ impl TaskArgStruct {
     }
 
 
-    pub fn create_case(self: &TaskArgStruct) -> Vec<CaseArgStruct<'_, '_>> {
+    pub fn data_case<'p>(self: &TaskArgStruct, case_ctx: &'p Vec<(String, Json)>) -> Vec<CaseArgStruct<'_, '_,'p>> {
+
         return self.data.iter()
             .enumerate()
             .map(|(idx,_)| {
                 CaseArgStruct::new(
+                    idx,
                     &self.flow,
                     &self.data[idx],
-                    idx
+                    self.flow.point_id_vec(),
+                case_ctx
                 )
             })
             .collect();
+    }
+
+    pub fn pre_case(self: &TaskArgStruct) -> CaseArgStruct<'_, '_, '_> {
+        CaseArgStruct::new(
+            0,
+            &self.flow,
+            TaskArgStruct::EMPTY_DATA,
+            self.pre_point_id_vec(),
+            TaskArgStruct::EMPTY_VEC,
+        )
+    }
+
+    fn pre_point_id_vec(self: &TaskArgStruct) -> Vec<String> {
+        let task_point_chain_arr = self.flow.data()["task"]["pre"]["chain"].as_array().unwrap();
+        let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()
+            .map(|e| {
+                e.as_str().map(|s| String::from(s)).unwrap()
+            })
+            .collect();
+
+        return task_point_chain_vec;
     }
 
     pub fn limit_concurrency(self: &TaskArgStruct) -> usize {

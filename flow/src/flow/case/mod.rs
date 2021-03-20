@@ -14,7 +14,7 @@ use common::point::{PointResult, PointState};
 pub mod result;
 pub mod arg;
 
-pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_>) -> CaseResult {
+pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_,'_>) -> CaseResult {
     let start = Utc::now();
     let mut render_context = case_arg.create_render_context();
     let mut point_result_vec = Vec::<(String, PointResult)>::new();

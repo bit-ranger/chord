@@ -1,9 +1,10 @@
-use std::collections::BTreeMap;
+
 use csv::{ReaderBuilder, Reader};
 use common::error::Error;
 use common::err;
+use common::value::Json;
 
-pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Result<Vec<BTreeMap<String, String>>, Error> {
+pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Result<Vec<Json>, Error> {
     let mut hashmap_vec = Vec::new();
     let mut curr_size = 0;
     for result in reader.deserialize() {
@@ -13,7 +14,7 @@ pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Resu
             Ok(r) => r
         };
 
-        let record: BTreeMap<String, String> = result;
+        let record: Json = result;
 
         hashmap_vec.push(record);
 

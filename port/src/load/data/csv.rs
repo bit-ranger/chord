@@ -2,7 +2,7 @@
 use csv::{ReaderBuilder, Reader};
 use common::error::Error;
 use common::err;
-use common::value::Json;
+use common::value::{Json, Map};
 
 pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Result<Vec<Json>, Error> {
     let mut hashmap_vec = Vec::new();
@@ -14,9 +14,9 @@ pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Resu
             Ok(r) => r
         };
 
-        let record: Json = result;
+        let record: Map = result;
 
-        hashmap_vec.push(record);
+        hashmap_vec.push(Json::Object(record));
 
         curr_size += 1;
         if curr_size == size_limit{

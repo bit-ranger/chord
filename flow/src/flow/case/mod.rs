@@ -9,7 +9,7 @@ use crate::flow::case::arg::{CaseArgStruct, RenderContext};
 use crate::flow::point;
 use crate::model::app::AppContext;
 use common::case::{CaseResult, CaseState};
-use common::point::PointResult;
+use common::point::{PointResult, PointState};
 
 pub mod result;
 pub mod arg;
@@ -19,23 +19,33 @@ pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'
     let mut render_context = case_arg.create_render_context();
     let mut point_result_vec = Vec::<(String, PointResult)>::new();
     for point_id in case_arg.point_id_vec().iter() {
-        let point_context = case_arg.create_point(point_id, app_context, &render_context);
-        if point_context.is_none(){
+        let point_arg = case_arg.create_point(point_id, app_context, &render_context);
+        if point_arg.is_none(){
             return Err(Error::new("000", "invalid point"));
         }
-        let point_context = point_context.unwrap();
-        let result = point::run(app_context, &point_context).await;
-        point_result_vec.push((point_id.clone(), result));
-        let (point_id, point_result) = point_result_vec.last().unwrap();
+        let point_context = point_arg.unwrap();
+        let point_result = point::run(app_context, &point_context).await;
 
-        match point_result {
+        // let (point_id, point_result) = point_result_vec.last().unwrap();
+        match &point_result {
             Ok(r) => {
-                let assert_true = point::assert(&point_context, r.result()).await;
-                if assert_true {
-                    register_dynamic(&mut render_context, point_id, r.result()).await;
-                } else {
-                    let result_struct = CaseAssessStruct::new(point_result_vec, case_arg.id(), start, Utc::now(), CaseState::PointFailure);
-                    return Ok(Box::new(result_struct));
+                match r.state(){
+                    PointState::Ok => {
+                        register_dynamic(&mut render_context, point_id, r.result()).await;
+                        point_result_vec.push((point_id.clone(), point_result));
+                    },
+                    PointState::Error(e) => {
+                        let state = CaseState::PointError(e.clone());
+                        point_result_vec.push((point_id.clone(), point_result));
+                        let result_struct = CaseAssessStruct::new(point_result_vec, case_arg.id(), start, Utc::now(), state);
+                        return Ok(Box::new(result_struct));
+                    },
+                    PointState::Failure=> {
+                        point_result_vec.push((point_id.clone(), point_result));
+                        let state = CaseState::PointFailure;
+                        let result_struct = CaseAssessStruct::new(point_result_vec, case_arg.id(), start, Utc::now(), state);
+                        return Ok(Box::new(result_struct));
+                    }
                 }
             },
             Err(e) =>  {

@@ -113,11 +113,13 @@ fn to_head_vec(cr_vec: &Vec<(usize, CaseResult)>) -> Vec<String> {
 
     let mut vec: Vec<String> = pr_vec.iter()
         .map(|(pid, _)| pid)
-        .map(|pid| String::from(pid))
+        .flat_map(|pid| vec![format!("{}_state", pid), format!("{}_start", pid), format!("{}_end",pid)])
         .collect();
-    vec.push(String::from("caseResult"));
-    vec.push(String::from("caseInfo"));
-    vec.push(String::from("lastPointInfo"));
+    vec.push(String::from("case_state"));
+    vec.push(String::from("case_start"));
+    vec.push(String::from("case_end"));
+    vec.push(String::from("case_info"));
+    vec.push(String::from("last_point_info"));
     vec
 }
 

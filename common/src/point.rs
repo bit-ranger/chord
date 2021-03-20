@@ -24,6 +24,13 @@ pub trait PointRunner{
 
 pub type PointResult = std::result::Result<Box<dyn PointAssess>, Error>;
 
+#[derive(Debug)]
+pub enum PointState {
+    Ok,
+    Failure,
+    Error(Error)
+}
+
 pub trait PointAssess {
 
     fn id(&self) -> &str;
@@ -31,6 +38,8 @@ pub trait PointAssess {
     fn start(&self) -> DateTime<Utc>;
 
     fn end(&self) -> DateTime<Utc>;
+
+    fn state(&self) -> &PointState;
 
     fn result(&self) -> &Json;
 }

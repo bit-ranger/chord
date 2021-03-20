@@ -7,7 +7,7 @@ use result::PointAssessStruct;
 
 use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::AppContext;
-use common::point::PointResult;
+use common::point::{PointResult, PointState};
 
 pub mod arg;
 pub mod result;
@@ -27,16 +27,23 @@ pub async fn run(app_context: &dyn AppContext, point_arg: &PointArgStruct<'_, '_
 
     return match result{
         PointValue::Ok(json) => {
-            let result_struct = PointAssessStruct::new(json, point_arg.id(), start, end);
-            Ok(Box::new(result_struct))
+            let assert_true = assert(point_arg, &json).await;
+            return if assert_true {
+                let result_struct = PointAssessStruct::new(json, point_arg.id(), start, end, PointState::Ok);
+                Ok(Box::new(result_struct))
+            } else {
+                let result_struct = PointAssessStruct::new(json, point_arg.id(), start, end, PointState::Failure);
+                Ok(Box::new(result_struct))
+            }
         },
         PointValue::Err(e) => {
-            Err(Error::cause("010", "run failure", e))
+            let result_struct = PointAssessStruct::new(Json::Null, point_arg.id(), start, end, PointState::Error(e));
+            Ok(Box::new(result_struct))
         }
     };
 }
 
-pub async fn assert(context: &PointArgStruct<'_, '_, '_, '_, '_>, result: &Json) -> bool{
+async fn assert(context: &PointArgStruct<'_, '_, '_, '_, '_>, result: &Json) -> bool{
     let assert_condition = context.meta_str(vec!["assert"]).await;
     return match assert_condition{
         Some(con) =>  {

@@ -1,4 +1,5 @@
 use common::value::Json;
+use std::num::ParseIntError;
 
 pub struct Error(common::error::Error);
 
@@ -31,6 +32,12 @@ impl  From<common::value::JsonError> for Error{
     }
 }
 
+
+impl From<ParseIntError> for Error{
+    fn from(e: ParseIntError) -> Error {
+        Error::new("ParseInt", e.to_string().as_str())
+    }
+}
 
 pub fn to_common_value(point_value: PointValue) -> common::point::PointValue{
     return match point_value {

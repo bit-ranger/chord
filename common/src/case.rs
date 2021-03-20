@@ -19,7 +19,7 @@ pub trait CaseAssess {
     fn result(&self) -> &Vec<(String, PointResult)>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CaseState {
     Ok,
     PointError(Error),

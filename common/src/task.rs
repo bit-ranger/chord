@@ -6,7 +6,8 @@ use crate::case::CaseResult;
 
 pub type TaskResult = Result<Box<dyn TaskAssess>, Error>;
 
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 pub enum TaskState {
     Ok,
     CaseError(Error),

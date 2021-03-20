@@ -3,16 +3,49 @@ use common::error::Error;
 use common::task::{TaskResult};
 use common::point::PointState;
 use crate::model::Error as CurrError;
+use csv::Writer;
 
-pub async fn report<W: std::io::Write>(task_result: &TaskResult, writer: W) -> Result<(), Error> {
-    match report0(task_result, writer).await {
+pub async fn report<W: std::io::Write>(writer: &mut Writer<W>,
+                                       task_result: &TaskResult,
+    head: &Vec<String>
+) -> Result<(), Error> {
+    match report0(writer, task_result, head).await {
         Ok(()) => Ok(()),
         Err(e) => Err(e.common())
     }
 }
 
-async fn report0<W: std::io::Write>(task_result: &TaskResult, writer: W) -> Result<(), CurrError> {
-    let mut rwr = csv::WriterBuilder::new().from_writer(writer);
+pub async fn mk_writer<W: std::io::Write>(writer: W) -> Writer<W>{
+    csv::WriterBuilder::new().from_writer(writer)
+}
+
+pub async fn mk_head(point_id_vec: &Vec<String>) -> Vec<String> {
+    let mut vec:Vec<String> = vec![];
+    vec.push(String::from("case_state"));
+    vec.push(String::from("case_info"));
+    vec.push(String::from("case_start"));
+    vec.push(String::from("case_end"));
+
+    let ph_vec: Vec<String> = point_id_vec.iter()
+        .flat_map(|pid| vec![format!("{}_state", pid), format!("{}_start", pid), format!("{}_end",pid)])
+        .collect();
+    vec.extend(ph_vec);
+    vec.push(String::from("last_point_info"));
+    vec
+}
+
+pub async fn write_record<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<String>) -> Result<(), Error> {
+    match write_record0(writer, record).await{
+        Ok(()) => Ok(()),
+        Err(e) => Err(e.common())
+    }
+}
+
+async fn write_record0<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<String>) -> Result<(), CurrError> {
+    Ok(writer.write_record(record)?)
+}
+
+async fn report0<W: std::io::Write>(writer: &mut Writer<W>, task_result: &TaskResult, head: &Vec<String>) -> Result<(), CurrError> {
     let empty = &vec![];
     let cr_vec = match task_result {
         Ok(tr) => tr.result(),
@@ -22,13 +55,11 @@ async fn report0<W: std::io::Write>(task_result: &TaskResult, writer: W) -> Resu
     if cr_vec.len() == 0 {
         return Ok(());
     }
-    let head_vec = to_head_vec(cr_vec);
 
-    let _ = rwr.write_record(&head_vec);
-    for sv in cr_vec.iter().map(|(_, cr)| to_value_vec(cr, head_vec.len())){
-        rwr.write_record(&sv)?
+    for sv in cr_vec.iter().map(|(_, cr)| to_value_vec(cr, head.len())){
+        writer.write_record(&sv)?
     }
-    rwr.flush()?;
+    writer.flush()?;
     return Ok(());
 }
 
@@ -116,39 +147,5 @@ fn to_value_vec(cr: &CaseResult, head_len: usize) -> Vec<String> {
     vec
 }
 
-fn to_head_vec(cr_vec: &Vec<(usize, CaseResult)>) -> Vec<String> {
-    let mut vec:Vec<String> = vec![];
-    vec.push(String::from("case_state"));
-    vec.push(String::from("case_info"));
-    vec.push(String::from("case_start"));
-    vec.push(String::from("case_end"));
 
-    let (_, max_len_cr) = cr_vec.iter().max_by(
-        |(_, x), (_, y)| {
-            let x = match x {
-                Ok(pv) => pv.result().len(),
-                Err(_) => 0
-            };
-            let y = match y {
-                Ok(pv) => pv.result().len(),
-                Err(_) => 0
-            };
-            x.cmp(&y)
-        })
-    .unwrap();
-
-    let empty = &vec![];
-    let pr_vec =  match max_len_cr {
-        Ok(cr) => cr.result(),
-        Err(_) => empty
-    };
-
-    let ph_vec: Vec<String> = pr_vec.iter()
-        .map(|(pid, _)| pid)
-        .flat_map(|pid| vec![format!("{}_state", pid), format!("{}_start", pid), format!("{}_end",pid)])
-        .collect();
-    vec.extend(ph_vec);
-    vec.push(String::from("last_point_info"));
-    vec
-}
 

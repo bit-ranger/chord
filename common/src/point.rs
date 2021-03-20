@@ -24,7 +24,7 @@ pub trait PointRunner{
 
 pub type PointResult = std::result::Result<Box<dyn PointAssess>, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PointState {
     Ok,
     Failure,

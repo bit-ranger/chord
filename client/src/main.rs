@@ -50,15 +50,17 @@ async fn main() -> Result<(),Error> {
         panic!("job path is not a dir {}", job_path.to_str().unwrap());
     }
 
-    let app_context = flow::mk_app_context(Box::new(PointRunnerDefault::new())).await;
+    let app_context = flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
     let task_state_vec = run_job(job_path, execution_id.as_str(), app_context.as_ref()).await;
 
-    let et = task_state_vec.iter().filter(|t| t.is_err()).last();
+    let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
+
     return match et {
         Some(et) => {
             match et {
-                Ok(_) => Ok(()),
-                Err(e) => err!("task", e.as_str())
+                TaskState::Ok(_) => Ok(()),
+                TaskState::Err(e) => err!("task", e.to_string().as_str()),
+                TaskState::Fail(_) => err!("task", "fail")
             }
 
         },
@@ -69,7 +71,7 @@ async fn main() -> Result<(),Error> {
 
 pub async fn run_job<P: AsRef<Path>>(job_path: P,
                                      execution_id: &str,
-                                     app_context: &dyn AppContext) -> Vec<Result<bool,String>>{
+                                     app_context: &dyn AppContext) -> Vec<TaskState>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("running job {}", job_path_str);
@@ -90,31 +92,29 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P,
         );
     }
 
-    let task_result_vec = join_all(futures).await;
-    let task_status = task_result_vec.iter()
-        .map(|r|
-                r.as_ref().map_or_else(|e| Err(String::from(e.message())),
-                                       |_| Ok(true)))
-        .collect::<Vec<Result<bool, String>>>();
-    info!("finish job {}, {:?}", job_path_str, task_status);
-    return task_status;
+    let task_state_vec = join_all(futures).await;
+    // info!("finish job {}, {}", job_path_str, task_state_vec);
+    return task_state_vec;
 }
 
 async fn run_task<P: AsRef<Path>>(task_path: P,
                                   execution_id: &str,
-                                  app_context: &dyn AppContext) -> Result<TaskState,Error> {
+                                  app_context: &dyn AppContext) -> TaskState {
+    let rt = run_task0(task_path, execution_id, app_context).await;
+    match rt {
+        Ok(ts) => ts,
+        Err(e) => TaskState::Err(e)
+    }
+}
+
+async fn run_task0<P: AsRef<Path>>(task_path: P,
+                                   execution_id: &str,
+                                   app_context: &dyn AppContext) -> Result<TaskState, Error> {
     info!("running task {}", task_path.as_ref().to_str().unwrap());
     let task_path = Path::new(task_path.as_ref());
     let flow_path = task_path.clone().join("flow.yml");
 
-    let flow = match port::load::flow::yml::load(&flow_path) {
-        Err(e) => {
-            return err!("001", format!("load flow failure {}", e).as_str())
-        }
-        Ok(value) => {
-            value
-        }
-    };
+    let flow =port::load::flow::yml::load(&flow_path)?;
     let flow = Flow::new(flow.clone());
 
     let report_dir_path = task_path.join(format!("{}", execution_id));
@@ -130,34 +130,26 @@ async fn run_task<P: AsRef<Path>>(task_path: P,
     port::report::csv::prepare(&mut result_writer, &flow).await?;
 
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
-    let mut task_state = TaskState::Ok;
+    let mut total_task_state = TaskState::Ok(vec![]);
     let size_limit = 99999;
     loop{
-        let data = match port::load::data::csv::load(&mut data_reader, size_limit) {
-            Err(e) => {
-                return err!("000", format!("load data failure {}", e).as_str());
-            }
-            Ok(vec) => {
-                vec
-            }
-        };
+        let data = port::load::data::csv::load(&mut data_reader, size_limit)?;
         let data_len = data.len();
 
-        let task_result = flow::run(app_context, flow.clone(), data, task_id).await;
+        let task_assess = flow::run(app_context, flow.clone(), data, task_id).await;
 
-        let _ = port::report::csv::report(&mut result_writer, &task_result, &flow).await?;
+        let _ = port::report::csv::report(&mut result_writer, task_assess.as_ref(), &flow).await?;
 
-        match task_result {
-            Ok(tr) => {
-                if task_state.is_ok(){
-                    task_state = tr.state().clone();
-                }
-            },
-            Err(e) => {
+        match task_assess.state() {
+            TaskState::Ok(_) => {},
+            TaskState::Fail(_) => {
+                total_task_state = TaskState::Fail(vec![]);
+            }
+            TaskState::Err(e) => {
                 let result_path_old = report_dir_path.clone().join("result.csv");
                 let result_path_new = report_dir_path.clone().join("result_E.csv");
                 let _ = std::fs::rename(result_path_old, result_path_new);
-                return Err(e);
+                return Ok(TaskState::Err(e.clone()));
             }
         }
 
@@ -166,15 +158,16 @@ async fn run_task<P: AsRef<Path>>(task_path: P,
         }
     }
 
-    let result_state = match task_state {
-        TaskState::Ok => "O",
-        _ => "F"
+    let task_state_view = match total_task_state {
+        TaskState::Ok(_) => "O",
+        TaskState::Err(_) => "E",
+        TaskState::Fail(_) => "F",
     };
 
     let result_path_old = report_dir_path.clone().join("result.csv");
-    let result_path_new = report_dir_path.clone().join(format!("result_{}.csv", result_state));
+    let result_path_new = report_dir_path.clone().join(format!("result_{}.csv", task_state_view));
     let _ = std::fs::rename(result_path_old, result_path_new);
 
     info!("finish task {}", task_path.to_str().unwrap());
-    return Ok(task_state);
+    return Ok(total_task_state);
 }

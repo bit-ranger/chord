@@ -1,7 +1,5 @@
 use chrono::{DateTime, Utc};
 
-use common::value::Json;
-
 use common::point::{PointAssess, PointState};
 
 pub struct PointAssessStruct {

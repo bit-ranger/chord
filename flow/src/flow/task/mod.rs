@@ -5,7 +5,7 @@ use log::info;
 
 use common::err;
 use common::error::Error;
-use common::task::{TaskAssess, TaskState};
+use common::task::{TaskState};
 use common::value::{Json, Map};
 use result::TaskAssessStruct;
 
@@ -14,6 +14,7 @@ use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::task::arg::TaskArgStruct;
 use crate::model::app::AppContext;
 use common::case::{CaseAssess, CaseState};
+use common::point::PointState;
 
 pub mod arg;
 pub mod result;
@@ -21,16 +22,20 @@ pub mod result;
 pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct) -> TaskAssessStruct {
     let start = Utc::now();
 
-    let case_ctx = pre_case(app_context, task_context).await?;
+    let pre_ctx = pre_ctx(app_context, task_context).await;
+    let pre_ctx=  match pre_ctx{
+        Ok(pc) => pc,
+        Err(e) => return TaskAssessStruct::new(task_context.id(), start, Utc::now(), TaskState::Err(e))
+    };
 
-    let mut data_case_arg_vec: Vec<CaseArgStruct> = task_context.data_case(&case_ctx);
+    let mut data_case_arg_vec: Vec<CaseArgStruct> = task_context.data_case(&pre_ctx);
 
     let mut futures = data_case_arg_vec.iter_mut().
-        map(|case_context| case::run(app_context, case_arg))
+        map(|case_arg| case_run(app_context, case_arg))
         .collect_vec();
 
     futures.reserve(0);
-    let mut case_assess_vec: Vec<dyn CaseAssess> = Vec::new();
+    let mut case_assess_vec  = Vec::<Box<dyn CaseAssess>>::new();
     let limit_concurrency = task_context.limit_concurrency();
     loop {
         if futures.len() >  limit_concurrency{
@@ -42,68 +47,50 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct
         }
     }
 
-    let err_case = case_assess_vec.iter()
-        .filter(|(_, case)| case.is_err())
-        .last();
+    let any_fail = case_assess_vec.iter()
+        .any(|ca| !ca.state().is_ok());
 
-    return match err_case {
-        Some((_, ec)) => {
-            let state = TaskState::CaseError(ec.as_ref().err().unwrap().clone());
-            let result_struct = TaskAssessStruct::new(case_assess_vec, task_context.id(), start, Utc::now(), state);
-            Ok(Box::new(result_struct))
-        }
-        None => {
-            let failure_case = case_assess_vec.iter()
-                .filter(|(_, case)| case.is_ok())
-                .filter(|(_, case)| !case.as_ref().unwrap().state().is_ok())
-                .last();
-
-            match failure_case {
-                Some(_) => {
-                    let result_struct = TaskAssessStruct::new(case_assess_vec, task_context.id(), start, Utc::now(), TaskState::CaseFailure);
-                    Ok(Box::new(result_struct))
-                },
-                None => {
-                    let result_struct = TaskAssessStruct::new(case_assess_vec, task_context.id(), start, Utc::now(), TaskState::Ok);
-                    Ok(Box::new(result_struct))
-                }
-            }
-       }
-    }
+    return if any_fail {
+        TaskAssessStruct::new(task_context.id(), start, Utc::now(),
+                              TaskState::Fail(case_assess_vec))
+    } else {
+        TaskAssessStruct::new(task_context.id(), start, Utc::now(),
+                              TaskState::Ok(case_assess_vec))
+    };
 }
 
 
-async fn pre_case(app_context: &dyn AppContext, task_context: &TaskArgStruct) -> Result<Vec<(String, Json)>, Error>{
+async fn pre_ctx(app_context: &dyn AppContext, task_context: &TaskArgStruct) -> Result<Vec<(String, Json)>, Error>{
     let mut case_ctx = vec![];
-    let mut pre_case = task_context.pre_case();
-    match &mut pre_case {
-        Some(pre_case) => {
-            let pre_assess = case::run(app_context, pre_case).await;
-
-            match pre_assess.state(){
-                CaseState::Ok(pa_vec) => {
-                    let mut pre_ctx = Map::new();
-                    for pa in pa_vec {
-                        match pa {
-                            PointState::Ok(pv) => {
-                                pre_ctx.insert(String::from(pid), pv.result().clone());
-                            },
-                            _ => {
-                                return err!("012", "pre point run failure");
-                            }
-                        }
-                    }
-                    let pre = Json::Object(pre_ctx);
-                    info!("pre_case: {:?}", pre);
-                    case_ctx.push((String::from("pre"), pre));
-                }
-                _ => return err!("011", "pre fail"),
-            }
-
-
-
-        },
-        None => {}
+    let pre_case = task_context.pre_case();
+    if pre_case.is_none() {
+        return Ok(case_ctx);
     }
-    return Ok(case_ctx);
+    let mut pre_case = pre_case.unwrap();
+
+    let pre_assess = case_run(app_context, &mut pre_case).await;
+    match pre_assess.state() {
+        CaseState::Ok(pa_vec) => {
+            let mut pre_ctx = Map::new();
+            for pa in pa_vec {
+                match pa.state() {
+                    PointState::Ok(pv) => {
+                        pre_ctx.insert(String::from(pa.id()), pv.clone());
+                    },
+                    _ => return err!("012", "pre point run failure")
+                }
+            }
+            let pre = Json::Object(pre_ctx);
+            info!("pre_case: {:?}", pre);
+            case_ctx.push((String::from("pre"), pre));
+            Ok(case_ctx)
+        }
+        _ => err!("011", "pre fail"),
+    }
+
+
+}
+
+async fn case_run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_,'_>) -> Box<dyn CaseAssess>{
+    Box::new(case::run(app_context, case_arg).await)
 }

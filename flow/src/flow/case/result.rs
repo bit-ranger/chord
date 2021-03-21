@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 
 use common::case::{CaseState, CaseAssess};
-use common::point::PointResult;
 
 pub struct CaseAssessStruct {
     id: usize,

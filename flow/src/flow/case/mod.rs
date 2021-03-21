@@ -8,7 +8,7 @@ use result::CaseAssessStruct;
 use crate::flow::case::arg::{CaseArgStruct, RenderContext};
 use crate::flow::point;
 use crate::model::app::AppContext;
-use common::case::{CaseAssess, CaseState};
+use common::case::{CaseState};
 use common::point::{PointAssess, PointState};
 pub mod result;
 pub mod arg;
@@ -16,7 +16,7 @@ pub mod arg;
 pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_,'_>) -> CaseAssessStruct {
     let start = Utc::now();
     let mut render_context = case_arg.create_render_context();
-    let mut point_assess_vec = Vec::<dyn PointAssess>::new();
+    let mut point_assess_vec = Vec::<Box<dyn PointAssess>>::new();
     for point_id in case_arg.point_id_vec().iter() {
         let point_arg = case_arg.create_point(point_id, app_context, &render_context);
         if point_arg.is_none(){
@@ -26,7 +26,7 @@ pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'
         let point_arg = point_arg.unwrap();
         let point_assess = point::run(app_context, &point_arg).await;
 
-        point_assess_vec.push(point_assess);
+        point_assess_vec.push(Box::new(point_assess));
         let point_assess = point_assess_vec.last().unwrap();
 
         match point_assess.state(){
@@ -34,7 +34,7 @@ pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'
                 register_dynamic(&mut render_context, point_id, json).await;
             },
             _ => {
-                return CaseAssessStruct::new(case_arg.id(), start, Utc::now(), CaseState::PointFail(point_assess_vec));
+                return CaseAssessStruct::new(case_arg.id(), start, Utc::now(), CaseState::Fail(point_assess_vec));
             }
         }
     }

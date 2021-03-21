@@ -3,12 +3,10 @@ use chrono::{DateTime, Utc};
 use crate::error::Error;
 use crate::case::CaseAssess;
 
-
-#[derive(Debug, Clone)]
 pub enum TaskState {
-    Ok(Vec<dyn CaseAssess>),
+    Ok(Vec<Box<dyn CaseAssess>>),
     Err(Error),
-    CaseFail(Vec<dyn CaseAssess>)
+    Fail(Vec<Box<dyn CaseAssess>>)
 }
 
 impl TaskState{

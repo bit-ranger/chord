@@ -2,7 +2,8 @@ use chrono::{DateTime, Utc};
 
 use crate::error::Error;
 
-use crate::point::{PointResult, PointAssess};
+use crate::point::{PointAssess};
+
 
 pub trait CaseAssess {
 
@@ -15,11 +16,10 @@ pub trait CaseAssess {
     fn state(&self) -> &CaseState;
 }
 
-#[derive(Debug, Clone)]
 pub enum CaseState {
-    Ok(Vec<dyn PointAssess>),
+    Ok(Vec<Box<dyn PointAssess>>),
     Err(Error),
-    PointFail(Vec<dyn PointAssess>)
+    Fail(Vec<Box<dyn PointAssess>>)
 }
 
 impl CaseState {

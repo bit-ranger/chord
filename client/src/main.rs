@@ -51,15 +51,25 @@ async fn main() -> Result<(),Error> {
     }
 
     let app_context = flow::mk_app_context(Box::new(PointRunnerDefault::new())).await;
-    run_job(job_path, execution_id.as_str(), app_context.as_ref()).await?;
+    let task_state_vec = run_job(job_path, execution_id.as_str(), app_context.as_ref()).await;
 
-    return Ok(());
+    let et = task_state_vec.iter().filter(|t| t.is_err()).last();
+    return match et {
+        Some(et) => {
+            match et {
+                Ok(_) => Ok(()),
+                Err(e) => err!("task", e.as_str())
+            }
+
+        },
+        None => Ok(())
+    };
 }
 
 
 pub async fn run_job<P: AsRef<Path>>(job_path: P,
                                      execution_id: &str,
-                                     app_context: &dyn AppContext) -> Result<(), Error>{
+                                     app_context: &dyn AppContext) -> Vec<Result<bool,String>>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("running job {}", job_path_str);
@@ -83,11 +93,11 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P,
     let task_result_vec = join_all(futures).await;
     let task_status = task_result_vec.iter()
         .map(|r|
-                r.as_ref().map_or_else(|e| Err(e.code()),
+                r.as_ref().map_or_else(|e| Err(String::from(e.code())),
                                        |_| Ok(true)))
-        .collect::<Vec<Result<bool, &str>>>();
+        .collect::<Vec<Result<bool, String>>>();
     info!("finish job {}, {:?}", job_path_str, task_status);
-    return Ok(());
+    return task_status;
 }
 
 async fn run_task<P: AsRef<Path>>(task_path: P,
@@ -99,7 +109,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P,
 
     let flow = match port::load::flow::yml::load(&flow_path) {
         Err(e) => {
-            return err!("001", format!("load config failure {}", e).as_str())
+            return err!("001", format!("load flow failure {}", e).as_str())
         }
         Ok(value) => {
             value

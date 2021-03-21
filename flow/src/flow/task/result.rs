@@ -1,27 +1,22 @@
 use chrono::{DateTime, Utc};
 
 use common::task::{TaskState, TaskAssess};
-use common::case::CaseResult;
 
-
-pub struct TaskResultStruct {
-    result: Vec<(usize, CaseResult)>,
+pub struct TaskAssessStruct {
     id: String,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: TaskState
 }
 
-impl TaskResultStruct{
+impl TaskAssessStruct {
 
-    pub fn new(result:Vec<(usize, CaseResult)>,
-               id: &str,
+    pub fn new(id: &str,
                start: DateTime<Utc>,
                end: DateTime<Utc>,
                state: TaskState
-    ) -> TaskResultStruct {
-        TaskResultStruct {
-            result,
+    ) -> TaskAssessStruct {
+        TaskAssessStruct {
             id: String::from(id),
             start,
             end,
@@ -32,7 +27,7 @@ impl TaskResultStruct{
 
 }
 
-impl TaskAssess for TaskResultStruct{
+impl TaskAssess for TaskAssessStruct {
     fn id(&self) -> &str {
         &self.id
     }
@@ -47,10 +42,6 @@ impl TaskAssess for TaskResultStruct{
 
     fn state(&self) -> &TaskState {
         &self.state
-    }
-
-    fn result(&self) -> &Vec<(usize, CaseResult)> {
-        &self.result
     }
 }
 

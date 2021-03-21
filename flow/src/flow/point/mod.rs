@@ -7,38 +7,34 @@ use result::PointAssessStruct;
 
 use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::AppContext;
-use common::point::{PointResult, PointState};
+use common::point::{PointState};
 
 pub mod arg;
 pub mod result;
 
 
-pub async fn run(app_context: &dyn AppContext, point_arg: &PointArgStruct<'_, '_, '_, '_, '_>) -> PointResult
+pub async fn run(app_context: &dyn AppContext, point_arg: &PointArgStruct<'_, '_, '_, '_, '_>) -> PointAssessStruct
 {
     let start = Utc::now();
     let point_type = point_arg.meta_str(vec!["type"]).await;
     if point_type.is_none(){
-        return Err(Error::new("001", "missing type"));
+        return PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Err(Error::new("001", "missing type")));
     }
     let point_type = point_type.unwrap();
     let point_runner = app_context.get_point_runner();
     let result = point_runner.run(point_type.as_str(), point_arg).await;
-    let end = Utc::now();
 
     return match result{
         PointValue::Ok(json) => {
             let assert_true = assert(point_arg, &json).await;
             return if assert_true {
-                let result_struct = PointAssessStruct::new(json, point_arg.id(), start, end, PointState::Ok);
-                Ok(Box::new(result_struct))
+                PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Ok(json))
             } else {
-                let result_struct = PointAssessStruct::new(json, point_arg.id(), start, end, PointState::Failure);
-                Ok(Box::new(result_struct))
+                PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Fail(json))
             }
         },
         PointValue::Err(e) => {
-            let result_struct = PointAssessStruct::new(Json::Null, point_arg.id(), start, end, PointState::Error(e));
-            Ok(Box::new(result_struct))
+            PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Err(e))
         }
     };
 }

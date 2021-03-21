@@ -4,7 +4,6 @@ use common::case::{CaseState, CaseAssess};
 use common::point::PointResult;
 
 pub struct CaseAssessStruct {
-    result: Vec<(String,PointResult)>,
     id: usize,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
@@ -13,14 +12,13 @@ pub struct CaseAssessStruct {
 
 impl CaseAssessStruct {
 
-    pub fn new(result:Vec<(String, PointResult)>,
-               id: usize,
+    pub fn new(id: usize,
                start: DateTime<Utc>,
                end: DateTime<Utc>,
                state: CaseState
     ) -> CaseAssessStruct {
         CaseAssessStruct {
-            result,id,start,end,state
+            id,start,end,state
         }
     }
 
@@ -41,9 +39,6 @@ impl CaseAssess for CaseAssessStruct {
     }
     fn state(&self) -> &CaseState {
         &self.state
-    }
-    fn result(&self) -> &Vec<(String, PointResult)> {
-        &self.result
     }
 }
 

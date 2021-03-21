@@ -22,13 +22,11 @@ pub trait PointRunner{
     fn run<'a>(&self, point_type: &'a str, point_arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ 'a>>;
 }
 
-pub type PointResult = std::result::Result<Box<dyn PointAssess>, Error>;
-
 #[derive(Debug, Clone)]
 pub enum PointState {
-    Ok,
-    Failure,
-    Error(Error)
+    Ok(Json),
+    Fail(Json),
+    Err(Error)
 }
 
 pub trait PointAssess {
@@ -40,6 +38,4 @@ pub trait PointAssess {
     fn end(&self) -> DateTime<Utc>;
 
     fn state(&self) -> &PointState;
-
-    fn result(&self) -> &Json;
 }

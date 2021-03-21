@@ -93,7 +93,7 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P,
     let task_result_vec = join_all(futures).await;
     let task_status = task_result_vec.iter()
         .map(|r|
-                r.as_ref().map_or_else(|e| Err(String::from(e.code())),
+                r.as_ref().map_or_else(|e| Err(String::from(e.message())),
                                        |_| Ok(true)))
         .collect::<Vec<Result<bool, String>>>();
     info!("finish job {}, {:?}", job_path_str, task_status);

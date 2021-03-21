@@ -1,5 +1,5 @@
 mod model;
-mod ext;
+mod point;
 
 use std::future::Future;
 use std::pin::Pin;
@@ -41,10 +41,10 @@ impl PointRunner for PointRunnerDefault {
 async fn run_point_type(point_type: &str, point_arg: &dyn PointArg) -> common::point::PointValue{
 
     let point_value = match point_type.trim() {
-        "restapi" => ext::restapi::run(point_arg).await,
-        "md5" => ext::md5::run(point_arg).await,
-        "dubbo" => ext::dubbo::run(point_arg).await,
-        "sleep" => ext::sleep::run(point_arg).await,
+        "restapi" => point::restapi::run(point_arg).await,
+        "md5" => point::md5::run(point_arg).await,
+        "dubbo" => point::dubbo::run(point_arg).await,
+        "sleep" => point::sleep::run(point_arg).await,
         _ => err!("002", format!("unsupported point type {}", point_type).as_str())
     };
 

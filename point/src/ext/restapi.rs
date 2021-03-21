@@ -8,7 +8,7 @@ use common::point::PointArg;
 use common::value::{Json, Map, Number};
 
 use crate::err;
-use crate::model::{Error, PointValue};
+use crate::model::{PointError, PointValue};
 
 pub async fn run(context: &dyn PointArg) -> PointValue{
     let url = match context.config_rendered(vec!["url"]) {
@@ -72,9 +72,9 @@ pub async fn run(context: &dyn PointArg) -> PointValue{
 
 
 
-impl From<surf::Error> for Error {
-    fn from(err: surf::Error) -> Error {
-        Error::new("http", format!("{}", err.status()).as_str())
+impl From<surf::Error> for PointError {
+    fn from(err: surf::Error) -> PointError {
+        PointError::new("http", format!("{}", err.status()).as_str())
     }
 }
 

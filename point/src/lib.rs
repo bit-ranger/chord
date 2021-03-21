@@ -10,7 +10,7 @@ use common::point::{PointArg, PointRunner};
 #[macro_export]
 macro_rules! err {
     ($code:expr, $message:expr) => {{
-        let res = $crate::model::Error::new($code, $message);
+        let res = $crate::model::PointError::new($code, $message);
         std::result::Result::Err(res)
     }}
 }
@@ -18,7 +18,7 @@ macro_rules! err {
 #[macro_export]
 macro_rules! err_raw {
     ($code:expr, $message:expr) => {{
-        $crate::model::Error::new($code, $message)
+        $crate::model::PointError::new($code, $message)
     }}
 }
 

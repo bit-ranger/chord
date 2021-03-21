@@ -1,12 +1,12 @@
 use common::value::Json;
 use std::num::ParseIntError;
 
-pub struct Error(common::error::Error);
+pub struct PointError(common::error::Error);
 
-impl Error {
+impl PointError {
 
-    pub fn new(code: &str, message: &str) -> Error {
-        Error(common::error::Error::new(code, message))
+    pub fn new(code: &str, message: &str) -> PointError {
+        PointError(common::error::Error::new(code, message))
     }
 
     pub fn common(&self) -> common::error::Error{
@@ -14,28 +14,28 @@ impl Error {
     }
 }
 
-impl From<common::error::Error> for Error {
-    fn from(err: common::error::Error) -> Error {
-        Error(err)
+impl From<common::error::Error> for PointError {
+    fn from(err: common::error::Error) -> PointError {
+        PointError(err)
     }
 }
 
-impl  From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Error {
-        Error::new("io", format!("{:?}", err.kind()).as_str())
+impl  From<std::io::Error> for PointError {
+    fn from(err: std::io::Error) -> PointError {
+        PointError::new("io", format!("{:?}", err.kind()).as_str())
     }
 }
 
-impl  From<common::value::JsonError> for Error{
-    fn from(err: common::value::JsonError) -> Error {
-        Error::new("json", format!("{:?}", err).as_str())
+impl  From<common::value::JsonError> for PointError {
+    fn from(err: common::value::JsonError) -> PointError {
+        PointError::new("json", format!("{:?}", err).as_str())
     }
 }
 
 
-impl From<ParseIntError> for Error{
-    fn from(e: ParseIntError) -> Error {
-        Error::new("ParseInt", e.to_string().as_str())
+impl From<ParseIntError> for PointError {
+    fn from(e: ParseIntError) -> PointError {
+        PointError::new("ParseInt", e.to_string().as_str())
     }
 }
 
@@ -46,7 +46,7 @@ pub fn to_common_value(point_value: PointValue) -> common::point::PointValue{
     }
 }
 
-pub type PointValue =  std::result::Result<Json, Error>;
+pub type PointValue =  std::result::Result<Json, PointError>;
 
 
 

@@ -1,15 +1,15 @@
 use std::fmt::{Display, Formatter};
 use std::fmt;
+use std::sync::Arc;
 
 
-
-#[derive(Debug, Clone)]
+#[derive(Debug,Clone)]
 pub struct Error
 
 {
     code: String,
     message: String,
-    cause: Option<Box<Error>>
+    cause: Option<Arc<Box<dyn std::error::Error>>>
 }
 
 impl Error {
@@ -22,22 +22,34 @@ impl Error {
         }
     }
 
-    pub fn cause(code: &str, message: &str, cause: Error) -> Error {
+    pub fn cause(code: &str, message: &str, cause: Box<dyn std::error::Error>) -> Error {
         Error {
             code: String::from(code),
             message: String::from(message),
-            cause: Some(Box::new(cause))
+            cause: Some(Arc::new(cause))
         }
     }
 
     #[allow(dead_code)]
-    pub fn get_code(self: &Error) -> &str{
+    pub fn code(self: &Error) -> &str{
         return &self.code
     }
 
     #[allow(dead_code)]
-    pub fn get_message(self: &Error) -> &str{
+    pub fn message(self: &Error) -> &str{
         return &self.message
+    }
+}
+
+impl std::error::Error for Error {
+
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match &self.cause{
+            Some(c) =>{
+                Some(c.as_ref().as_ref())
+            },
+            None => None
+        }
     }
 }
 
@@ -52,6 +64,12 @@ impl  Display for Error {
 impl  From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
         Error::new("io", format!("{:?}", err.kind()).as_str())
+    }
+}
+
+impl  From<Box<dyn std::error::Error>> for Error {
+    fn from(err: Box<dyn std::error::Error>) -> Error {
+        Error::cause("std", err.to_string().as_str(), err)
     }
 }
 

@@ -4,22 +4,34 @@ use common::task::{TaskResult};
 use common::point::PointState;
 use crate::model::Error as CurrError;
 use csv::Writer;
+use std::path::Path;
+use common::flow::Flow;
+use std::fs::File;
 
 pub async fn report<W: std::io::Write>(writer: &mut Writer<W>,
                                        task_result: &TaskResult,
-    head: &Vec<String>
+    flow: &Flow
 ) -> Result<(), Error> {
-    match report0(writer, task_result, head).await {
+    match report0(writer, task_result, flow).await {
         Ok(()) => Ok(()),
         Err(e) => Err(e.common())
     }
 }
 
-pub async fn mk_writer<W: std::io::Write>(writer: W) -> Writer<W>{
+pub async fn from_writer<W: std::io::Write>(writer: W) -> Writer<W>{
     csv::WriterBuilder::new().from_writer(writer)
 }
 
-pub async fn mk_head(point_id_vec: &Vec<String>) -> Vec<String> {
+pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error>{
+    csv::WriterBuilder::new().from_path(path).map_err(|e| Error::new("csv", e.to_string().as_str()))
+}
+
+pub async fn prepare<W: std::io::Write>(writer: &mut Writer<W>, flow: &Flow) -> Result<(),Error>{
+    writer.write_record(create_head(flow)).map_err(|e|Error::new("csv", e.to_string().as_str()))
+}
+
+fn create_head(flow: &Flow) -> Vec<String>{
+    let point_id_vec:Vec<String> =  flow.point_id_vec();
     let mut vec:Vec<String> = vec![];
     vec.push(String::from("case_state"));
     vec.push(String::from("case_info"));
@@ -45,7 +57,9 @@ async fn write_record0<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<S
     Ok(writer.write_record(record)?)
 }
 
-async fn report0<W: std::io::Write>(writer: &mut Writer<W>, task_result: &TaskResult, head: &Vec<String>) -> Result<(), CurrError> {
+async fn report0<W: std::io::Write>(writer: &mut Writer<W>, task_result: &TaskResult, flow: &Flow) -> Result<(), CurrError> {
+
+
     let empty = &vec![];
     let cr_vec = match task_result {
         Ok(tr) => tr.result(),
@@ -56,6 +70,7 @@ async fn report0<W: std::io::Write>(writer: &mut Writer<W>, task_result: &TaskRe
         return Ok(());
     }
 
+    let head = create_head(flow);
     for sv in cr_vec.iter().map(|(_, cr)| to_value_vec(cr, head.len())){
         writer.write_record(&sv)?
     }

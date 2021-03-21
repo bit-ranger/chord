@@ -3,6 +3,8 @@ use csv::{ReaderBuilder, Reader};
 use common::error::Error;
 use common::err;
 use common::value::{Json, Map};
+use std::path::Path;
+use std::fs::File;
 
 pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Result<Vec<Json>, Error> {
     let mut hashmap_vec = Vec::new();
@@ -26,6 +28,10 @@ pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Resu
     Ok(hashmap_vec)
 }
 
-pub fn mk_reader<R: std::io::Read>(reader: R) -> Reader<R>{
-    ReaderBuilder::new().from_reader(reader)
+pub async fn from_reader<R: std::io::Read>(reader: R) -> Result<Reader<R>, Error>{
+    Ok(ReaderBuilder::new().from_reader(reader))
+}
+
+pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Reader<File>, Error>{
+    ReaderBuilder::new().from_path(path).map_err(|e| Error::new("csv", e.to_string().as_str()))
 }

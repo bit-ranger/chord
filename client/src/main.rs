@@ -1,6 +1,4 @@
 use std::{env, fs};
-use std::fs::File;
-use std::io::{BufReader, BufWriter};
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -17,7 +15,7 @@ use point::PointRunnerDefault;
 mod logger;
 
 #[async_std::main]
-async fn main() -> Result<(),usize> {
+async fn main() -> Result<(),Error> {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
     opts.reqopt("j", "job", "job path", "job");
@@ -27,9 +25,9 @@ async fn main() -> Result<(),usize> {
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(_) => {
-            println!("{}", opts.short_usage("runner"));
-            return Err(1);
+        Err(e) => {
+            println!("{}", opts.short_usage("chord"));
+            return err!("arg", e.to_string().as_str());
         }
     };
 
@@ -53,15 +51,15 @@ async fn main() -> Result<(),usize> {
     }
 
     let app_context = flow::mk_app_context(Box::new(PointRunnerDefault::new())).await;
-    // async_task::block_on(async {
-        let _ = run_job(job_path, execution_id.as_str(), app_context.as_ref()).await;
-    // });
+    run_job(job_path, execution_id.as_str(), app_context.as_ref()).await?;
 
     return Ok(());
 }
 
 
-pub async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str, app_context: &dyn AppContext) -> Result<(), Error>{
+pub async fn run_job<P: AsRef<Path>>(job_path: P,
+                                     execution_id: &str,
+                                     app_context: &dyn AppContext) -> Result<(), Error>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("running job {}", job_path_str);
@@ -85,17 +83,19 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P, execution_id: &str, app_contex
     let task_result_vec = join_all(futures).await;
     let task_status = task_result_vec.iter()
         .map(|r|
-                r.as_ref().map_or_else(|e| Err(e.get_code()), |_| Ok(true)))
+                r.as_ref().map_or_else(|e| Err(e.code()),
+                                       |_| Ok(true)))
         .collect::<Vec<Result<bool, &str>>>();
     info!("finish job {}, {:?}", job_path_str, task_status);
     return Ok(());
 }
 
-async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context: &dyn AppContext) -> Result<TaskState,Error> {
+async fn run_task<P: AsRef<Path>>(task_path: P,
+                                  execution_id: &str,
+                                  app_context: &dyn AppContext) -> Result<TaskState,Error> {
     info!("running task {}", task_path.as_ref().to_str().unwrap());
     let task_path = Path::new(task_path.as_ref());
     let flow_path = task_path.clone().join("flow.yml");
-
 
     let flow = match port::load::flow::yml::load(&flow_path) {
         Err(e) => {
@@ -105,28 +105,19 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
             value
         }
     };
-
-
+    let flow = Flow::new(flow.clone());
 
     let report_dir_path = task_path.join(format!("{}", execution_id));
     std::fs::create_dir(report_dir_path.clone())?;
 
     //read
     let data_path = task_path.clone().join("data.csv");
-    let data_file = File::open(data_path)?;
-    let data_reader = BufReader::new(data_file);
-    let mut data_reader = port::load::data::csv::mk_reader(data_reader);
+    let mut data_reader = port::load::data::csv::from_path(data_path).await?;
 
     //write
     let result_path = report_dir_path.clone().join("result.csv");
-    let result_file = File::create(result_path)?;
-    let result_writer = BufWriter::new(result_file);
-    let mut result_writer = port::report::csv::mk_writer(result_writer).await;
-    let flow = Flow::new(flow.clone());
-    let point_id_vec =  flow.point_id_vec();
-    let head = port::report::csv::mk_head(&point_id_vec).await;
-    port::report::csv::write_record(&mut result_writer, &head).await?;
-
+    let mut result_writer = port::report::csv::from_path(result_path).await?;
+    port::report::csv::prepare(&mut result_writer, &flow).await?;
 
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
     let mut task_state = TaskState::Ok;
@@ -144,7 +135,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P, execution_id: &str, app_context:
 
         let task_result = flow::run(app_context, flow.clone(), data, task_id).await;
 
-        let _ = port::report::csv::report(&mut result_writer, &task_result, &head).await?;
+        let _ = port::report::csv::report(&mut result_writer, &task_result, &flow).await?;
 
         match task_result {
             Ok(tr) => {

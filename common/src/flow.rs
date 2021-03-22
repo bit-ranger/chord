@@ -19,7 +19,8 @@ impl Flow{
     }
 
     pub fn point_id_vec(self: &Flow) -> Vec<String> {
-        let task_point_chain_arr = self.flow["task"]["case"]["chain"].as_array().unwrap();
+        let empty = vec![];
+        let task_point_chain_arr = self.flow["task"]["case"]["chain"].as_array().unwrap_or(&empty);
         let task_point_chain_vec: Vec<String> = task_point_chain_arr.iter()
             .map(|e| {
                 e.as_str().map(|s| String::from(s)).unwrap()

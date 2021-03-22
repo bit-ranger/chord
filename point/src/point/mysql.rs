@@ -5,7 +5,7 @@ use sqlx::{MySqlConnection, Row, Column, ValueRef, TypeInfo};
 use sqlx::Connection;
 use sqlx::mysql::MySqlRow;
 use crate::perr;
-use log::warn;
+use log::{warn, debug};
 use sqlx::decode::Decode;
 use sqlx::types::chrono::{DateTime, Utc};
 
@@ -18,7 +18,7 @@ pub async fn run(point_arg: &dyn PointArg) -> PointValue {
         .fetch_all(&mut conn).await?;
 
     let rows = Json::Array(vec);
-    println!("mysql rows:\n{}", rows);
+    debug!("mysql rows:\n{}", rows);
     return Ok(rows)
 }
 

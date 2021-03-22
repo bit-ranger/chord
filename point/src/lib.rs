@@ -46,6 +46,7 @@ async fn run_point_type(point_type: &str, point_arg: &dyn PointArg) -> common::p
         "dubbo" => point::dubbo::run(point_arg).await,
         "sleep" => point::sleep::run(point_arg).await,
         "mysql" => point::mysql::run(point_arg).await,
+        "redis" => point::redis::run(point_arg).await,
         _ => err!("002", format!("unsupported point type {}", point_type).as_str())
     };
 

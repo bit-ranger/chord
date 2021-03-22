@@ -7,14 +7,13 @@ use sqlx::mysql::MySqlRow;
 use crate::perr;
 use log::warn;
 use sqlx::decode::Decode;
-use std::any::Any;
 use sqlx::types::chrono::{DateTime, Utc};
 
 pub async fn run(point_arg: &dyn PointArg) -> PointValue {
-    let url = point_arg.config()["url"].as_str().ok_or(perr!("010", "missing url"))?;
-    let sql = point_arg.config()["sql"].as_str().ok_or(perr!("010", "missing sql"))?;
-    let mut conn = MySqlConnection::connect(url).await?;
-    let vec:Vec<Json> = sqlx::query(sql)
+    let url = point_arg.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
+    let sql = point_arg.config_rendered(vec!["sql"]).ok_or(perr!("010", "missing sql"))?;
+    let mut conn = MySqlConnection::connect(url.as_str()).await?;
+    let vec:Vec<Json> = sqlx::query(sql.as_str())
         .map(|row: MySqlRow| to_json(row))
         .fetch_all(&mut conn).await?;
 

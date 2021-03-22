@@ -34,7 +34,7 @@ impl log::Log for ChannelLogger {
                 microseconds,
                 record.level(),
                 record.target(),
-                record.line().unwrap(),
+                record.line().unwrap_or(0),
                 record.args()
             );
 

@@ -19,7 +19,7 @@ pub trait PointArg {
 
 pub trait PointRunner{
 
-    fn run<'a>(&self, point_type: &'a str, point_arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ 'a>>;
+    fn run<'a>(&self, pt_type: &'a str, pt_arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ 'a>>;
 }
 
 #[derive(Debug, Clone)]

@@ -1,6 +1,11 @@
+#[cfg(feature = "pt_restapi")]
 pub mod restapi;
+#[cfg(feature = "pt_md5")]
 pub mod md5;
+#[cfg(feature = "pt_dubbo")]
 pub mod dubbo;
 pub mod sleep;
+#[cfg(feature = "pt_mysql")]
 pub mod mysql;
+#[cfg(feature = "pt_redis")]
 pub mod redis;

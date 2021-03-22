@@ -16,36 +16,36 @@ pub mod arg;
 pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_,'_>) -> CaseAssessStruct {
     let start = Utc::now();
     let mut render_context = case_arg.create_render_context();
-    let mut point_assess_vec = Vec::<Box<dyn PointAssess>>::new();
-    for point_id in case_arg.point_id_vec().iter() {
-        let point_arg = case_arg.create_point(point_id, app_context, &render_context);
-        if point_arg.is_none(){
+    let mut pt_assess_vec = Vec::<Box<dyn PointAssess>>::new();
+    for pt_id in case_arg.pt_id_vec().iter() {
+        let pt_arg = case_arg.create_point(pt_id, app_context, &render_context);
+        if pt_arg.is_none(){
             return CaseAssessStruct::new(case_arg.id(), start, Utc::now(),
             CaseState::Err(Error::new("000", "invalid point")));
         }
-        let point_arg = point_arg.unwrap();
-        let point_assess = point::run(app_context, &point_arg).await;
+        let pt_arg = pt_arg.unwrap();
+        let pt_assess = point::run(app_context, &pt_arg).await;
 
-        point_assess_vec.push(Box::new(point_assess));
-        let point_assess = point_assess_vec.last().unwrap();
+        pt_assess_vec.push(Box::new(pt_assess));
+        let pt_assess = pt_assess_vec.last().unwrap();
 
-        match point_assess.state(){
+        match pt_assess.state(){
             PointState::Ok(json) => {
-                register_dynamic(&mut render_context, point_id, json).await;
+                register_dynamic(&mut render_context, pt_id, json).await;
             },
             _ => {
-                return CaseAssessStruct::new(case_arg.id(), start, Utc::now(), CaseState::Fail(point_assess_vec));
+                return CaseAssessStruct::new(case_arg.id(), start, Utc::now(), CaseState::Fail(pt_assess_vec));
             }
         }
     }
 
-    return CaseAssessStruct::new(case_arg.id(), start, Utc::now(), CaseState::Ok(point_assess_vec));
+    return CaseAssessStruct::new(case_arg.id(), start, Utc::now(), CaseState::Ok(pt_assess_vec));
 }
 
 
-pub async fn register_dynamic(render_context: &mut RenderContext, point_id: &str, result: &Json) {
+pub async fn register_dynamic(render_context: &mut RenderContext, pt_id: &str, result: &Json) {
     if let Json::Object(data) = render_context.data_mut(){
-        data["dyn"][point_id] = to_json(result).unwrap();
+        data["dyn"][pt_id] = to_json(result).unwrap();
     }
 }
 

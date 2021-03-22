@@ -22,7 +22,7 @@ pub async fn run(app_context: &dyn AppContext,
     return Box::new(task_assess);
 }
 
-pub async fn create_app_context(point_runner: Box<dyn PointRunner>) -> Box<dyn AppContext> {
-    Box::new(AppContextStruct::<'_>::new(point_runner))
+pub async fn create_app_context(pt_runner: Box<dyn PointRunner>) -> Box<dyn AppContext> {
+    Box::new(AppContextStruct::<'_>::new(pt_runner))
 }
 

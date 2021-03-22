@@ -9,9 +9,9 @@ use log::{warn, debug};
 use sqlx::decode::Decode;
 use sqlx::types::chrono::{DateTime, Utc};
 
-pub async fn run(point_arg: &dyn PointArg) -> PointValue {
-    let url = point_arg.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
-    let sql = point_arg.config_rendered(vec!["sql"]).ok_or(perr!("011", "missing sql"))?;
+pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
+    let url = pt_arg.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
+    let sql = pt_arg.config_rendered(vec!["sql"]).ok_or(perr!("011", "missing sql"))?;
     let mut conn = MySqlConnection::connect(url.as_str()).await?;
     let vec:Vec<Json> = sqlx::query(sql.as_str())
         .map(|row: MySqlRow| to_json(row))

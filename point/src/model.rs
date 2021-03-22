@@ -39,8 +39,8 @@ impl From<ParseIntError> for PointError {
     }
 }
 
-pub fn to_common_value(point_value: PointValue) -> common::point::PointValue{
-    return match point_value {
+pub fn to_common_value(pt_value: PointValue) -> common::point::PointValue{
+    return match pt_value {
         Ok(pv) => Ok(pv),
         Err(e) => Err(e.common())
     }

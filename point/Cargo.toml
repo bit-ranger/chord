@@ -13,4 +13,4 @@ log = { version = "0.4.14", features = ["std"]}
 surf = "2.1.0"
 md5 = "0.7.0"
 telnet = "0.1.4"
-sqlx = { version = "0.5", features = [ "runtime-async-std-rustls", "mysql" ] }
+#sqlx = { version = "0.5", features = [ "runtime-async-std-rustls", "mysql"] }

@@ -1,7 +1,7 @@
 use common::point::PointArg;
 use crate::model::PointValue;
 // use log::{debug,info};
-use crate::{err, err_raw};
+use crate::{err, perr};
 use async_std::net::TcpStream;
 use async_std::prelude::*;
 use common::value::{Json};
@@ -40,7 +40,7 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
     }
 
     let mut value = unsafe { String::from_utf8_unchecked(Vec::from(response)) };
-    let i = value.rfind("\r\nelapsed:").ok_or(err_raw!("0", "elapsed"))?;
+    let i = value.rfind("\r\nelapsed:").ok_or(perr!("0", "elapsed"))?;
     value.truncate(i);
 
     let json = Json::from_str(value.as_str())?;

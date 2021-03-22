@@ -15,7 +15,7 @@ macro_rules! err {
 }
 
 #[macro_export]
-macro_rules! err_raw {
+macro_rules! perr {
     ($code:expr, $message:expr) => {{
         $crate::model::PointError::new($code, $message)
     }}

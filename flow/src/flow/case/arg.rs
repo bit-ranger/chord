@@ -37,7 +37,7 @@ impl<'c, 'd, 'p> CaseArgStruct<'c, 'd, 'p> {
 
     pub fn create_render_context(self: &CaseArgStruct<'c, 'd, 'p>) -> RenderContext{
         let mut render_data: Map = Map::new();
-        let config_def = self.flow.data()["task"]["def"].as_object();
+        let config_def = self.flow.task_def();
         match config_def {
             Some(def) => {
                 render_data.insert(String::from("def"), to_json(def).unwrap());
@@ -63,7 +63,7 @@ impl<'c, 'd, 'p> CaseArgStruct<'c, 'd, 'p> {
     ) -> Option<PointArgStruct<'c, 'd, 'h, 'reg, 'r>>
         where 'app: 'h, 'app: 'reg
     {
-        let _ = self.flow.data()["point"][point_id].as_object()?;
+        let _ = self.flow.point(point_id).as_object()?;
 
         Some(PointArgStruct::new(
             self.flow,

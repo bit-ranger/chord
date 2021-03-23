@@ -1,4 +1,4 @@
-use crate::value::Json;
+use crate::value::{Json, Map};
 use std::borrow::Borrow;
 use crate::error::Error;
 
@@ -18,19 +18,48 @@ impl Flow{
         return Ok(flow);
     }
 
-    pub fn data(self: &Flow) -> &Json {
-        self.flow.borrow()
-    }
-
     pub fn case_point_id_vec(self: &Flow) -> Result<Vec<String>, Error> {
         let task_pt_chain_arr = self.flow["case"]["chain"].as_array()
             .ok_or(Error::new("flow", "missing case.chain"))?;
-        let task_pt_chain_vec: Vec<String> = task_pt_chain_arr.iter()
+        return Ok(Flow::conv_to_string_vec(task_pt_chain_arr));
+    }
+
+    pub fn point(&self, point_id: &str) -> &Json{
+        self.flow["point"][point_id].borrow()
+    }
+
+    pub fn point_config(&self, point_id: &str) -> &Json{
+        self.flow["point"][point_id]["config"].borrow()
+    }
+
+    pub fn task_def(&self) -> Option<&Map>{
+        self.flow["task"]["def"].as_object()
+    }
+
+    pub fn pre_point_id_vec(&self) -> Option<Vec<String>> {
+        let task_pt_chain_arr = self.flow["task"]["pre"]["chain"].as_array();
+        if task_pt_chain_arr.is_none() {
+            return None;
+        }
+        return Some(Flow::conv_to_string_vec(task_pt_chain_arr.unwrap()));
+    }
+
+    pub fn limit_concurrency(&self) -> usize {
+        let num = match self.flow["task"]["limit"]["concurrency"].as_u64() {
+            Some(n) => n as usize,
+            None => 9999
+        };
+
+        return num;
+    }
+
+    fn conv_to_string_vec(vec: &Vec<Json>) -> Vec<String>{
+        let string_vec: Vec<String> = vec.iter()
             .map(|e| {
                 e.as_str().map(|s| String::from(s)).unwrap()
             })
             .collect();
-
-        return Ok(task_pt_chain_vec);
+        return string_vec;
     }
+
 }

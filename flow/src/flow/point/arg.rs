@@ -51,11 +51,9 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
         return self.id.as_str();
     }
 
-
-
     pub async fn meta_str(self : &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) ->Option<String>
     {
-        let config = self.flow.data()["point"][&self.id].borrow();
+        let config = self.flow.point(self.id());
 
         let raw_config = path.iter()
             .fold(config,
@@ -129,7 +127,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 
     fn config_rendered(self: &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
     {
-        let config = self.flow.data()["point"][&self.id]["config"].borrow();
+        let config = self.flow.point_config(self.id());
 
         let raw_config = path.iter()
             .fold(config,
@@ -149,7 +147,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
     }
 
     fn config(&self) -> &Json {
-        let config = self.flow.data()["point"][&self.id]["config"].borrow();
+        let config = self.flow.point_config(self.id());
         return config;
     }
 

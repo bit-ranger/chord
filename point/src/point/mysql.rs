@@ -2,7 +2,7 @@ use common::point::PointArg;
 use common::value::{Json, Map, Number};
 use crate::model::{PointValue, PointError};
 use crate::perr;
-use log::{warn, debug};
+use log::{debug};
 use rbatis::rbatis::Rbatis;
 use rbatis::plugin::page::{Page, PageRequest};
 

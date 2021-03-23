@@ -1,6 +1,6 @@
 use common::point::PointArg;
 use crate::model::PointValue;
-// use log::{debug,info};
+use log::{debug};
 use crate::{err, perr};
 use async_std::net::TcpStream;
 use async_std::prelude::*;
@@ -40,6 +40,7 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
     }
 
     let mut value = unsafe { String::from_utf8_unchecked(Vec::from(response)) };
+    debug!("Response: {}", value);
     let i = value.rfind("\r\nelapsed:").ok_or(perr!("0", "elapsed"))?;
     value.truncate(i);
 

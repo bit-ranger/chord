@@ -1,98 +1,50 @@
 use common::point::PointArg;
 use common::value::{Json, Map, Number};
 use crate::model::{PointValue, PointError};
-use sqlx::{MySqlConnection, Row, Column, ValueRef, TypeInfo};
-use sqlx::Connection;
-use sqlx::mysql::MySqlRow;
 use crate::perr;
 use log::{warn, debug};
-use sqlx::decode::Decode;
-use sqlx::types::chrono::{DateTime, Utc};
+use rbatis::rbatis::Rbatis;
+use rbatis::plugin::page::{Page, PageRequest};
 
 pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
     let url = pt_arg.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
     let sql = pt_arg.config_rendered(vec!["sql"]).ok_or(perr!("011", "missing sql"))?;
-    let mut conn = MySqlConnection::connect(url.as_str()).await?;
-    let vec:Vec<Json> = sqlx::query(sql.as_str())
-        .map(|row: MySqlRow| to_json(row))
-        .fetch_all(&mut conn).await?;
+    let rb = Rbatis::new();
+    rb.link(url.as_str()).await?;
 
-    let rows = Json::Array(vec);
-    debug!("mysql rows:\n{}", rows);
-    return Ok(rows)
-}
-
-impl From<sqlx::Error> for PointError {
-    fn from(err: sqlx::Error) -> PointError {
-        PointError::new("sqlx", format!("{:?}", err).as_str())
-    }
-}
-
-fn to_json(row: MySqlRow) -> Json{
-    let mut map = Map::with_capacity(row.len());
-
-    for c in row.columns() {
-        let k = c.name();
-        let v= row.try_get_raw(k).unwrap();
-        if v.is_null(){
-            map.insert(String::from(k), Json::Null);
-            continue;
+    if sql.trim_start().to_uppercase().starts_with("SELECT "){
+        let pr = PageRequest::new(1, 20);
+        let args = vec![];
+        let page:Page<Json> = rb.fetch_page("", sql.as_str(), &args, &pr).await?;
+        let mut map = Map::new();
+        map.insert(String::from("total"), Json::Number(Number::from(page.total)));
+        map.insert(String::from("pages"), Json::Number(Number::from(page.pages)));
+        map.insert(String::from("page_no"), Json::Number(Number::from(page.page_no)));
+        map.insert(String::from("page_size"), Json::Number(Number::from(page.page_size)));
+        map.insert(String::from("records"), Json::Array(page.records));
+        let page = Json::Object(map);
+        debug!("mysql select:\n{}", page);
+        return Ok(page)
+    } else {
+        let exec = rb.exec("", sql.as_str()).await?;
+        let mut map = Map::new();
+        map.insert(String::from("rows_affected"), Json::Number(Number::from(exec.rows_affected)));
+        match exec.last_insert_id {
+            Some(id) => {
+                map.insert(String::from("last_insert_id"), Json::Number(Number::from(id)));
+            },
+            None => {}
         }
-
-        let type_info = v.type_info();
-        let type_name = type_info.name();
-        match type_name {
-            "BOOLEAN"
-            => {
-                map.insert(String::from(k), Json::Bool(bool::decode(v).unwrap()));
-            },
-            "TINYINT UNSIGNED"
-            | "SMALLINT UNSIGNED"
-            | "INT UNSIGNED"
-            | "MEDIUMINT UNSIGNED"
-            | "BIGINT UNSIGNED"
-             => {
-                 map.insert(String::from(k), Json::Number(Number::from(u64::decode(v).unwrap())));
-             },
-             "TINYINT"
-            | "SMALLINT"
-            | "INT"
-            | "MEDIUMINT"
-            | "BIGINT"
-            => {
-                map.insert(String::from(k), Json::Number(Number::from(i64::decode(v).unwrap())));
-            },
-            "FLOAT"
-            => {
-                map.insert(String::from(k), Json::Number(Number::from_f64(f64::decode(v).unwrap()).unwrap()));
-            },
-             "DOUBLE"
-            | "DECIMAL"
-            => {
-                map.insert(String::from(k), Json::Number(Number::from_f64(f64::decode(v).unwrap()).unwrap()));
-            },
-             "DATE"
-            | "TIMESTAMP"
-            | "TIME"
-            | "DATETIME"
-            => {
-                 let time = DateTime::< Utc > ::decode(v).unwrap();
-                 let tt = time.format("%Y-%m-%d %T").to_string();
-                 map.insert(String::from(k), Json::String(tt));
-            },
-             "ENUM"
-            | "CHAR"
-            | "VARCHAR"
-            => {
-                map.insert(String::from(k), Json::String(String::decode(v).unwrap()));
-            },
-            _ => {
-                warn!("column type not supported! {}", k);
-                map.insert(String::from(k), Json::Null);
-            }
-        }
+        let exec = Json::Object(map);
+        debug!("mysql exec:\n{}", exec);
+        return Ok(exec)
     }
 
-    return Json::Object(map);
 
+}
+
+impl From<rbatis::Error> for PointError {
+    fn from(err: rbatis::Error) -> PointError {
+        PointError::new("rbatis", format!("{:?}", err).as_str())
+    }
 }

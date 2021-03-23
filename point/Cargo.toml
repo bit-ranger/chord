@@ -14,7 +14,7 @@ log = { version = "0.4.14", features = ["std"]}
 surf = {version = "2.1.0",  optional = true}
 md5 = {version = "0.7.0", optional = true }
 redis = {version="0.20.0", features = [ "async-std-comp"], optional = true }
-sqlx = { version = "0.5", features = [ "runtime-async-std-native-tls", "chrono", "mysql"], optional = true }
+rbatis = { version = "1.8.81",  optional = true }
 
 
 [target.'cfg(linux)'.dependencies]
@@ -24,7 +24,7 @@ openssl = {version = "0.10", features = ["vendored"]}
 
 [features]
 default = []
-pt_mysql = ["sqlx"]
+pt_mysql = ["rbatis"]
 pt_dubbo = []
 pt_redis = ["redis"]
 pt_md5 = ["md5"]

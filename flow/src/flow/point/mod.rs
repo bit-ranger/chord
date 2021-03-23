@@ -3,7 +3,7 @@ use chrono::Utc;
 use common::error::Error;
 use common::point::{PointValue, PointArg};
 use common::value::Json;
-use result::PointAssessStruct;
+use res::PointAssessStruct;
 
 use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::AppContext;
@@ -11,7 +11,7 @@ use common::point::{PointState};
 use log::{info, error};
 
 pub mod arg;
-pub mod result;
+pub mod res;
 
 
 pub async fn run(app_context: &dyn AppContext, pt_arg: &PointArgStruct<'_, '_, '_, '_, '_>) -> PointAssessStruct

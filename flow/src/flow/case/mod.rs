@@ -3,14 +3,14 @@ use common::value::to_json;
 
 use common::error::Error;
 use common::value::Json;
-use result::CaseAssessStruct;
+use res::CaseAssessStruct;
 
 use crate::flow::case::arg::{CaseArgStruct, RenderContext};
 use crate::flow::point;
 use crate::model::app::AppContext;
 use common::case::{CaseState};
 use common::point::{PointAssess, PointState};
-pub mod result;
+pub mod res;
 pub mod arg;
 
 pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_,'_>) -> CaseAssessStruct {

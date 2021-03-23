@@ -1,5 +1,5 @@
 use log;
-use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
+use log::{Metadata, Record, SetLoggerError};
 use std::collections::vec_deque::VecDeque;
 use std::fs::{remove_file, rename, OpenOptions};
 use std::io::Write;
@@ -10,14 +10,13 @@ use time::{at, get_time, strftime};
 use regex::Regex;
 
 struct ChannelLogger {
-    level: Level,
     target: Regex,
     msg_queue: Arc<(Mutex<VecDeque<Vec<u8>>>, Condvar)>,
 }
 
 impl log::Log for ChannelLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= self.level && self.target.is_match(metadata.target())
+        metadata.level() <= log::max_level() && self.target.is_match(metadata.target())
     }
 
     fn log(&self, record: &Record) {
@@ -117,7 +116,6 @@ fn rotate_file(log_path: &String, rotate_count: usize) {
 }
 
 pub fn init(
-    level: Level,
     log_target: String,
     log_path: String,
     rotate_count: usize,
@@ -127,14 +125,15 @@ pub fn init(
     let sender = Arc::new((Mutex::new(VecDeque::new()), Condvar::new()));
     let receiver = sender.clone();
 
+
+    log::set_max_level(log::LevelFilter::Trace);
+    let _ = log::set_boxed_logger(Box::new(ChannelLogger {
+        target: Regex::new(&log_target).unwrap(),
+        msg_queue: sender,
+    }));
     thread::spawn(move || {
         log_thread_func(receiver, log_path, rotate_count, rotate_size, console_print);
     });
 
-    log::set_max_level(LevelFilter::Info);
-    log::set_boxed_logger(Box::new(ChannelLogger {
-        level,
-        target: Regex::new(&log_target).unwrap(),
-        msg_queue: sender,
-    }))
+    Ok(())
 }

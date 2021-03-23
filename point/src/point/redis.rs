@@ -1,9 +1,8 @@
 use common::point::PointArg;
-use common::value::{Json, Map};
+use common::value::{Json, Number, from_str};
 use crate::model::{PointValue, PointError};
-use redis::{RedisError, Value as RedisValue, FromRedisValue};
+use redis::{RedisError, Value as RedisValue};
 use crate::perr;
-use std::collections::HashMap;
 
 pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
     let url = pt_arg.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
@@ -25,17 +24,27 @@ pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
         RedisValue::Nil => {
             Json::Null
         },
-        _ => {
-            let hash_map = HashMap::<String,String>::from_redis_value(&redis_value)?;
-            let mut map = Map::new();
-            for (k, v) in hash_map.into_iter() {
-                map.insert(k, Json::String(v));
+        RedisValue::Int(i) => {
+            Json::Number(Number::from(i.clone()))
+        },
+        RedisValue::Data(data) => {
+            let data = String::from_utf8_lossy(data);
+            let dv = from_str(data.as_ref());
+            match dv {
+                Ok(v) => v,
+                Err(_) => Json::String(data.to_string())
             }
-            Json::Object(map)
+        },
+        RedisValue::Status(status) => {
+            Json::String(status.clone())
+        },
+        RedisValue::Okay => {
+            Json::String("OK".to_string())
+        },
+        _ => {
+            Json::Array(vec![])
         }
     };
-
-    println!("{}", result);
     return Ok(result);
 }
 

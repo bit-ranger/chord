@@ -11,7 +11,6 @@ use common::flow::Flow;
 use common::task::TaskState;
 use flow::AppContext;
 use point::PointRunnerDefault;
-use std::str::FromStr;
 
 mod logger;
 
@@ -21,7 +20,6 @@ async fn main() -> Result<(),Error> {
     let mut opts = getopts::Options::new();
     opts.reqopt("j", "job", "job path", "job");
     opts.reqopt("l", "log", "log path", "log");
-    opts.optopt("v", "level", "log level", "info");
     opts.optopt("p", "print", "console print", "true/false");
     opts.optopt("t", "target", "long target", ".*");
 
@@ -33,9 +31,7 @@ async fn main() -> Result<(),Error> {
         }
     };
 
-    let log_level = matches.opt_get_default("v", String::from("info")).unwrap();
-    logger::init(log::Level::from_str(log_level.as_str()).unwrap(),
-                 matches.opt_get_default("t", String::from(".*")).unwrap(),
+    logger::init(matches.opt_get_default("t", String::from(".*")).unwrap(),
                  matches.opt_str("l").unwrap(),
                  1,
                  2000000,

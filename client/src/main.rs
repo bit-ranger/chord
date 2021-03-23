@@ -19,9 +19,6 @@ async fn main() -> Result<(),Error> {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
     opts.reqopt("j", "job", "job path", "job");
-    opts.reqopt("l", "log", "log path", "log");
-    opts.optopt("p", "print", "console print", "true/false");
-    opts.optopt("t", "target", "long target", ".*");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -31,22 +28,23 @@ async fn main() -> Result<(),Error> {
         }
     };
 
-    logger::init(matches.opt_get_default("t", String::from(".*")).unwrap(),
-                 matches.opt_str("l").unwrap(),
+    let job_path = matches.opt_str("j").unwrap();
+    let job_path = Path::new(&job_path);
+    if !job_path.is_dir(){
+        panic!("job path is not a dir {}", job_path.to_str().unwrap());
+    }
+    let log_path = job_path.clone().join("log.log");
+    logger::init(String::from(".*"),
+                 log_path.to_str().map(|s| s.to_owned()).unwrap(),
                  1,
                  2000000,
-                 matches.opt_get_default("p", false).unwrap()
+        true
     ).unwrap();
 
     let duration = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH).unwrap();
     let execution_id = duration.as_millis().to_string();
 
-    let job_path = matches.opt_str("j").unwrap();
-    let job_path = Path::new(&job_path);
-    if !job_path.is_dir(){
-        panic!("job path is not a dir {}", job_path.to_str().unwrap());
-    }
 
     let app_context = flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
     let task_state_vec = run_job(job_path, execution_id.as_str(), app_context.as_ref()).await;

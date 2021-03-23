@@ -12,7 +12,7 @@ pub struct CaseArgStruct<'c, 'd, 'p> {
     id: usize,
     flow: &'c Flow,
     data: &'d Json,
-    pt_id_vec: Vec<String>,
+    point_id_vec: Vec<String>,
     context: &'p Vec<(String, Json)>
 }
 
@@ -21,14 +21,14 @@ impl<'c, 'd, 'p> CaseArgStruct<'c, 'd, 'p> {
     pub fn new(id: usize,
                flow: &'c Flow,
                data: &'d Json,
-               pt_id_vec: Vec<String>,
+               point_id_vec: Vec<String>,
                context: &'p Vec<(String, Json)>
     ) -> CaseArgStruct<'c, 'd, 'p> {
         let context = CaseArgStruct {
             id,
             flow,
             data,
-            pt_id_vec,
+            point_id_vec,
             context
         };
 
@@ -56,25 +56,25 @@ impl<'c, 'd, 'p> CaseArgStruct<'c, 'd, 'p> {
 
 
     pub fn create_point<'h, 'reg, 'app, 'r>(self: &CaseArgStruct<'c, 'd, 'p>,
-                                            pt_id: &str,
+                                            point_id: &str,
                                             app_context: &'app dyn AppContext,
                                             render_context: &'r RenderContext
 
     ) -> Option<PointArgStruct<'c, 'd, 'h, 'reg, 'r>>
         where 'app: 'h, 'app: 'reg
     {
-        let _ = self.flow.data()["point"][pt_id].as_object()?;
+        let _ = self.flow.data()["point"][point_id].as_object()?;
 
         Some(PointArgStruct::new(
             self.flow,
             self.data,
-            pt_id,
+            point_id,
             app_context.get_handlebars(),
             render_context))
     }
     
-    pub fn pt_id_vec(self: &CaseArgStruct<'c, 'd, 'p>) -> &Vec<String> {
-        &self.pt_id_vec
+    pub fn point_id_vec(self: &CaseArgStruct<'c, 'd, 'p>) -> &Vec<String> {
+        &self.point_id_vec
     }
 
 

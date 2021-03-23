@@ -22,13 +22,15 @@ pub mod res;
 pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct) -> TaskAssessStruct {
     let start = Utc::now();
 
-    let pre_ctx = pre_ctx(app_context, task_context).await;
-    let pre_ctx=  match pre_ctx{
+    let pre_ctx=  match pre_ctx(app_context, task_context).await{
         Ok(pc) => pc,
         Err(e) => return TaskAssessStruct::new(task_context.id(), start, Utc::now(), TaskState::Err(e))
     };
 
-    let mut data_case_arg_vec: Vec<CaseArgStruct> = task_context.data_case(&pre_ctx);
+    let mut data_case_arg_vec = match task_context.data_case_vec(&pre_ctx){
+        Ok(v) => v,
+        Err(e) => return TaskAssessStruct::new(task_context.id(), start, Utc::now(), TaskState::Err(e))
+    };
 
     let mut futures = data_case_arg_vec.iter_mut().
         map(|case_arg| case_run(app_context, case_arg))
@@ -85,7 +87,13 @@ async fn pre_ctx(app_context: &dyn AppContext, task_context: &TaskArgStruct) -> 
             case_ctx.push((String::from("pre"), pre));
             Ok(case_ctx)
         }
-        _ => err!("011", "pre fail"),
+        CaseState::Fail(pa_vec) => {
+            let pa_last = pa_vec.last().unwrap();
+            err!("020", format!("pre Fail : {}", pa_last.id()).as_str())
+        },
+        CaseState::Err(e) => {
+            err!("021", format!("pre Err  : {}", e.to_string()).as_str())
+        }
     }
 
 

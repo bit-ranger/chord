@@ -17,7 +17,7 @@ pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'
     let start = Utc::now();
     let mut render_context = case_arg.create_render_context();
     let mut pt_assess_vec = Vec::<Box<dyn PointAssess>>::new();
-    for pt_id in case_arg.pt_id_vec().iter() {
+    for pt_id in case_arg.point_id_vec().iter() {
         let pt_arg = case_arg.create_point(pt_id, app_context, &render_context);
         if pt_arg.is_none(){
             return CaseAssessStruct::new(case_arg.id(), start, Utc::now(),

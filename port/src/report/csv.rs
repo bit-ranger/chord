@@ -31,7 +31,7 @@ pub async fn prepare<W: std::io::Write>(writer: &mut Writer<W>, flow: &Flow) -> 
 }
 
 fn create_head(flow: &Flow) -> Vec<String> {
-    let pt_id_vec: Vec<String> = flow.pt_id_vec();
+    let pt_id_vec: Vec<String> = flow.case_point_id_vec().unwrap_or(vec!());
     let mut vec: Vec<String> = vec![];
     vec.push(String::from("case_state"));
     vec.push(String::from("case_info"));
@@ -42,7 +42,7 @@ fn create_head(flow: &Flow) -> Vec<String> {
         .flat_map(|pid| vec![format!("{}_state", pid), format!("{}_start", pid), format!("{}_end", pid)])
         .collect();
     vec.extend(ph_vec);
-    vec.push(String::from("last_pt_info"));
+    vec.push(String::from("last_point_info"));
     vec
 }
 

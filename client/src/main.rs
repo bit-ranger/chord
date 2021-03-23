@@ -117,7 +117,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
     let flow_path = task_path.clone().join("flow.yml");
 
     let flow =port::load::flow::yml::load(&flow_path)?;
-    let flow = Flow::new(flow.clone());
+    let flow = Flow::new(flow.clone())?;
 
     let report_dir_path = task_path.join(format!("{}", execution_id));
     std::fs::create_dir(report_dir_path.clone())?;

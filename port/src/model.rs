@@ -31,7 +31,7 @@ impl  From<common::value::JsonError> for PortError {
 
 impl  From<csv::Error> for PortError {
     fn from(err: csv::Error) -> PortError {
-        PortError::new("io", format!("{:?}", err.kind()).as_str())
+        PortError::new("csv", format!("{:?}", err.kind()).as_str())
     }
 }
 

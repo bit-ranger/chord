@@ -2,6 +2,7 @@ use common::flow::Flow;
 
 use crate::flow::case::arg::CaseArgStruct;
 use common::value::{Json};
+use common::error::Error;
 
 #[derive(Debug)]
 pub struct TaskArgStruct {
@@ -26,24 +27,25 @@ impl TaskArgStruct {
     }
 
 
-    pub fn data_case<'p>(self: &TaskArgStruct, case_ctx: &'p Vec<(String, Json)>) -> Vec<CaseArgStruct<'_, '_,'p>> {
-
-        return self.data.iter()
+    pub fn data_case_vec<'p>(self: &TaskArgStruct, case_ctx: &'p Vec<(String, Json)>) -> Result<Vec<CaseArgStruct<'_, '_,'p>>, Error> {
+        let case_point_id_vec = self.flow.case_point_id_vec()?;
+        let vec = self.data.iter()
             .enumerate()
             .map(|(idx,_)| {
                 CaseArgStruct::new(
                     idx,
                     &self.flow,
                     &self.data[idx],
-                    self.flow.pt_id_vec(),
-                case_ctx
+                    case_point_id_vec.clone(),
+                    case_ctx
                 )
             })
             .collect();
+        return Ok(vec);
     }
 
     pub fn pre_case(self: &TaskArgStruct) -> Option<CaseArgStruct<'_, '_, '_>> {
-        let pre_pt_id_vec = self.pre_pt_id_vec();
+        let pre_pt_id_vec = self.pre_point_id_vec();
         return if pre_pt_id_vec.is_empty() {
             None
         } else {
@@ -60,7 +62,7 @@ impl TaskArgStruct {
 
     }
 
-    fn pre_pt_id_vec(self: &TaskArgStruct) -> Vec<String> {
+    fn pre_point_id_vec(self: &TaskArgStruct) -> Vec<String> {
         let task_pt_chain_arr = self.flow.data()["task"]["pre"]["chain"].as_array();
         if task_pt_chain_arr.is_none() {
             return vec![];

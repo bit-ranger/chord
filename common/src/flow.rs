@@ -13,14 +13,18 @@ impl Flow{
         let flow = Flow{
             flow
         };
-        flow.case_point_id_vec()?;
-
+        let pt_id_vec = flow.case_point_id_vec()?;
+        for pt_id in pt_id_vec {
+            flow.point(pt_id.as_str())
+                .as_object()
+                .ok_or_else(|| Error::new("point", format!("invalid point_id {}", pt_id).as_str()))?;
+        }
         return Ok(flow);
     }
 
     pub fn case_point_id_vec(self: &Flow) -> Result<Vec<String>, Error> {
         let task_pt_chain_arr = self.flow["case"]["chain"].as_array()
-            .ok_or(Error::new("flow", "missing case.chain"))?;
+            .ok_or(Error::new("case", "missing case.chain"))?;
         return Ok(Flow::conv_to_string_vec(task_pt_chain_arr));
     }
 

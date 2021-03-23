@@ -140,7 +140,9 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
         }
     }
 
-    if !pa_vec.is_empty() {
+    if pa_vec.is_empty() {
+        vec.push(String::from(""));
+    } else {
         match pa_vec.last().unwrap().state(){
             PointState::Fail(json) => {
                 vec.push(json.to_string());

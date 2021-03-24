@@ -36,6 +36,10 @@ impl Flow{
         self.flow["point"][point_id]["config"].borrow()
     }
 
+    pub fn point_timeout(&self, point_id: &str) -> &Json{
+        self.flow["point"][point_id]["timeout"].borrow()
+    }
+
     pub fn task_def(&self) -> Option<&Map>{
         self.flow["task"]["def"].as_object()
     }

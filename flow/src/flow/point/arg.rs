@@ -13,6 +13,7 @@ use common::err;
 use common::flow::Flow;
 
 use crate::flow::case::arg::RenderContext;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct PointArgStruct<'c, 'd, 'h, 'reg, 'r>
@@ -117,6 +118,10 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
                 false
             }
         }
+    }
+
+    pub fn timeout(&self) -> Duration{
+        self.flow.point_timeout(self.id()).as_u64().map_or(Duration::from_secs(5), |sec| Duration::from_secs(sec))
     }
 
 }

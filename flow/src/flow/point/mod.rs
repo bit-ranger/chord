@@ -8,6 +8,7 @@ use res::PointAssessStruct;
 use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::AppContext;
 use common::point::{PointState};
+use async_std::future::timeout;
 use log::{trace, debug, info, warn};
 
 pub mod arg;
@@ -25,7 +26,15 @@ pub async fn run(app_context: &dyn AppContext, point_arg: &PointArgStruct<'_, '_
     }
     let pt_type = pt_type.unwrap();
     let pt_runner = app_context.get_pt_runner();
-    let pt_value = pt_runner.run(pt_type.as_str(), point_arg).await;
+    let pt_value_future = pt_runner.run(pt_type.as_str(), point_arg);
+    let timeout_result = timeout(point_arg.timeout(), pt_value_future).await;
+    let pt_value = match timeout_result {
+        Ok(pt_value) => pt_value,
+        Err(_) => {
+            warn!("point Err {}", point_arg.id());
+            return PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Err(Error::new("002", "timeout")));
+        }
+    };
 
     return match pt_value {
         PointValue::Ok(json) => {

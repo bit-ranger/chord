@@ -155,3 +155,11 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
         return self.render_inner(text);
     }
 }
+
+unsafe impl <'c, 'd, 'h, 'reg, 'r> Send for PointArgStruct<'c, 'd, 'h, 'reg, 'r>
+{
+}
+
+unsafe impl <'c, 'd, 'h, 'reg, 'r> Sync for PointArgStruct<'c, 'd, 'h, 'reg, 'r>
+{
+}

@@ -42,4 +42,11 @@ impl CaseAssess for CaseAssessStruct {
 }
 
 
+unsafe impl Send for CaseAssessStruct
+{
+}
+
+unsafe impl Sync for CaseAssessStruct
+{
+}
 

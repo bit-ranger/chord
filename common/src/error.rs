@@ -73,6 +73,14 @@ impl  From<Box<dyn std::error::Error>> for Error {
     }
 }
 
+unsafe impl Send for Error
+{
+}
+
+unsafe impl Sync for Error
+{
+}
+
 #[macro_export]
 macro_rules! err {
     ($code:expr, $message:expr) => {{

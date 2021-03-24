@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 
 pub type PointValue = std::result::Result<Json, Error>;
 
-pub trait PointArg {
+pub trait PointArg: Sync+Send {
 
     fn config_rendered(&self, path: Vec<&str>) -> Option<String>;
 
@@ -29,7 +29,7 @@ pub enum PointState {
     Err(Error)
 }
 
-pub trait PointAssess {
+pub trait PointAssess : Sync + Send{
 
     fn id(&self) -> &str;
 
@@ -39,3 +39,12 @@ pub trait PointAssess {
 
     fn state(&self) -> &PointState;
 }
+
+unsafe impl Send for PointState
+{
+}
+
+unsafe impl Sync for PointState
+{
+}
+

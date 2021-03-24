@@ -45,3 +45,10 @@ impl TaskAssess for TaskAssessStruct {
     }
 }
 
+unsafe impl Send for TaskAssessStruct
+{
+}
+
+unsafe impl Sync for TaskAssessStruct
+{
+}

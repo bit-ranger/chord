@@ -20,7 +20,7 @@ impl TaskState{
     }
 }
 
-pub trait TaskAssess{
+pub trait TaskAssess : Sync + Send{
 
     fn id(&self) -> &str;
 
@@ -32,3 +32,10 @@ pub trait TaskAssess{
 }
 
 
+unsafe impl Send for TaskState
+{
+}
+
+unsafe impl Sync for TaskState
+{
+}

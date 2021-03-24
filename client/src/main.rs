@@ -1,8 +1,7 @@
-use std::{env, fs};
+use std::{env, fs, thread};
 use std::path::Path;
 use std::time::SystemTime;
 
-use futures::future::join_all;
 use log::info;
 
 use common::err;
@@ -11,6 +10,7 @@ use common::flow::Flow;
 use common::task::TaskState;
 use flow::AppContext;
 use point::PointRunnerDefault;
+use futures::executor::block_on;
 
 mod logger;
 
@@ -46,8 +46,8 @@ async fn main() -> Result<(),Error> {
     let execution_id = duration.as_millis().to_string();
 
 
-    let app_context = flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
-    let task_state_vec = run_job(job_path, execution_id.as_str(), app_context.as_ref()).await;
+
+    let task_state_vec = run_job(job_path, execution_id.as_str()).await;
 
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
 
@@ -66,8 +66,7 @@ async fn main() -> Result<(),Error> {
 
 
 pub async fn run_job<P: AsRef<Path>>(job_path: P,
-                                     execution_id: &str,
-                                     app_context: &dyn AppContext) -> Vec<TaskState>{
+                                     execution_id: &str) -> Vec<TaskState>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("running job {}", job_path_str);
@@ -83,20 +82,21 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P,
             continue;
         }
 
-        futures.push(
-            run_task(job_path.as_ref().join(task_dir.path()), execution_id, app_context)
-        );
+        let task_path = job_path.as_ref().join(task_dir.path());
+        let execution_id = execution_id.to_owned();
+        let jh = thread::spawn(move || block_on(run_task(task_path, execution_id)));
+        futures.push(jh);
     }
 
-    let task_state_vec = join_all(futures).await;
+    let task_state_vec = futures.into_iter().map(|jh| jh.join().unwrap()).collect();
     // info!("finish job {}, {}", job_path_str, task_state_vec);
     return task_state_vec;
 }
 
 async fn run_task<P: AsRef<Path>>(task_path: P,
-                                  execution_id: &str,
-                                  app_context: &dyn AppContext) -> TaskState {
-    let rt = run_task0(task_path, execution_id, app_context).await;
+                                  execution_id: String) -> TaskState {
+    let app_context = flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
+    let rt = run_task0(task_path, execution_id.as_str(), app_context.as_ref()).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => TaskState::Err(e)

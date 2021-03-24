@@ -45,3 +45,12 @@ impl PointAssess for PointAssessStruct {
 }
 
 
+unsafe impl Send for PointAssessStruct
+{
+}
+
+unsafe impl Sync for PointAssessStruct
+{
+}
+
+

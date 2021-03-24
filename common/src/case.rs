@@ -5,7 +5,7 @@ use crate::error::Error;
 use crate::point::{PointAssess};
 
 
-pub trait CaseAssess {
+pub trait CaseAssess : Sync + Send{
 
     fn id(&self) -> usize;
 
@@ -20,6 +20,14 @@ pub enum CaseState {
     Ok(Vec<Box<dyn PointAssess>>),
     Err(Error),
     Fail(Vec<Box<dyn PointAssess>>)
+}
+
+unsafe impl Send for CaseState
+{
+}
+
+unsafe impl Sync for CaseState
+{
 }
 
 impl CaseState {

@@ -5,7 +5,7 @@ pub struct PointError(common::error::Error);
 
 impl PointError {
 
-    pub fn new(code: &str, message: &str) -> PointError {
+    pub fn new<C,M>(code: C, message: M) -> PointError where C: Into<String>, M: Into<String>{
         PointError(common::error::Error::new(code, message))
     }
 

@@ -1,7 +1,7 @@
 use common::point::PointArg;
 use crate::model::PointValue;
 use log::{debug};
-use crate::{err, perr};
+use crate::{err};
 use async_std::net::TcpStream;
 use async_std::prelude::*;
 use common::value::{Json};
@@ -11,9 +11,8 @@ use std::str::FromStr;
 pub async fn run(arg: &dyn PointArg) -> PointValue {
     let mut server_stream = match TcpStream::connect(arg.config_rendered(vec!["address"]).unwrap()).await {
         Ok(server_stream) => server_stream,
-
-        Err(_) => {
-            return err!("connection error", "");
+        Err(e) => {
+            return err!("connection error", format!("{}", e));
         }
     };
 
@@ -41,12 +40,19 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
 
     let mut value = unsafe { String::from_utf8_unchecked(Vec::from(response)) };
     debug!("Response: {}", value);
-    let i = value.rfind("\r\nelapsed:").ok_or(perr!("0", "elapsed"))?;
-    value.truncate(i);
+    let i = value.rfind("\r\nelapsed:");
+    match i {
+        Some(i) => {
+            value.truncate(i);
+            let json = Json::from_str(value.as_str())?;
+            PointValue::Ok(json)
+        },
+        None => {
+            err!("001", value)
+        }
+    }
 
-    let json = Json::from_str(value.as_str())?;
 
-    PointValue::Ok(json)
 }
 
 

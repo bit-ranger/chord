@@ -12,12 +12,12 @@ pub struct Error
     cause: Option<Arc<Box<dyn std::error::Error>>>
 }
 
-impl Error {
+impl  Error {
 
-    pub fn new(code: &str, message: &str) -> Error {
+    pub fn new<C,M>(code: C, message: M) -> Error  where C: Into<String>, M: Into<String>{
         Error {
-            code: String::from(code),
-            message: String::from(message),
+            code: String::from(code.into()),
+            message: String::from(message.into()),
             cause: None
         }
     }

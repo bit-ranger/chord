@@ -44,7 +44,11 @@ impl log::Log for ChannelLogger {
                 record.args()
             );
 
-            let log_path:String = log_mdc::get("work_path", |x| x.unwrap_or("").into());
+            println!("{}", String::from_utf8_lossy(&data));
+
+            // let log_path:String = log_mdc::get("work_path", |x| x.unwrap_or("").into());
+
+
 
             // if log_path.is_empty() {
             //     println!("{}", String::from_utf8_lossy(&data));
@@ -60,10 +64,10 @@ impl log::Log for ChannelLogger {
             //     writer.write_all(&data).unwrap();
             // }
 
-            let &(ref lock, ref cvar) = &*self.msg_queue;
-            let mut queue = lock.lock().unwrap();
-            queue.push_back((log_path,data));
-            cvar.notify_one();
+            // let &(ref lock, ref cvar) = &*self.msg_queue;
+            // let mut queue = lock.lock().unwrap();
+            // queue.push_back((log_path,data));
+            // cvar.notify_one();
         }
     }
 

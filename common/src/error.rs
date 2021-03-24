@@ -39,6 +39,7 @@ impl Error {
     pub fn message(self: &Error) -> &str{
         return &self.message
     }
+
 }
 
 impl std::error::Error for Error {
@@ -55,8 +56,8 @@ impl std::error::Error for Error {
 
 impl  Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.write_fmt(format_args!("{} \"code\": \"{}\", \"message\": \"{}\" {}",
-                                 "{", self.code, self.message, "}"))
+        f.write_str(format!("{} code: {}, message: {} {}",
+                                 "{", self.code, self.message, "}").as_str())
     }
 }
 
@@ -85,6 +86,15 @@ unsafe impl Sync for Error
 macro_rules! err {
     ($code:expr, $message:expr) => {{
         let res = $crate::error::Error::new($code, $message);
+        std::result::Result::Err(res)
+    }}
+}
+
+
+#[macro_export]
+macro_rules! cause {
+    ($code:expr, $message:expr, $cause:expr) => {{
+        let res = $crate::error::Error::cause($code, $message, std::boxed::Box::new($cause));
         std::result::Result::Err(res)
     }}
 }

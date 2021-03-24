@@ -4,7 +4,7 @@ use std::time::SystemTime;
 
 use log::info;
 
-use common::err;
+use common::{err, cause};
 use common::error::Error;
 use common::flow::Flow;
 use common::task::TaskState;
@@ -55,7 +55,7 @@ async fn main() -> Result<(),Error> {
         Some(et) => {
             match et {
                 TaskState::Ok(_) => Ok(()),
-                TaskState::Err(e) => err!("task", e.to_string().as_str()),
+                TaskState::Err(e) => cause!("task", e.to_string().as_str(), e.clone()),
                 TaskState::Fail(_) => err!("task", "fail")
             }
 

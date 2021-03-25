@@ -6,7 +6,7 @@ use common::point::PointRunner;
 
 use crate::model::helper::{BOOL_HELPER, NUM_HELPER};
 
-pub trait AppContext{
+pub trait AppContext: Sync+Send{
 
     fn get_handlebars(&self) -> &Handlebars;
 
@@ -48,6 +48,13 @@ impl <'reg> AppContext for AppContextStruct <'reg>{
 
 }
 
+unsafe impl<'reg> Send for AppContextStruct<'reg>
+{
+}
+
+unsafe impl<'reg> Sync for AppContextStruct<'reg>
+{
+}
 
 
 

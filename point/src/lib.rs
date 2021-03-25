@@ -32,9 +32,18 @@ impl PointRunnerDefault{
 
 impl PointRunner for PointRunnerDefault {
 
-    fn run<'a>(&self, pt_type: &'a str, context: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=common::point::PointValue> + 'a>> {
+    fn run<'a>(&self, pt_type: &'a str, context: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=common::point::PointValue> + Send  + 'a>> {
         Box::pin(crate::run_pt_type(pt_type, context))
     }
+}
+
+
+unsafe impl Send for PointRunnerDefault
+{
+}
+
+unsafe impl Sync for PointRunnerDefault
+{
 }
 
 

@@ -17,9 +17,9 @@ pub trait PointArg: Sync+Send {
     fn render(&self, text: &str) -> Result<String,Error>;
 }
 
-pub trait PointRunner{
+pub trait PointRunner: Sync+Send{
 
-    fn run<'a>(&self, pt_type: &'a str, pt_arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ 'a>>;
+    fn run<'a>(&self, pt_type: &'a str, pt_arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ Send + 'a>>;
 }
 
 #[derive(Debug, Clone)]

@@ -1,4 +1,4 @@
-use std::{env, fs, thread};
+use std::{env, fs};
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -13,8 +13,14 @@ use point::PointRunnerDefault;
 use futures::executor::block_on;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-
+use async_std::task::Builder;
+use futures::future::join_all;
+use async_std::task_local;
 mod logger;
+
+// task_local! {
+//     static VAL: Cell<u32> = Cell::new(5);
+// }
 
 #[async_std::main]
 async fn main() -> Result<(),Error> {
@@ -85,14 +91,16 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P,
         if !task_dir.path().is_dir(){
             continue;
         }
+        let builder = Builder::new()
+            .name(task_dir.file_name().to_str().unwrap().into());
 
         let task_path = job_path.as_ref().join(task_dir.path());
         let execution_id = execution_id.to_owned();
-        let jh = thread::spawn(move || block_on(run_task(task_path, execution_id)));
+        let jh = builder.spawn(run_task(task_path, execution_id)).unwrap();
         futures.push(jh);
     }
 
-    let task_state_vec = futures.into_iter().map(|jh| jh.join().unwrap()).collect();
+    let task_state_vec = join_all(futures).await;
     info!("job end {}", job_path_str);
     return task_state_vec;
 }

@@ -48,18 +48,18 @@ async fn main() -> Result<(),Error> {
     let execution_id = duration.as_millis().to_string();
 
     let log_path = job_path.clone().join("log.log");
-    let switch = Arc::new(AtomicBool::new(true));
+    let log_enable = Arc::new(AtomicBool::new(true));
     let log_handler = logger::init(execution_id.clone(),
                                    String::from(".*"),
-                              log_path.to_str().map(|s| s.to_owned()).unwrap(),
-                                   switch.clone()
+                                   log_path.to_str().map(|s| s.to_owned()).unwrap(),
+                                   log_enable.clone()
     ).await?;
 
 
 
     let task_state_vec = run_job(job_path, execution_id.as_str()).await;
 
-    switch.store(false, Ordering::SeqCst);
+    log_enable.store(false, Ordering::SeqCst);
     let _ = log_handler.join();
 
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();

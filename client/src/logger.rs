@@ -57,11 +57,11 @@ async fn log_thread_func(
     execution_id: String,
     receiver: Receiver<(String,Vec<u8>)>,
     mut default_log_writer: async_std::io::BufWriter<async_std::fs::File>,
-    switch: Arc<AtomicBool>
+    enable: Arc<AtomicBool>
 ) {
     let mut log_writer_map = HashMap::<String, BufWriter<File>>::new();
 
-    loop_write(execution_id, receiver, &mut default_log_writer, &mut log_writer_map, switch).await;
+    loop_write(execution_id, receiver, &mut default_log_writer, &mut log_writer_map, enable).await;
 
     let _ = default_log_writer.flush().await;
     for (_,mut v) in log_writer_map {
@@ -73,12 +73,12 @@ async fn loop_write(execution_id: String,
                     receiver: Receiver<(String,Vec<u8>)>,
                     default_log_writer: &mut async_std::io::BufWriter<async_std::fs::File>,
                     log_writer_map: &mut HashMap<String, BufWriter<File>>,
-                    switch: Arc<AtomicBool>){
+                    enable: Arc<AtomicBool>){
     let recv_timeout = Duration::from_secs(2);
     loop {
         let recv = receiver.recv_timeout(recv_timeout);
         if let Err(_) =  recv {
-            if !switch.load(Ordering::SeqCst){
+            if !enable.load(Ordering::SeqCst){
                 return;
             } else {
                 continue;
@@ -124,7 +124,7 @@ pub async fn init(
     execution_id: String,
     log_target: String,
     default_log_path: String,
-    switch: Arc<AtomicBool>
+    enable: Arc<AtomicBool>
 ) -> Result<JoinHandle<()>, Error> {
     let (sender, receiver) = unbounded();
 
@@ -142,7 +142,7 @@ pub async fn init(
     let default_log_writer = async_std::io::BufWriter::new(file);
 
     let jh = thread::spawn(move || block_on(
-        log_thread_func(execution_id, receiver, default_log_writer, switch.clone())
+        log_thread_func(execution_id, receiver, default_log_writer, enable.clone())
     ));
 
     Ok(jh)

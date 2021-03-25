@@ -44,7 +44,7 @@ impl log::Log for ChannelLogger {
                 record.args()
             );
 
-            println!("{:?} {}", std::thread::current().id(), String::from_utf8_lossy(&data));
+            println!("{}", String::from_utf8_lossy(&data));
 
             // let log_path:String = log_mdc::get("work_path", |x| x.unwrap_or("").into());
 

@@ -1,26 +1,25 @@
-use std::{env, fs};
+use std::env;
 use std::path::Path;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::SystemTime;
 
+use async_std::fs;
+use async_std::task::Builder;
+use futures::future::join_all;
 use log::info;
 
-use common::{err, cause};
+use common::{cause, err};
 use common::error::Error;
 use common::flow::Flow;
 use common::task::TaskState;
 use flow::AppContext;
 use point::PointRunnerDefault;
-use futures::executor::block_on;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use async_std::task::Builder;
-use futures::future::join_all;
-use async_std::task_local;
-mod logger;
+use futures::StreamExt;
 
-// task_local! {
-//     static VAL: Cell<u32> = Cell::new(5);
-// }
+mod logger;
+// mod mdc;
+
 
 #[async_std::main]
 async fn main() -> Result<(),Error> {
@@ -80,17 +79,23 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P,
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("job start {}", job_path_str);
-    let children = fs::read_dir(job_path.as_ref()).unwrap();
+    let mut job_dir = fs::read_dir(job_path.as_ref()).await.unwrap();
 
     let mut futures = Vec::new();
-    for task_dir in children{
+    loop {
+        let task_dir  = job_dir.next().await;
+        if task_dir.is_none(){
+            break;
+        }
+        let task_dir = task_dir.unwrap();
         if task_dir.is_err(){
             continue;
         }
         let task_dir = task_dir.unwrap();
-        if !task_dir.path().is_dir(){
+        if !task_dir.path().is_dir().await{
             continue;
         }
+
         let builder = Builder::new()
             .name(task_dir.file_name().to_str().unwrap().into());
 
@@ -100,6 +105,7 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P,
         futures.push(jh);
     }
 
+
     let task_state_vec = join_all(futures).await;
     info!("job end {}", job_path_str);
     return task_state_vec;
@@ -107,7 +113,7 @@ pub async fn run_job<P: AsRef<Path>>(job_path: P,
 
 async fn run_task<P: AsRef<Path>>(task_path: P,
                                   execution_id: String) -> TaskState {
-    log_mdc::insert("work_path", task_path.as_ref().to_str().unwrap());
+    // mdc::insert("work_path", task_path.as_ref().to_str().unwrap());
     let app_context = flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
     let rt = run_task0(task_path, execution_id.as_str(), app_context.as_ref()).await;
     match rt {
@@ -176,7 +182,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
 
     let result_path_old = task_work_path.clone().join("result.csv");
     let result_path_new = task_work_path.clone().join(format!("result_{}.csv", task_state_view));
-    let _ = std::fs::rename(result_path_old, result_path_new);
+    fs::rename(result_path_old, result_path_new).await.unwrap();
 
     info!("task end {}", task_path.to_str().unwrap());
     return Ok(total_task_state);

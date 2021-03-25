@@ -52,8 +52,7 @@ async fn main() -> Result<(),Error> {
     let log_handler = logger::init(execution_id.clone(),
                                    String::from(".*"),
                                    log_path.to_str().map(|s| s.to_owned()).unwrap(),
-                                   log_enable.clone()
-    ).await?;
+                                   log_enable.clone()).await?;
 
 
 

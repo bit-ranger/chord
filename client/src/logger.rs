@@ -74,7 +74,7 @@ async fn loop_write(execution_id: String,
                     default_log_writer: &mut async_std::io::BufWriter<async_std::fs::File>,
                     log_writer_map: &mut HashMap<String, BufWriter<File>>,
                     switch: Arc<AtomicBool>){
-    let recv_timeout = Duration::from_secs(1);
+    let recv_timeout = Duration::from_secs(2);
     loop {
         let recv = receiver.recv_timeout(recv_timeout);
         if let Err(_) =  recv {

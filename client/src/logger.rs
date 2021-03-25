@@ -1,9 +1,8 @@
 use log;
 use log::{Metadata, Record};
-use std::collections::vec_deque::VecDeque;
 use std::fs::{File};
 use std::io::{Write, BufWriter};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc};
 use std::thread;
 use std::vec::Vec;
 use time::{at, get_time, strftime};
@@ -15,10 +14,12 @@ use futures::AsyncWriteExt;
 use std::path::Path;
 use std::thread::JoinHandle;
 use std::sync::atomic::{AtomicBool, Ordering};
+use crossbeam::channel::{Sender, Receiver, unbounded};
+use std::time::Duration;
 
 struct ChannelLogger {
     target: Regex,
-    msg_queue: Arc<(Mutex<VecDeque<(String, Vec<u8>)>>, Condvar)>,
+    sender: Sender<(String,Vec<u8>)>
 }
 
 impl log::Log for ChannelLogger {
@@ -44,30 +45,8 @@ impl log::Log for ChannelLogger {
                 record.args()
             );
 
-            println!("{}", String::from_utf8_lossy(&data));
-
             // let log_path:String = log_mdc::get("work_path", |x| x.unwrap_or("").into());
-
-
-
-            // if log_path.is_empty() {
-            //     println!("{}", String::from_utf8_lossy(&data));
-            // } else {
-            //     let log_file_path = Path::new(&log_path).join("log.log");
-            //     println!("{}", log_file_path.to_str().unwrap());
-            //     let mut file = std::fs::OpenOptions::new()
-            //         .create(true)
-            //         .write(true)
-            //         .append(true)
-            //         .open(&log_file_path).unwrap();
-            //     let mut writer = std::io::BufWriter::new(file);
-            //     writer.write_all(&data).unwrap();
-            // }
-
-            // let &(ref lock, ref cvar) = &*self.msg_queue;
-            // let mut queue = lock.lock().unwrap();
-            // queue.push_back((log_path,data));
-            // cvar.notify_one();
+            let _ = self.sender.send(("".into(), data));
         }
     }
 
@@ -76,13 +55,13 @@ impl log::Log for ChannelLogger {
 
 async fn log_thread_func(
     execution_id: String,
-    msg_queue: Arc<(Mutex<VecDeque<(String, Vec<u8>)>>, Condvar)>,
+    receiver: Receiver<(String,Vec<u8>)>,
     mut default_log_writer: async_std::io::BufWriter<async_std::fs::File>,
     switch: Arc<AtomicBool>
 ) {
     let mut log_writer_map = HashMap::<String, BufWriter<File>>::new();
 
-    loop_write(execution_id, msg_queue, &mut default_log_writer, &mut log_writer_map, switch).await;
+    loop_write(execution_id, receiver, &mut default_log_writer, &mut log_writer_map, switch).await;
 
     let _ = default_log_writer.flush().await;
     for (_,mut v) in log_writer_map {
@@ -91,21 +70,24 @@ async fn log_thread_func(
 }
 
 async fn loop_write(execution_id: String,
-                    msg_queue: Arc<(Mutex<VecDeque<(String, Vec<u8>)>>, Condvar)>,
+                    receiver: Receiver<(String,Vec<u8>)>,
                     default_log_writer: &mut async_std::io::BufWriter<async_std::fs::File>,
                     log_writer_map: &mut HashMap<String, BufWriter<File>>,
                     switch: Arc<AtomicBool>){
+    let recv_timeout = Duration::from_secs(1);
     loop {
-        let &(ref lock, ref cvar) = &*msg_queue;
-        let mut queue = lock.lock().unwrap();
-        while queue.is_empty() {
+        let recv = receiver.recv_timeout(recv_timeout);
+        if let Err(_) =  recv {
             if !switch.load(Ordering::SeqCst){
                 return;
+            } else {
+                continue;
             }
-            queue = cvar.wait(queue).unwrap();
         }
 
-        let (log_path, data) = queue.pop_front().unwrap();
+        let (log_path, data) = recv.unwrap();
+
+        println!("{}", String::from_utf8_lossy(&data));
 
         if log_path.is_empty() {
             let _ = default_log_writer.write_all(&data).await;
@@ -144,13 +126,11 @@ pub async fn init(
     default_log_path: String,
     switch: Arc<AtomicBool>
 ) -> Result<JoinHandle<()>, Error> {
-
-    let sender = Arc::new((Mutex::new(VecDeque::new()), Condvar::new()));
-    let receiver = sender.clone();
+    let (sender, receiver) = unbounded();
 
     log::set_max_level(log::LevelFilter::Trace);
     let _ = log::set_boxed_logger(Box::new(ChannelLogger {
-        msg_queue: sender,
+        sender,
         target: Regex::new(&log_target).unwrap(),
     }));
 

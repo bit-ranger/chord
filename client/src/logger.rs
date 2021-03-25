@@ -1,24 +1,21 @@
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
-use std::thread::JoinHandle;
-use std::time::Duration;
-use std::vec::Vec;
-
-use async_std::fs::File;
-use async_std::fs::OpenOptions;
-use async_std::io::BufWriter;
-use async_std::prelude::*;
-use crossbeam::channel::{Receiver, Sender, unbounded};
-use futures::executor::block_on;
 use log;
 use log::{Metadata, Record};
-use regex::Regex;
+use std::fs::{File};
+use std::io::{Write, BufWriter};
+use std::sync::{Arc};
+use std::thread;
+use std::vec::Vec;
 use time::{at, get_time, strftime};
-
+use regex::Regex;
+use futures::executor::block_on;
 use common::error::Error;
+use std::collections::HashMap;
+use futures::AsyncWriteExt;
+use std::path::Path;
+use std::thread::JoinHandle;
+use std::sync::atomic::{AtomicBool, Ordering};
+use crossbeam::channel::{Sender, Receiver, unbounded};
+use std::time::Duration;
 
 struct ChannelLogger {
     target: Regex,
@@ -100,15 +97,15 @@ async fn loop_write(execution_id: String,
         let writer = log_writer_map.get_mut(log_path.as_str());
         match writer {
             Some(writer) => {
-                let _ = writer.write_all(&data).await;
+                let _ = writer.write_all(&data);
             },
             None => {
                 let log_file_path = Path::new(&log_path).join(execution_id.as_str()).join("log.log");
-                let file = File::create(log_file_path).await;
+                let file = File::create(log_file_path);
                 match file {
                     Ok(file) => {
                         let mut writer = BufWriter::new(file);
-                        let _ = writer.write_all(&data).await;
+                        let _ = writer.write_all(&data);
                         log_writer_map.insert(log_path, writer);
                     },
                     Err(_) => {
@@ -137,7 +134,7 @@ pub async fn init(
         target: Regex::new(&log_target).unwrap(),
     }));
 
-    let file = OpenOptions::new()
+    let file = async_std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .append(true)

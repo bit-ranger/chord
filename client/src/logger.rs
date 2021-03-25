@@ -46,7 +46,7 @@ impl log::Log for ChannelLogger {
             );
 
             // let log_path:String = log_mdc::get("work_path", |x| x.unwrap_or("").into());
-            let _ = self.sender.send(("".into(), data));
+            let _ = self.sender.try_send(("".into(), data));
         }
     }
 

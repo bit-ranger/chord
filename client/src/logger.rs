@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
@@ -19,11 +18,10 @@ use regex::Regex;
 use time::{at, get_time, strftime};
 
 use common::error::Error;
-// use crate::mdc;
 
 struct ChannelLogger {
     target: Regex,
-    sender: Sender<(String,Vec<u8>)>
+    sender: Sender<Vec<u8>>
 }
 
 impl log::Log for ChannelLogger {
@@ -49,8 +47,7 @@ impl log::Log for ChannelLogger {
                 record.args()
             );
 
-            // let log_path:String = mdc::get("work_path", |x| x.unwrap_or("").into());
-            let _ = self.sender.try_send(("".into(), data));
+            let _ = self.sender.try_send(data);
         }
     }
 
@@ -58,25 +55,17 @@ impl log::Log for ChannelLogger {
 }
 
 async fn log_thread_func(
-    execution_id: String,
-    receiver: Receiver<(String,Vec<u8>)>,
+    receiver: Receiver<Vec<u8>>,
     mut default_log_writer: BufWriter<File>,
     enable: Arc<AtomicBool>
 ) {
-    let mut log_writer_map = HashMap::<String, BufWriter<File>>::new();
-
-    loop_write(execution_id, receiver, &mut default_log_writer, &mut log_writer_map, enable).await;
+    loop_write(receiver, &mut default_log_writer, enable).await;
 
     let _ = default_log_writer.flush().await;
-    for (_,mut v) in log_writer_map {
-        let _ = v.flush();
-    }
 }
 
-async fn loop_write(execution_id: String,
-                    receiver: Receiver<(String,Vec<u8>)>,
+async fn loop_write(receiver: Receiver<Vec<u8>>,
                     default_log_writer: &mut BufWriter<File>,
-                    log_writer_map: &mut HashMap<String, BufWriter<File>>,
                     enable: Arc<AtomicBool>){
     let recv_timeout = Duration::from_secs(2);
     loop {
@@ -89,45 +78,18 @@ async fn loop_write(execution_id: String,
             }
         }
 
-        let (log_path, data) = recv.unwrap();
+        let data = recv.unwrap();
 
         println!("{}", String::from_utf8_lossy(&data));
 
-        if log_path.is_empty() {
-            let _ = default_log_writer.write_all(&data).await;
-            continue;
-        }
-
-        let writer = log_writer_map.get_mut(log_path.as_str());
-        match writer {
-            Some(writer) => {
-                let _ = writer.write_all(&data).await;
-            },
-            None => {
-                let log_file_path = Path::new(&log_path).join(execution_id.as_str()).join("log.log");
-                let file = File::create(log_file_path).await;
-                match file {
-                    Ok(file) => {
-                        let mut writer = BufWriter::new(file);
-                        let _ = writer.write_all(&data).await;
-                        log_writer_map.insert(log_path, writer);
-                    },
-                    Err(_) => {
-                        let log_file_path = Path::new(&log_path).join(execution_id.as_str()).join("log.log");
-                        println!("failed to create file {}", log_file_path.to_str().unwrap());
-                    }
-                }
-
-            }
-        }
+        let _ = default_log_writer.write_all(&data).await;
     }
 }
 
 
 pub async fn init(
-    execution_id: String,
     log_target: String,
-    job_path: &Path,
+    log_file_path: &Path,
     enable: Arc<AtomicBool>
 ) -> Result<JoinHandle<()>, Error> {
     let (sender, receiver) = unbounded();
@@ -137,7 +99,7 @@ pub async fn init(
         sender,
         target: Regex::new(&log_target).unwrap(),
     }));
-    let log_file_path = Path::new(job_path).join(format!("log_{}.log", execution_id));
+
     let file = async_std::fs::OpenOptions::new()
         .create(true)
         .write(true)
@@ -146,7 +108,7 @@ pub async fn init(
     let default_log_writer = BufWriter::new(file);
 
     let jh = thread::spawn(move || block_on(
-        log_thread_func(execution_id, receiver, default_log_writer, enable.clone())
+        log_thread_func(receiver, default_log_writer, enable.clone())
     ));
 
     Ok(jh)

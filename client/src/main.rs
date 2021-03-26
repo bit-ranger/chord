@@ -38,10 +38,10 @@ async fn main() -> Result<(),Error> {
         .duration_since(SystemTime::UNIX_EPOCH).unwrap();
     let execution_id = duration.as_millis().to_string();
 
+    let log_file_path = Path::new(job_path).join(format!("log_{}.log", execution_id));
     let log_enable = Arc::new(AtomicBool::new(true));
     let log_handler = logger::init(execution_id.clone(),
-                                   String::from(".*"),
-                                   job_path.clone(),
+                                   &log_file_path,
                                    log_enable.clone()).await?;
 
     let task_state_vec = job::run(job_path, execution_id.as_str()).await;

@@ -19,6 +19,7 @@ use regex::Regex;
 use time::{at, get_time, strftime};
 
 use common::error::Error;
+// use crate::mdc;
 
 struct ChannelLogger {
     target: Regex,
@@ -48,7 +49,7 @@ impl log::Log for ChannelLogger {
                 record.args()
             );
 
-            // let log_path:String = log_mdc::get("work_path", |x| x.unwrap_or("").into());
+            // let log_path:String = mdc::get("work_path", |x| x.unwrap_or("").into());
             let _ = self.sender.try_send(("".into(), data));
         }
     }
@@ -126,7 +127,7 @@ async fn loop_write(execution_id: String,
 pub async fn init(
     execution_id: String,
     log_target: String,
-    default_log_path: String,
+    job_path: &Path,
     enable: Arc<AtomicBool>
 ) -> Result<JoinHandle<()>, Error> {
     let (sender, receiver) = unbounded();
@@ -136,12 +137,12 @@ pub async fn init(
         sender,
         target: Regex::new(&log_target).unwrap(),
     }));
-
+    let log_file_path = Path::new(job_path).join(format!("log_{}.log", execution_id));
     let file = async_std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .append(true)
-        .open(&default_log_path).await?;
+        .open(&log_file_path).await?;
     let default_log_writer = BufWriter::new(file);
 
     let jh = thread::spawn(move || block_on(

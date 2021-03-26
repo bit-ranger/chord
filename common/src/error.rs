@@ -64,7 +64,7 @@ impl  Display for Error {
 
 impl  From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
-        Error::new("io", format!("{:?}", err.kind()).as_str())
+        Error::new("io", format!("{:?}", err).as_str())
     }
 }
 

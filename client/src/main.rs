@@ -40,7 +40,7 @@ async fn main() -> Result<(),Error> {
 
     let log_file_path = Path::new(job_path).join(format!("log_{}.log", execution_id));
     let log_enable = Arc::new(AtomicBool::new(true));
-    let log_handler = logger::init(execution_id.clone(),
+    let log_handler = logger::init(String::from(".*"),
                                    &log_file_path,
                                    log_enable.clone()).await?;
 

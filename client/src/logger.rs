@@ -73,6 +73,8 @@ async fn loop_write(receiver: Receiver<Vec<u8>>,
         if let Err(_) =  recv {
             if !enable.load(Ordering::SeqCst){
                 return;
+            } else {
+                continue;
             }
         }
 

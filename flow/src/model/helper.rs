@@ -140,7 +140,7 @@ impl HelperDef for AnyHelper {
 
             match param {
                 Json::Bool(b) => {
-                    if b {
+                    if *b {
                         return Ok(Some(ScopedJson::Derived(Json::Bool(true))));
                     }
                 },

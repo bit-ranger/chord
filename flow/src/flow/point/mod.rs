@@ -15,43 +15,37 @@ pub mod arg;
 pub mod res;
 
 
-pub async fn run(app_context: &dyn AppContext, point_arg: &PointArgStruct<'_, '_, '_, '_, '_>) -> PointAssessStruct
+pub async fn run(app_context: &dyn AppContext, arg: &PointArgStruct<'_, '_, '_, '_, '_>) -> PointAssessStruct
 {
-    trace!("point start {}", point_arg.id());
+    trace!("point start {}", arg.id());
     let start = Utc::now();
-    let pt_type = point_arg.meta_str(vec!["type"]).await;
-    if pt_type.is_none(){
-        warn!("point Err {}", point_arg.id());
-        return PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Err(Error::new("001", "missing type")));
-    }
-    let pt_type = pt_type.unwrap();
-    let pt_runner = app_context.get_pt_runner();
-    let pt_value_future = pt_runner.run(pt_type.as_str(), point_arg);
-    let timeout_result = timeout(point_arg.timeout(), pt_value_future).await;
-    let pt_value = match timeout_result {
-        Ok(pt_value) => pt_value,
+
+    let future = app_context.get_point_runner().run(arg.kind(), arg);
+    let timeout_value = timeout(arg.timeout(), future).await;
+    let value = match timeout_value {
+        Ok(v) => v,
         Err(_) => {
-            warn!("point Err {}", point_arg.id());
-            return PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Err(Error::new("002", "timeout")));
+            warn!("point Err {}", arg.id());
+            return PointAssessStruct::new(arg.id(), start, Utc::now(), PointState::Err(Error::new("002", "timeout")));
         }
     };
 
-    return match pt_value {
+    return match value {
         PointValue::Ok(json) => {
-            let assert_true = assert(point_arg, &json).await;
+            let assert_true = assert(arg, &json).await;
             return if assert_true {
-                debug!("point Ok   {} - {} \n", point_arg.id(), json);
-                PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Ok(json))
+                debug!("point Ok   {} - {} \n", arg.id(), json);
+                PointAssessStruct::new(arg.id(), start, Utc::now(), PointState::Ok(json))
             } else {
-                let txt = point_arg.render(point_arg.config().to_string().as_str()).unwrap();
-                info!("point Fail {} - {} \n<<< {}", point_arg.id(), json, txt);
-                PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Fail(json))
+                let txt = arg.render(arg.config().to_string().as_str()).unwrap();
+                info!("point Fail {} - {} \n<<< {}", arg.id(), json, txt);
+                PointAssessStruct::new(arg.id(), start, Utc::now(), PointState::Fail(json))
             }
         },
         PointValue::Err(e) => {
-            let txt = point_arg.render(point_arg.config().to_string().as_str());
-            warn!("point Err  {} - {} \n<<< {}", point_arg.id(), e, txt.unwrap());
-            PointAssessStruct::new(point_arg.id(), start, Utc::now(), PointState::Err(e))
+            let txt = arg.render(arg.config().to_string().as_str());
+            warn!("point Err  {} - {} \n<<< {}", arg.id(), e, txt.unwrap());
+            PointAssessStruct::new(arg.id(), start, Utc::now(), PointState::Err(e))
         }
     };
 }

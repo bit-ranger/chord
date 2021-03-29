@@ -10,14 +10,14 @@ pub trait AppContext: Sync+Send{
 
     fn get_handlebars(&self) -> &Handlebars;
 
-    fn get_pt_runner(&self) -> &dyn PointRunner;
+    fn get_point_runner(&self) -> &dyn PointRunner;
 }
 
 
 pub struct AppContextStruct<'reg> {
 
     handlebars: Handlebars<'reg>,
-    pt_runner: Box<dyn PointRunner>
+    point_runner: Box<dyn PointRunner>
 }
 
 impl <'reg> AppContextStruct<'reg> {
@@ -29,7 +29,7 @@ impl <'reg> AppContextStruct<'reg> {
 
         AppContextStruct{
             handlebars,
-            pt_runner
+            point_runner: pt_runner
         }
     }
 
@@ -42,8 +42,8 @@ impl <'reg> AppContext for AppContextStruct <'reg>{
         self.handlebars.borrow()
     }
 
-    fn get_pt_runner(self: &AppContextStruct<'reg>) -> & dyn PointRunner{
-        self.pt_runner.as_ref()
+    fn get_point_runner(self: &AppContextStruct<'reg>) -> & dyn PointRunner{
+        self.point_runner.as_ref()
     }
 
 }

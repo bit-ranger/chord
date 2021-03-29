@@ -1,6 +1,7 @@
 use crate::value::{Json, Map};
 use std::borrow::Borrow;
 use crate::error::Error;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct Flow {
@@ -18,6 +19,8 @@ impl Flow{
             flow.point(pt_id.as_str())
                 .as_object()
                 .ok_or_else(|| Error::new("point", format!("invalid point_id {}", pt_id).as_str()))?;
+
+            let _ = flow.point_kind(pt_id.as_str());
         }
         return Ok(flow);
     }
@@ -36,8 +39,13 @@ impl Flow{
         self.flow["point"][point_id]["config"].borrow()
     }
 
-    pub fn point_timeout(&self, point_id: &str) -> &Json{
-        self.flow["point"][point_id]["timeout"].borrow()
+    pub fn point_timeout(&self, point_id: &str) -> Duration{
+        self.flow["point"][point_id]["timeout"].as_u64()
+            .map_or(Duration::from_secs(5), |sec| Duration::from_secs(sec))
+    }
+
+    pub fn point_kind(&self, point_id: &str) -> &str{
+        self.flow["point"][point_id]["kind"].as_str().unwrap()
     }
 
     pub fn task_def(&self) -> Option<&Map>{

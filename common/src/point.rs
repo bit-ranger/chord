@@ -19,7 +19,7 @@ pub trait PointArg: Sync+Send {
 
 pub trait PointRunner: Sync+Send{
 
-    fn run<'a>(&self, pt_type: &'a str, pt_arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ Send + 'a>>;
+    fn run<'a>(&self, kind: &'a str, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ Send + 'a>>;
 }
 
 #[derive(Debug, Clone)]

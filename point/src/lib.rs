@@ -32,8 +32,8 @@ impl PointRunnerDefault{
 
 impl PointRunner for PointRunnerDefault {
 
-    fn run<'a>(&self, pt_type: &'a str, context: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=common::point::PointValue> + Send  + 'a>> {
-        Box::pin(crate::run_pt_type(pt_type, context))
+    fn run<'a>(&self, kind: &'a str, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=common::point::PointValue> + Send  + 'a>> {
+        Box::pin(crate::run_point_kind(kind, arg))
     }
 }
 
@@ -47,24 +47,24 @@ unsafe impl Sync for PointRunnerDefault
 }
 
 
-async fn run_pt_type(pt_type: &str, pt_arg: &dyn PointArg) -> common::point::PointValue{
+async fn run_point_kind(kind: &str, arg: &dyn PointArg) -> common::point::PointValue{
 
-    let pt_value = match pt_type.trim() {
+    let value = match kind.trim() {
+        "sleep" => point::sleep::run(arg).await,
         #[cfg(feature = "pt_restapi")]
-        "restapi" => point::restapi::run(pt_arg).await,
+        "restapi" => point::restapi::run(arg).await,
         #[cfg(feature = "pt_md5")]
-        "md5" => point::md5::run(pt_arg).await,
+        "md5" => point::md5::run(arg).await,
         #[cfg(feature = "pt_dubbo")]
-        "dubbo" => point::dubbo::run(pt_arg).await,
-        "sleep" => point::sleep::run(pt_arg).await,
+        "dubbo" => point::dubbo::run(arg).await,
         #[cfg(feature = "pt_mysql")]
-        "mysql" => point::mysql::run(pt_arg).await,
+        "mysql" => point::mysql::run(arg).await,
         #[cfg(feature = "pt_redis")]
-        "redis" => point::redis::run(pt_arg).await,
-        _ => err!("002", format!("unsupported point type {}", pt_type).as_str())
+        "redis" => point::redis::run(arg).await,
+        _ => err!("002", format!("unsupported point kind {}", kind).as_str())
     };
 
-    return model::to_common_value(pt_value);
+    return model::to_common_value(value);
 }
 
 

@@ -121,7 +121,12 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
     }
 
     pub fn timeout(&self) -> Duration{
-        self.flow.point_timeout(self.id()).as_u64().map_or(Duration::from_secs(5), |sec| Duration::from_secs(sec))
+        self.flow.point_timeout(self.id())
+    }
+
+
+    pub fn kind(&self) -> &str{
+        self.flow.point_kind(self.id())
     }
 
 }

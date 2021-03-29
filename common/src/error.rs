@@ -3,6 +3,29 @@ use std::fmt;
 use std::sync::Arc;
 
 
+#[macro_export]
+macro_rules! err {
+    ($code:expr, $message:expr) => {{
+        let res = $crate::error::Error::new($code, $message);
+        std::result::Result::Err(res)
+    }}
+}
+
+#[macro_export]
+macro_rules! perr {
+    ($code:expr, $message:expr) => {{
+        $crate::error::Error::new($code, $message)
+    }}
+}
+
+#[macro_export]
+macro_rules! cause {
+    ($code:expr, $message:expr, $cause:expr) => {{
+        let res = $crate::error::Error::cause($code, $message, std::boxed::Box::new($cause));
+        std::result::Result::Err(res)
+    }}
+}
+
 #[derive(Debug,Clone)]
 pub struct Error
 
@@ -64,7 +87,7 @@ impl  Display for Error {
 
 impl  From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
-        Error::new("io", format!("{:?}", err).as_str())
+       perr!("io", format!("{:?}", err).as_str())
     }
 }
 
@@ -82,19 +105,3 @@ unsafe impl Sync for Error
 {
 }
 
-#[macro_export]
-macro_rules! err {
-    ($code:expr, $message:expr) => {{
-        let res = $crate::error::Error::new($code, $message);
-        std::result::Result::Err(res)
-    }}
-}
-
-
-#[macro_export]
-macro_rules! cause {
-    ($code:expr, $message:expr, $cause:expr) => {{
-        let res = $crate::error::Error::cause($code, $message, std::boxed::Box::new($cause));
-        std::result::Result::Err(res)
-    }}
-}

@@ -7,6 +7,7 @@ use std::path::Path;
 use common::flow::Flow;
 use std::fs::File;
 use common::task::{TaskAssess, TaskState};
+use common::perr;
 
 pub async fn report<W: std::io::Write>(writer: &mut Writer<W>,
                                        task_assess: &dyn TaskAssess,
@@ -23,11 +24,11 @@ pub async fn from_writer<W: std::io::Write>(writer: W) -> Writer<W> {
 }
 
 pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
-    csv::WriterBuilder::new().from_path(path).map_err(|e| Error::new("csv", e.to_string().as_str()))
+    csv::WriterBuilder::new().from_path(path).map_err(|e|perr!("csv", e.to_string().as_str()))
 }
 
 pub async fn prepare<W: std::io::Write>(writer: &mut Writer<W>, flow: &Flow) -> Result<(), Error> {
-    writer.write_record(create_head(flow)).map_err(|e| Error::new("csv", e.to_string().as_str()))
+    writer.write_record(create_head(flow)).map_err(|e|perr!("csv", e.to_string().as_str()))
 }
 
 fn create_head(flow: &Flow) -> Vec<String> {

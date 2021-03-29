@@ -2,6 +2,7 @@ use crate::value::{Json, Map};
 use std::borrow::Borrow;
 use crate::error::Error;
 use std::time::Duration;
+use crate::perr;
 
 #[derive(Debug, Clone)]
 pub struct Flow {
@@ -18,7 +19,7 @@ impl Flow{
         for pt_id in pt_id_vec {
             flow.point(pt_id.as_str())
                 .as_object()
-                .ok_or_else(|| Error::new("point", format!("invalid point_id {}", pt_id).as_str()))?;
+                .ok_or_else(||perr!("point", format!("invalid point_id {}", pt_id).as_str()))?;
 
             let _ = flow.point_kind(pt_id.as_str());
         }

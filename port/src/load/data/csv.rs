@@ -2,6 +2,7 @@
 use csv::{ReaderBuilder, Reader};
 use common::error::Error;
 use common::err;
+use common::perr;
 use common::value::{Json, Map};
 use std::path::Path;
 use std::fs::File;
@@ -33,5 +34,5 @@ pub async fn from_reader<R: std::io::Read>(reader: R) -> Result<Reader<R>, Error
 }
 
 pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Reader<File>, Error>{
-    ReaderBuilder::new().from_path(path).map_err(|e| Error::new("csv", e.to_string().as_str()))
+    ReaderBuilder::new().from_path(path).map_err(|e|perr!("csv", e.to_string().as_str()))
 }

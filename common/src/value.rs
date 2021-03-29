@@ -8,9 +8,10 @@ pub use serde_json::from_slice;
 pub use serde_json::from_value;
 pub use serde_json::error::Error as JsonError;
 use crate::error::Error;
+use crate::perr;
 
 impl  From<serde_json::error::Error> for Error{
     fn from(err: serde_json::error::Error) -> Error {
-        Error::new("json", format!("{:?}", err).as_str())
+       perr!("json", format!("{:?}", err).as_str())
     }
 }

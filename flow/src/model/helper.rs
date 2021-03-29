@@ -7,6 +7,7 @@ use common::value::{Json, Number};
 pub static NUM_HELPER: NumHelper = NumHelper { };
 pub static BOOL_HELPER: BoolHelper = BoolHelper { };
 pub static ALL_HELPER: AllHelper = AllHelper { };
+pub static ANY_HELPER: AnyHelper = AnyHelper { };
 
 #[derive(Clone, Copy)]
 pub struct NumHelper;
@@ -108,5 +109,47 @@ impl HelperDef for AllHelper {
         }
 
         return Ok(Some(ScopedJson::Derived(Json::Bool(true))));
+    }
+}
+
+
+#[derive(Clone, Copy)]
+pub struct AnyHelper;
+
+impl HelperDef for AnyHelper {
+
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        _: &'reg Handlebars<'reg>,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg, 'rc>,
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+
+        let mut idx = 0;
+        loop {
+            let param = h.param(idx);
+            if param.is_none() {
+                if idx == 0 {
+                    return Err(RenderError::new("Param not found for helper \"any\""));
+                }
+                break;
+            }
+
+            let param = param.unwrap().value();
+
+            match param {
+                Json::Bool(b) => {
+                    if b {
+                        return Ok(Some(ScopedJson::Derived(Json::Bool(true))));
+                    }
+                },
+                _ => return Err(RenderError::new("\"any\" only accept bool"))
+            }
+
+            idx = idx + 1;
+        }
+
+        return Ok(Some(ScopedJson::Derived(Json::Bool(false))));
     }
 }

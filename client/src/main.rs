@@ -24,7 +24,7 @@ async fn main() -> Result<(),Error> {
         Ok(m) => m,
         Err(e) => {
             println!("{}", opts.short_usage("chord"));
-            return err!("arg", e.to_string().as_str());
+            return err!("arg", e.to_string());
         }
     };
 
@@ -54,7 +54,7 @@ async fn main() -> Result<(),Error> {
         Some(et) => {
             match et {
                 TaskState::Ok(_) => Ok(()),
-                TaskState::Err(e) => cause!("task", e.to_string().as_str(), e.clone()),
+                TaskState::Err(e) => cause!("task", e.to_string(), e.clone()),
                 TaskState::Fail(_) => err!("task", "fail")
             }
         },

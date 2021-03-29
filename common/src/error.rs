@@ -39,16 +39,16 @@ impl  Error {
 
     pub fn new<C,M>(code: C, message: M) -> Error  where C: Into<String>, M: Into<String>{
         Error {
-            code: String::from(code.into()),
-            message: String::from(message.into()),
+            code: code.into(),
+            message: message.into(),
             cause: None
         }
     }
 
-    pub fn cause(code: &str, message: &str, cause: Box<dyn std::error::Error>) -> Error {
+    pub fn cause<C,M>(code: C, message: M, cause: Box<dyn std::error::Error>) -> Error where C: Into<String>, M: Into<String>{
         Error {
-            code: String::from(code),
-            message: String::from(message),
+            code: code.into(),
+            message: message.into(),
             cause: Some(Arc::new(cause))
         }
     }
@@ -87,7 +87,7 @@ impl  Display for Error {
 
 impl  From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
-       perr!("io", format!("{:?}", err).as_str())
+       perr!("io", format!("{:?}", err))
     }
 }
 

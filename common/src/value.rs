@@ -12,6 +12,6 @@ use crate::perr;
 
 impl  From<serde_json::error::Error> for Error{
     fn from(err: serde_json::error::Error) -> Error {
-       perr!("json", format!("{:?}", err).as_str())
+       perr!("json", format!("{:?}", err))
     }
 }

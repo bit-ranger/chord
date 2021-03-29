@@ -98,10 +98,10 @@ async fn pre_ctx(app_context: &dyn AppContext, task_arg: &TaskArgStruct) -> Resu
         }
         CaseState::Fail(pa_vec) => {
             let pa_last = pa_vec.last().unwrap();
-            err!("020", format!("pre Fail : {}", pa_last.id()).as_str())
+            err!("020", format!("pre Fail : {}", pa_last.id()))
         },
         CaseState::Err(e) => {
-            err!("021", format!("pre Err  : {}", e.to_string()).as_str())
+            err!("021", format!("pre Err  : {}", e.to_string()))
         }
     }
 

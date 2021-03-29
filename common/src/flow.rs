@@ -19,7 +19,7 @@ impl Flow{
         for pt_id in pt_id_vec {
             flow.point(pt_id.as_str())
                 .as_object()
-                .ok_or_else(||perr!("point", format!("invalid point_id {}", pt_id).as_str()))?;
+                .ok_or_else(||perr!("point", format!("invalid point_id {}", pt_id)))?;
 
             let _ = flow.point_kind(pt_id.as_str());
         }

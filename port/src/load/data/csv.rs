@@ -13,7 +13,7 @@ pub fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Resu
     for result in reader.deserialize() {
 
         let result = match result  {
-            Err(e)  => return err!("csv", format!("{:?}", e).as_str()),
+            Err(e)  => return err!("csv", format!("{:?}", e)),
             Ok(r) => r
         };
 
@@ -34,5 +34,5 @@ pub async fn from_reader<R: std::io::Read>(reader: R) -> Result<Reader<R>, Error
 }
 
 pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Reader<File>, Error>{
-    ReaderBuilder::new().from_path(path).map_err(|e|perr!("csv", e.to_string().as_str()))
+    ReaderBuilder::new().from_path(path).map_err(|e|perr!("csv", e.to_string()))
 }

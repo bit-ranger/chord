@@ -77,7 +77,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
             text, self.render_context);
         return match render {
             Ok(r) => Ok(r),
-            Err(e) => err!("tpl", format!("{}", e).as_str())
+            Err(e) => err!("tpl", format!("{}", e))
         };
     }
 
@@ -97,7 +97,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
             text, &ctx);
         return match render {
             Ok(r) => Ok(r),
-            Err(e) => err!("tpl", format!("{}", e).as_str())
+            Err(e) => err!("tpl", format!("{}", e))
         };
     }
 

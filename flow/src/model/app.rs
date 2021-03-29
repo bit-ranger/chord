@@ -4,7 +4,7 @@ use handlebars::Handlebars;
 
 use common::point::PointRunner;
 
-use crate::model::helper::{BOOL_HELPER, NUM_HELPER};
+use crate::model::helper::{BOOL_HELPER, NUM_HELPER, ALL_HELPER};
 
 pub trait AppContext: Sync+Send{
 
@@ -26,6 +26,7 @@ impl <'reg> AppContextStruct<'reg> {
         let mut  handlebars = Handlebars::new();
         handlebars.register_helper("num", Box::new(NUM_HELPER));
         handlebars.register_helper("bool", Box::new(BOOL_HELPER));
+        handlebars.register_helper("all", Box::new(ALL_HELPER));
 
         AppContextStruct{
             handlebars,

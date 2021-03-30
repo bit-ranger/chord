@@ -21,7 +21,7 @@ use async_std::task::{Builder, JoinHandle};
 pub mod arg;
 pub mod res;
 
-pub async fn run_task(app_ctx: Arc<dyn AppContext>, arg: &TaskArgStruct) -> TaskAssessStruct {
+pub async fn run(app_ctx: Arc<dyn AppContext>, arg: &TaskArgStruct) -> TaskAssessStruct {
     trace!("task start {}", arg.id());
     let start = Utc::now();
 

@@ -19,7 +19,7 @@ pub async fn run(app_ctx: Arc<dyn AppContext>,
                  data: Vec<Json>,
                  id: &str
 ) -> Box<dyn TaskAssess> {
-    let task_assess = task::run_task(app_ctx.as_ref(), &TaskArgStruct::new(flow, data, id)).await;
+    let task_assess = task::run_task(app_ctx, &TaskArgStruct::new(flow, data, id)).await;
     return Box::new(task_assess);
 }
 

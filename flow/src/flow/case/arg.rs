@@ -6,36 +6,37 @@ use common::flow::Flow;
 
 use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::AppContext;
+use async_std::sync::Arc;
 
 #[derive(Debug)]
-pub struct CaseArgStruct<'c, 'd, 'p> {
+pub struct CaseArgStruct {
     id: usize,
-    flow: &'c Flow,
-    data: &'d Json,
+    flow: Arc<Flow>,
+    data: Arc<Vec<Json>>,
     point_id_vec: Vec<String>,
-    context: &'p Vec<(String, Json)>
+    context_ext:  Arc<Vec<(String, Json)>>
 }
 
 
-impl<'c, 'd, 'p> CaseArgStruct<'c, 'd, 'p> {
+impl CaseArgStruct{
     pub fn new(id: usize,
-               flow: &'c Flow,
-               data: &'d Json,
+               flow: Arc<Flow>,
+               data: Arc<Vec<Json>>,
                point_id_vec: Vec<String>,
-               context: &'p Vec<(String, Json)>
-    ) -> CaseArgStruct<'c, 'd, 'p> {
+               context_ext: Arc<Vec<(String, Json)>>
+    ) -> CaseArgStruct {
         let context = CaseArgStruct {
             id,
             flow,
             data,
             point_id_vec,
-            context
+            context_ext
         };
 
         return context;
     }
 
-    pub fn create_render_context(self: &CaseArgStruct<'c, 'd, 'p>) -> RenderContext{
+    pub fn create_render_context(self: &CaseArgStruct) -> RenderContext{
         let mut render_data: Map = Map::new();
         let config_def = self.flow.task_def();
         match config_def {
@@ -44,10 +45,10 @@ impl<'c, 'd, 'p> CaseArgStruct<'c, 'd, 'p> {
             }
             None => {}
         }
-        render_data.insert(String::from("data"), self.data.clone());
+        render_data.insert(String::from("data"), self.data[self.id].clone());
         render_data.insert(String::from("dyn"), Json::Object(Map::new()));
 
-        for (k,v) in self.context{
+        for (k,v) in self.context_ext.iter(){
             render_data.insert(k.clone(), v.clone());
         }
 
@@ -55,25 +56,25 @@ impl<'c, 'd, 'p> CaseArgStruct<'c, 'd, 'p> {
     }
 
 
-    pub fn create_point_arg<'h, 'reg, 'app, 'r>(self: &CaseArgStruct<'c, 'd, 'p>,
+    pub fn create_point_arg<'app, 'h, 'reg, 'r>(self: &CaseArgStruct,
                                                 point_id: &str,
-                                                app_context: &'app dyn AppContext,
-                                                render_context: &'r RenderContext
+                                                app_ctx: &'app dyn AppContext,
+                                                render_ctx: &'r RenderContext
 
-    ) -> Option<PointArgStruct<'c, 'd, 'h, 'reg, 'r>>
+    ) -> Option<PointArgStruct<'_, '_, 'h, 'reg, 'r>>
         where 'app: 'h, 'app: 'reg
     {
         let _ = self.flow.point(point_id).as_object()?;
 
         Some(PointArgStruct::new(
-            self.flow,
-            self.data,
+            self.flow.as_ref(),
+            &self.data[self.id],
             point_id,
-            app_context.get_handlebars(),
-            render_context))
+            app_ctx.get_handlebars(),
+            render_ctx))
     }
     
-    pub fn point_id_vec(self: &CaseArgStruct<'c, 'd, 'p>) -> &Vec<String> {
+    pub fn point_id_vec(self: &CaseArgStruct) -> &Vec<String> {
         &self.point_id_vec
     }
 

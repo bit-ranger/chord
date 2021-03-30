@@ -31,7 +31,7 @@ pub async fn run_task(app_ctx: &dyn AppContext, arg: &TaskArgStruct) -> TaskAsse
         }
     };
 
-    let mut data_case_arg_vec = match arg.case_arg_vec(&pre_ctx){
+    let mut data_case_arg_vec = match arg.case_arg_vec(pre_ctx){
         Ok(v) => v,
         Err(e) => {
             warn!("task Err {}", arg.id());
@@ -110,6 +110,6 @@ async fn pre_ctx(app_ctx: &dyn AppContext, arg: &TaskArgStruct) -> Result<Vec<(S
 
 }
 
-async fn case_run(app_context: &dyn AppContext, case_arg: &CaseArgStruct<'_,'_,'_>) -> Box<dyn CaseAssess>{
+async fn case_run(app_context: &dyn AppContext, case_arg: &CaseArgStruct) -> Box<dyn CaseAssess>{
     Box::new(case::run(app_context, case_arg).await)
 }

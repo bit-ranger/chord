@@ -14,7 +14,7 @@ pub mod res;
 pub mod arg;
 use log::{trace, debug, info, warn};
 
-pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct<'_,'_,'_>) -> CaseAssessStruct {
+pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
     let start = Utc::now();
     let mut render_context = arg.create_render_context();

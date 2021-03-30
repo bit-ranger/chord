@@ -7,44 +7,27 @@ use surf::http::Method;
 use common::point::PointArg;
 use common::value::{Json, Map, Number};
 
-use crate::err;
+use crate::{err,perr};
 use crate::model::{PointError, PointValue};
 
 pub async fn run(context: &dyn PointArg) -> PointValue{
-    let url = match context.config_rendered(vec!["url"]) {
-        Some(url) => url,
-        None => return err!("010", "missing url")
-    };
+    let url = context.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
+    let url = Url::from_str(url.as_str()).or(err!("011", format!("invalid url: {}", url)))?;
 
-    let url = match Url::from_str(url.as_str()) {
-        Ok(url) => url,
-        Err(_) => return err!("011", format!("invalid url: {}", url).as_str())
-    };
-
-    let method = match context.config_rendered(vec!["method"]) {
-        Some(method) => method,
-        None => return err!("020", "missing method")
-    };
-
-    let method = match Method::from_str(method.as_str()) {
-        Ok(method) => method,
-        Err(_) => return err!("021", "invalid method")
-    };
-
+    let method = context.config_rendered(vec!["method"]).ok_or(perr!("020", "missing method"))?;
+    let method = Method::from_str(method.as_str()).or(err!("021", "invalid method"))?;
 
     let mut rb = RequestBuilder::new(method, url);
+    rb = rb.header(HeaderName::from_str("Content-Type").unwrap(), HeaderValue::from_str("application/json").unwrap());
 
     if let Some(header) = context.config()["header"].as_object() {
         for (k, v) in header.iter() {
-            let hn = HeaderName::from_str(context.render(k)?.as_str());
-            if hn.is_err() {
-                return err!("030", "invalid header name");
-            }
-            let hv = HeaderValue::from_str(context.render(v.as_str().unwrap())?.as_str());
-            if hv.is_err() {
-                return err!("031", "invalid header value");
-            }
-            rb = rb.header(hn.unwrap(), hv.unwrap());
+            let hn = HeaderName::from_string(context.render(k)?)
+                .or(err!("030", "invalid header name"))?;
+            let hvt = context.render(v.as_str().ok_or(perr!("031", "invalid header value"))?)?;
+            let hv = HeaderValue::from_str(hvt.as_str())
+                .or(err!("031", "invalid header value"))?;
+            rb = rb.header(hn, hv);
         }
     }
 

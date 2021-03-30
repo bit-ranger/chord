@@ -39,6 +39,8 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct
         }
     };
 
+    trace!("task load data {}, {}", task_context.id(), data_case_arg_vec.len());
+
     let mut futures = data_case_arg_vec.iter_mut().
         map(|case_arg| case_run(app_context, case_arg))
         .collect_vec();

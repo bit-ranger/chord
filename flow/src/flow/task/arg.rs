@@ -27,7 +27,7 @@ impl TaskArgStruct {
     }
 
 
-    pub fn data_case_vec<'p>(self: &TaskArgStruct, case_ctx: &'p Vec<(String, Json)>) -> Result<Vec<CaseArgStruct<'_, '_,'p>>, Error> {
+    pub fn case_arg_vec<'p>(self: &TaskArgStruct, case_ctx: &'p Vec<(String, Json)>) -> Result<Vec<CaseArgStruct<'_, '_,'p>>, Error> {
         let case_point_id_vec = self.flow.case_point_id_vec()?;
         let vec = self.data.iter()
             .enumerate()
@@ -44,7 +44,7 @@ impl TaskArgStruct {
         return Ok(vec);
     }
 
-    pub fn pre_case(self: &TaskArgStruct) -> Option<CaseArgStruct<'_, '_, '_>> {
+    pub fn pre_arg(self: &TaskArgStruct) -> Option<CaseArgStruct<'_, '_, '_>> {
         let pre_pt_id_vec = self.flow.pre_point_id_vec();
         if pre_pt_id_vec.is_none() {
            return None

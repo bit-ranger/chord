@@ -55,10 +55,10 @@ impl<'c, 'd, 'p> CaseArgStruct<'c, 'd, 'p> {
     }
 
 
-    pub fn create_point<'h, 'reg, 'app, 'r>(self: &CaseArgStruct<'c, 'd, 'p>,
-                                            point_id: &str,
-                                            app_context: &'app dyn AppContext,
-                                            render_context: &'r RenderContext
+    pub fn create_point_arg<'h, 'reg, 'app, 'r>(self: &CaseArgStruct<'c, 'd, 'p>,
+                                                point_id: &str,
+                                                app_context: &'app dyn AppContext,
+                                                render_context: &'r RenderContext
 
     ) -> Option<PointArgStruct<'c, 'd, 'h, 'reg, 'r>>
         where 'app: 'h, 'app: 'reg

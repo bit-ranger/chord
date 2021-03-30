@@ -7,6 +7,7 @@ use std::time::SystemTime;
 use common::{cause, err};
 use common::error::Error;
 use common::task::TaskState;
+use point::PointRunnerDefault;
 
 mod logger;
 mod job;
@@ -44,7 +45,8 @@ async fn main() -> Result<(),Error> {
                                    &log_file_path,
                                    log_enable.clone()).await?;
 
-    let task_state_vec = job::run(job_path, execution_id.as_str()).await;
+    let app_ctx = flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
+    let task_state_vec = job::run(job_path, execution_id.as_str(), app_ctx).await;
 
     log_enable.store(false, Ordering::SeqCst);
     let _ = log_handler.join();

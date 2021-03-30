@@ -19,35 +19,35 @@ use common::point::PointState;
 pub mod arg;
 pub mod res;
 
-pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct) -> TaskAssessStruct {
-    trace!("task start {}", task_context.id());
+pub async fn run_task(app_ctx: &dyn AppContext, arg: &TaskArgStruct) -> TaskAssessStruct {
+    trace!("task start {}", arg.id());
     let start = Utc::now();
 
-    let pre_ctx=  match pre_ctx(app_context, task_context).await{
+    let pre_ctx=  match pre_ctx(app_ctx, arg).await{
         Ok(pc) => pc,
         Err(e) => {
-            warn!("task Err {}", task_context.id());
-            return TaskAssessStruct::new(task_context.id(), start, Utc::now(), TaskState::Err(e))
+            warn!("task Err {}", arg.id());
+            return TaskAssessStruct::new(arg.id(), start, Utc::now(), TaskState::Err(e))
         }
     };
 
-    let mut data_case_arg_vec = match task_context.data_case_vec(&pre_ctx){
+    let mut data_case_arg_vec = match arg.case_arg_vec(&pre_ctx){
         Ok(v) => v,
         Err(e) => {
-            warn!("task Err {}", task_context.id());
-            return TaskAssessStruct::new(task_context.id(), start, Utc::now(), TaskState::Err(e))
+            warn!("task Err {}", arg.id());
+            return TaskAssessStruct::new(arg.id(), start, Utc::now(), TaskState::Err(e))
         }
     };
 
-    trace!("task load data {}, {}", task_context.id(), data_case_arg_vec.len());
+    trace!("task load data {}, {}", arg.id(), data_case_arg_vec.len());
 
     let mut futures = data_case_arg_vec.iter_mut().
-        map(|case_arg| case_run(app_context, case_arg))
+        map(|case_arg| case_run(app_ctx, case_arg))
         .collect_vec();
 
     futures.reserve(0);
     let mut case_assess_vec  = Vec::<Box<dyn CaseAssess>>::new();
-    let limit_concurrency = task_context.limit_concurrency();
+    let limit_concurrency = arg.limit_concurrency();
     loop {
         if futures.len() >  limit_concurrency{
             let off = futures.split_off(futures.len() - limit_concurrency);
@@ -62,26 +62,26 @@ pub async fn run_task(app_context: &dyn AppContext, task_context: &TaskArgStruct
         .any(|ca| !ca.state().is_ok());
 
     return if any_fail {
-        warn!("task Fail {}", task_context.id());
-        TaskAssessStruct::new(task_context.id(), start, Utc::now(),
+        warn!("task Fail {}", arg.id());
+        TaskAssessStruct::new(arg.id(), start, Utc::now(),
                               TaskState::Fail(case_assess_vec))
     } else {
-        debug!("task Ok {}", task_context.id());
-        TaskAssessStruct::new(task_context.id(), start, Utc::now(),
+        debug!("task Ok {}", arg.id());
+        TaskAssessStruct::new(arg.id(), start, Utc::now(),
                               TaskState::Ok(case_assess_vec))
     };
 }
 
 
-async fn pre_ctx(app_context: &dyn AppContext, task_arg: &TaskArgStruct) -> Result<Vec<(String, Json)>, Error>{
+async fn pre_ctx(app_ctx: &dyn AppContext, arg: &TaskArgStruct) -> Result<Vec<(String, Json)>, Error>{
     let mut case_ctx = vec![];
-    let pre_case = task_arg.pre_case();
-    if pre_case.is_none() {
+    let pre_arg = arg.pre_arg();
+    if pre_arg.is_none() {
         return Ok(case_ctx);
     }
-    let mut pre_case = pre_case.unwrap();
+    let pre_arg = pre_arg.unwrap();
 
-    let pre_assess = case_run(app_context, &mut pre_case).await;
+    let pre_assess = case_run(app_ctx, &pre_arg).await;
     match pre_assess.state() {
         CaseState::Ok(pa_vec) => {
             let mut pre_ctx = Map::new();
@@ -94,7 +94,7 @@ async fn pre_ctx(app_context: &dyn AppContext, task_arg: &TaskArgStruct) -> Resu
                 }
             }
             let pre = Json::Object(pre_ctx);
-            debug!("task pre {} - {}", task_arg.id(), pre);
+            debug!("task pre {} - {}", arg.id(), pre);
             case_ctx.push((String::from("pre"), pre));
             Ok(case_ctx)
         }
@@ -110,6 +110,6 @@ async fn pre_ctx(app_context: &dyn AppContext, task_arg: &TaskArgStruct) -> Resu
 
 }
 
-async fn case_run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_,'_>) -> Box<dyn CaseAssess>{
+async fn case_run(app_context: &dyn AppContext, case_arg: &CaseArgStruct<'_,'_,'_>) -> Box<dyn CaseAssess>{
     Box::new(case::run(app_context, case_arg).await)
 }

@@ -9,12 +9,13 @@ use common::flow::Flow;
 use common::task::{TaskState};
 use flow::AppContext;
 use futures::future::join_all;
-use point::PointRunnerDefault;
 use log::info;
+use async_std::sync::Arc;
 // use crate::mdc;
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
-                                 execution_id: &str) -> Vec<TaskState>{
+                                 execution_id: &str,
+                                 app_ctx: Arc<dyn AppContext>) -> Vec<TaskState>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     info!("job start {}", job_path_str);
@@ -40,7 +41,7 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
 
         let task_path = job_path.as_ref().join(task_dir.path());
         let execution_id = execution_id.to_owned();
-        let jh = builder.spawn(run_task(task_path, execution_id)).unwrap();
+        let jh = builder.spawn(run_task(task_path, execution_id, app_ctx.clone())).unwrap();
         futures.push(jh);
     }
 
@@ -50,10 +51,10 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
 }
 
 async fn run_task<P: AsRef<Path>>(task_path: P,
-                                  execution_id: String) -> TaskState {
+                                  execution_id: String,
+                                  app_ctx: Arc<dyn AppContext>) -> TaskState {
     // mdc::insert("work_path", task_path.as_ref().to_str().unwrap());
-    let app_context = flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
-    let rt = run_task0(task_path, execution_id.as_str(), app_context.as_ref()).await;
+    let rt = run_task0(task_path, execution_id.as_str(), app_ctx).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => TaskState::Err(e)
@@ -62,7 +63,7 @@ async fn run_task<P: AsRef<Path>>(task_path: P,
 
 async fn run_task0<P: AsRef<Path>>(task_path: P,
                                    execution_id: &str,
-                                   app_context: &dyn AppContext) -> Result<TaskState, Error> {
+                                   app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let task_work_path = task_path.join(format!("{}", execution_id));
     std::fs::create_dir(task_work_path.clone())?;
@@ -90,7 +91,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
         let data = port::load::data::csv::load(&mut data_reader, size_limit)?;
         let data_len = data.len();
 
-        let task_assess = flow::run(app_context, flow.clone(), data, task_id).await;
+        let task_assess = flow::run(app_ctx.clone(), flow.clone(), data, task_id).await;
 
         let _ = port::report::csv::report(&mut result_writer, task_assess.as_ref(), &flow).await?;
 

@@ -14,37 +14,37 @@ pub mod res;
 pub mod arg;
 use log::{trace, debug, info, warn};
 
-pub async fn run(app_context: &dyn AppContext, case_arg: &mut CaseArgStruct<'_,'_,'_>) -> CaseAssessStruct {
-    trace!("case start {}", case_arg.id());
+pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct<'_,'_,'_>) -> CaseAssessStruct {
+    trace!("case start {}", arg.id());
     let start = Utc::now();
-    let mut render_context = case_arg.create_render_context();
+    let mut render_context = arg.create_render_context();
     let mut point_assess_vec = Vec::<Box<dyn PointAssess>>::new();
-    for point_id in case_arg.point_id_vec().iter() {
-        let pt_arg = case_arg.create_point(point_id, app_context, &render_context);
-        if pt_arg.is_none(){
-            warn!("case Err {}", case_arg.id());
-            return CaseAssessStruct::new(case_arg.id(), start, Utc::now(),
-            CaseState::Err(Error::new("010", format!("invalid point {}", point_id).as_str())));
+    for point_id in arg.point_id_vec().iter() {
+        let point_arg = arg.create_point_arg(point_id, app_ctx, &render_context);
+        if point_arg.is_none(){
+            warn!("case Err {}", arg.id());
+            return CaseAssessStruct::new(arg.id(), start, Utc::now(),
+                                         CaseState::Err(Error::new("010", format!("invalid point {}", point_id).as_str())));
         }
-        let point_arg = pt_arg.unwrap();
-        let point_assess = point::run(app_context, &point_arg).await;
+        let point_arg = point_arg.unwrap();
+        let point_assess = point::run(app_ctx, &point_arg).await;
 
         point_assess_vec.push(Box::new(point_assess));
-        let pt_assess = point_assess_vec.last().unwrap();
+        let point_assess = point_assess_vec.last().unwrap();
 
-        match pt_assess.state(){
+        match point_assess.state(){
             PointState::Ok(json) => {
                 register_dynamic(&mut render_context, point_id, json).await;
             },
             _ => {
-                info!("case Fail {}", case_arg.id());
-                return CaseAssessStruct::new(case_arg.id(), start, Utc::now(), CaseState::Fail(point_assess_vec));
+                info!("case Fail {}", arg.id());
+                return CaseAssessStruct::new(arg.id(), start, Utc::now(), CaseState::Fail(point_assess_vec));
             }
         }
     }
 
-    debug!("case Ok {}", case_arg.id());
-    return CaseAssessStruct::new(case_arg.id(), start, Utc::now(), CaseState::Ok(point_assess_vec));
+    debug!("case Ok {}", arg.id());
+    return CaseAssessStruct::new(arg.id(), start, Utc::now(), CaseState::Ok(point_assess_vec));
 }
 
 

@@ -1,26 +1,10 @@
-mod model;
-mod point;
-
 use std::future::Future;
 use std::pin::Pin;
 
 use common::point::{PointArg, PointRunner};
 
-#[macro_export]
-macro_rules! err {
-    ($code:expr, $message:expr) => {{
-        let res = $crate::model::PointError::new($code, $message);
-        std::result::Result::Err(res)
-    }}
-}
-
-#[macro_export]
-macro_rules! perr {
-    ($code:expr, $message:expr) => {{
-        $crate::model::PointError::new($code, $message)
-    }}
-}
-
+mod model;
+mod point;
 
 pub struct PointRunnerDefault;
 

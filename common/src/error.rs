@@ -21,7 +21,7 @@ macro_rules! perr {
 #[macro_export]
 macro_rules! cause {
     ($code:expr, $message:expr, $cause:expr) => {{
-        let res = $crate::error::Error::cause($code, $message, std::boxed::Box::new($cause));
+        let res = $crate::error::Error::cause($code, $message, $cause);
         std::result::Result::Err(res)
     }}
 }
@@ -32,7 +32,7 @@ pub struct Error
 {
     code: String,
     message: String,
-    cause: Option<Arc<Box<dyn std::error::Error>>>
+    cause: Option<Arc<dyn std::error::Error>>
 }
 
 impl  Error {
@@ -45,7 +45,7 @@ impl  Error {
         }
     }
 
-    pub fn cause<C,M>(code: C, message: M, cause: Box<dyn std::error::Error>) -> Error where C: Into<String>, M: Into<String>{
+    pub fn cause<C,M,S>(code: C, message: M, cause: S) -> Error where C: Into<String>, M: Into<String>, S: std::error::Error+'static{
         Error {
             code: code.into(),
             message: message.into(),
@@ -70,7 +70,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.cause{
             Some(c) =>{
-                Some(c.as_ref().as_ref())
+                Some(c.as_ref())
             },
             None => None
         }
@@ -88,12 +88,6 @@ impl  Display for Error {
 impl  From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
        perr!("io", format!("{:?}", err))
-    }
-}
-
-impl  From<Box<dyn std::error::Error>> for Error {
-    fn from(err: Box<dyn std::error::Error>) -> Error {
-        Error::cause("std", err.to_string().as_str(), err)
     }
 }
 

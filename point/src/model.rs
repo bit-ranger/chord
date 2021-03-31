@@ -43,7 +43,7 @@ impl From<common::error::Error> for PointError {
 
 impl  From<std::io::Error> for PointError {
     fn from(err: std::io::Error) -> PointError {
-        PointError::new("io", format!("{:?}", err.kind()).as_str())
+        PointError::new("io", format!("{:?}", err.kind()))
     }
 }
 

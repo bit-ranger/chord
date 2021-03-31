@@ -24,7 +24,7 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStr
         if point_arg.is_none(){
             warn!("case Err {}", arg.id());
             return CaseAssessStruct::new(arg.id(), start, Utc::now(),
-                                         CaseState::Err(Error::new("010", format!("invalid point {}", point_id).as_str())));
+                                         CaseState::Err(Error::new("010", format!("invalid point {}", point_id))));
         }
         let point_arg = point_arg.unwrap();
         let point_assess = point::run(app_ctx, &point_arg).await;

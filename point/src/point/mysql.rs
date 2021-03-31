@@ -45,6 +45,6 @@ pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
 
 impl From<rbatis::Error> for PointError {
     fn from(err: rbatis::Error) -> PointError {
-        PointError::new("rbatis", format!("{:?}", err).as_str())
+        PointError::new("rbatis", format!("{:?}", err))
     }
 }

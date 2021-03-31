@@ -57,7 +57,7 @@ pub async fn run(context: &dyn PointArg) -> PointValue{
 
 impl From<surf::Error> for PointError {
     fn from(err: surf::Error) -> PointError {
-        PointError::new("http", format!("{}", err.status()).as_str())
+        PointError::new("http", format!("{}", err.status()))
     }
 }
 

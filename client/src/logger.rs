@@ -1,5 +1,6 @@
 use std::io::Write;
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
@@ -13,20 +14,40 @@ use crossbeam::channel::{Receiver, Sender, unbounded};
 use futures::AsyncWriteExt;
 use futures::executor::block_on;
 use log;
-use log::{Metadata, Record};
-use regex::Regex;
+use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
 
 use common::error::Error;
+use itertools::Itertools;
 
 struct ChannelLogger {
-    target: Regex,
-    sender: Sender<Vec<u8>>
+    target_level: Vec<(String, LevelFilter)>,
+    sender: Sender<Vec<u8>>,
+}
+
+impl ChannelLogger {
+    fn new(target_level: Vec<(String, String)>,
+           sender: Sender<Vec<u8>>) -> ChannelLogger{
+        let target_level = target_level.into_iter()
+            .map(|(t, l)| (t, LevelFilter::from_str(l.as_str()).unwrap_or(log::max_level())))
+            .sorted_by(|(a,_),(b,_)| b.cmp(a))
+            .collect_vec();
+
+        return ChannelLogger{
+            target_level, sender
+        }
+    }
 }
 
 impl log::Log for ChannelLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= log::max_level() && self.target.is_match(metadata.target())
+        for (t, l) in self.target_level.iter() {
+            if metadata.target().starts_with(t) {
+                return metadata.level() <= l.clone();
+            }
+        }
+
+        return metadata.level() <= log::max_level();
     }
 
     fn log(&self, record: &Record) {
@@ -57,7 +78,7 @@ impl log::Log for ChannelLogger {
 async fn log_thread_func(
     receiver: Receiver<Vec<u8>>,
     mut default_log_writer: BufWriter<File>,
-    enable: Arc<AtomicBool>
+    enable: Arc<AtomicBool>,
 ) {
     loop_write(receiver, &mut default_log_writer, enable).await;
 
@@ -66,12 +87,12 @@ async fn log_thread_func(
 
 async fn loop_write(receiver: Receiver<Vec<u8>>,
                     default_log_writer: &mut BufWriter<File>,
-                    enable: Arc<AtomicBool>){
+                    enable: Arc<AtomicBool>) {
     let recv_timeout = Duration::from_secs(2);
     loop {
         let recv = receiver.recv_timeout(recv_timeout);
-        if let Err(_) =  recv {
-            if !enable.load(Ordering::SeqCst){
+        if let Err(_) = recv {
+            if !enable.load(Ordering::SeqCst) {
                 return;
             } else {
                 continue;
@@ -88,17 +109,18 @@ async fn loop_write(receiver: Receiver<Vec<u8>>,
 
 
 pub async fn init(
-    log_target: String,
+    target_level: Vec<(String, String)>,
     log_file_path: &Path,
-    enable: Arc<AtomicBool>
+    enable: Arc<AtomicBool>,
 ) -> Result<JoinHandle<()>, Error> {
     let (sender, receiver) = unbounded();
 
-    log::set_max_level(log::LevelFilter::Trace);
-    let _ = log::set_boxed_logger(Box::new(ChannelLogger {
-        sender,
-        target: Regex::new(&log_target).unwrap(),
-    }));
+    let max_level = target_level.iter()
+        .filter(|(t, _)| t.starts_with("root"))
+        .map(|(_, l)| LevelFilter::from_str(l.as_str()).unwrap())
+        .last().unwrap_or(LevelFilter::Info);
+    log::set_max_level(max_level);
+    let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
 
     let file = async_std::fs::OpenOptions::new()
         .create(true)

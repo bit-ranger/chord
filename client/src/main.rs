@@ -8,6 +8,7 @@ use common::{cause, err};
 use common::error::Error;
 use common::task::TaskState;
 use point::PointRunnerDefault;
+use itertools::Itertools;
 
 mod logger;
 mod job;
@@ -41,9 +42,17 @@ async fn main() -> Result<(),Error> {
 
     let log_file_path = Path::new(job_path).join(format!("log_{}.log", execution_id));
     let log_enable = Arc::new(AtomicBool::new(true));
-    let log_handler = logger::init(String::from(".*"),
-                                   &log_file_path,
-                                   log_enable.clone()).await?;
+    let target_level: Vec<(String, String)> = env::args()
+        .into_iter()
+        .filter(|a| a.starts_with("log.level."))
+        .map(|a| a[9..].splitn(2, "=")
+            .collect_tuple()
+            .map(|(a, b)| (a.into(), b.into())).unwrap())
+        .collect_vec();
+    let log_handler = logger::init(
+        target_level,
+        &log_file_path,
+        log_enable.clone()).await?;
 
     let app_ctx = flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
     let task_state_vec = job::run(job_path, execution_id.as_str(), app_ctx).await;

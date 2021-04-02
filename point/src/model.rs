@@ -26,6 +26,7 @@ impl PointError {
         PointError(common::error::Error::new(code, message))
     }
 
+    #[allow(dead_code)]
     pub fn trace<C,M>(code: C, message: M, bt: Backtrace) -> PointError where C: Into<String>, M: Into<String>{
         PointError(common::error::Error::new(code, format!("{} {:?}", message.into(), bt)))
     }

@@ -118,7 +118,7 @@ pub async fn init(
     let max_level = target_level.iter()
         .filter(|(t, _)| t.starts_with("root"))
         .map(|(_, l)| LevelFilter::from_str(l.as_str()).unwrap())
-        .last().unwrap_or(LevelFilter::Info);
+        .last().unwrap_or(LevelFilter::Warn);
     log::set_max_level(max_level);
     let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
 

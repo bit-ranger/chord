@@ -21,6 +21,7 @@ async fn main() -> Result<(),Error> {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
     opts.reqopt("j", "job", "job path", "job");
+    opts.optmulti("l", "level", "log level", "level");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -42,10 +43,10 @@ async fn main() -> Result<(),Error> {
 
     let log_file_path = Path::new(job_path).join(format!("log_{}.log", execution_id));
     let log_enable = Arc::new(AtomicBool::new(true));
-    let target_level: Vec<(String, String)> = env::args()
+
+    let target_level: Vec<(String, String)> = matches.opt_strs("l")
         .into_iter()
-        .filter(|a| a.starts_with("log.level."))
-        .map(|a| a[9..].splitn(2, "=")
+        .map(|a| a.splitn(2, "=")
             .collect_tuple()
             .map(|(a, b)| (a.into(), b.into())).unwrap())
         .collect_vec();

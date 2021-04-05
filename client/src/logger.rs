@@ -29,6 +29,7 @@ impl ChannelLogger {
     fn new(target_level: Vec<(String, String)>,
            sender: Sender<Vec<u8>>) -> ChannelLogger{
         let target_level = target_level.into_iter()
+            .map(|(t, l)| if t.starts_with("root"){("".to_owned(), l)} else {(t,l)})
             .map(|(t, l)| (t, LevelFilter::from_str(l.as_str()).unwrap_or(log::max_level())))
             .sorted_by(|(a,_),(b,_)| b.cmp(a))
             .collect_vec();
@@ -43,7 +44,7 @@ impl log::Log for ChannelLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         for (t, l) in self.target_level.iter() {
             if metadata.target().starts_with(t) {
-                return metadata.level() <= l.clone();
+                return &metadata.level() <= l;
             }
         }
 
@@ -115,11 +116,7 @@ pub async fn init(
 ) -> Result<JoinHandle<()>, Error> {
     let (sender, receiver) = unbounded();
 
-    let max_level = target_level.iter()
-        .filter(|(t, _)| t.starts_with("root"))
-        .map(|(_, l)| LevelFilter::from_str(l.as_str()).unwrap())
-        .last().unwrap_or(LevelFilter::Warn);
-    log::set_max_level(max_level);
+    log::set_max_level(LevelFilter::Trace);
     let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
 
     let file = async_std::fs::OpenOptions::new()

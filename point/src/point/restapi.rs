@@ -4,8 +4,8 @@ use surf::{Body, RequestBuilder, Response, Url};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 
-use common::point::PointArg;
-use common::value::{Json, Map, Number};
+use chord_common::point::PointArg;
+use chord_common::value::{Json, Map, Number};
 
 use crate::{err,perr};
 use crate::model::{PointError, PointValue};

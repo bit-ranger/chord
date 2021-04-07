@@ -1,4 +1,4 @@
-use common::value::Json;
+use chord_common::value::Json;
 use std::num::ParseIntError;
 use backtrace::Backtrace;
 
@@ -18,26 +18,26 @@ macro_rules! perr {
     }}
 }
 
-pub struct PointError(common::error::Error);
+pub struct PointError(chord_common::error::Error);
 
 impl PointError {
 
     pub fn new<C,M>(code: C, message: M) -> PointError where C: Into<String>, M: Into<String>{
-        PointError(common::error::Error::new(code, message))
+        PointError(chord_common::error::Error::new(code, message))
     }
 
     #[allow(dead_code)]
     pub fn trace<C,M>(code: C, message: M, bt: Backtrace) -> PointError where C: Into<String>, M: Into<String>{
-        PointError(common::error::Error::new(code, format!("{} {:?}", message.into(), bt)))
+        PointError(chord_common::error::Error::new(code, format!("{} {:?}", message.into(), bt)))
     }
 
-    pub fn common(&self) -> common::error::Error{
+    pub fn common(&self) -> chord_common::error::Error{
         self.0.clone()
     }
 }
 
-impl From<common::error::Error> for PointError {
-    fn from(err: common::error::Error) -> PointError {
+impl From<chord_common::error::Error> for PointError {
+    fn from(err: chord_common::error::Error) -> PointError {
         PointError(err)
     }
 }
@@ -48,8 +48,8 @@ impl  From<std::io::Error> for PointError {
     }
 }
 
-impl  From<common::value::JsonError> for PointError {
-    fn from(err: common::value::JsonError) -> PointError {
+impl  From<chord_common::value::JsonError> for PointError {
+    fn from(err: chord_common::value::JsonError) -> PointError {
         PointError::new("json", format!("{:?}", err))
     }
 }
@@ -61,7 +61,7 @@ impl From<ParseIntError> for PointError {
     }
 }
 
-pub fn to_common_value(pt_value: PointValue) -> common::point::PointValue{
+pub fn to_common_value(pt_value: PointValue) -> chord_common::point::PointValue{
     return match pt_value {
         Ok(pv) => Ok(pv),
         Err(e) => Err(e.common())

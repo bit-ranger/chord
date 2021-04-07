@@ -1,5 +1,5 @@
 [package]
-name = "client"
+name = "chord-client"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2018"
@@ -7,10 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-flow = {path = "../flow"}
-common = {path = "../common"}
-port = {path = "../port"}
-point = {path = "../point", features = ["pt_restapi", "pt_md5", "pt_dubbo", "pt_redis", "pt_mysql"]}
+chord-flow = {path = "../flow"}
+chord-common = {path = "../common"}
+chord-port = {path = "../port"}
+chord-point = {path = "../point", features = ["pt_restapi", "pt_md5", "pt_dubbo", "pt_redis", "pt_mysql"]}
 log = { version = "0.4.14", features = ["std"]}
 getopts = "0.2.21"
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}

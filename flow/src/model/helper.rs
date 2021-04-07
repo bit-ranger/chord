@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
-use common::value::{Json, Number};
+use chord_common::value::{Json, Number};
 
 pub static NUM_HELPER: NumHelper = NumHelper { };
 pub static BOOL_HELPER: BoolHelper = BoolHelper { };

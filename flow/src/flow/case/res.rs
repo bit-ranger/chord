@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use common::case::{CaseState, CaseAssess};
+use chord_common::case::{CaseState, CaseAssess};
 
 pub struct CaseAssessStruct {
     id: usize,

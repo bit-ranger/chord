@@ -1,5 +1,5 @@
-use common::point::{PointArg};
-use common::value::Json;
+use chord_common::point::{PointArg};
+use chord_common::value::Json;
 use crate::model::PointValue;
 
 pub async fn run(context: &dyn PointArg) -> PointValue {

@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use common::point::{PointArg, PointRunner};
+use chord_common::point::{PointArg, PointRunner};
 
 mod model;
 mod point;
@@ -16,7 +16,7 @@ impl PointRunnerDefault{
 
 impl PointRunner for PointRunnerDefault {
 
-    fn run<'a>(&self, kind: &'a str, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=common::point::PointValue> + Send  + 'a>> {
+    fn run<'a>(&self, kind: &'a str, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=chord_common::point::PointValue> + Send  + 'a>> {
         Box::pin(crate::run_point_kind(kind, arg))
     }
 }
@@ -31,7 +31,7 @@ unsafe impl Sync for PointRunnerDefault
 }
 
 
-async fn run_point_kind(kind: &str, arg: &dyn PointArg) -> common::point::PointValue{
+async fn run_point_kind(kind: &str, arg: &dyn PointArg) -> chord_common::point::PointValue{
 
     let value = match kind.trim() {
         "sleep" => point::sleep::run(arg).await,

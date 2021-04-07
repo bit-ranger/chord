@@ -1,5 +1,5 @@
-use common::point::PointArg;
-use common::value::{Json, Map, Number};
+use chord_common::point::PointArg;
+use chord_common::value::{Json, Map, Number};
 use crate::model::{PointValue, PointError};
 use crate::perr;
 use log::{debug};

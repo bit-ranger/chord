@@ -1,8 +1,8 @@
 use handlebars::Context;
 
-use common::value::{to_json, Map};
-use common::value::Json;
-use common::flow::Flow;
+use chord_common::value::{to_json, Map};
+use chord_common::value::Json;
+use chord_common::flow::Flow;
 
 use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::AppContext;

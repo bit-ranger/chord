@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use common::task::{TaskState, TaskAssess};
+use chord_common::task::{TaskState, TaskAssess};
 
 pub struct TaskAssessStruct {
     id: String,

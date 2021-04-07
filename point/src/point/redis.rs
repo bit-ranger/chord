@@ -1,5 +1,5 @@
-use common::point::PointArg;
-use common::value::{Json, Number, from_str};
+use chord_common::point::PointArg;
+use chord_common::value::{Json, Number, from_str};
 use crate::model::{PointValue, PointError};
 use redis::{RedisError, Value as RedisValue};
 use crate::perr;

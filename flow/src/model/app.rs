@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 
 use handlebars::Handlebars;
 
-use common::point::PointRunner;
+use chord_common::point::PointRunner;
 
 use crate::model::helper::{BOOL_HELPER, NUM_HELPER, ALL_HELPER, ANY_HELPER};
 

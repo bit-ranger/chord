@@ -1,5 +1,5 @@
 [package]
-name = "point"
+name = "chord-point"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2018"
@@ -8,7 +8,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-common = {path = "../common"}
+chord-common = {path = "../common"}
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 log = { version = "0.4.14", features = ["std"]}
 surf = {version = "2.1.0",  optional = true}

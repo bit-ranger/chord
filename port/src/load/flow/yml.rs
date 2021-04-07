@@ -1,9 +1,9 @@
 use std::fs::File;
 use std::path::Path;
 
-use common::error::Error;
-use common::value::Json;
-use common::err;
+use chord_common::error::Error;
+use chord_common::value::Json;
+use chord_common::err;
 
 pub fn load<P: AsRef<Path>>(path: P) -> Result<Json, Error> {
     let file = File::open(path);

@@ -1,18 +1,18 @@
-pub struct PortError(common::error::Error);
+pub struct PortError(chord_common::error::Error);
 
 impl PortError {
 
     pub fn new(code: &str, message: &str) -> PortError {
-        PortError(common::error::Error::new(code, message))
+        PortError(chord_common::error::Error::new(code, message))
     }
 
-    pub fn common(&self) -> common::error::Error{
+    pub fn common(&self) -> chord_common::error::Error{
         self.0.clone()
     }
 }
 
-impl From<common::error::Error> for PortError {
-    fn from(err: common::error::Error) -> PortError {
+impl From<chord_common::error::Error> for PortError {
+    fn from(err: chord_common::error::Error) -> PortError {
         PortError(err)
     }
 }
@@ -23,8 +23,8 @@ impl  From<std::io::Error> for PortError {
     }
 }
 
-impl  From<common::value::JsonError> for PortError {
-    fn from(err: common::value::JsonError) -> PortError {
+impl  From<chord_common::value::JsonError> for PortError {
+    fn from(err: chord_common::value::JsonError) -> PortError {
         PortError::new("json", format!("{:?}", err).as_str())
     }
 }

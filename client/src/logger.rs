@@ -17,7 +17,7 @@ use log;
 use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
 
-use common::error::Error;
+use chord_common::error::Error;
 use itertools::Itertools;
 
 struct ChannelLogger {

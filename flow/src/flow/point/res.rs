@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use common::point::{PointAssess, PointState};
+use chord_common::point::{PointAssess, PointState};
 
 pub struct PointAssessStruct {
     id: String,

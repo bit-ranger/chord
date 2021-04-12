@@ -1,4 +1,3 @@
-use tide::prelude::*;
 mod controller;
 use controller::job;
 

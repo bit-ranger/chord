@@ -1,13 +1,15 @@
-use tide::Request;
 use tide::prelude::*;
+use chord_common::error::Error;
+use validator::{Validate};
 
 
-#[derive(Debug, Deserialize)]
-struct Job {
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct Job {
+    #[validate(length(min = 1, max = 10))]
     name: String
 }
 
-pub async fn job_exec(mut req: Request<()>) -> tide::Result {
-    let Job { name} = req.body_json().await?;
-    Ok(format!("Hello, I've put in an job for {}", name).into())
+pub async fn exec(job: Job) -> Result<Job, Error> {
+    return Ok(job);
 }

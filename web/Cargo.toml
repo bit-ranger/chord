@@ -16,13 +16,15 @@ repository = "https://github.com/bit-ranger/chord"
 
 [dependencies]
 chord-common = {path = "../common"}
-chord-cmd = {path = "../cmd"}
-chord-point = {path = "../point"}
+chord-point = {path = "../point", features = ["pt_restapi", "pt_md5", "pt_dubbo", "pt_redis", "pt_mysql"]}
 chord-flow = {path = "../flow"}
+chord-port = {path = "../port"}
 serde = { version = "1.0", features = ["derive"] }
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 time = "0.1.42"
 futures = "0.3.13"
 itertools = "0.10.0"
+log = { version = "0.4.14", features = ["std"]}
+crossbeam = "0.8.0"
 tide = "0.16.0"
 validator = { version = "0.12", features = ["derive"] }

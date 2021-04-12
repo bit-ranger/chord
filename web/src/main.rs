@@ -6,7 +6,8 @@ use tide::prelude::*;
 use tide::http::StatusCode;
 use validator::{ValidationErrors, ValidationErrorsKind};
 use std::path::Path;
-use chord_cmd::logger;
+mod logger;
+mod job;
 
 #[derive(Serialize, Deserialize)]
 struct ErrorBody{

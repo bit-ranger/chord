@@ -80,7 +80,7 @@ macro_rules! json_handler {
 
 #[async_std::main]
 async fn main() -> tide::Result<()> {
-    let log_file_path = Path::new("/var/logs/log.log");
+    let log_file_path = Path::new("/data/logs/chord/log.log");
     let _log_handler = logger::init(vec![], &log_file_path).await?;
 
     let mut app = tide::new();

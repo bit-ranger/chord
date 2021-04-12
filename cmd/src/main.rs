@@ -1,7 +1,5 @@
 use std::env;
 use std::path::Path;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::SystemTime;
 
 use chord_common::{cause, err};
@@ -9,6 +7,7 @@ use chord_common::error::Error;
 use chord_common::task::TaskState;
 use chord_point::PointRunnerDefault;
 use itertools::Itertools;
+use getopts::Matches;
 
 mod logger;
 mod job;
@@ -37,29 +36,15 @@ async fn main() -> Result<(),Error> {
         panic!("job path is not a dir {}", job_path.to_str().unwrap());
     }
 
-    let duration = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    let execution_id = duration.as_millis().to_string();
+    let execution_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
 
     let log_file_path = Path::new(job_path).join(format!("log_{}.log", execution_id));
-    let log_enable = Arc::new(AtomicBool::new(true));
-
-    let target_level: Vec<(String, String)> = matches.opt_strs("l")
-        .into_iter()
-        .map(|a| a.splitn(2, "=")
-            .collect_tuple()
-            .map(|(a, b)| (a.into(), b.into())).unwrap())
-        .collect_vec();
-    let log_handler = logger::init(
-        target_level,
-        &log_file_path,
-        log_enable.clone()).await?;
+    let log_handler = logger::init(target_level(matches), &log_file_path).await?;
 
     let app_ctx = chord_flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
     let task_state_vec = job::run(job_path, execution_id.as_str(), app_ctx).await;
 
-    log_enable.store(false, Ordering::SeqCst);
-    let _ = log_handler.join();
+    logger::terminal(log_handler).await?;
 
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
     return match et {
@@ -72,4 +57,14 @@ async fn main() -> Result<(),Error> {
         },
         None => Ok(())
     };
+}
+
+fn target_level(matches: Matches) -> Vec<(String, String)>{
+    let target_level: Vec<(String, String)> = matches.opt_strs("l")
+        .into_iter()
+        .map(|a| a.splitn(2, "=")
+            .collect_tuple()
+            .map(|(a, b)| (a.into(), b.into())).unwrap())
+        .collect_vec();
+    return target_level;
 }

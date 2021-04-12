@@ -111,9 +111,8 @@ async fn loop_write(receiver: Receiver<Vec<u8>>,
 
 pub async fn init(
     target_level: Vec<(String, String)>,
-    log_file_path: &Path,
-    enable: Arc<AtomicBool>,
-) -> Result<JoinHandle<()>, Error> {
+    log_file_path: &Path
+) -> Result<LogHandler, Error> {
     let (sender, receiver) = unbounded();
 
     log::set_max_level(LevelFilter::Trace);
@@ -126,9 +125,25 @@ pub async fn init(
         .open(&log_file_path).await?;
     let default_log_writer = BufWriter::new(file);
 
-    let jh = thread::spawn(move || block_on(
-        log_thread_func(receiver, default_log_writer, enable.clone())
+    let log_enable = Arc::new(AtomicBool::new(true));
+    let log_enable_move = log_enable.clone();
+    let join_handler = thread::spawn(move || block_on(
+        log_thread_func(receiver, default_log_writer, log_enable_move)
     ));
 
-    Ok(jh)
+    Ok(LogHandler{
+        log_enable: log_enable.clone(),
+        join_handler
+    })
+}
+
+pub struct LogHandler{
+    log_enable: Arc<AtomicBool>,
+    join_handler: JoinHandle<()>
+}
+
+pub async fn terminal(log_handler: LogHandler) -> Result<(), Error>{
+    log_handler.log_enable.store(false, Ordering::SeqCst);
+    let _ = log_handler.join_handler.join();
+    Ok(())
 }

@@ -5,6 +5,8 @@ use chord_common::error::Error;
 use tide::prelude::*;
 use tide::http::StatusCode;
 use validator::{ValidationErrors, ValidationErrorsKind};
+use std::path::Path;
+use chord_cmd::logger;
 
 #[derive(Serialize, Deserialize)]
 struct ErrorBody{
@@ -78,6 +80,9 @@ macro_rules! json_handler {
 
 #[async_std::main]
 async fn main() -> tide::Result<()> {
+    let log_file_path = Path::new("/var/logs/log.log");
+    let _log_handler = logger::init(vec![], &log_file_path).await?;
+
     let mut app = tide::new();
 
     app.at("/job/exec").post(

@@ -1,5 +1,5 @@
 [package]
-name = "chord-client"
+name = "chord-cmd"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2018"

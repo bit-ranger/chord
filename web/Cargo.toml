@@ -1,0 +1,29 @@
+[package]
+name = "chord-web"
+version = "0.1.0"
+authors = ["bit-ranger <sincerebravefight@gmail.com>"]
+edition = "2018"
+
+description = "async parallel case executor"
+homepage = "https://github.com/bit-ranger/chord"
+readme = "README.md"
+keywords = ["async", "parallel", "executor", "case", "test"]
+categories = ["test"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/bit-ranger/chord"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chord-flow = {path = "../flow"}
+chord-common = {path = "../common"}
+chord-port = {path = "../port"}
+chord-point = {path = "../point", features = ["pt_restapi", "pt_md5", "pt_dubbo", "pt_redis", "pt_mysql"]}
+serde = { version = "1.0", features = ["derive"] }
+log = { version = "0.4.14", features = ["std"]}
+async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
+time = "0.1.42"
+futures = "0.3.13"
+itertools = "0.10.0"
+crossbeam = "0.8.0"
+tide = "0.16.0"

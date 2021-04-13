@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::fmt;
 use std::sync::Arc;
-
+use anyhow::anyhow;
 
 #[macro_export]
 macro_rules! err {
@@ -32,24 +32,26 @@ pub struct Error
 {
     code: String,
     message: String,
-    cause: Option<Arc<dyn std::error::Error>>
+    cause: Option<Arc<anyhow::Error>>
 }
 
 impl  Error {
 
     pub fn new<C,M>(code: C, message: M) -> Error  where C: Into<String>, M: Into<String>{
+        let c = code.into();
+        let m = message.into();
         Error {
-            code: code.into(),
-            message: message.into(),
+            code: c,
+            message: m,
             cause: None
         }
     }
 
-    pub fn cause<C,M,S>(code: C, message: M, cause: S) -> Error where C: Into<String>, M: Into<String>, S: std::error::Error+'static{
+    pub fn cause<C,M, E>(code: C, message: M, cause: E) -> Error where C: Into<String>, M: Into<String>, E: Into<anyhow::Error>{
         Error {
             code: code.into(),
             message: message.into(),
-            cause: Some(Arc::new(cause))
+            cause: Some(Arc::new(cause.into()))
         }
     }
 
@@ -65,37 +67,56 @@ impl  Error {
 
 }
 
-impl std::error::Error for Error {
+unsafe impl Send for Error {}
 
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match &self.cause{
-            Some(c) =>{
-                Some(c.as_ref())
-            },
-            None => None
-        }
-    }
-}
+unsafe impl Sync for Error {}
+
+// impl std::error::Error for Error {
+//
+//     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+//         match &self.cause{
+//             Some(c) =>{
+//                 Some(c.root_cause())
+//             },
+//             None => None
+//         }
+//     }
+// }
 
 impl  Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_str(format!("{} code: {}, message: {} {}",
-                                 "{", self.code, self.message, "}").as_str())
+                                 "{", self.code, self.message, "}").as_str())?;
+
+        if let Some(cause) = &self.cause{
+            f.write_str("\n")?;
+            f.write_str(cause.to_string().as_str())?;
+        }
+
+        return Ok(());
     }
 }
 
 
-impl  From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Error {
-       perr!("io", format!("{:?}", err))
+// impl  From<std::io::Error> for Error {
+//     fn from(err: std::io::Error) -> Error {
+//         Error::cause("io", err.to_string(), err)
+//     }
+// }
+
+impl Into<anyhow::Error> for Error
+{
+    fn into(self) -> anyhow::Error {
+        anyhow::Error::msg(format!("{}: {}", self.code, self.message))
     }
 }
 
-unsafe impl Send for Error
+impl<E> From<E> for Error
+    where
+        E: std::error::Error + Send + Sync + 'static,
 {
-}
-
-unsafe impl Sync for Error
-{
+    fn from(error: E) -> Self {
+        Error::cause("std", error.to_string(), error)
+    }
 }
 

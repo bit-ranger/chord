@@ -1,7 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::fmt;
 use std::sync::Arc;
-use anyhow::anyhow;
 
 #[macro_export]
 macro_rules! err {
@@ -32,7 +31,7 @@ pub struct Error
 {
     code: String,
     message: String,
-    cause: Option<Arc<anyhow::Error>>
+    cause: Arc<anyhow::Error>
 }
 
 impl  Error {
@@ -41,9 +40,9 @@ impl  Error {
         let c = code.into();
         let m = message.into();
         Error {
-            code: c,
+            code: c.clone(),
             message: m,
-            cause: None
+            cause: Arc::new(anyhow::Error::msg(c))
         }
     }
 
@@ -51,7 +50,7 @@ impl  Error {
         Error {
             code: code.into(),
             message: message.into(),
-            cause: Some(Arc::new(cause.into()))
+            cause: Arc::new(cause.into())
         }
     }
 
@@ -71,38 +70,21 @@ unsafe impl Send for Error {}
 
 unsafe impl Sync for Error {}
 
-// impl std::error::Error for Error {
-//
-//     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-//         match &self.cause{
-//             Some(c) =>{
-//                 Some(c.root_cause())
-//             },
-//             None => None
-//         }
-//     }
-// }
 
 impl  Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_str(format!("{} code: {}, message: {} {}",
                                  "{", self.code, self.message, "}").as_str())?;
 
-        if let Some(cause) = &self.cause{
-            f.write_str("\n")?;
-            f.write_str(cause.to_string().as_str())?;
-        }
+        // if let Some(cause) = &self.cause{
+        //     f.write_str("\n")?;
+        //     f.write_str(cause.to_string().as_str())?;
+        // }
 
         return Ok(());
     }
 }
 
-
-// impl  From<std::io::Error> for Error {
-//     fn from(err: std::io::Error) -> Error {
-//         Error::cause("io", err.to_string(), err)
-//     }
-// }
 
 impl Into<anyhow::Error> for Error
 {

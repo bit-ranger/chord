@@ -1,7 +1,6 @@
 use chrono::Utc;
 use chord_common::value::to_json;
 
-use chord_common::error::Error;
 use chord_common::value::Json;
 use res::CaseAssessStruct;
 
@@ -13,6 +12,7 @@ use chord_common::point::{PointAssess, PointState};
 pub mod res;
 pub mod arg;
 use log::{trace, debug, info, warn};
+use chord_common::perr;
 
 pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
@@ -24,7 +24,7 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStr
         if point_arg.is_none(){
             warn!("case Err {}", arg.id());
             return CaseAssessStruct::new(arg.id(), start, Utc::now(),
-                                         CaseState::Err(Error::new("010", format!("invalid point {}", point_id))));
+                                         CaseState::Err(perr!("010", format!("invalid point {}", point_id))));
         }
         let point_arg = point_arg.unwrap();
         let point_assess = point::run(app_ctx, &point_arg).await;

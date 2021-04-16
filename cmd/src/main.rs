@@ -51,7 +51,7 @@ async fn main() -> Result<(),Error> {
         Some(et) => {
             match et {
                 TaskState::Ok(_) => Ok(()),
-                TaskState::Err(e) => cause!("task", e.to_string(), e.clone()),
+                TaskState::Err(e) => Err(e.clone()),
                 TaskState::Fail(_) => err!("task", "fail")
             }
         },

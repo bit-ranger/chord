@@ -2,7 +2,7 @@ use std::env;
 use std::path::Path;
 use std::time::SystemTime;
 
-use chord_common::{cause, err};
+use chord_common::{err};
 use chord_common::error::Error;
 use chord_common::task::TaskState;
 use chord_point::PointRunnerDefault;

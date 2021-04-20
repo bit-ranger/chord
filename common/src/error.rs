@@ -17,11 +17,19 @@ macro_rules! err {
     }}
 }
 
+
 #[macro_export]
-macro_rules! cause {
+macro_rules! rcause {
     ($code:expr, $message:expr, $cause:expr) => {{
         let res = $crate::error::Error::cause($code, $message, $cause);
         std::result::Result::Err(res)
+    }}
+}
+
+#[macro_export]
+macro_rules! cause {
+    ($code:expr, $message:expr, $cause:expr) => {{
+        $crate::error::Error::cause($code, $message, $cause)
     }}
 }
 

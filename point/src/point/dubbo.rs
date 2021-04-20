@@ -4,13 +4,13 @@ use async_std::prelude::*;
 use chord_common::value::{Json};
 use std::str::FromStr;
 use chord_common::point::{PointArg, PointValue};
-use chord_common::{err};
+use chord_common::{rerr};
 
 pub async fn run(arg: &dyn PointArg) -> PointValue {
     let mut server_stream = match TcpStream::connect(arg.config_rendered(vec!["address"]).unwrap()).await {
         Ok(server_stream) => server_stream,
         Err(e) => {
-            return err!("connection error", format!("{}", e));
+            return rerr!("connection error", format!("{}", e));
         }
     };
 
@@ -46,7 +46,7 @@ pub async fn run(arg: &dyn PointArg) -> PointValue {
             PointValue::Ok(json)
         },
         None => {
-            err!("001", value)
+            rerr!("001", value)
         }
     }
 

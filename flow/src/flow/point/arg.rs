@@ -9,7 +9,7 @@ use chord_common::value::to_json;
 use chord_common::error::Error;
 use chord_common::point::PointArg;
 use chord_common::value::Json;
-use chord_common::err;
+use chord_common::rerr;
 use chord_common::flow::Flow;
 
 use crate::flow::case::arg::RenderContext;
@@ -77,7 +77,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
             text, self.render_context);
         return match render {
             Ok(r) => Ok(r),
-            Err(e) => err!("tpl", format!("{}", e))
+            Err(e) => rerr!("tpl", format!("{}", e))
         };
     }
 
@@ -97,7 +97,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
             text, &ctx);
         return match render {
             Ok(r) => Ok(r),
-            Err(e) => err!("tpl", format!("{}", e))
+            Err(e) => rerr!("tpl", format!("{}", e))
         };
     }
 

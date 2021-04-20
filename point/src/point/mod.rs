@@ -1,6 +1,5 @@
+use chord_common::rerr;
 use chord_common::point::PointArg;
-
-use crate::point;
 
 pub mod sleep;
 
@@ -32,7 +31,7 @@ pub async fn run_point_kind(kind: &str, arg: &dyn PointArg) -> chord_common::poi
         #[cfg(feature = "pt_redis")]
         "redis" => redis::run(arg).await,
 
-        _ => err!("002", format!("unsupported point kind {}", kind).as_str())
+        _ => rerr!("002", format!("unsupported point kind {}", kind).as_str())
     };
 
     return value;

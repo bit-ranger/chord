@@ -5,7 +5,7 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 
 use chord_common::point::{PointArg, PointValue};
-use chord_common::{err,perr};
+use chord_common::{rerr, err};
 
 use chord_common::value::{Json, Map, Number};
 use chord_common::error::Error;
@@ -17,11 +17,11 @@ pub async fn run(context: &dyn PointArg) -> PointValue{
 
 async fn run0(context: &dyn PointArg) -> std::result::Result<Json, Rae>{
 
-    let url = context.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
-    let url = Url::from_str(url.as_str()).or(err!("011", format!("invalid url: {}", url)))?;
+    let url = context.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
+    let url = Url::from_str(url.as_str()).or(rerr!("011", format!("invalid url: {}", url)))?;
 
-    let method = context.config_rendered(vec!["method"]).ok_or(perr!("020", "missing method"))?;
-    let method = Method::from_str(method.as_str()).or(err!("021", "invalid method"))?;
+    let method = context.config_rendered(vec!["method"]).ok_or(err!("020", "missing method"))?;
+    let method = Method::from_str(method.as_str()).or(rerr!("021", "invalid method"))?;
 
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(HeaderName::from_str("Content-Type").unwrap(), HeaderValue::from_str("application/json")?);
@@ -29,10 +29,10 @@ async fn run0(context: &dyn PointArg) -> std::result::Result<Json, Rae>{
     if let Some(header) = context.config()["header"].as_object() {
         for (k, v) in header.iter() {
             let hn = HeaderName::from_string(context.render(k)?)
-                .or(err!("030", "invalid header name"))?;
-            let hvt = context.render(v.as_str().ok_or(perr!("031", "invalid header value"))?)?;
+                .or(rerr!("030", "invalid header name"))?;
+            let hvt = context.render(v.as_str().ok_or(err!("031", "invalid header value"))?)?;
             let hv = HeaderValue::from_str(hvt.as_str())
-                .or(err!("031", "invalid header value"))?;
+                .or(rerr!("031", "invalid header value"))?;
             rb = rb.header(hn, hv);
         }
     }
@@ -63,7 +63,7 @@ struct Rae(chord_common::error::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
-        Rae(perr!("http", format!("{}", err.status())))
+        Rae(err!("http", format!("{}", err.status())))
     }
 }
 

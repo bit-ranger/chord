@@ -1,11 +1,11 @@
 use chord_common::value::{Json, Number, from_str};
 use redis::{Value as RedisValue};
 use chord_common::point::{PointArg, PointValue};
-use chord_common::{perr};
+use chord_common::{err};
 
 pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
-    let url = pt_arg.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
-    let cmd = pt_arg.config_rendered(vec!["cmd"]).ok_or(perr!("012", "missing cmd"))?;
+    let url = pt_arg.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
+    let cmd = pt_arg.config_rendered(vec!["cmd"]).ok_or(err!("012", "missing cmd"))?;
 
     let client = redis::Client::open(url)?;
     let mut con = client.get_async_connection().await?;

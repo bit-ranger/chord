@@ -1,7 +1,6 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use chord_common::err;
 use chord_common::point::{PointArg, PointRunner};
 
 mod point;

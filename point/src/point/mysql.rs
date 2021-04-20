@@ -1,13 +1,13 @@
 use chord_common::value::{Json, Map, Number};
 use chord_common::point::{PointArg, PointValue};
-use chord_common::{perr};
+use chord_common::{err};
 use log::{debug};
 use rbatis::rbatis::Rbatis;
 use rbatis::plugin::page::{Page, PageRequest};
 
 pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
-    let url = pt_arg.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
-    let sql = pt_arg.config_rendered(vec!["sql"]).ok_or(perr!("011", "missing sql"))?;
+    let url = pt_arg.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
+    let sql = pt_arg.config_rendered(vec!["sql"]).ok_or(err!("011", "missing sql"))?;
     let rb = Rbatis::new();
     rb.link(url.as_str()).await?;
 

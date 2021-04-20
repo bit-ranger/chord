@@ -3,7 +3,7 @@ use std::fmt;
 use std::sync::Arc;
 
 #[macro_export]
-macro_rules! err {
+macro_rules! rerr {
     ($code:expr, $message:expr) => {{
         let res = $crate::error::Error::new($code, $message);
         std::result::Result::Err(res)
@@ -11,7 +11,7 @@ macro_rules! err {
 }
 
 #[macro_export]
-macro_rules! perr {
+macro_rules! err {
     ($code:expr, $message:expr) => {{
         $crate::error::Error::new($code, $message)
     }}

@@ -2,7 +2,7 @@ use std::env;
 use std::path::Path;
 use std::time::SystemTime;
 
-use chord_common::{err};
+use chord_common::{rerr};
 use chord_common::error::Error;
 use chord_common::task::TaskState;
 use chord_point::PointRunnerDefault;
@@ -26,7 +26,7 @@ async fn main() -> Result<(),Error> {
         Ok(m) => m,
         Err(e) => {
             println!("{}", opts.short_usage("chord"));
-            return err!("arg", e.to_string());
+            return rerr!("arg", e.to_string());
         }
     };
 
@@ -52,7 +52,7 @@ async fn main() -> Result<(),Error> {
             match et {
                 TaskState::Ok(_) => Ok(()),
                 TaskState::Err(e) => Err(e.clone()),
-                TaskState::Fail(_) => err!("task", "fail")
+                TaskState::Fail(_) => rerr!("task", "fail")
             }
         },
         None => Ok(())

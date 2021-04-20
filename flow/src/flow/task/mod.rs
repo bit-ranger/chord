@@ -3,7 +3,7 @@ use futures::future::join_all;
 use itertools::Itertools;
 use log::{debug, warn, trace};
 
-use chord_common::err;
+use chord_common::rerr;
 use chord_common::error::Error;
 use chord_common::task::{TaskState};
 use chord_common::value::{Json, Map};
@@ -92,7 +92,7 @@ async fn pre_ctx(app_ctx: &dyn AppContext, arg: &TaskArgStruct) -> Result<Vec<(S
                     PointState::Ok(pv) => {
                         pre_ctx.insert(String::from(pa.id()), pv.clone());
                     },
-                    _ => return err!("012", "pre point run failure")
+                    _ => return rerr!("012", "pre point run failure")
                 }
             }
             let pre = Json::Object(pre_ctx);
@@ -102,10 +102,10 @@ async fn pre_ctx(app_ctx: &dyn AppContext, arg: &TaskArgStruct) -> Result<Vec<(S
         }
         CaseState::Fail(pa_vec) => {
             let pa_last = pa_vec.last().unwrap();
-            err!("020", format!("pre Fail : {}", pa_last.id()))
+            rerr!("020", format!("pre Fail : {}", pa_last.id()))
         },
         CaseState::Err(e) => {
-            err!("021", format!("pre Err  : {}", e.to_string()))
+            rerr!("021", format!("pre Err  : {}", e.to_string()))
         }
     }
 

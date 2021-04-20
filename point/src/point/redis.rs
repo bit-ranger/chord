@@ -1,8 +1,7 @@
-use chord_common::point::PointArg;
 use chord_common::value::{Json, Number, from_str};
-use crate::model::{PointValue, PointError};
-use redis::{RedisError, Value as RedisValue};
-use crate::perr;
+use redis::{Value as RedisValue};
+use chord_common::point::{PointArg, PointValue};
+use chord_common::{perr};
 
 pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
     let url = pt_arg.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
@@ -46,10 +45,4 @@ pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
         }
     };
     return Ok(result);
-}
-
-impl From<RedisError> for PointError {
-    fn from(err: RedisError) -> PointError {
-        PointError::new("redis", format!("{:?}", err).as_str())
-    }
 }

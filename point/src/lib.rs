@@ -3,8 +3,9 @@ use std::pin::Pin;
 
 use chord_common::point::{PointArg, PointRunner};
 
-mod model;
 mod point;
+
+use chord_common::{err};
 
 pub struct PointRunnerDefault;
 
@@ -48,7 +49,7 @@ async fn run_point_kind(kind: &str, arg: &dyn PointArg) -> chord_common::point::
         _ => err!("002", format!("unsupported point kind {}", kind).as_str())
     };
 
-    return model::to_common_value(value);
+    return value;
 }
 
 

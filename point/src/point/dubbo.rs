@@ -1,12 +1,10 @@
-use chord_common::point::PointArg;
-use crate::model::PointValue;
 use log::{debug};
-use crate::{err};
 use async_std::net::TcpStream;
 use async_std::prelude::*;
 use chord_common::value::{Json};
 use std::str::FromStr;
-
+use chord_common::point::{PointArg, PointValue};
+use chord_common::{err};
 
 pub async fn run(arg: &dyn PointArg) -> PointValue {
     let mut server_stream = match TcpStream::connect(arg.config_rendered(vec!["address"]).unwrap()).await {

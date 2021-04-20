@@ -4,13 +4,19 @@ use surf::{Body, RequestBuilder, Response, Url};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 
-use chord_common::point::PointArg;
-use chord_common::value::{Json, Map, Number};
+use chord_common::point::{PointArg, PointValue};
+use chord_common::{err,perr};
 
-use crate::{err,perr};
-use crate::model::{PointError, PointValue};
+use chord_common::value::{Json, Map, Number};
+use chord_common::error::Error;
+
 
 pub async fn run(context: &dyn PointArg) -> PointValue{
+    return run0(context).await.map_err(|e| e.0);
+}
+
+async fn run0(context: &dyn PointArg) -> std::result::Result<Json, Rae>{
+
     let url = context.config_rendered(vec!["url"]).ok_or(perr!("010", "missing url"))?;
     let url = Url::from_str(url.as_str()).or(err!("011", format!("invalid url: {}", url)))?;
 
@@ -18,7 +24,7 @@ pub async fn run(context: &dyn PointArg) -> PointValue{
     let method = Method::from_str(method.as_str()).or(err!("021", "invalid method"))?;
 
     let mut rb = RequestBuilder::new(method, url);
-    rb = rb.header(HeaderName::from_str("Content-Type").unwrap(), HeaderValue::from_str("application/json").unwrap());
+    rb = rb.header(HeaderName::from_str("Content-Type").unwrap(), HeaderValue::from_str("application/json")?);
 
     if let Some(header) = context.config()["header"].as_object() {
         for (k, v) in header.iter() {
@@ -49,17 +55,25 @@ pub async fn run(context: &dyn PointArg) -> PointValue{
     let body: Json = res.body_json().await?;
     res_data.insert(String::from("body"), body);
     return Ok(Json::Object(res_data))
+
 }
 
+struct Rae(chord_common::error::Error);
 
 
-
-
-impl From<surf::Error> for PointError {
-    fn from(err: surf::Error) -> PointError {
-        PointError::new("http", format!("{}", err.status()))
+impl From<surf::Error> for Rae {
+    fn from(err: surf::Error) -> Rae {
+        Rae(perr!("http", format!("{}", err.status())))
     }
 }
+
+impl From<chord_common::error::Error> for Rae {
+    fn from(err: Error) -> Self {
+        Rae(err)
+    }
+}
+
+
 
 
 

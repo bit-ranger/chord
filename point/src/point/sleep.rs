@@ -1,6 +1,5 @@
-use chord_common::point::PointArg;
+use chord_common::point::{PointArg, PointValue};
 use chord_common::value::Json;
-use crate::model::PointValue;
 use async_std::task::sleep;
 use std::time::Duration;
 

@@ -1,6 +1,5 @@
-use chord_common::point::{PointArg};
 use chord_common::value::Json;
-use crate::model::PointValue;
+use chord_common::point::{PointArg, PointValue};
 
 pub async fn run(context: &dyn PointArg) -> PointValue {
     let raw = context.config_rendered(vec!["raw"]).unwrap();

@@ -1,7 +1,6 @@
-use chord_common::point::PointArg;
 use chord_common::value::{Json, Map, Number};
-use crate::model::{PointValue, PointError};
-use crate::perr;
+use chord_common::point::{PointArg, PointValue};
+use chord_common::{perr};
 use log::{debug};
 use rbatis::rbatis::Rbatis;
 use rbatis::plugin::page::{Page, PageRequest};
@@ -43,8 +42,8 @@ pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
 
 }
 
-impl From<rbatis::Error> for PointError {
-    fn from(err: rbatis::Error) -> PointError {
-        PointError::new("rbatis", format!("{:?}", err))
-    }
-}
+// impl From<rbatis::Error> for PointError {
+//     fn from(err: rbatis::Error) -> PointError {
+//         PointError::new("rbatis", format!("{:?}", err))
+//     }
+// }

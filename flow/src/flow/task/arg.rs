@@ -56,7 +56,7 @@ impl TaskArgStruct {
                 CaseArgStruct::new(
                     0,
                     self.flow.clone(),
-                    Arc::new(Vec::new()),
+                    Arc::new(vec![Json::Null]),
                     pre_pt_id_vec,
                     Arc::new(Vec::new())
                 )

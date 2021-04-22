@@ -86,10 +86,14 @@ pub async fn init() -> Result<(), Error>{
     let log_file_path = Path::new("/data/logs/chord/log.log");
     let _log_handler = logger::init(vec![], &log_file_path).await?;
 
-    app.at("/job/exec").post(
-        json_handler!(controller::job::exec)
-    );
+    // let job_service = controller::job::Service::new(String::from("/data/chord"));
+    // app.at("/job/exec").post(
+    //     json_handler!(|p| {
+    //         controller::job::Service::exec(&service, p)
+    //     })
+    // );
 
     app.listen("127.0.0.1:8080").await?;
     Ok(())
 }
+

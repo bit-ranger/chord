@@ -23,7 +23,6 @@ surf = {version = "2.1.0",  optional = true}
 md5 = {version = "0.7.0", optional = true }
 redis = {version="0.20.0", features = [ "async-std-comp"], optional = true }
 rbatis = { version = "1.8.81",  optional = true }
-backtrace = "0.3.56"
 
 
 [target.'cfg(linux)'.dependencies]

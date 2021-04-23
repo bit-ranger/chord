@@ -13,7 +13,8 @@ pub mod dubbo;
 pub mod mysql;
 #[cfg(feature = "pt_redis")]
 pub mod redis;
-
+#[cfg(feature = "pt_mongodb")]
+pub mod mongodb;
 
 pub async fn run_point_kind(kind: &str, arg: &dyn PointArg) -> chord_common::point::PointValue{
 
@@ -30,7 +31,8 @@ pub async fn run_point_kind(kind: &str, arg: &dyn PointArg) -> chord_common::poi
         "mysql" => mysql::run(arg).await,
         #[cfg(feature = "pt_redis")]
         "redis" => redis::run(arg).await,
-
+        #[cfg(feature = "pt_mongodb")]
+        "mongodb" => mongodb::run(arg).await,
         _ => rerr!("002", format!("unsupported point kind {}", kind).as_str())
     };
 

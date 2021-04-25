@@ -1,7 +1,7 @@
 use mongodb::{Client, options::ClientOptions};
-use mongodb::bson::{doc, bson, Document};
+use mongodb::bson::{doc, Document, to_document};
 
-use chord_common::err;
+use chord_common::{err, rerr};
 use chord_common::point::{PointArg, PointValue};
 use chord_common::value::{Json, from_str};
 
@@ -24,15 +24,17 @@ pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
             let arg_json:Json = from_str(arg.as_str())?;
             match arg_json {
                 Json::Array(arr) => {
-                    let doc_vec: Vec<Bson> = arr.iter().map(|v| {
-                        let doc = bson!()
-                    }).collect();
+                    let doc_vec: Vec<Document> = arr
+                        .iter()
+                        .map(|v| to_document(v).unwrap())
+                        .collect();
                     collection.insert_many(doc_vec, None).await?;
+                    return Ok(Json::Null);
                 },
-                _ => ()
+                _ => rerr!("010", "illegal arg")
             }
         },
-        _ => ()
+        _ => rerr!("010", "illegal operation")
     }
     Ok(Json::Null)
 }

@@ -31,10 +31,9 @@ pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
                     collection.insert_many(doc_vec, None).await?;
                     return Ok(Json::Null);
                 },
-                _ => rerr!("010", "illegal arg")
+                _ => return rerr!("010", "illegal arg");
             }
         },
-        _ => rerr!("010", "illegal operation")
+        _ => return rerr!("010", "illegal operation");
     }
-    Ok(Json::Null)
 }

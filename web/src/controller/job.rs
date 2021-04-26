@@ -36,8 +36,9 @@ impl Ctl {
 
     pub async fn exec(&self, req: Req) -> Result<String, Error> {
         let exe_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
-        let job_path = self.job_dir.clone().join(&req.name).join(exe_id.as_str());
+        let job_path = self.job_dir.clone().join(&req.name);
         let work_path = self.work_dir.clone().join(&req.name).join(exe_id.as_str());
+        let _ = async_std::fs::create_dir(work_path.clone()).await;
         let _task_state_vec = service::job::run(job_path, work_path, exe_id.clone(), self.app_ctx.clone()).await;
         return Ok(exe_id);
     }

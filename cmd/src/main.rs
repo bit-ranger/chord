@@ -34,26 +34,26 @@ async fn main() -> Result<(),Error> {
     let job_path = matches.opt_str("j").unwrap();
     let job_path = Path::new(&job_path);
     if !job_path.is_dir(){
-        panic!("job is not a dir {}", job_path.to_str().unwrap());
+        panic!("job_path is not a dir {}", job_path.to_str().unwrap());
     }
 
-    let job_work_path = matches.opt_str("w").unwrap();
-    let job_work_path = Path::new(&job_work_path);
-    if !job_work_path.is_dir(){
-        panic!("workspace is not a dir {}", job_work_path.to_str().unwrap());
+    let work_path = matches.opt_str("w").unwrap();
+    let work_path = Path::new(&work_path);
+    if !work_path.is_dir(){
+        panic!("work_path is not a dir {}", work_path.to_str().unwrap());
     }
 
     let execution_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
 
-    let job_work_path = job_work_path.join(execution_id.as_str());
-    let job_work_path = Path::new(&job_work_path);
-    std::fs::create_dir(job_work_path)?;
+    let work_path = work_path.join(execution_id.as_str());
+    let work_path = Path::new(&work_path);
+    async_std::fs::create_dir(work_path).await?;
 
-    let log_file_path = job_work_path.join("log.log");
+    let log_file_path = work_path.join("log.log");
     let log_handler = logger::init(target_level(matches), &log_file_path).await?;
 
     let app_ctx = chord_flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
-    let task_state_vec = job::run(job_path, job_work_path, execution_id, app_ctx).await;
+    let task_state_vec = job::run(job_path, work_path, execution_id, app_ctx).await;
 
     logger::terminal(log_handler).await?;
 

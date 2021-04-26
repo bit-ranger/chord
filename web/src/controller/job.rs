@@ -5,6 +5,8 @@ use std::time::SystemTime;
 use chord_point::PointRunnerDefault;
 use crate::service;
 use std::path::{PathBuf, Path};
+use async_std::sync::Arc;
+use chord_flow::AppContext;
 
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -15,7 +17,8 @@ pub struct Req {
 
 pub struct Ctl {
     job_dir: PathBuf,
-    work_dir: PathBuf
+    work_dir: PathBuf,
+    app_ctx: Arc<dyn AppContext>
 }
 
 impl Ctl {
@@ -24,17 +27,17 @@ impl Ctl {
                work_dir: String) -> Ctl {
         Ctl {
             job_dir: Path::new(job_dir.as_str()).to_path_buf(),
-            work_dir: Path::new(work_dir.as_str()).to_path_buf()
+            work_dir: Path::new(work_dir.as_str()).to_path_buf(),
+            app_ctx: chord_flow::create_app_context(Box::new(PointRunnerDefault::new())).await
         }
     }
 
 
     pub async fn exec(&self, req: Req) -> Result<String, Error> {
         let exe_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
-        let app_ctx = chord_flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
         let job_path = self.job_dir.clone().join(&req.name).join(exe_id.as_str());
         let work_path = self.work_dir.clone().join(&req.name).join(exe_id.as_str());
-        let _task_state_vec = service::job::run(job_path, work_path, exe_id.clone(), app_ctx).await;
+        let _task_state_vec = service::job::run(job_path, work_path, exe_id.clone(), self.app_ctx.clone()).await;
         return Ok(exe_id);
     }
 }

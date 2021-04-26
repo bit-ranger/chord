@@ -92,7 +92,7 @@ lazy_static! {
 pub async fn init() -> Result<(), Error>{
     let mut app = tide::new();
 
-    let log_file_path = Path::new("/data/logs/chord/log.log");
+    let log_file_path = Path::new("/data/chord/log.log");
     let _log_handler = logger::init(vec![], &log_file_path).await?;
 
     app.at("/job/exec").post(

@@ -1,4 +1,4 @@
-use tide::prelude::*;
+use serde::{Serialize, Deserialize};
 use chord_common::error::Error;
 use validator::{Validate};
 use std::time::SystemTime;
@@ -7,6 +7,7 @@ use crate::service;
 use std::path::{PathBuf, Path};
 use async_std::sync::Arc;
 use chord_flow::AppContext;
+use futures::executor::block_on;
 
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -23,12 +24,12 @@ pub struct Ctl {
 
 impl Ctl {
 
-    pub fn new(job_dir: String,
+    pub  fn new(job_dir: String,
                work_dir: String) -> Ctl {
         Ctl {
             job_dir: Path::new(job_dir.as_str()).to_path_buf(),
             work_dir: Path::new(work_dir.as_str()).to_path_buf(),
-            app_ctx: chord_flow::create_app_context(Box::new(PointRunnerDefault::new())).await
+            app_ctx: block_on(chord_flow::create_app_context(Box::new(PointRunnerDefault::new())))
         }
     }
 

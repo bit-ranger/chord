@@ -1,5 +1,5 @@
 use mongodb::{Client, options::ClientOptions};
-use mongodb::bson::{doc, Document, to_document};
+use mongodb::bson::{Document, to_document};
 
 use chord_common::{err, rerr};
 use chord_common::point::{PointArg, PointValue};
@@ -13,7 +13,7 @@ pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
     let arg = pt_arg.config_rendered(vec!["arg"]).ok_or(err!("010", "missing arg"))?;
 
     // Parse a connection string into an options struct.
-    let mut client_options = ClientOptions::parse(url.as_str()).await?;
+    let client_options = ClientOptions::parse(url.as_str()).await?;
     // Get a handle to the deployment.
     let client = Client::with_options(client_options)?;
     let db = client.database(database.as_str());

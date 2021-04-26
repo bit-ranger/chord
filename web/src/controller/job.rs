@@ -30,11 +30,11 @@ impl Ctl {
 
 
     pub async fn exec(&self, req: Req) -> Result<String, Error> {
-        let execution_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
+        let exe_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
         let app_ctx = chord_flow::create_app_context(Box::new(PointRunnerDefault::new())).await;
-        let job_path = self.job_dir.clone().join(&req.name);
-        let work_path = self.work_dir.clone().join(&req.name);
-        let _task_state_vec = service::job::run(job_path, work_path, execution_id.clone(), app_ctx).await;
-        return Ok(execution_id);
+        let job_path = self.job_dir.clone().join(&req.name).join(exe_id.as_str());
+        let work_path = self.work_dir.clone().join(&req.name).join(exe_id.as_str());
+        let _task_state_vec = service::job::run(job_path, work_path, exe_id.clone(), app_ctx).await;
+        return Ok(exe_id);
     }
 }

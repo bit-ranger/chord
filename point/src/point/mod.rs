@@ -3,8 +3,8 @@ use chord_common::point::PointArg;
 
 pub mod sleep;
 
-#[cfg(feature = "pt_restapi")]
-pub mod restapi;
+#[cfg(feature = "pt_jsonapi")]
+pub mod jsonapi;
 #[cfg(feature = "pt_md5")]
 pub mod md5;
 #[cfg(feature = "pt_dubbo")]
@@ -21,8 +21,8 @@ pub async fn run_point_kind(kind: &str, arg: &dyn PointArg) -> chord_common::poi
     let value = match kind.trim() {
         "sleep" => sleep::run(arg).await,
 
-        #[cfg(feature = "pt_restapi")]
-        "restapi" => restapi::run(arg).await,
+        #[cfg(feature = "pt_jsonapi")]
+        "jsonapi" => jsonapi::run(arg).await,
         #[cfg(feature = "pt_md5")]
         "md5" => md5::run(arg).await,
         #[cfg(feature = "pt_dubbo")]

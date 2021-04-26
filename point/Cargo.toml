@@ -36,6 +36,6 @@ pt_mysql = ["rbatis"]
 pt_dubbo = []
 pt_redis = ["redis"]
 pt_md5 = ["md5"]
-pt_restapi = ["surf"]
+pt_jsonapi = ["surf"]
 pt_mongodb = ["mongodb"]
 

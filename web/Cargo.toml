@@ -29,3 +29,4 @@ crossbeam = "0.8.0"
 tide = "0.16.0"
 validator = { version = "0.12", features = ["derive"] }
 lazy_static = "1.4.0"
+rayon = "1.5.0"

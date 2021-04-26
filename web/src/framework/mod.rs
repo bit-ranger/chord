@@ -84,7 +84,7 @@ macro_rules! json_handler {
 
 
 lazy_static! {
-    static ref JOB_CTL:controller::job::Ctl = {
+    static ref JOB_CTL: controller::job::Ctl = {
         controller::job::Ctl::new(String::from("/data/chord/job"), String::from("/data/chord/work"))
     };
 }
@@ -94,7 +94,6 @@ pub async fn init() -> Result<(), Error>{
 
     let log_file_path = Path::new("/data/logs/chord/log.log");
     let _log_handler = logger::init(vec![], &log_file_path).await?;
-
 
     app.at("/job/exec").post(
         json_handler!(controller::job::Ctl::exec, &JOB_CTL)

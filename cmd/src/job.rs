@@ -9,7 +9,7 @@ use chord_common::flow::Flow;
 use chord_common::task::{TaskState};
 use chord_flow::AppContext;
 use futures::future::join_all;
-use log::info;
+use log::debug;
 use async_std::sync::Arc;
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
@@ -18,7 +18,7 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
                                        app_ctx: Arc<dyn AppContext>) -> Vec<TaskState>{
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
-    info!("job start {}", job_path_str);
+    debug!("job start {}", job_path_str);
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
 
     let mut futures = Vec::new();
@@ -46,7 +46,7 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
     }
 
     let task_state_vec = join_all(futures).await;
-    info!("job end {}", job_path_str);
+    debug!("job end {}", job_path_str);
     return task_state_vec;
 }
 
@@ -56,7 +56,6 @@ async fn run_task<P: AsRef<Path>>(
     execution_id: String,
     app_ctx: Arc<dyn AppContext>) -> TaskState
 {
-    // mdc::insert("work_path", task_path.as_ref().to_str().unwrap());
     let rt = run_task0(work_path, task_path, execution_id.as_str(), app_ctx).await;
     match rt {
         Ok(ts) => ts,
@@ -70,7 +69,7 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
                                    app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
 
-    info!("task start {}", task_path.to_str().unwrap());
+    debug!("task start {}", task_path.to_str().unwrap());
 
     let flow_path = task_path.clone().join("flow.yml");
 
@@ -124,6 +123,6 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
     let result_path_new = work_path.as_ref().join(format!("{}_result_{}.csv", task_id, task_state_view));
     rename(result_path, result_path_new).await.unwrap();
 
-    info!("task end {}", task_path.to_str().unwrap());
+    debug!("task end {}", task_path.to_str().unwrap());
     return Ok(total_task_state);
 }

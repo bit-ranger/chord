@@ -102,13 +102,11 @@ impl Ctl {
             .join(group_name)
             .join(repo_name);
         if checkout.exists() {
-            if !checkout.is_dir(){
-                error!("invalid checkout {}", checkout.to_str().unwrap());
-                return;
-            }
+            error!("checkout exist {}", checkout.to_str().unwrap());
+            return;
         } else {
             if let Err(e) = async_std::fs::create_dir_all(checkout.clone()).await {
-                error!("create_dir checkout error {}, {}", checkout.to_str().unwrap(), e);
+                error!("checkout create_dir error {}, {}", checkout.to_str().unwrap(), e);
                 return;
             }
         }

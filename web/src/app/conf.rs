@@ -38,4 +38,19 @@ impl App {
     pub fn ssh_key_private_path(&self) -> &str {
         self.conf["ssh"]["key"]["private"]["path"].as_str().unwrap_or("/data/chord/conf/ssh_key.pri")
     }
+
+    pub fn log_level(&self) -> Vec<(String, String)>{
+        let target_level: Vec<(String, String)> =  match self.conf["log"]["level"]
+            .as_object(){
+            None => Vec::new(),
+            Some(m) => {
+                m.iter()
+                    .filter(|(_,v)| v.is_string())
+                    .map(|(k,v)| (k.to_owned(), v.as_str().unwrap().to_owned()))
+                    .collect()
+            }
+        };
+
+        return target_level;
+    }
 }

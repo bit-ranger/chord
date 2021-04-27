@@ -88,7 +88,7 @@ pub async fn init(conf: Json) -> Result<(), Error>{
     let mut app = tide::new();
 
     let log_file_path = Path::new(conf.log_path());
-    let _log_handler = logger::init(vec![], &log_file_path).await?;
+    let _log_handler = logger::init(conf.log_level(), &log_file_path).await?;
 
     ctl::job::Ctl::create_singleton(conf.job_input_path(), conf.job_output_path(), conf.ssh_key_private_path());
     app.at("/job/exec").post(

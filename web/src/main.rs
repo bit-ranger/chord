@@ -12,7 +12,7 @@ mod biz;
 
 #[async_std::main]
 async fn main() -> Result<(), Error> {
-    let conf = load_conf("/data/chord/application.yml")?;
+    let conf = load_conf("/data/chord/conf/application.yml")?;
     app::init(conf).await?;
     Ok(())
 }

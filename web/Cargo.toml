@@ -27,8 +27,11 @@ itertools = "0.10.0"
 log = { version = "0.4.14", features = ["std"]}
 crossbeam = "0.8.0"
 tide = "0.16.0"
-validator = { version = "0.12", features = ["derive"] }
+validator = { version = "0.13", features = ["derive"] }
 lazy_static = "1.4.0"
 rayon = "1.5.0"
 serde_yaml = "0.8"
 git2 = "0.13.18"
+url = "2.2.1"
+regex = "1.4.6"
+rm_rf = "0.6.1"

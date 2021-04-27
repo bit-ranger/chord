@@ -67,7 +67,7 @@ macro_rules! json_handler {
         |mut req: Request<()>| async move{
             let rb =  req.body_json().await?;
             if let Err(e) = validator::Validate::validate(&rb){
-                return Ok(Response::builder(StatusCode::InternalServerError)
+                return Ok(Response::builder(StatusCode::BadRequest)
                     .body(validator_error_json(&e)))
             };
             let rst = $func($ctl, rb).await;
@@ -90,7 +90,7 @@ pub async fn init(conf: Json) -> Result<(), Error>{
     let log_file_path = Path::new(conf.log_path());
     let _log_handler = logger::init(vec![], &log_file_path).await?;
 
-    ctl::job::Ctl::create_singleton(conf.job_input_path(), conf.job_output_path());
+    ctl::job::Ctl::create_singleton(conf.job_input_path(), conf.job_output_path(), conf.ssh_key_private_path());
     app.at("/job/exec").post(
         json_handler!(ctl::job::Ctl::exec, ctl::job::Ctl::get_singleton())
     );

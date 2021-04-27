@@ -27,7 +27,13 @@ fn regex(){
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct Req {
     #[validate(regex = "GIT_URL")]
-    git_url: String
+    git_url: String,
+
+    #[validate(length(min = 1))]
+    branch: Option<String>,
+
+    #[validate(length(min = 1))]
+    job_path: Option<String>
 }
 
 pub struct Ctl {
@@ -107,17 +113,26 @@ impl Ctl {
             }
         }
 
-        if let Err(e) = Ctl::checkout(ssh_key_pri.as_path(), req.git_url.as_str(), checkout.as_path()).await{
+        if let Err(e) = Ctl::checkout(ssh_key_pri.as_path(),
+                                      req.git_url.as_str(),
+                                      checkout.as_path(),
+                                      req.branch.unwrap_or_else(|| "master".to_owned()).as_str(),
+        ).await {
             error!("checkout error {}, {}, {}", req.git_url, checkout.to_str().unwrap(), e);
             Ctl::clear(checkout.as_path()).await;
             return;
         }
 
+        let job_path = match req.job_path{
+            Some(p) => checkout.clone().join(p.as_str()),
+            None => checkout.clone()
+        };
+
         let work_path = output
             .join(host)
             .join(group_name)
             .join(repo_name);
-        Ctl::run(app_ctx, checkout.clone(), work_path, exe_id).await;
+        Ctl::run(app_ctx, job_path, work_path, exe_id).await;
         Ctl::clear(checkout.as_path()).await;
     }
 
@@ -162,14 +177,18 @@ impl Ctl {
         return Err(git2::Error::from_str("ssh_key not allowed"));
     }
 
-    async fn checkout(ssh_key_private: &Path, git_url: &str, into: &Path) -> Result<Repository, git2::Error>{
+    async fn checkout(ssh_key_private: &Path,
+                      git_url: &str,
+                      into: &Path,
+                      branch: &str,
+    ) -> Result<Repository, git2::Error> {
         let mut callbacks = git2::RemoteCallbacks::new();
         callbacks.credentials(|_, _, allowed| Ctl::credentials_callback(ssh_key_private, allowed));
 
         let mut fetch_opts = git2::FetchOptions::new();
         fetch_opts.remote_callbacks(callbacks);
         RepoBuilder::new()
-            .branch("master")
+            .branch(branch)
             .fetch_options(fetch_opts)
             .clone(git_url, into)
     }

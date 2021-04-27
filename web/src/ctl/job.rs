@@ -124,7 +124,13 @@ impl Ctl {
         }
 
         let job_path = match req.job_path{
-            Some(p) => checkout.clone().join(p.as_str()),
+            Some(p) => {
+                let mut r = checkout.clone();
+                for seg in p.split("/"){
+                    r = r.join(seg);
+                }
+                r
+            },
             None => checkout.clone()
         };
 

@@ -5,7 +5,7 @@ use chord_common::error::Error;
 use chord_common::rerr;
 use chord_common::value::Json;
 
-mod controller;
+mod ctl;
 
 mod framework;
 mod service;

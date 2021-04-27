@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use lazy_static::lazy_static;
 use tide::{Request, Response};
 use tide::http::StatusCode;
 use tide::prelude::*;
@@ -9,7 +8,7 @@ use validator::{ValidationErrors, ValidationErrorsKind};
 use chord_common::error::Error;
 use chord_common::value::Json;
 
-use crate::controller;
+use crate::ctl;
 
 mod logger;
 mod conf;
@@ -82,13 +81,7 @@ macro_rules! json_handler {
     }}
 }
 
-
-
-lazy_static! {
-    static ref JOB_CTL: controller::job::Ctl = {
-        controller::job::Ctl::new(String::from("/data/chord/job"), String::from("/data/chord/work"))
-    };
-}
+static mut JOB_CTL: Option<ctl::job::Ctl> = Option::None;
 
 pub async fn init(conf: Json) -> Result<(), Error>{
     let conf = conf::App::new(conf)?;
@@ -97,8 +90,12 @@ pub async fn init(conf: Json) -> Result<(), Error>{
     let log_file_path = Path::new(conf.log_path());
     let _log_handler = logger::init(vec![], &log_file_path).await?;
 
+    unsafe {
+        JOB_CTL = Some(ctl::job::Ctl::new(conf.job_input_path().to_owned(), conf.job_output_path().to_owned()));
+    }
+
     app.at("/job/exec").post(
-        json_handler!(controller::job::Ctl::exec, &JOB_CTL)
+        json_handler!(ctl::job::Ctl::exec, unsafe {&JOB_CTL.as_ref().unwrap()})
     );
 
     app.listen(format!("127.0.0.1:{}", conf.server_port())).await?;

@@ -17,29 +17,27 @@ pub struct Req {
 }
 
 pub struct Ctl {
-    job_dir: PathBuf,
-    work_dir: PathBuf,
+    input: PathBuf,
+    output: PathBuf,
     app_ctx: Arc<dyn AppContext>,
     pool: rayon::ThreadPool
 }
 
 impl Ctl {
-
-    pub  fn new(job_dir: String,
-               work_dir: String) -> Ctl {
+    pub fn new(input: String,
+               output: String) -> Ctl {
         Ctl {
-            job_dir: Path::new(job_dir.as_str()).to_path_buf(),
-            work_dir: Path::new(work_dir.as_str()).to_path_buf(),
+            input: Path::new(input.as_str()).to_path_buf(),
+            output: Path::new(output.as_str()).to_path_buf(),
             app_ctx: block_on(chord_flow::create_app_context(Box::new(PointRunnerDefault::new()))),
-            pool: rayon::ThreadPoolBuilder::new().build().unwrap()
+            pool: rayon::ThreadPoolBuilder::new().build().unwrap(),
         }
     }
 
-
     pub async fn exec(&self, req: Req) -> Result<String, Error> {
         let exe_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
-        let job_path = self.job_dir.clone().join(&req.name);
-        let work_path = self.work_dir.clone().join(&req.name).join(exe_id.as_str());
+        let job_path = self.input.clone().join(&req.name);
+        let work_path = self.output.clone().join(&req.name).join(exe_id.as_str());
 
         let app_ctx_0 = self.app_ctx.clone();
         let exe_id_0 = exe_id.clone();

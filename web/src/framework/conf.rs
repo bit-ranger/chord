@@ -1,4 +1,3 @@
-use chord_common::err;
 use chord_common::error::Error;
 use chord_common::value::Json;
 

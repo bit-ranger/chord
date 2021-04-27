@@ -4,6 +4,7 @@ use std::path::Path;
 use chord_common::error::Error;
 use chord_common::rerr;
 use chord_common::value::Json;
+use std::env;
 
 mod ctl;
 
@@ -12,7 +13,20 @@ mod biz;
 
 #[async_std::main]
 async fn main() -> Result<(), Error> {
-    let conf = load_conf("/data/chord/conf/application.yml")?;
+    let args: Vec<_> = env::args().collect();
+    let mut opts = getopts::Options::new();
+    opts.optopt("c", "conf", "config path", "conf");
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(e) => {
+            println!("{}", opts.short_usage("chord"));
+            return rerr!("arg", e.to_string());
+        }
+    };
+
+    let conf_path = matches.opt_get_default("c", "/data/chord/conf/application.yml".to_owned()).unwrap();
+    let conf = load_conf(conf_path)?;
     app::init(conf).await?;
     Ok(())
 }

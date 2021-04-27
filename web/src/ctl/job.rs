@@ -36,6 +36,11 @@ pub struct Req {
     job_path: Option<String>
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Rep {
+    exe_id: String
+}
+
 pub struct Ctl {
     input: PathBuf,
     output: PathBuf,
@@ -60,7 +65,7 @@ impl Ctl {
         }
     }
 
-    pub async fn exec(&self, req: Req) -> Result<String, Error> {
+    pub async fn exec(&self, req: Req) -> Result<Rep, Error> {
         let exe_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
         let input = self.input.clone();
         let output = self.output.clone();
@@ -68,7 +73,7 @@ impl Ctl {
         let app_ctx_0 = self.app_ctx.clone();
         let exe_id_0 = exe_id.clone();
         self.pool.spawn(|| block_on(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exe_id_0)));
-        return Ok(exe_id);
+        return Ok(Rep{exe_id});
     }
 
     pub fn create_singleton(input: &str,

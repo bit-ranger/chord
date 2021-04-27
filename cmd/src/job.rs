@@ -13,9 +13,9 @@ use log::debug;
 use async_std::sync::Arc;
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
-                                       work_path: P,
-                                       execution_id: String,
-                                       app_ctx: Arc<dyn AppContext>) -> Vec<TaskState>{
+                                 work_path: P,
+                                 execution_id: String,
+                                 app_ctx: Arc<dyn AppContext>) -> Vec<TaskState> {
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     debug!("job start {}", job_path_str);
@@ -23,16 +23,16 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
 
     let mut futures = Vec::new();
     loop {
-        let task_dir  = job_dir.next().await;
-        if task_dir.is_none(){
+        let task_dir = job_dir.next().await;
+        if task_dir.is_none() {
             break;
         }
         let task_dir = task_dir.unwrap();
-        if task_dir.is_err(){
+        if task_dir.is_err() {
             continue;
         }
         let task_dir = task_dir.unwrap();
-        if !task_dir.path().is_dir().await{
+        if !task_dir.path().is_dir().await {
             continue;
         }
 
@@ -89,7 +89,7 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
 
     let mut total_task_state = TaskState::Ok(vec![]);
     let size_limit = 99999;
-    loop{
+    loop {
         let data = chord_port::load::data::csv::load(&mut data_reader, size_limit)?;
         let data_len = data.len();
 
@@ -98,7 +98,7 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
         let _ = chord_port::report::csv::report(&mut result_writer, task_assess.as_ref(), &flow).await?;
 
         match task_assess.state() {
-            TaskState::Ok(_) => {},
+            TaskState::Ok(_) => {}
             TaskState::Fail(_) => {
                 total_task_state = TaskState::Fail(vec![]);
             }

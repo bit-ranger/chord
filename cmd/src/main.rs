@@ -39,8 +39,10 @@ async fn main() -> Result<(),Error> {
 
     let output_path = matches.opt_str("o").unwrap();
     let output_path = Path::new(&output_path);
-    if output_path.exists() && !output_path.is_dir(){
-        panic!("output is not a dir {}", output_path.to_str().unwrap());
+    if output_path.exists(){
+        if !output_path.is_dir() {
+            panic!("output is not a dir {}", output_path.to_str().unwrap());
+        }
     } else {
         async_std::fs::create_dir(output_path).await?;
     }

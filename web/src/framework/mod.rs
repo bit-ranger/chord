@@ -12,6 +12,7 @@ use chord_common::value::Json;
 use crate::controller;
 
 mod logger;
+mod conf;
 
 #[derive(Serialize, Deserialize)]
 struct ErrorBody {
@@ -89,16 +90,17 @@ lazy_static! {
     };
 }
 
-pub async fn init() -> Result<(), Error>{
+pub async fn init(conf: Json) -> Result<(), Error>{
+    let conf = conf::App::new(conf)?;
     let mut app = tide::new();
 
-    let log_file_path = Path::new("/data/chord/log.log");
+    let log_file_path = Path::new(conf.log_path());
     let _log_handler = logger::init(vec![], &log_file_path).await?;
 
     app.at("/job/exec").post(
         json_handler!(controller::job::Ctl::exec, &JOB_CTL)
     );
 
-    app.listen("127.0.0.1:8080").await?;
+    app.listen(format!("127.0.0.1:{}", conf.server_port())).await?;
     Ok(())
 }

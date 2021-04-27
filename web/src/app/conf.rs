@@ -15,6 +15,9 @@ impl App {
         return Ok(app);
     }
 
+    pub fn server_ip(&self) -> &str {
+        self.conf["server"]["ip"].as_str().unwrap_or("127.0.0.1")
+    }
 
     pub fn server_port(&self) -> usize {
         self.conf["server"]["port"].as_u64().unwrap_or(9999) as usize

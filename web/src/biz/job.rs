@@ -16,9 +16,8 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
                                  work_path: P,
                                  execution_id: String,
                                  app_ctx: Arc<dyn AppContext>) -> Vec<TaskState>{
-    let job_path_str = job_path.as_ref().to_str().unwrap();
 
-    debug!("job start {}", job_path_str);
+    debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), work_path.as_ref().to_str().unwrap());
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
 
     let mut futures = Vec::new();
@@ -46,7 +45,7 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
     }
 
     let task_state_vec = join_all(futures).await;
-    debug!("job end {}", job_path_str);
+    debug!("job end {}, {}", job_path.as_ref().to_str().unwrap(), work_path.as_ref().to_str().unwrap());
     return task_state_vec;
 }
 

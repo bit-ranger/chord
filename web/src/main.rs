@@ -7,13 +7,13 @@ use chord_common::value::Json;
 
 mod ctl;
 
-mod framework;
-mod service;
+mod app;
+mod biz;
 
 #[async_std::main]
 async fn main() -> Result<(), Error> {
     let conf = load_conf("/data/chord/application.yml")?;
-    framework::init(conf).await?;
+    app::init(conf).await?;
     Ok(())
 }
 

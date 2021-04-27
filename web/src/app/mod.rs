@@ -81,7 +81,7 @@ macro_rules! json_handler {
     }}
 }
 
-static mut JOB_CTL: Option<ctl::job::Ctl> = Option::None;
+
 
 pub async fn init(conf: Json) -> Result<(), Error>{
     let conf = conf::App::new(conf)?;
@@ -90,14 +90,11 @@ pub async fn init(conf: Json) -> Result<(), Error>{
     let log_file_path = Path::new(conf.log_path());
     let _log_handler = logger::init(vec![], &log_file_path).await?;
 
-    unsafe {
-        JOB_CTL = Some(ctl::job::Ctl::new(conf.job_input_path().to_owned(), conf.job_output_path().to_owned()));
-    }
-
+    ctl::job::Ctl::create_singleton(conf.job_input_path(), conf.job_output_path());
     app.at("/job/exec").post(
-        json_handler!(ctl::job::Ctl::exec, unsafe {&JOB_CTL.as_ref().unwrap()})
+        json_handler!(ctl::job::Ctl::exec, ctl::job::Ctl::get_singleton())
     );
 
-    app.listen(format!("127.0.0.1:{}", conf.server_port())).await?;
+    app.listen(format!("{}:{}", conf.server_ip(), conf.server_port())).await?;
     Ok(())
 }

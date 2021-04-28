@@ -34,7 +34,7 @@ async fn main() -> Result<(), Error> {
 pub fn load_conf<P: AsRef<Path>>(path: P) -> Result<Json, Error> {
     let file = File::open(path);
     let file = match file {
-        Err(e) => return rerr!("yaml", format!("{:?}", e)),
+        Err(_) => return Ok(Json::Null),
         Ok(r) => r
     };
 

@@ -1,6 +1,6 @@
 use chord_common::case::{CaseState, CaseAssess};
 use chord_common::error::Error;
-use chord_common::point::PointState;
+use chord_common::point::{PointState, PointAssess};
 use crate::model::PortError;
 use std::path::Path;
 use chord_common::flow::Flow;
@@ -8,158 +8,143 @@ use std::fs::File;
 use chord_common::task::{TaskAssess, TaskState};
 use chord_common::err;
 use async_std::sync::Arc;
+use mongodb::{Collection, Client};
+use mongodb::options::ClientOptions;
+use mongodb::bson::{Document, to_document};
+use mongodb::bson::doc;
 
 pub struct Writer {
-    rb: Arc<Rbatis>,
-    table: String
+    collection: Collection,
+    exe_id: String,
 }
 
-pub async fn report<W: std::io::Write>(writer: &mut Writer<W>,
-                                       task_assess: &dyn TaskAssess,
-                                       flow: &Flow,
-) -> Result<(), Error> {
-    match report0(writer, task_assess, flow).await {
-        Ok(()) => Ok(()),
-        Err(e) => Err(e.common())
+impl Writer {
+    pub async fn new(client_options: ClientOptions,
+                     flow: &Flow,
+                     job_name: &str,
+                     exe_id: &str) -> Result<Writer, Error> {
+        // Get a handle to the deployment.
+        let client = Client::with_options(client_options)?;
+        let db = client.database(job_name);
+        let collection = db.collection::<Document>(collection.as_str());
+        collection.insert_one(job_toc(exe_id), None).await?;
+        Ok(Writer {
+            collection,
+            exe_id: exe_id.to_owned(),
+        })
     }
-}
 
+    pub async fn write(&self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+        let task_doc = self.collection.find_one(doc! { "exe_id": self.exe_id, "task_assess.$.id": task_assess.id()}, None).await?;
+        if let None = task_doc {
+            self.collection.insert_one(ta_doc(task_assess), None).await?;
+            return Ok(());
+        }
 
-pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
-    csv::WriterBuilder::new().from_path(path).map_err(|e| err!("csv", e.to_string()))
-}
+        match ta.state() {
+            TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
+                self.collection.update_one(
+                    doc! { "exe_id": self.exe_id, "task_assess.$.id": task_assess.id()},
+                    doc! { "$push": {
+                                    format!("task_assess.$.{}.case_assess", task_assess.id()):
+                                    ca_vec.iter().map(ca_doc).collect_vec()
+                                }
+                            },
+                    None,
+                ).await?;
+            }
+            TaskState::Fail(_) => ()
+        }
 
-pub async fn prepare<W: std::io::Write>(writer: &mut Writer<W>, flow: &Flow) -> Result<(), Error> {
-    writer.write_record(create_head(flow)).map_err(|e| err!("csv", e.to_string()))
-}
-
-fn create_head(flow: &Flow) -> Vec<String> {
-    let pt_id_vec: Vec<String> = flow.case_point_id_vec().unwrap_or(vec!());
-    let mut vec: Vec<String> = vec![];
-    vec.push(String::from("case_state"));
-    vec.push(String::from("case_info"));
-    vec.push(String::from("case_start"));
-    vec.push(String::from("case_end"));
-
-    let ph_vec: Vec<String> = pt_id_vec.iter()
-        .flat_map(|pid| vec![format!("{}_state", pid), format!("{}_start", pid), format!("{}_end", pid)])
-        .collect();
-    vec.extend(ph_vec);
-    vec.push(String::from("last_point_info"));
-    vec
-}
-
-pub async fn write_record<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<String>) -> Result<(), Error> {
-    match write_record0(writer, record).await {
-        Ok(()) => Ok(()),
-        Err(e) => Err(e.common())
-    }
-}
-
-async fn write_record0<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<String>) -> Result<(), PortError> {
-    Ok(writer.write_record(record)?)
-}
-
-async fn report0<W: std::io::Write>(writer: &mut Writer<W>, task_assess: &dyn TaskAssess, flow: &Flow) -> Result<(), PortError> {
-    let empty = &vec![];
-    let ca_vec = match task_assess.state() {
-        TaskState::Ok(ca_vec) => ca_vec,
-        TaskState::Fail(ca_vec) => ca_vec,
-        TaskState::Err(_) => empty
-    };
-
-    if ca_vec.len() == 0 {
         return Ok(());
     }
 
-    let head = create_head(flow);
-    for sv in ca_vec.iter().map(|ca| to_value_vec(ca.as_ref(), head.len())) {
-        writer.write_record(&sv)?
-    }
-    writer.flush()?;
-    return Ok(());
+    pub async fn close(&self) -> Result<(), Error> {}
 }
 
 
-fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
-    let mut vec = vec![];
+fn job_toc(exe_id: &str) -> Document {
+    doc! {
+        "exe_id": exe_id,
+        "task_assess": vec![]
+    }
+}
 
+fn ta_doc(ta: &dyn TaskAssess) -> Document {
+    match ta.state() {
+        TaskState::Ok(ca_vec) => {
+            doc! {
+                "id": ca.id(),
+                "start": ca.start(),
+                "end": ca.end(),
+                "state": "O",
+                "case_assess": ca_vec.iter().map(ca_doc).collect_vec()
+            }
+        }
+        TaskState::Fail(ca_vec) => {
+            doc! {
+                "id": ca.id(),
+                "start": ca.start(),
+                "end": ca.end(),
+                "state": "F",
+                "case_assess": ca_vec.iter().map(ca_doc).collect_vec()
+            }
+        }
+        TaskState::Err(e) => {
+            doc! {
+                "id": ca.id(),
+                "start": ca.start(),
+                "end": ca.end(),
+                "state": "E",
+                "error": e.to_string()
+            }
+        }
+    }
+}
+
+fn ca_doc(ca: &dyn CaseAssess) -> Document {
     match ca.state() {
-        CaseState::Ok(_) => {
-            vec.push(String::from("O"));
-            vec.push(String::from(""));
+        CaseState::Ok(pa_vec) => {
+            doc! {
+                "id": ca.id(),
+                "start": ca.start(),
+                "end": ca.end(),
+                "state": "O",
+                "point_assess": pa_vec.iter().map(pa_doc).collect_vec()
+            }
+        }
+        CaseState::Fail(pa_vec) => {
+            doc! {
+                "id": ca.id(),
+                "start": ca.start(),
+                "end": ca.end(),
+                "state": "F",
+                "point_assess": pa_vec.iter().map(pa_doc).collect_vec()
+            }
         }
         CaseState::Err(e) => {
-            vec.push(String::from("E"));
-            vec.push(String::from(format!("{}", e)));
-        }
-        CaseState::Fail(_) => {
-            vec.push(String::from("F"));
-            vec.push(String::from(""));
-        }
-    }
-    vec.push(ca.start().format("%T").to_string());
-    vec.push(ca.end().format("%T").to_string());
-
-    let empty = &vec![];
-    let pa_vec = match ca.state() {
-        CaseState::Ok(pa_vec) => pa_vec,
-        CaseState::Fail(pa_vec) => pa_vec,
-        _ => empty
-    };
-
-    if !pa_vec.is_empty() {
-        let p_vec: Vec<String> = pa_vec.iter()
-            .flat_map(|pa| match pa.state() {
-                PointState::Ok(_) => {
-                    vec![
-                        String::from("O"),
-                        pa.start().format("%T").to_string(),
-                        pa.end().format("%T").to_string(),
-                    ]
-                }
-                PointState::Err(_) => {
-                    vec![
-                        String::from("E"),
-                        pa.start().format("%T").to_string(),
-                        pa.end().format("%T").to_string(),
-                    ]
-                }
-                PointState::Fail(_) => {
-                    vec![
-                        String::from("F"),
-                        pa.start().format("%T").to_string(),
-                        pa.end().format("%T").to_string()
-                    ]
-                }
-            })
-            .collect();
-        vec.extend(p_vec);
-    }
-
-    if vec.len() < head_len - 1 {
-        for _i in 0..head_len - 1 - vec.len() {
-            vec.push(String::from(""));
-        }
-    }
-
-    if pa_vec.is_empty() {
-        vec.push(String::from(""));
-    } else {
-        match pa_vec.last().unwrap().state(){
-            PointState::Fail(json) => {
-                vec.push(json.to_string());
-            },
-            PointState::Err(e) => {
-                vec.push(e.to_string());
-            }
-            _ => {
-                vec.push(String::from(""));
+            doc! {
+                "id": ca.id(),
+                "start": ca.start(),
+                "end": ca.end(),
+                "state": "E",
+                "error": e.to_string()
             }
         }
     }
+}
 
-    vec
+fn pa_doc(pa: &dyn PointAssess) -> Document {
+    doc! {
+            "id": pa.id(),
+            "start": pa.start(),
+            "end": pa.end(),
+            "state": match pa.state(){
+               PointState::Ok(_) => "O",
+               PointState::Fail(_) => "F",
+               PointState::Err(_) => "E",
+            }
+        }
 }
 
 

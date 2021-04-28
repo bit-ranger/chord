@@ -11,13 +11,15 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::AppContext;
+use chord_port::report::mongodb::{Writer, ClientOptions};
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
-                                 work_path: P,
-                                 execution_id: String,
-                                 app_ctx: Arc<dyn AppContext>) -> Vec<TaskState>{
+                                 job_name: String,
+                                 exec_id: String,
+                                 app_ctx: Arc<dyn AppContext>) -> Result<Vec<TaskState>, Error>{
 
-    debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), work_path.as_ref().to_str().unwrap());
+    debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
+    let writer = Arc::new(Writer::new(ClientOptions::parse("").await?, job_name.as_str(), exec_id.as_str()).await?);
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
 
     let mut futures = Vec::new();
@@ -39,33 +41,39 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
             .name(task_dir.file_name().to_str().unwrap().into());
 
         let task_path = job_path.as_ref().join(task_dir.path());
-        let work_path = std::path::PathBuf::from(work_path.as_ref());
-        let jh = builder.spawn(run_task(work_path, task_path, execution_id.clone(), app_ctx.clone())).unwrap();
+        let jh = builder.spawn(run_task(
+            task_path,
+            exec_id.clone(),
+            app_ctx.clone(),
+            writer.clone()))
+            .unwrap();
         futures.push(jh);
     }
 
     let task_state_vec = join_all(futures).await;
-    debug!("job end {}, {}", job_path.as_ref().to_str().unwrap(), work_path.as_ref().to_str().unwrap());
-    return task_state_vec;
+    writer.close().await;
+    debug!("job end {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
+    return Ok(task_state_vec);
 }
 
 async fn run_task<P: AsRef<Path>>(
-    work_path: P,
     task_path: P,
     execution_id: String,
-    app_ctx: Arc<dyn AppContext>) -> TaskState
+    app_ctx: Arc<dyn AppContext>,
+    writer: Arc<Writer>
+) -> TaskState
 {
-    let rt = run_task0(work_path, task_path, execution_id.as_str(), app_ctx).await;
+    let rt = run_task0(task_path, execution_id.as_str(), app_ctx, writer).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => TaskState::Err(e)
     }
 }
 
-async fn run_task0<P: AsRef<Path>>(work_path: P,
-                                   task_path: P,
+async fn run_task0<P: AsRef<Path>>(task_path: P,
                                    _execution_id: &str,
-                                   app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
+                                   app_ctx: Arc<dyn AppContext>,
+                                   writer: Arc<Writer>) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
 
     debug!("task start {}", task_path.to_str().unwrap());
@@ -80,11 +88,6 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
     let mut data_reader = chord_port::load::data::csv::from_path(data_path).await?;
 
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
-    //write
-    let result_path = work_path.as_ref().join(format!("{}_result.csv", task_id));
-    let mut result_writer = chord_port::report::csv::from_path(result_path.clone()).await?;
-    chord_port::report::csv::prepare(&mut result_writer, &flow).await?;
-
 
     let mut total_task_state = TaskState::Ok(vec![]);
     let size_limit = 99999;
@@ -94,7 +97,8 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
 
         let task_assess = chord_flow::run(app_ctx.clone(), flow.clone(), data, task_id).await;
 
-        let _ = chord_port::report::csv::report(&mut result_writer, task_assess.as_ref(), &flow).await?;
+        //write
+        writer.write(task_assess.as_ref());
 
         match task_assess.state() {
             TaskState::Ok(_) => {},
@@ -102,8 +106,6 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
                 total_task_state = TaskState::Fail(vec![]);
             }
             TaskState::Err(e) => {
-                let result_path_new = work_path.as_ref().join(format!("{}_result_E.csv", task_id));
-                let _ = rename(result_path, result_path_new).await;
                 return Ok(TaskState::Err(e.clone()));
             }
         }
@@ -112,15 +114,6 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
             break;
         }
     }
-
-    let task_state_view = match total_task_state {
-        TaskState::Ok(_) => "O",
-        TaskState::Err(_) => "E",
-        TaskState::Fail(_) => "F",
-    };
-
-    let result_path_new = work_path.as_ref().join(format!("{}_result_{}.csv", task_id, task_state_view));
-    rename(result_path, result_path_new).await.unwrap();
 
     debug!("task end {}", task_path.to_str().unwrap());
     return Ok(total_task_state);

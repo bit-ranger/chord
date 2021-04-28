@@ -9,9 +9,10 @@ use chord_common::task::{TaskAssess, TaskState};
 use chord_common::err;
 use async_std::sync::Arc;
 use mongodb::{Collection, Client};
-use mongodb::options::ClientOptions;
+pub use mongodb::options::ClientOptions;
 use mongodb::bson::{Document, to_document};
 use mongodb::bson::doc;
+use itertools::Itertools;
 
 pub struct Writer {
     collection: Collection,
@@ -20,13 +21,12 @@ pub struct Writer {
 
 impl Writer {
     pub async fn new(client_options: ClientOptions,
-                     flow: &Flow,
                      job_name: &str,
                      exec_id: &str) -> Result<Writer, Error> {
         // Get a handle to the deployment.
         let client = Client::with_options(client_options)?;
         let db = client.database(job_name);
-        let collection = db.collection::<Document>(collection.as_str());
+        let collection = db.collection::<Document>(job_name);
         collection.insert_one(job_toc(exec_id), None).await?;
         Ok(Writer {
             collection,
@@ -35,25 +35,25 @@ impl Writer {
     }
 
     pub async fn write(&self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
-        let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id, "task_assess.$.id": task_assess.id()}, None).await?;
+        let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id.as_str(), "task_assess.$.id": task_assess.id()}, None).await?;
         if let None = task_doc {
             self.collection.insert_one(ta_doc(task_assess), None).await?;
             return Ok(());
         }
 
-        match ta.state() {
+        match task_assess.state() {
             TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
                 self.collection.update_one(
-                    doc! { "exec_id": self.exec_id, "task_assess.$.id": task_assess.id()},
+                    doc! { "exec_id": self.exec_id.as_str(), "task_assess.$.id": task_assess.id()},
                     doc! { "$push": {
                                     format!("task_assess.$.{}.case_assess", task_assess.id()):
-                                    ca_vec.iter().map(ca_doc).collect_vec()
+                                    ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
                                 }
                             },
                     None,
                 ).await?;
             }
-            TaskState::Fail(_) => ()
+            TaskState::Err(_) => ()
         }
 
         return Ok(());
@@ -62,7 +62,7 @@ impl Writer {
     pub async fn close(&self) -> Result<(), Error> {
         //todo 计算task state
         //todo 计算job state
-
+        Ok(())
     }
 }
 
@@ -70,7 +70,7 @@ impl Writer {
 fn job_toc(exec_id: &str) -> Document {
     doc! {
         "exec_id": exec_id,
-        "task_assess": vec![]
+        "task_assess": []
     }
 }
 
@@ -78,27 +78,27 @@ fn ta_doc(ta: &dyn TaskAssess) -> Document {
     match ta.state() {
         TaskState::Ok(ca_vec) => {
             doc! {
-                "id": ca.id(),
-                "start": ca.start(),
-                "end": ca.end(),
+                "id": ta.id(),
+                "start": ta.start(),
+                "end": ta.end(),
                 "state": "O",
-                "case_assess": ca_vec.iter().map(ca_doc).collect_vec()
+                "case_assess": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
             }
         }
         TaskState::Fail(ca_vec) => {
             doc! {
-                "id": ca.id(),
-                "start": ca.start(),
-                "end": ca.end(),
+                "id": ta.id(),
+                "start": ta.start(),
+                "end": ta.end(),
                 "state": "F",
-                "case_assess": ca_vec.iter().map(ca_doc).collect_vec()
+                "case_assess": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
             }
         }
         TaskState::Err(e) => {
             doc! {
-                "id": ca.id(),
-                "start": ca.start(),
-                "end": ca.end(),
+                "id": ta.id(),
+                "start": ta.start(),
+                "end": ta.end(),
                 "state": "E",
                 "error": e.to_string()
             }
@@ -110,25 +110,25 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
     match ca.state() {
         CaseState::Ok(pa_vec) => {
             doc! {
-                "id": ca.id(),
+                "id": ca.id() as u64,
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "O",
-                "point_assess": pa_vec.iter().map(pa_doc).collect_vec()
+                "point_assess": pa_vec.iter().map(|pa|pa_doc(pa.as_ref())).collect_vec()
             }
         }
         CaseState::Fail(pa_vec) => {
             doc! {
-                "id": ca.id(),
+                "id": ca.id() as u64,
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "F",
-                "point_assess": pa_vec.iter().map(pa_doc).collect_vec()
+                "point_assess": pa_vec.iter().map(|pa|pa_doc(pa.as_ref())).collect_vec()
             }
         }
         CaseState::Err(e) => {
             doc! {
-                "id": ca.id(),
+                "id": ca.id() as u64,
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "E",

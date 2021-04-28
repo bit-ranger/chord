@@ -137,11 +137,8 @@ impl Ctl {
             None => checkout.clone()
         };
 
-        let work_path = output
-            .join(host)
-            .join(group_name)
-            .join(repo_name);
-        Ctl::run(app_ctx, job_path, work_path, exec_id).await;
+        let job_name = format!("{}:{}/{}", host, group_name, repo_name);
+        Ctl::run(app_ctx, job_path, job_name, exec_id).await;
         Ctl::clear(checkout.as_path()).await;
     }
 
@@ -204,22 +201,9 @@ impl Ctl {
 
     async fn run(app_ctx: Arc<dyn AppContext>,
                  job_path: PathBuf,
-                 work_path: PathBuf,
+                 job_name: String,
                  exec_id: String) {
-        let work_path = work_path.join(exec_id.as_str());
-
-        if work_path.exists() {
-            if !work_path.is_dir(){
-                error!("invalid work_path {}", work_path.to_str().unwrap());
-                return;
-            }
-        } else {
-            if let Err(e) = async_std::fs::create_dir_all(work_path.clone()).await {
-                error!("create_dir work_path error {}, {}", work_path.to_str().unwrap(), e);
-                return;
-            }
-        }
-        let _task_state_vec = biz::job::run(job_path, work_path, exec_id, app_ctx).await;
+        let _task_state_vec = biz::job::run(job_path, job_name, exec_id, app_ctx).await;
     }
 }
 

@@ -18,7 +18,7 @@ repository = "https://github.com/bit-ranger/chord"
 chord-common = {path = "../common"}
 chord-point = {path = "../point", features = ["pt_jsonapi", "pt_md5", "pt_dubbo", "pt_redis", "pt_mysql"]}
 chord-flow = {path = "../flow"}
-chord-port = {path = "../port", features = ["report_csv"]}
+chord-port = {path = "../port", features = ["report_mongodb"]}
 serde = { version = "1.0", features = ["derive"] }
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 time = "0.1.42"

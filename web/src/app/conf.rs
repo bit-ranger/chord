@@ -6,13 +6,25 @@ pub struct Config {
     conf: Json
 }
 
+static mut SINGLETON: Option<Config> = Option::None;
+
 impl Config {
 
-    pub fn new(conf: Json) -> Result<Config,Error>{
-        let app = Config {
+    fn new(conf: Json) -> Config{
+        Config {
             conf
-        };
-        return Ok(app);
+        }
+    }
+
+    pub fn create_singleton(conf: Json) -> &'static Config{
+        unsafe {
+            SINGLETON = Some(Config::new(conf));
+            Config::get_singleton()
+        }
+    }
+
+    pub fn get_singleton() -> &'static Config{
+        unsafe {&SINGLETON.as_ref().unwrap()}
     }
 
     pub fn server_ip(&self) -> &str {

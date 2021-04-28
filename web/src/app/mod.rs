@@ -84,7 +84,7 @@ macro_rules! json_handler {
 
 
 pub async fn init(conf: Json) -> Result<(), Error>{
-    let conf = conf::Config::new(conf)?;
+    let conf = conf::Config::create_singleton(conf);
     let mut app = tide::new();
 
     let log_file_path = Path::new(conf.log_path());

@@ -38,7 +38,7 @@ pub struct Req {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Rep {
-    exe_id: String
+    exec_id: String
 }
 
 pub struct Ctl {
@@ -66,14 +66,14 @@ impl Ctl {
     }
 
     pub async fn exec(&self, req: Req) -> Result<Rep, Error> {
-        let exe_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
+        let exec_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
         let input = self.input.clone();
         let output = self.output.clone();
         let ssh_key_pri = self.ssh_key_private.clone();
         let app_ctx_0 = self.app_ctx.clone();
-        let exe_id_0 = exe_id.clone();
-        self.pool.spawn(|| block_on(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exe_id_0)));
-        return Ok(Rep{exe_id});
+        let exec_id_0 = exec_id.clone();
+        self.pool.spawn(|| block_on(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
+        return Ok(Rep{exec_id});
     }
 
     pub fn create_singleton(input: &str,
@@ -95,7 +95,7 @@ impl Ctl {
         output: PathBuf,
         ssh_key_pri: PathBuf,
         req: Req,
-        exe_id: String) {
+        exec_id: String) {
         let is_delimiter = |c: char| ['@',':','/'].contains(&c);
         let git_url_splits = Ctl::split(is_delimiter, req.git_url.as_str());
 
@@ -141,7 +141,7 @@ impl Ctl {
             .join(host)
             .join(group_name)
             .join(repo_name);
-        Ctl::run(app_ctx, job_path, work_path, exe_id).await;
+        Ctl::run(app_ctx, job_path, work_path, exec_id).await;
         Ctl::clear(checkout.as_path()).await;
     }
 
@@ -205,8 +205,8 @@ impl Ctl {
     async fn run(app_ctx: Arc<dyn AppContext>,
                  job_path: PathBuf,
                  work_path: PathBuf,
-                 exe_id: String) {
-        let work_path = work_path.join(exe_id.as_str());
+                 exec_id: String) {
+        let work_path = work_path.join(exec_id.as_str());
 
         if work_path.exists() {
             if !work_path.is_dir(){
@@ -219,7 +219,7 @@ impl Ctl {
                 return;
             }
         }
-        let _task_state_vec = biz::job::run(job_path, work_path, exe_id, app_ctx).await;
+        let _task_state_vec = biz::job::run(job_path, work_path, exec_id, app_ctx).await;
     }
 }
 

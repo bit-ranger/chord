@@ -15,27 +15,27 @@ use mongodb::bson::doc;
 
 pub struct Writer {
     collection: Collection,
-    exe_id: String,
+    exec_id: String,
 }
 
 impl Writer {
     pub async fn new(client_options: ClientOptions,
                      flow: &Flow,
                      job_name: &str,
-                     exe_id: &str) -> Result<Writer, Error> {
+                     exec_id: &str) -> Result<Writer, Error> {
         // Get a handle to the deployment.
         let client = Client::with_options(client_options)?;
         let db = client.database(job_name);
         let collection = db.collection::<Document>(collection.as_str());
-        collection.insert_one(job_toc(exe_id), None).await?;
+        collection.insert_one(job_toc(exec_id), None).await?;
         Ok(Writer {
             collection,
-            exe_id: exe_id.to_owned(),
+            exec_id: exec_id.to_owned(),
         })
     }
 
     pub async fn write(&self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
-        let task_doc = self.collection.find_one(doc! { "exe_id": self.exe_id, "task_assess.$.id": task_assess.id()}, None).await?;
+        let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id, "task_assess.$.id": task_assess.id()}, None).await?;
         if let None = task_doc {
             self.collection.insert_one(ta_doc(task_assess), None).await?;
             return Ok(());
@@ -44,7 +44,7 @@ impl Writer {
         match ta.state() {
             TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
                 self.collection.update_one(
-                    doc! { "exe_id": self.exe_id, "task_assess.$.id": task_assess.id()},
+                    doc! { "exec_id": self.exec_id, "task_assess.$.id": task_assess.id()},
                     doc! { "$push": {
                                     format!("task_assess.$.{}.case_assess", task_assess.id()):
                                     ca_vec.iter().map(ca_doc).collect_vec()
@@ -67,9 +67,9 @@ impl Writer {
 }
 
 
-fn job_toc(exe_id: &str) -> Document {
+fn job_toc(exec_id: &str) -> Document {
     doc! {
-        "exe_id": exe_id,
+        "exec_id": exec_id,
         "task_assess": vec![]
     }
 }

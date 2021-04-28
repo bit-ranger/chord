@@ -2,14 +2,14 @@ use chord_common::error::Error;
 use chord_common::value::Json;
 
 #[derive(Debug, Clone)]
-pub struct App {
+pub struct Config {
     conf: Json
 }
 
-impl App {
+impl Config {
 
-    pub fn new(conf: Json) -> Result<App,Error>{
-        let app = App {
+    pub fn new(conf: Json) -> Result<Config,Error>{
+        let app = Config {
             conf
         };
         return Ok(app);

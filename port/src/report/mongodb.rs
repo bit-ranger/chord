@@ -59,7 +59,11 @@ impl Writer {
         return Ok(());
     }
 
-    pub async fn close(&self) -> Result<(), Error> {}
+    pub async fn close(&self) -> Result<(), Error> {
+        //todo 计算task state
+        //todo 计算job state
+
+    }
 }
 
 

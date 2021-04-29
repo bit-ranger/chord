@@ -1,5 +1,6 @@
 use chord_common::error::Error;
 use chord_common::value::Json;
+use chord_common::err;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -64,5 +65,9 @@ impl Config {
         };
 
         return target_level;
+    }
+
+    pub fn report_mongodb_url(&self) -> Result<&str, Error> {
+        self.conf["report"]["mongodb"]["url"].as_str().ok_or(err!("config", "missing report.mongodb.url"))
     }
 }

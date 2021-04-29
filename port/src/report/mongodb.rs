@@ -7,6 +7,7 @@ use chord_common::flow::Flow;
 use std::fs::File;
 use chord_common::task::{TaskAssess, TaskState};
 use chord_common::err;
+use chord_common::rerr;
 use async_std::sync::Arc;
 use mongodb::{Collection, Client};
 pub use mongodb::options::ClientOptions;
@@ -24,8 +25,13 @@ impl Writer {
                      job_name: &str,
                      exec_id: &str) -> Result<Writer, Error> {
         // Get a handle to the deployment.
+        let db_name = client_options.credential
+            .as_ref()
+            .map(|c|
+                c.source.as_ref().map(|s| s.clone()).unwrap_or("chord".to_owned()))
+            .unwrap();
         let client = Client::with_options(client_options)?;
-        let db = client.database(job_name);
+        let db = client.database(db_name.as_str());
         let collection = db.collection::<Document>(job_name);
         collection.insert_one(job_toc(exec_id), None).await?;
         Ok(Writer {
@@ -37,7 +43,15 @@ impl Writer {
     pub async fn write(&self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
         let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id.as_str(), "task_assess.$.id": task_assess.id()}, None).await?;
         if let None = task_doc {
-            self.collection.insert_one(ta_doc(task_assess), None).await?;
+            self.collection.update_one(
+                doc! { "exec_id": self.exec_id.as_str()},
+                doc! { "$push": {
+                                    "task_assess":
+                                    ta_doc(task_assess)
+                                }
+                            },
+                None,
+            ).await?;
             return Ok(());
         }
 

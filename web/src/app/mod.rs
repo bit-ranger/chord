@@ -11,7 +11,7 @@ use chord_common::value::Json;
 use crate::ctl;
 
 mod logger;
-mod conf;
+pub mod conf;
 
 #[derive(Serialize, Deserialize)]
 struct ErrorBody {
@@ -90,9 +90,9 @@ pub async fn init(conf: Json) -> Result<(), Error>{
     let log_file_path = Path::new(conf.log_path());
     let _log_handler = logger::init(conf.log_level(), &log_file_path).await?;
 
-    ctl::job::Ctl::create_singleton(conf.job_input_path(), conf.job_output_path(), conf.ssh_key_private_path());
+    ctl::job::Ctl::create_singleton(conf.job_input_path(), conf.job_output_path(), conf.ssh_key_private_path()).await;
     app.at("/job/exec").post(
-        json_handler!(ctl::job::Ctl::exec, ctl::job::Ctl::get_singleton())
+        json_handler!(ctl::job::Ctl::exec, ctl::job::Ctl::get_singleton().await)
     );
 
     app.listen(format!("{}:{}", conf.server_ip(), conf.server_port())).await?;

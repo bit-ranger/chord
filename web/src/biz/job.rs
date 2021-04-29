@@ -12,6 +12,8 @@ use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::AppContext;
 use chord_port::report::mongodb::{Writer, ClientOptions};
+use crate::app::conf::Config;
+use chord_common::err;
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
                                  job_name: String,
@@ -19,7 +21,11 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
                                  app_ctx: Arc<dyn AppContext>) -> Result<Vec<TaskState>, Error>{
 
     debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
-    let writer = Arc::new(Writer::new(ClientOptions::parse("").await?, job_name.as_str(), exec_id.as_str()).await?);
+    let opt = ClientOptions::parse(Config::get_singleton().report_mongodb_url()?).await?;
+    let writer = Arc::new(Writer::new(opt,
+        job_name.as_str(),
+        exec_id.as_str())
+        .await?);
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
 
     let mut futures = Vec::new();
@@ -98,7 +104,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
         let task_assess = chord_flow::run(app_ctx.clone(), flow.clone(), data, task_id).await;
 
         //write
-        writer.write(task_assess.as_ref());
+        writer.write(task_assess.as_ref()).await;
 
         match task_assess.state() {
             TaskState::Ok(_) => {},

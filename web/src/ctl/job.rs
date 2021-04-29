@@ -1,19 +1,22 @@
-use serde::{Serialize, Deserialize};
-use chord_common::error::Error;
-use validator::{Validate};
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use chord_point::PointRunnerDefault;
-use crate::biz;
-use std::path::{PathBuf, Path};
+
 use async_std::sync::Arc;
-use chord_flow::AppContext;
+use async_std::task::{spawn, spawn_blocking};
 use futures::executor::block_on;
-use log::{error,debug,warn};
-use git2::Repository;
 use git2::build::RepoBuilder;
+use git2::Repository;
 use lazy_static::lazy_static;
+use log::{debug, error, warn};
 use regex::Regex;
-use async_std::task::spawn_blocking;
+use serde::{Deserialize, Serialize};
+use validator::Validate;
+
+use chord_common::error::Error;
+use chord_flow::AppContext;
+use chord_point::PointRunnerDefault;
+
+use crate::biz;
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
@@ -46,13 +49,12 @@ pub struct Ctl {
     output: PathBuf,
     ssh_key_private: PathBuf,
     app_ctx: Arc<dyn AppContext>,
-    pool: rayon::ThreadPool
 }
 
 static mut JOB_CTL: Option<Ctl> = Option::None;
 
 impl Ctl {
-    pub fn new(input: &str,
+    async fn new(input: &str,
                output: &str,
                ssh_key_private: &str,
     ) -> Ctl {
@@ -60,8 +62,7 @@ impl Ctl {
             input: Path::new(input).to_path_buf(),
             output: Path::new(output).to_path_buf(),
             ssh_key_private: Path::new(ssh_key_private).to_path_buf(),
-            app_ctx: block_on(chord_flow::create_app_context(Box::new(PointRunnerDefault::new()))),
-            pool: rayon::ThreadPoolBuilder::new().build().unwrap(),
+            app_ctx: chord_flow::create_app_context(Box::new(PointRunnerDefault::new())).await,
         }
     }
 
@@ -72,20 +73,21 @@ impl Ctl {
         let ssh_key_pri = self.ssh_key_private.clone();
         let app_ctx_0 = self.app_ctx.clone();
         let exec_id_0 = exec_id.clone();
-        self.pool.spawn(|| block_on(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
+        // self.pool.spawn(|| block_on(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
+        spawn(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0));
         return Ok(Rep{exec_id});
     }
 
-    pub fn create_singleton(input: &str,
+    pub async fn create_singleton(input: &str,
                             output: &str,
                             ssh_key_private: &str) -> &'static Ctl{
         unsafe {
-            JOB_CTL = Some(Ctl::new(input, output, ssh_key_private));
-            Ctl::get_singleton()
+            JOB_CTL = Some(Ctl::new(input, output, ssh_key_private).await);
+            Ctl::get_singleton().await
         }
     }
 
-    pub fn get_singleton() -> &'static Ctl{
+    pub async fn get_singleton() -> &'static Ctl{
         unsafe {&JOB_CTL.as_ref().unwrap()}
     }
 
@@ -203,7 +205,10 @@ impl Ctl {
                  job_path: PathBuf,
                  job_name: String,
                  exec_id: String) {
-        let _task_state_vec = biz::job::run(job_path, job_name, exec_id, app_ctx).await;
+        let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx).await;
+        if let Err(e) = job_result {
+            error!("run job error {}", e);
+        }
     }
 }
 

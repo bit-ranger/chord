@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use async_std::fs::{read_dir, rename};
+use async_std::fs::{read_dir};
 use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
@@ -13,7 +13,6 @@ use chord_common::task::TaskState;
 use chord_flow::AppContext;
 use chord_port::report::mongodb::{Writer, ClientOptions};
 use crate::app::conf::Config;
-use chord_common::err;
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
                                  job_name: String,
@@ -57,7 +56,7 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
     }
 
     let task_state_vec = join_all(futures).await;
-    writer.close().await;
+    writer.close().await?;
     debug!("job end {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
     return Ok(task_state_vec);
 }
@@ -96,7 +95,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
 
     let mut total_task_state = TaskState::Ok(vec![]);
-    let size_limit = 99999;
+    let size_limit = 2;
     loop{
         let data = chord_port::load::data::csv::load(&mut data_reader, size_limit)?;
         let data_len = data.len();
@@ -104,7 +103,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
         let task_assess = chord_flow::run(app_ctx.clone(), flow.clone(), data, task_id).await;
 
         //write
-        writer.write(task_assess.as_ref()).await;
+        writer.write(task_assess.as_ref()).await?;
 
         match task_assess.state() {
             TaskState::Ok(_) => {},

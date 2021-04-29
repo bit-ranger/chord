@@ -44,10 +44,6 @@ impl Config {
         self.conf["job"]["input"]["path"].as_str().unwrap_or("/data/chord/job/input")
     }
 
-    pub fn job_output_path(&self) -> &str {
-        self.conf["job"]["output"]["path"].as_str().unwrap_or("/data/chord/job/output")
-    }
-
     pub fn ssh_key_private_path(&self) -> &str {
         self.conf["ssh"]["key"]["private"]["path"].as_str().unwrap_or("/data/chord/conf/ssh_key.pri")
     }

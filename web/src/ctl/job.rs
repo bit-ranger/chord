@@ -3,7 +3,6 @@ use std::time::SystemTime;
 
 use async_std::sync::Arc;
 use async_std::task::{spawn, spawn_blocking};
-use futures::executor::block_on;
 use git2::build::RepoBuilder;
 use git2::Repository;
 use lazy_static::lazy_static;
@@ -15,6 +14,7 @@ use validator::Validate;
 use chord_common::error::Error;
 use chord_flow::AppContext;
 use chord_point::PointRunnerDefault;
+use crate::app::conf::Config;
 
 use crate::biz;
 
@@ -46,7 +46,6 @@ pub struct Rep {
 
 pub struct Ctl {
     input: PathBuf,
-    output: PathBuf,
     ssh_key_private: PathBuf,
     app_ctx: Arc<dyn AppContext>,
 }
@@ -55,12 +54,10 @@ static mut JOB_CTL: Option<Ctl> = Option::None;
 
 impl Ctl {
     async fn new(input: &str,
-               output: &str,
                ssh_key_private: &str,
     ) -> Ctl {
         Ctl {
             input: Path::new(input).to_path_buf(),
-            output: Path::new(output).to_path_buf(),
             ssh_key_private: Path::new(ssh_key_private).to_path_buf(),
             app_ctx: chord_flow::create_app_context(Box::new(PointRunnerDefault::new())).await,
         }
@@ -69,20 +66,18 @@ impl Ctl {
     pub async fn exec(&self, req: Req) -> Result<Rep, Error> {
         let exec_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
         let input = self.input.clone();
-        let output = self.output.clone();
         let ssh_key_pri = self.ssh_key_private.clone();
         let app_ctx_0 = self.app_ctx.clone();
         let exec_id_0 = exec_id.clone();
         // self.pool.spawn(|| block_on(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
-        spawn(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0));
+        spawn(Ctl::checkout_run(app_ctx_0, input, ssh_key_pri, req, exec_id_0));
         return Ok(Rep{exec_id});
     }
 
-    pub async fn create_singleton(input: &str,
-                            output: &str,
-                            ssh_key_private: &str) -> &'static Ctl{
+    pub async fn create_singleton() -> &'static Ctl{
         unsafe {
-            JOB_CTL = Some(Ctl::new(input, output, ssh_key_private).await);
+            JOB_CTL = Some(Ctl::new(Config::get_singleton().job_input_path(),
+                                    Config::get_singleton().ssh_key_private_path()).await);
             Ctl::get_singleton().await
         }
     }
@@ -94,7 +89,6 @@ impl Ctl {
     async fn checkout_run(
         app_ctx: Arc<dyn AppContext>,
         input: PathBuf,
-        output: PathBuf,
         ssh_key_pri: PathBuf,
         req: Req,
         exec_id: String) {

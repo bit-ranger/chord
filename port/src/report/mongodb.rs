@@ -1,17 +1,10 @@
 use chord_common::case::{CaseState, CaseAssess};
 use chord_common::error::Error;
 use chord_common::point::{PointState, PointAssess};
-use crate::model::PortError;
-use std::path::Path;
-use chord_common::flow::Flow;
-use std::fs::File;
 use chord_common::task::{TaskAssess, TaskState};
-use chord_common::err;
-use chord_common::rerr;
-use async_std::sync::Arc;
 use mongodb::{Collection, Client};
 pub use mongodb::options::ClientOptions;
-use mongodb::bson::{Document, to_document};
+use mongodb::bson::{Document};
 use mongodb::bson::doc;
 use itertools::Itertools;
 
@@ -41,7 +34,7 @@ impl Writer {
     }
 
     pub async fn write(&self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
-        let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id.as_str(), "task_assess.$.id": task_assess.id()}, None).await?;
+        let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()}, None).await?;
         if let None = task_doc {
             self.collection.update_one(
                 doc! { "exec_id": self.exec_id.as_str()},
@@ -58,10 +51,12 @@ impl Writer {
         match task_assess.state() {
             TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
                 self.collection.update_one(
-                    doc! { "exec_id": self.exec_id.as_str(), "task_assess.$.id": task_assess.id()},
+                    doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()},
                     doc! { "$push": {
-                                    format!("task_assess.$.{}.case_assess", task_assess.id()):
-                                    ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
+                                    "task_assess.$.case_assess":
+                                    {
+                                        "$each": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
+                                    }
                                 }
                             },
                     None,

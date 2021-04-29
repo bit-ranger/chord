@@ -15,7 +15,7 @@ pub mod arg;
 pub mod res;
 
 
-pub async fn run(app_ctx: &dyn AppContext, arg: &PointArgStruct<'_, '_, '_, '_, '_>) -> PointAssessStruct
+pub async fn run(app_ctx: &dyn AppContext, arg: &PointArgStruct<'_, '_, '_, '_>) -> PointAssessStruct
 {
     trace!("point start {}", arg.id());
     let start = Utc::now();
@@ -50,7 +50,7 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &PointArgStruct<'_, '_, '_, '_, 
     };
 }
 
-async fn assert(context: &PointArgStruct<'_, '_, '_, '_, '_>, result: &Json) -> bool{
+async fn assert(context: &PointArgStruct<'_, '_, '_, '_>, result: &Json) -> bool{
     let assert_condition = context.meta_str(vec!["assert"]).await;
     return match assert_condition{
         Some(con) =>  {

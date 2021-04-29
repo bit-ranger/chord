@@ -75,6 +75,7 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
 
     let flow = chord_port::load::flow::yml::load(&flow_path)?;
     let flow = Flow::new(flow.clone())?;
+    let flow = Arc::new(flow);
 
     //read
     let data_path = task_path.clone().join("data.csv");
@@ -84,8 +85,10 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
     //write
     let result_path = work_path.as_ref().join(format!("{}_result.csv", task_id));
     let mut result_writer = chord_port::report::csv::from_path(result_path.clone()).await?;
-    chord_port::report::csv::prepare(&mut result_writer, &flow).await?;
+    chord_port::report::csv::prepare(&mut result_writer, flow.as_ref()).await?;
 
+    //runner
+    let mut runner = chord_flow::Runner::new(app_ctx, flow.clone(), String::from(task_id)).await?;
 
     let mut total_task_state = TaskState::Ok(vec![]);
     let size_limit = 99999;
@@ -93,9 +96,9 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
         let data = chord_port::load::data::csv::load(&mut data_reader, size_limit)?;
         let data_len = data.len();
 
-        let task_assess = chord_flow::run(app_ctx.clone(), flow.clone(), data, task_id).await;
+        let task_assess = runner.run(data).await;
 
-        let _ = chord_port::report::csv::report(&mut result_writer, task_assess.as_ref(), &flow).await?;
+        let _ = chord_port::report::csv::report(&mut result_writer, task_assess.as_ref(), flow.as_ref()).await?;
 
         match task_assess.state() {
             TaskState::Ok(_) => {}

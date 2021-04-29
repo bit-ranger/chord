@@ -16,29 +16,26 @@ use crate::flow::case::arg::RenderContext;
 use std::time::Duration;
 
 #[derive(Debug)]
-pub struct PointArgStruct<'c, 'd, 'h, 'reg, 'r>
+pub struct PointArgStruct<'c, 'h, 'reg, 'r>
 {
     flow: &'c Flow,
-    data: &'d Json,
     id: String,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
 }
 
 
-impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
+impl <'c, 'h, 'reg, 'r> PointArgStruct<'c, 'h, 'reg, 'r> {
 
 
     pub fn new(flow: &'c Flow,
-               data: &'d Json,
                id: &str,
                handlebars: &'h Handlebars<'reg>,
                render_context: &'r RenderContext
-    ) -> PointArgStruct<'c, 'd, 'h, 'reg, 'r>{
+    ) -> PointArgStruct<'c, 'h, 'reg, 'r>{
 
         let context = PointArgStruct {
             flow,
-            data,
             id: String::from(id),
             handlebars,
             render_context
@@ -48,11 +45,11 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
     }
 
     #[allow(dead_code)]
-    pub fn id(self :&PointArgStruct<'c, 'd, 'h, 'reg, 'r>) -> &str{
+    pub fn id(self :&PointArgStruct<'c, 'h, 'reg, 'r>) -> &str{
         return self.id.as_str();
     }
 
-    pub async fn meta_str(self : &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) ->Option<String>
+    pub async fn meta_str(self : &PointArgStruct<'c, 'h, 'reg, 'r>, path: Vec<&str>) ->Option<String>
     {
         let config = self.flow.point(self.id());
 
@@ -72,7 +69,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
         }
     }
 
-    fn render_inner(self: &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, text: &str) -> Result<String, Error> {
+    fn render_inner(self: &PointArgStruct<'c, 'h, 'reg, 'r>, text: &str) -> Result<String, Error> {
         let render = self.handlebars.render_template_with_context(
             text, self.render_context);
         return match render {
@@ -81,7 +78,7 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
         };
     }
 
-    fn render_inner_with<T>(self: &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> Result<String, Error>
+    fn render_inner_with<T>(self: &PointArgStruct<'c, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> Result<String, Error>
         where
             T: Serialize
     {
@@ -132,10 +129,10 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
 }
 
 
-impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
+impl <'c, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'h, 'reg, 'r> {
 
 
-    fn config_rendered(self: &PointArgStruct<'c, 'd, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
+    fn config_rendered(self: &PointArgStruct<'c, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
     {
         let config = self.flow.point_config(self.id());
 
@@ -166,10 +163,10 @@ impl <'c, 'd, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'd, 'h, 'reg, 'r> {
     }
 }
 
-unsafe impl <'c, 'd, 'h, 'reg, 'r> Send for PointArgStruct<'c, 'd, 'h, 'reg, 'r>
+unsafe impl <'c, 'h, 'reg, 'r> Send for PointArgStruct<'c, 'h, 'reg, 'r>
 {
 }
 
-unsafe impl <'c, 'd, 'h, 'reg, 'r> Sync for PointArgStruct<'c, 'd, 'h, 'reg, 'r>
+unsafe impl <'c, 'h, 'reg, 'r> Sync for PointArgStruct<'c, 'h, 'reg, 'r>
 {
 }

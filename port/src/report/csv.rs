@@ -1,7 +1,6 @@
 use chord_common::case::{CaseState, CaseAssess};
 use chord_common::error::Error;
 use chord_common::point::PointState;
-use crate::model::PortError;
 use csv::Writer;
 use std::path::Path;
 use chord_common::flow::Flow;
@@ -9,15 +8,6 @@ use std::fs::File;
 use chord_common::task::{TaskAssess, TaskState};
 use chord_common::err;
 
-pub async fn report<W: std::io::Write>(writer: &mut Writer<W>,
-                                       task_assess: &dyn TaskAssess,
-                                       flow: &Flow,
-) -> Result<(), Error> {
-    match report0(writer, task_assess, flow).await {
-        Ok(()) => Ok(()),
-        Err(e) => Err(e.common())
-    }
-}
 
 pub async fn from_writer<W: std::io::Write>(writer: W) -> Writer<W> {
     csv::WriterBuilder::new().from_writer(writer)
@@ -47,18 +37,13 @@ fn create_head(flow: &Flow) -> Vec<String> {
     vec
 }
 
-pub async fn write_record<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<String>) -> Result<(), Error> {
-    match write_record0(writer, record).await {
-        Ok(()) => Ok(()),
-        Err(e) => Err(e.common())
-    }
-}
 
-async fn write_record0<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<String>) -> Result<(), PortError> {
+
+pub async fn write_record<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<String>) -> Result<(), Error> {
     Ok(writer.write_record(record)?)
 }
 
-async fn report0<W: std::io::Write>(writer: &mut Writer<W>, task_assess: &dyn TaskAssess, flow: &Flow) -> Result<(), PortError> {
+pub async fn report<W: std::io::Write>(writer: &mut Writer<W>, task_assess: &dyn TaskAssess, flow: &Flow) -> Result<(), Error> {
     let empty = &vec![];
     let ca_vec = match task_assess.state() {
         TaskState::Ok(ca_vec) => ca_vec,

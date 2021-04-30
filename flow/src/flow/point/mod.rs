@@ -23,8 +23,9 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &PointArgStruct<'_, '_, '_, '_>)
     let timeout_value = timeout(arg.timeout(), future).await;
     let value = match timeout_value {
         Ok(v) => v,
-        Err(_) => {
-            warn!("point Err {}", arg.id());
+        Err(e) => {
+            let txt = arg.render(arg.config().to_string().as_str());
+            warn!("point Err  {} - {} \n<<< {}", arg.id(), e, txt.unwrap());
             return PointAssessStruct::new(arg.id(), start, Utc::now(), PointState::Err(Error::new("002", "timeout")));
         }
     };

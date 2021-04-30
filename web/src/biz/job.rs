@@ -11,17 +11,18 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::AppContext;
-use chord_port::report::mongodb::{Writer, ClientOptions};
+use chord_port::report::mongodb::{Writer, Database};
 use crate::app::conf::Config;
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
                                  job_name: String,
                                  exec_id: String,
-                                 app_ctx: Arc<dyn AppContext>) -> Result<Vec<TaskState>, Error>{
+                                 app_ctx: Arc<dyn AppContext>,
+                                 db: Arc<Database>) -> Result<Vec<TaskState>, Error>{
 
     debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
-    let opt = ClientOptions::parse(Config::get_singleton().report_mongodb_url()?).await?;
-    let writer = Arc::new(Writer::new(opt,
+
+    let writer = Arc::new(Writer::new(db,
         job_name.as_str(),
         exec_id.as_str())
         .await?);

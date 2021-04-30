@@ -2,11 +2,14 @@ use chord_common::case::{CaseState, CaseAssess};
 use chord_common::error::Error;
 use chord_common::point::{PointState, PointAssess};
 use chord_common::task::{TaskAssess, TaskState};
-use mongodb::{Collection, Client};
+use mongodb::{Collection};
 pub use mongodb::options::ClientOptions;
+pub use mongodb::Client;
+pub use mongodb::Database;
 use mongodb::bson::{Document};
 use mongodb::bson::doc;
 use itertools::Itertools;
+use async_std::sync::Arc;
 
 pub struct Writer {
     collection: Collection,
@@ -14,17 +17,9 @@ pub struct Writer {
 }
 
 impl Writer {
-    pub async fn new(client_options: ClientOptions,
+    pub async fn new(db: Arc<Database>,
                      job_name: &str,
                      exec_id: &str) -> Result<Writer, Error> {
-        // Get a handle to the deployment.
-        let db_name = client_options.credential
-            .as_ref()
-            .map(|c|
-                c.source.as_ref().map(|s| s.clone()).unwrap_or("chord".to_owned()))
-            .unwrap();
-        let client = Client::with_options(client_options)?;
-        let db = client.database(db_name.as_str());
         let collection = db.collection::<Document>(job_name);
         collection.insert_one(job_toc(exec_id), None).await?;
         Ok(Writer {

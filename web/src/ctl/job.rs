@@ -17,6 +17,7 @@ use chord_point::PointRunnerDefault;
 use crate::app::conf::Config;
 
 use crate::biz;
+use chord_port::report::mongodb::{Client, Database, ClientOptions};
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
@@ -51,6 +52,7 @@ pub struct Ctl {
 }
 
 static mut JOB_CTL: Option<Ctl> = Option::None;
+static mut MONGO_DB: Option<Arc<Database>> = Option::None;
 
 impl Ctl {
     async fn new(input: &str,
@@ -74,16 +76,32 @@ impl Ctl {
         return Ok(Rep{exec_id});
     }
 
-    pub async fn create_singleton() -> &'static Ctl{
+    pub async fn create_singleton() ->  Result<(), Error>{
         unsafe {
             JOB_CTL = Some(Ctl::new(Config::get_singleton().job_input_path(),
                                     Config::get_singleton().ssh_key_private_path()).await);
-            Ctl::get_singleton().await
+
+            // Get a handle to the deployment.
+            let opt = ClientOptions::parse(Config::get_singleton().report_mongodb_url()?).await?;
+            let db_name = opt.credential
+                .as_ref()
+                .map(|c|
+                    c.source.as_ref().map(|s| s.clone()).unwrap_or("chord".to_owned()))
+                .unwrap();
+            let client = Client::with_options(opt)?;
+            let db = client.database(db_name.as_str());
+            MONGO_DB = Some(Arc::new(db));
+            Ok(())
         }
+
     }
 
     pub async fn get_singleton() -> &'static Ctl{
         unsafe {&JOB_CTL.as_ref().unwrap()}
+    }
+
+    async fn get_mongodb() -> Arc<Database>{
+        unsafe { MONGO_DB.clone().unwrap() }
     }
 
     async fn checkout_run(
@@ -199,7 +217,7 @@ impl Ctl {
                  job_path: PathBuf,
                  job_name: String,
                  exec_id: String) {
-        let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx).await;
+        let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, Ctl::get_mongodb().await).await;
         if let Err(e) = job_result {
             error!("run job error {}", e);
         }

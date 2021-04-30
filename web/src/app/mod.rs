@@ -90,7 +90,7 @@ pub async fn init(conf: Json) -> Result<(), Error>{
     let log_file_path = Path::new(conf.log_path());
     let _log_handler = logger::init(conf.log_level(), &log_file_path).await?;
 
-    ctl::job::Ctl::create_singleton().await;
+    ctl::job::Ctl::create_singleton().await?;
     app.at("/job/exec").post(
         json_handler!(ctl::job::Ctl::exec, ctl::job::Ctl::get_singleton().await)
     );

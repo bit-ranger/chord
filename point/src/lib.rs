@@ -2,14 +2,15 @@ use std::future::Future;
 use std::pin::Pin;
 
 use chord_common::point::{PointArg, PointRunner};
+use chord_common::error::Error;
 
 mod point;
 
 pub struct PointRunnerDefault;
 
 impl PointRunnerDefault{
-    pub fn new() -> PointRunnerDefault{
-        PointRunnerDefault{}
+    pub async fn new() -> Result<PointRunnerDefault, Error>{
+        Ok(PointRunnerDefault{})
     }
 }
 

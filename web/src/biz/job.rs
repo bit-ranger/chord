@@ -98,9 +98,9 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
     let mut runner = chord_flow::Runner::new(app_ctx, Arc::new(flow), String::from(task_id)).await?;
 
     let mut total_task_state = TaskState::Ok(vec![]);
-    let size_limit = 2;
+    let case_batch_size = Config::get_singleton().case_batch_size();
     loop{
-        let data = chord_port::load::data::csv::load(&mut data_reader, size_limit)?;
+        let data = chord_port::load::data::csv::load(&mut data_reader, case_batch_size)?;
         let data_len = data.len();
 
         let task_assess = runner.run(data).await;
@@ -118,7 +118,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
             }
         }
 
-        if data_len < size_limit {
+        if data_len < case_batch_size {
             break;
         }
     }

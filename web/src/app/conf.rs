@@ -66,4 +66,8 @@ impl Config {
     pub fn report_mongodb_url(&self) -> Result<&str, Error> {
         self.conf["report"]["mongodb"]["url"].as_str().ok_or(err!("config", "missing report.mongodb.url"))
     }
+
+    pub fn case_batch_size(&self) -> usize{
+        self.conf["case"]["batch"]["size"].as_u64().unwrap_or(99999) as usize
+    }
 }

@@ -3,10 +3,10 @@ use chrono::{DateTime, Utc};
 use chord_common::point::{PointAssess, PointState};
 
 pub struct PointAssessStruct {
-    id: String,
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
-    state: PointState
+    pub id: String,
+    pub start: DateTime<Utc>,
+    pub end: DateTime<Utc>,
+    pub state: PointState
 }
 
 impl PointAssessStruct {
@@ -21,8 +21,6 @@ impl PointAssessStruct {
             state,
         }
     }
-
-
 }
 
 impl PointAssess for PointAssessStruct {

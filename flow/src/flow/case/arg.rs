@@ -47,6 +47,7 @@ impl CaseArgStruct{
         }
         render_data.insert(String::from("data"), self.data.clone());
         render_data.insert(String::from("dyn"), Json::Object(Map::new()));
+        render_data.insert(String::from("res"), Json::Null);
 
         for (k,v) in self.context_ext.iter(){
             render_data.insert(k.clone(), v.clone());

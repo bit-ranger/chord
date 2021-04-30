@@ -1,11 +1,8 @@
 use std::borrow::Borrow;
 
 
-use handlebars::{Handlebars};
+use handlebars::{Handlebars, Context};
 use log::info;
-use serde::Serialize;
-use chord_common::value::to_json;
-
 use chord_common::error::Error;
 use chord_common::point::PointArg;
 use chord_common::value::Json;
@@ -60,7 +57,7 @@ impl <'c, 'h, 'reg, 'r> PointArgStruct<'c, 'h, 'reg, 'r> {
 
         match raw_config.as_str(){
             Some(s) => {
-                match self.render_inner(s){
+                match render(self.handlebars, self.render_context, s){
                     Ok(s) => Some(s),
                     Err(_) => None
                 }
@@ -69,53 +66,7 @@ impl <'c, 'h, 'reg, 'r> PointArgStruct<'c, 'h, 'reg, 'r> {
         }
     }
 
-    fn render_inner(self: &PointArgStruct<'c, 'h, 'reg, 'r>, text: &str) -> Result<String, Error> {
-        let render = self.handlebars.render_template_with_context(
-            text, self.render_context);
-        return match render {
-            Ok(r) => Ok(r),
-            Err(e) => rerr!("tpl", format!("{}", e))
-        };
-    }
 
-    fn render_inner_with<T>(self: &PointArgStruct<'c, 'h, 'reg, 'r>, text: &str, with_data: (&str, &T)) -> Result<String, Error>
-        where
-            T: Serialize
-    {
-        let mut ctx = self.render_context.data().clone();
-
-        if let Json::Object(data) = &mut ctx{
-            let (n, d) = with_data;
-            data.insert(String::from(n), to_json(d).unwrap());
-        }
-
-        // let handlebars = Handlebars::new();
-        let render = self.handlebars.render_template(
-            text, &ctx);
-        return match render {
-            Ok(r) => Ok(r),
-            Err(e) => rerr!("tpl", format!("{}", e))
-        };
-    }
-
-    pub async fn assert <T>(&self, condition: &str, with_data: &T) -> bool
-        where
-            T: Serialize
-    {
-        let template = format!(
-            "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
-            condition = condition
-        );
-
-        let result = self.render_inner_with(&template, ("res", with_data));
-        match result {
-            Ok(result) => if result.eq("true") {true} else {false},
-            Err(e) => {
-                info!("assert failure: {} >>> {}", condition, e);
-                false
-            }
-        }
-    }
 
     pub fn timeout(&self) -> Duration{
         self.flow.point_timeout(self.id())
@@ -126,6 +77,37 @@ impl <'c, 'h, 'reg, 'r> PointArgStruct<'c, 'h, 'reg, 'r> {
         self.flow.point_kind(self.id())
     }
 
+}
+
+
+pub async fn assert(handlebars: &Handlebars<'_>,
+                    render_context: &Context,
+                    condition: &str) -> bool
+{
+    let template = format!(
+        "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
+        condition = condition
+    );
+
+    let result = render(handlebars, render_context, &template);
+    match result {
+        Ok(result) => if result.eq("true") { true } else { false },
+        Err(e) => {
+            info!("assert failure: {} >>> {}", condition, e);
+            false
+        }
+    }
+}
+
+pub fn render(handlebars: & Handlebars<'_>,
+              render_context: & Context,
+              text: &str) -> Result<String, Error> {
+    let render = handlebars.render_template_with_context(
+        text, render_context);
+    return match render {
+        Ok(r) => Ok(r),
+        Err(e) => rerr!("tpl", format!("{}", e))
+    };
 }
 
 
@@ -143,7 +125,7 @@ impl <'c, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'h, 'reg, 'r> {
 
         match raw_config.as_str(){
             Some(s) => {
-                match self.render_inner(s){
+                match render(self.handlebars, self.render_context, s){
                     Ok(s) => Some(s),
                     Err(_) => None
                 }
@@ -159,7 +141,7 @@ impl <'c, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'h, 'reg, 'r> {
     }
 
     fn render(&self, text: &str) -> Result<String, Error> {
-        return self.render_inner(text);
+        return render(self.handlebars, self.render_context, text);
     }
 }
 

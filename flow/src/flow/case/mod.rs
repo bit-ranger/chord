@@ -1,6 +1,4 @@
 use chrono::Utc;
-use chord_common::value::to_json;
-
 use chord_common::value::Json;
 use res::CaseAssessStruct;
 
@@ -13,6 +11,8 @@ pub mod res;
 pub mod arg;
 use log::{trace, debug, info, warn};
 use chord_common::err;
+use crate::flow::point::arg::{assert};
+use crate::flow::point::res::PointAssessStruct;
 
 pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
@@ -29,12 +29,21 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStr
         let point_arg = point_arg.unwrap();
         let point_assess = point::run(app_ctx, &point_arg).await;
 
-        point_assess_vec.push(Box::new(point_assess));
-        let point_assess = point_assess_vec.last().unwrap();
-
-        match point_assess.state(){
-            PointState::Ok(json) => {
-                register_dynamic(&mut render_context, point_id, json).await;
+        match point_assess{
+            PointAssessStruct {state: PointState::Ok(json), id,start, end} => {
+                if let Some(con) =  point_arg.meta_str(vec!["assert"]).await{
+                    register_dynamic(&mut render_context, point_id, &json).await;
+                    if assert(app_ctx.get_handlebars(), &mut render_context, &con).await {
+                        let point_assess = PointAssessStruct::new(id.as_str(), start, end,PointState::Ok(json));
+                        point_assess_vec.push(Box::new(point_assess));
+                    } else {
+                        info!("point Fail {} - {} \n", arg.id(), json);
+                        let point_assess = PointAssessStruct::new(id.as_str(), start, end, PointState::Fail(json));
+                        point_assess_vec.push(Box::new(point_assess));
+                        info!("case Fail {}", arg.id());
+                        return CaseAssessStruct::new(arg.id(), start, Utc::now(), CaseState::Fail(point_assess_vec));
+                    }
+                }
             },
             _ => {
                 info!("case Fail {}", arg.id());
@@ -50,9 +59,9 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStr
 
 pub async fn register_dynamic(render_context: &mut RenderContext, pt_id: &str, result: &Json) {
     if let Json::Object(data) = render_context.data_mut(){
-        data["dyn"][pt_id] = to_json(result).unwrap();
+        data["dyn"][pt_id] = result.clone();
+        data["res"] = result.clone();
     }
 }
-
 
 

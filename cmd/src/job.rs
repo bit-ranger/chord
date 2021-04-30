@@ -79,7 +79,8 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
 
     //read
     let data_path = task_path.clone().join("data.csv");
-    let mut data_reader = chord_port::load::data::csv::from_path(data_path).await?;
+    let case_batch_size = 99999;
+    let mut data_loader = chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
     //write
@@ -91,9 +92,8 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
     let mut runner = chord_flow::Runner::new(app_ctx, flow.clone(), String::from(task_id)).await?;
 
     let mut total_task_state = TaskState::Ok(vec![]);
-    let size_limit = 99999;
     loop {
-        let data = chord_port::load::data::csv::load(&mut data_reader, size_limit)?;
+        let data = data_loader.load().await?;
         let data_len = data.len();
 
         let task_assess = runner.run(data).await;
@@ -112,7 +112,7 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
             }
         }
 
-        if data_len < size_limit {
+        if data_len < case_batch_size {
             break;
         }
     }

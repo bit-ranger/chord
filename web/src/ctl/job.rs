@@ -71,8 +71,8 @@ impl Ctl {
         let ssh_key_pri = self.ssh_key_private.clone();
         let app_ctx_0 = self.app_ctx.clone();
         let exec_id_0 = exec_id.clone();
-        // self.pool.spawn(|| block_on(Ctl::checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
-        spawn(Ctl::checkout_run(app_ctx_0, input, ssh_key_pri, req, exec_id_0));
+        // self.pool.spawn(|| block_on(checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
+        spawn(checkout_run(app_ctx_0, input, ssh_key_pri, req, exec_id_0));
         return Ok(Rep{exec_id});
     }
 
@@ -99,129 +99,130 @@ impl Ctl {
     pub async fn get_singleton() -> &'static Ctl{
         unsafe {&JOB_CTL.as_ref().unwrap()}
     }
+    
+}
 
-    async fn get_mongodb() -> Arc<Database>{
-        unsafe { MONGO_DB.clone().unwrap() }
-    }
 
-    async fn checkout_run(
-        app_ctx: Arc<dyn AppContext>,
-        input: PathBuf,
-        ssh_key_pri: PathBuf,
-        req: Req,
-        exec_id: String) {
-        let is_delimiter = |c: char| ['@',':','/'].contains(&c);
-        let git_url_splits = Ctl::split(is_delimiter, req.git_url.as_str());
+async fn get_mongodb() -> Arc<Database>{
+    unsafe { MONGO_DB.clone().unwrap() }
+}
 
-        let host = git_url_splits[1];
-        let group_name = git_url_splits[2];
-        let repo_name = git_url_splits[3];
-        let checkout = input.clone()
-            .join(host)
-            .join(group_name)
-            .join(repo_name);
-        if checkout.exists() {
-            error!("checkout exist {}", checkout.to_str().unwrap());
-            return;
-        } else {
-            if let Err(e) = async_std::fs::create_dir_all(checkout.clone()).await {
-                error!("checkout create_dir error {}, {}", checkout.to_str().unwrap(), e);
-                return;
-            }
-        }
+async fn checkout_run(
+    app_ctx: Arc<dyn AppContext>,
+    input: PathBuf,
+    ssh_key_pri: PathBuf,
+    req: Req,
+    exec_id: String) {
+    let is_delimiter = |c: char| ['@',':','/'].contains(&c);
+    let git_url_splits = split(is_delimiter, req.git_url.as_str());
 
-        if let Err(e) = Ctl::checkout(ssh_key_pri.as_path(),
-                                      req.git_url.as_str(),
-                                      checkout.as_path(),
-                                      req.branch.unwrap_or_else(|| "master".to_owned()).as_str(),
-        ).await {
-            error!("checkout error {}, {}, {}", req.git_url, checkout.to_str().unwrap(), e);
-            Ctl::clear(checkout.as_path()).await;
+    let host = git_url_splits[1];
+    let group_name = git_url_splits[2];
+    let repo_name = git_url_splits[3];
+    let checkout_path = input.clone()
+        .join(host)
+        .join(group_name)
+        .join(repo_name);
+    if checkout_path.exists() {
+        error!("checkout exist {}", checkout_path.to_str().unwrap());
+        return;
+    } else {
+        if let Err(e) = async_std::fs::create_dir_all(checkout_path.clone()).await {
+            error!("checkout create_dir error {}, {}", checkout_path.to_str().unwrap(), e);
             return;
         }
-
-        let job_path = match req.job_path{
-            Some(p) => {
-                let mut r = checkout.clone();
-                for seg in p.split("/"){
-                    r = r.join(seg);
-                }
-                r
-            },
-            None => checkout.clone()
-        };
-
-        let job_name = format!("{}:{}/{}", host, group_name, repo_name);
-        Ctl::run(app_ctx, job_path, job_name, exec_id).await;
-        Ctl::clear(checkout.as_path()).await;
     }
 
-    async fn clear(dir: &Path) {
-        let path = dir.to_owned();
-        let result = spawn_blocking(move || {
-            rm_rf::ensure_removed(path)
-        }).await;
-
-        match result{
-            Ok(()) => debug!("remove dir {}", dir.to_str().unwrap()),
-            Err(e) => warn!("remove dir {}, {}", dir.to_str().unwrap(), e),
-        }
+    if let Err(e) = checkout(ssh_key_pri.as_path(),
+                                  req.git_url.as_str(),
+                                  checkout_path.as_path(),
+                                  req.branch.unwrap_or_else(|| "master".to_owned()).as_str(),
+    ).await {
+        error!("checkout error {}, {}, {}", req.git_url, checkout_path.to_str().unwrap(), e);
+        clear(checkout_path.as_path()).await;
+        return;
     }
 
-    fn split(is_delimiter: fn(char) -> bool, text: &str) -> Vec<&str> {
-        let mut result: Vec<&str> = Vec::new();
-        let mut li: usize = 0;
-        for (i, c) in text.char_indices() {
-            if is_delimiter(c) {
-                result.push(&text[li..i]);
-                li = i + 1;
+    let job_path = match req.job_path{
+        Some(p) => {
+            let mut r = checkout_path.clone();
+            for seg in p.split("/"){
+                r = r.join(seg);
             }
-        }
-        result.push(&text[li..]);
-        return result;
-    }
+            r
+        },
+        None => checkout_path.clone()
+    };
 
-    fn credentials_callback<P: AsRef<Path>>(
-        ssh_key_private: P,
-        cred_types_allowed: git2::CredentialType,
-    ) -> Result<git2::Cred, git2::Error> {
+    let job_name = format!("{}:{}/{}", host, group_name, repo_name);
+    run(app_ctx, job_path, job_name, exec_id).await;
+    clear(checkout_path.as_path()).await;
+}
 
-        if cred_types_allowed.contains(git2::CredentialType::SSH_KEY) {
-            let cred = git2::Cred::ssh_key("git", None, ssh_key_private.as_ref(), None);
-            if let Err(e) = &cred {
-                error!("ssh_key error {}", e);
-            }
-            return cred;
-        }
+async fn clear(dir: &Path) {
+    let path = dir.to_owned();
+    let result = spawn_blocking(move || {
+        rm_rf::ensure_removed(path)
+    }).await;
 
-        return Err(git2::Error::from_str("ssh_key not allowed"));
-    }
-
-    async fn checkout(ssh_key_private: &Path,
-                      git_url: &str,
-                      into: &Path,
-                      branch: &str,
-    ) -> Result<Repository, git2::Error> {
-        let mut callbacks = git2::RemoteCallbacks::new();
-        callbacks.credentials(|_, _, allowed| Ctl::credentials_callback(ssh_key_private, allowed));
-
-        let mut fetch_opts = git2::FetchOptions::new();
-        fetch_opts.remote_callbacks(callbacks);
-        RepoBuilder::new()
-            .branch(branch)
-            .fetch_options(fetch_opts)
-            .clone(git_url, into)
-    }
-
-    async fn run(app_ctx: Arc<dyn AppContext>,
-                 job_path: PathBuf,
-                 job_name: String,
-                 exec_id: String) {
-        let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, Ctl::get_mongodb().await).await;
-        if let Err(e) = job_result {
-            error!("run job error {}", e);
-        }
+    match result{
+        Ok(()) => debug!("remove dir {}", dir.to_str().unwrap()),
+        Err(e) => warn!("remove dir {}, {}", dir.to_str().unwrap(), e),
     }
 }
 
+fn split(is_delimiter: fn(char) -> bool, text: &str) -> Vec<&str> {
+    let mut result: Vec<&str> = Vec::new();
+    let mut li: usize = 0;
+    for (i, c) in text.char_indices() {
+        if is_delimiter(c) {
+            result.push(&text[li..i]);
+            li = i + 1;
+        }
+    }
+    result.push(&text[li..]);
+    return result;
+}
+
+fn credentials_callback<P: AsRef<Path>>(
+    ssh_key_private: P,
+    cred_types_allowed: git2::CredentialType,
+) -> Result<git2::Cred, git2::Error> {
+
+    if cred_types_allowed.contains(git2::CredentialType::SSH_KEY) {
+        let cred = git2::Cred::ssh_key("git", None, ssh_key_private.as_ref(), None);
+        if let Err(e) = &cred {
+            error!("ssh_key error {}", e);
+        }
+        return cred;
+    }
+
+    return Err(git2::Error::from_str("ssh_key not allowed"));
+}
+
+async fn checkout(ssh_key_private: &Path,
+                  git_url: &str,
+                  into: &Path,
+                  branch: &str,
+) -> Result<Repository, git2::Error> {
+    let mut callbacks = git2::RemoteCallbacks::new();
+    callbacks.credentials(|_, _, allowed| credentials_callback(ssh_key_private, allowed));
+
+    let mut fetch_opts = git2::FetchOptions::new();
+    fetch_opts.remote_callbacks(callbacks);
+    RepoBuilder::new()
+        .branch(branch)
+        .fetch_options(fetch_opts)
+        .clone(git_url, into)
+}
+
+async fn run(app_ctx: Arc<dyn AppContext>,
+             job_path: PathBuf,
+             job_name: String,
+             exec_id: String) {
+    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, get_mongodb().await).await;
+    if let Err(e) = job_result {
+        error!("run job error {}", e);
+    }
+}
 

@@ -71,22 +71,20 @@ impl Runner {
         self.case_id_offset = self.case_id_offset + data_len;
         trace!("task load data {}, {}", self.id, ca_vec.len());
 
-        let mut futures = ca_vec.into_iter()
-            .map(|ca| case_spawn(self.app_ctx.clone(), ca))
-            .collect_vec();
-
-        futures.reserve(0);
         let mut case_assess_vec  = Vec::<Box<dyn CaseAssess>>::new();
         let limit_concurrency =  self.flow.limit_concurrency();
-        loop {
-            if futures.len() >  limit_concurrency{
-                let off = futures.split_off(futures.len() - limit_concurrency);
-                let off_result = join_all(off).await;
-                case_assess_vec.extend(off_result);
-            } else {
-                case_assess_vec.extend(join_all(futures).await);
-                break;
+        let mut futures = vec![];
+        for ca in ca_vec {
+            let f = case_spawn(self.app_ctx.clone(), ca);
+            futures.push(f);
+            if futures.len() >= limit_concurrency {
+                let case_assess = join_all(futures.split_off(0)).await;
+                case_assess_vec.extend(case_assess);
             }
+        }
+        if !futures.is_empty(){
+            let case_assess = join_all(futures).await;
+            case_assess_vec.extend(case_assess);
         }
 
         let any_fail = case_assess_vec.iter()

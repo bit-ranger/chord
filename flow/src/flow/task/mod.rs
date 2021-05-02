@@ -81,7 +81,8 @@ impl Runner {
         loop {
             if futures.len() >  limit_concurrency{
                 let off = futures.split_off(futures.len() - limit_concurrency);
-                case_assess_vec.extend(join_all(off).await);
+                let off_result = join_all(off).await;
+                case_assess_vec.extend(off_result);
             } else {
                 case_assess_vec.extend(join_all(futures).await);
                 break;

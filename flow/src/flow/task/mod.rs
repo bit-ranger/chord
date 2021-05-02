@@ -17,8 +17,15 @@ use chord_common::point::PointState;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
 use chord_common::flow::Flow;
+use async_std::task_local;
+use std::cell::RefCell;
+use crate::CASE_ID;
 
 pub mod res;
+
+task_local! {
+    pub static TASK_ID: RefCell<String> = RefCell::new(String::new());
+}
 
 pub struct Runner {
     app_ctx: Arc<dyn AppContext>,
@@ -179,12 +186,15 @@ async fn case_run(app_ctx: &dyn AppContext, case_arg: &CaseArgStruct) -> Box<dyn
 }
 
 fn case_spawn(app_ctx: Arc<dyn AppContext>, case_arg: CaseArgStruct) -> JoinHandle<Box<dyn CaseAssess>>{
+    let task_id = TASK_ID.try_with(|c| c.borrow().clone()).unwrap_or("".to_owned());
     let builder = Builder::new()
         .name(format!("case_{}", case_arg.id()))
-        .spawn(case_run_arc(app_ctx, case_arg));
+        .spawn(case_run_arc(app_ctx, task_id, case_arg));
     return builder.unwrap();
 }
 
-async fn case_run_arc(app_ctx: Arc<dyn AppContext>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess>{
+async fn case_run_arc(app_ctx: Arc<dyn AppContext>, task_id: String, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+    TASK_ID.with(|tid| tid.replace(task_id));
+    CASE_ID.with(|cid| cid.replace(case_arg.id()));
     case_run(app_ctx.as_ref(), &case_arg).await
 }

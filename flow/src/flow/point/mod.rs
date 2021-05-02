@@ -8,7 +8,7 @@ use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::AppContext;
 use chord_common::point::{PointState};
 use async_std::future::timeout;
-use log::{trace, debug, warn};
+use log::{trace, warn};
 
 pub mod arg;
 pub mod res;
@@ -32,7 +32,6 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &PointArgStruct<'_, '_, '_, '_>)
 
     return match value {
         PointValue::Ok(json) => {
-            debug!("point Ok   {} - {} \n", arg.id(), json);
             PointAssessStruct::new(arg.id(), start, Utc::now(), PointState::Ok(json))
         },
         PointValue::Err(e) => {

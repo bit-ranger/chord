@@ -2,6 +2,8 @@ use async_std::sync::Arc;
 
 use chord_common::point::PointRunner;
 pub use task::Runner;
+pub use task::TASK_ID;
+pub use case::CASE_ID;
 
 use crate::model::app::{AppContext, AppContextStruct};
 

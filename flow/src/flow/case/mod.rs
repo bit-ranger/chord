@@ -13,6 +13,12 @@ use log::{trace, debug, info, warn};
 use chord_common::err;
 use crate::flow::point::arg::{assert};
 use crate::flow::point::res::PointAssessStruct;
+use async_std::task_local;
+use std::cell::RefCell;
+
+task_local! {
+    pub static CASE_ID: RefCell<usize> = RefCell::new(0);
+}
 
 pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
@@ -34,10 +40,11 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStr
                 if let Some(con) =  point_arg.meta_str(vec!["assert"]).await{
                     register_dynamic(&mut render_context, point_id, &json).await;
                     if assert(app_ctx.get_handlebars(), &mut render_context, &con).await {
+                        debug!("point Ok   {}", arg.id());
                         let point_assess = PointAssessStruct::new(id.as_str(), start, end,PointState::Ok(json));
                         point_assess_vec.push(Box::new(point_assess));
                     } else {
-                        info!("point Fail {} - {} \n", arg.id(), json);
+                        info!("point Fail {} - {}", arg.id(), json);
                         let point_assess = PointAssessStruct::new(id.as_str(), start, end, PointState::Fail(json));
                         point_assess_vec.push(Box::new(point_assess));
                         info!("case Fail {}", arg.id());

@@ -68,6 +68,8 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
                                    _execution_id: &str,
                                    app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
+    let task_id = task_path.file_name().unwrap().to_str().unwrap();
+    chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_owned()));
 
     debug!("task start {}", task_path.to_str().unwrap());
 
@@ -82,7 +84,7 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
     let case_batch_size = 99999;
     let mut data_loader = chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
-    let task_id = task_path.file_name().unwrap().to_str().unwrap();
+
     //write
     let result_path = work_path.as_ref().join(format!("{}_result.csv", task_id));
     let mut result_writer = chord_port::report::csv::from_path(result_path.clone()).await?;

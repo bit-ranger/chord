@@ -58,14 +58,20 @@ impl log::Log for ChannelLogger {
             let date = strftime("%F %T", &now).unwrap();
             let microseconds = now.tm_nsec / 1000;
 
+
+            let task_id = chord_flow::TASK_ID.try_with(|c| c.borrow().clone()).unwrap_or("".to_owned());
+            let case_id = chord_flow::CASE_ID.try_with(|c| c.borrow().clone()).unwrap_or(0);
+
             let _ = write!(
                 &mut data,
-                "[{}.{:06}][{}][{}:{}] - {}\n",
+                "[{}.{:06}][{}][{}:{}] - [{}][{}], {}\n",
                 date,
                 microseconds,
                 record.level(),
                 record.target(),
                 record.line().unwrap_or(0),
+                task_id,
+                case_id,
                 record.args()
             );
 

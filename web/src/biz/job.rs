@@ -81,7 +81,8 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
                                    app_ctx: Arc<dyn AppContext>,
                                    writer: Arc<Writer>) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
-
+    let task_id = task_path.file_name().unwrap().to_str().unwrap();
+    chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_owned()));
     debug!("task start {}", task_path.to_str().unwrap());
 
     let flow_path = task_path.clone().join("flow.yml");
@@ -93,8 +94,6 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
     let data_path = task_path.clone().join("data.csv");
     let case_batch_size = Config::get_singleton().case_batch_size();
     let mut data_loader = chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
-
-    let task_id = task_path.file_name().unwrap().to_str().unwrap();
 
     //runner
     let mut runner = chord_flow::Runner::new(app_ctx, Arc::new(flow), String::from(task_id)).await?;

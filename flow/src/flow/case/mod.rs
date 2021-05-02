@@ -46,6 +46,7 @@ pub async fn run(app_ctx: &dyn AppContext, arg: &CaseArgStruct) -> CaseAssessStr
                 }
             },
             _ => {
+                point_assess_vec.push(Box::new(point_assess));
                 info!("case Fail {}", arg.id());
                 return CaseAssessStruct::new(arg.id(), start, Utc::now(), CaseState::Fail(point_assess_vec));
             }

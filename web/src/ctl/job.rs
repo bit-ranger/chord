@@ -57,12 +57,12 @@ static mut MONGO_DB: Option<Arc<Database>> = Option::None;
 impl Ctl {
     async fn new(input: &str,
                ssh_key_private: &str,
-    ) -> Ctl {
-        Ctl {
+    ) -> Result<Ctl, Error> {
+        Ok(Ctl {
             input: Path::new(input).to_path_buf(),
             ssh_key_private: Path::new(ssh_key_private).to_path_buf(),
             app_ctx: chord_flow::create_app_context(Box::new(PointRunnerDefault::new().await?)).await,
-        }
+        })
     }
 
     pub async fn exec(&self, req: Req) -> Result<Rep, Error> {
@@ -79,7 +79,7 @@ impl Ctl {
     pub async fn create_singleton() ->  Result<(), Error>{
         unsafe {
             JOB_CTL = Some(Ctl::new(Config::get_singleton().job_input_path(),
-                                    Config::get_singleton().ssh_key_private_path()).await);
+                                    Config::get_singleton().ssh_key_private_path()).await?);
 
             // Get a handle to the deployment.
             let opt = ClientOptions::parse(Config::get_singleton().report_mongodb_url()?).await?;

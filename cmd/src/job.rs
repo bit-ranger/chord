@@ -12,14 +12,14 @@ use futures::future::join_all;
 use log::debug;
 use async_std::sync::Arc;
 
-pub async fn run<P: AsRef<Path>>(job_path: P,
-                                 work_path: P,
+pub async fn run<P: AsRef<Path>>(input_dir: P,
+                                 output_dir: P,
                                  execution_id: String,
                                  app_ctx: Arc<dyn AppContext>) -> Vec<TaskState> {
-    let job_path_str = job_path.as_ref().to_str().unwrap();
+    let job_path_str = input_dir.as_ref().to_str().unwrap();
 
     debug!("job start {}", job_path_str);
-    let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
+    let mut job_dir = read_dir(input_dir.as_ref()).await.unwrap();
 
     let mut futures = Vec::new();
     loop {
@@ -39,9 +39,9 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
         let builder = Builder::new()
             .name(task_dir.file_name().to_str().unwrap().into());
 
-        let task_path = job_path.as_ref().join(task_dir.path());
-        let work_path = std::path::PathBuf::from(work_path.as_ref());
-        let jh = builder.spawn(run_task(work_path, task_path, execution_id.clone(), app_ctx.clone())).unwrap();
+        let task_input_dir = input_dir.as_ref().join(task_dir.path());
+        let output_dir = std::path::PathBuf::from(output_dir.as_ref());
+        let jh = builder.spawn(run_task(task_input_dir, output_dir, execution_id.clone(), app_ctx.clone())).unwrap();
         futures.push(jh);
     }
 
@@ -51,20 +51,20 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
 }
 
 async fn run_task<P: AsRef<Path>>(
-    work_path: P,
-    task_path: P,
+    input_dir: P,
+    output_dir: P,
     execution_id: String,
     app_ctx: Arc<dyn AppContext>) -> TaskState
 {
-    let rt = run_task0(work_path, task_path, execution_id.as_str(), app_ctx).await;
+    let rt = run_task0(input_dir, output_dir, execution_id.as_str(), app_ctx).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => TaskState::Err(e)
     }
 }
 
-async fn run_task0<P: AsRef<Path>>(output_dir: P,
-                                   input_dir: P,
+async fn run_task0<P: AsRef<Path>>(input_dir: P,
+                                   output_dir: P,
                                    _execution_id: &str,
                                    app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
     let input_dir = Path::new(input_dir.as_ref());

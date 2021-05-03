@@ -10,7 +10,7 @@ use std::vec::Vec;
 
 use async_std::fs::File;
 use async_std::io::BufWriter;
-use crossbeam::channel::{Receiver, Sender, unbounded};
+use flume::{Receiver, Sender, unbounded};
 use futures::AsyncWriteExt;
 use futures::executor::block_on;
 use log;

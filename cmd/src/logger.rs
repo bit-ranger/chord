@@ -10,7 +10,6 @@ use std::vec::Vec;
 
 use async_std::fs::File;
 use async_std::io::BufWriter;
-use crossbeam::channel::{Receiver, Sender, unbounded};
 use futures::AsyncWriteExt;
 use futures::executor::block_on;
 use log;
@@ -19,6 +18,7 @@ use time::{at, get_time, strftime};
 
 use chord_common::error::Error;
 use itertools::Itertools;
+use flume::{bounded, Sender, Receiver};
 
 struct ChannelLogger {
     target_level: Vec<(String, LevelFilter)>,
@@ -119,7 +119,7 @@ pub async fn init(
     target_level: Vec<(String, String)>,
     log_file_path: &Path
 ) -> Result<LogHandler, Error> {
-    let (sender, receiver) = unbounded();
+    let (sender, receiver) = bounded(999999);
 
     log::set_max_level(LevelFilter::Trace);
     let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));

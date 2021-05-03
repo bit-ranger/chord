@@ -1,6 +1,5 @@
 use chrono::{Utc};
 use futures::future::join_all;
-use itertools::Itertools;
 use log::{debug, warn, trace};
 
 use chord_common::rerr;

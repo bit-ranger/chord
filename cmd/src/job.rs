@@ -18,6 +18,7 @@ pub async fn run<P: AsRef<Path>>(input_dir: P,
                                  app_ctx: Arc<dyn AppContext>) -> Vec<TaskState> {
     let job_path_str = input_dir.as_ref().to_str().unwrap();
 
+
     debug!("job start {}", job_path_str);
     let mut job_dir = read_dir(input_dir.as_ref()).await.unwrap();
 
@@ -56,7 +57,7 @@ async fn run_task<P: AsRef<Path>>(
     execution_id: String,
     app_ctx: Arc<dyn AppContext>) -> TaskState
 {
-    let rt = run_task0(input_dir, output_dir, execution_id.as_str(), app_ctx).await;
+    let rt = run_task0(input_dir, output_dir, execution_id, app_ctx).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => TaskState::Err(e)
@@ -65,7 +66,7 @@ async fn run_task<P: AsRef<Path>>(
 
 async fn run_task0<P: AsRef<Path>>(input_dir: P,
                                    output_dir: P,
-                                   _execution_id: &str,
+                                   _execution_id: String,
                                    app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
     let input_dir = Path::new(input_dir.as_ref());
     let task_id = input_dir.file_name().unwrap().to_str().unwrap();
@@ -96,7 +97,7 @@ async fn run_task0<P: AsRef<Path>>(input_dir: P,
 
         let task_assess = runner.run(data).await;
 
-        let _ = assess_reporter.write(task_assess.as_ref()).await?;
+        assess_reporter.write(task_assess.as_ref()).await?;
 
         match task_assess.state(){
             TaskState::Err(e) => {

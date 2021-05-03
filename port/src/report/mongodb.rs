@@ -1,34 +1,40 @@
-use chord_common::case::{CaseState, CaseAssess};
-use chord_common::error::Error;
-use chord_common::point::{PointState, PointAssess};
-use chord_common::task::{TaskAssess, TaskState};
-use mongodb::{Collection};
-pub use mongodb::options::ClientOptions;
-pub use mongodb::Client;
-pub use mongodb::Database;
-use mongodb::bson::{Document};
-use mongodb::bson::doc;
-use itertools::Itertools;
 use async_std::sync::Arc;
+use itertools::Itertools;
+pub use mongodb::bson::doc;
+pub use mongodb::bson::Document;
+pub use mongodb::Client;
+pub use mongodb::Collection;
+pub use mongodb::Database;
+pub use mongodb::options::ClientOptions;
 
-pub struct Writer {
-    collection: Collection,
+use chord_common::case::{CaseAssess, CaseState};
+use chord_common::error::Error;
+use chord_common::point::{PointAssess, PointState};
+use chord_common::rerr;
+use chord_common::task::{TaskAssess, TaskState};
+
+pub struct Reporter {
+    collection: Arc<Collection>,
     exec_id: String,
+    task_id: String,
 }
 
-impl Writer {
-    pub async fn new(db: Arc<Database>,
-                     job_name: &str,
-                     exec_id: &str) -> Result<Writer, Error> {
-        let collection = db.collection::<Document>(job_name);
-        collection.insert_one(job_toc(exec_id), None).await?;
-        Ok(Writer {
+impl Reporter {
+    pub async fn new<T, E>(collection: Arc<Collection>,
+                           task_id: T,
+                           exec_id: E) -> Result<Reporter, Error>
+        where T: Into<String>, E: Into<String> {
+        Ok(Reporter {
             collection,
-            exec_id: exec_id.to_owned(),
+            exec_id: exec_id.into(),
+            task_id: task_id.into(),
         })
     }
 
-    pub async fn write(&self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+    pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+        if self.task_id != task_assess.id() {
+            return rerr!("400", "task_id mismatch");
+        }
         let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()}, None).await?;
         if let None = task_doc {
             self.collection.update_one(
@@ -63,18 +69,10 @@ impl Writer {
         return Ok(());
     }
 
-    pub async fn close(&self) -> Result<(), Error> {
+    pub async fn close(self) -> Result<(), Error> {
         //todo 计算task state
         //todo 计算job state
         Ok(())
-    }
-}
-
-
-fn job_toc(exec_id: &str) -> Document {
-    doc! {
-        "exec_id": exec_id,
-        "task_assess": []
     }
 }
 

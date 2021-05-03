@@ -1,25 +1,27 @@
-use chord_common::case::{CaseState, CaseAssess};
-use chord_common::error::Error;
-use chord_common::point::PointState;
-use csv::Writer;
-use std::path::{Path, PathBuf};
-use chord_common::flow::Flow;
 use std::fs::File;
-use chord_common::task::{TaskAssess, TaskState};
-use chord_common::err;
-use async_std::fs::{rename};
+use std::path::{Path, PathBuf};
 
+use async_std::fs::rename;
+use csv::Writer;
+
+use chord_common::case::{CaseAssess, CaseState};
+use chord_common::err;
+use chord_common::error::Error;
+use chord_common::flow::Flow;
+use chord_common::point::PointState;
+use chord_common::rerr;
+use chord_common::task::{TaskAssess, TaskState};
 
 pub struct Reporter {
     writer: Writer<File>,
     point_id_vec: Vec<String>,
     total_task_state: TaskState,
     report_dir: PathBuf,
-    task_id: String
+    task_id: String,
 }
 
 impl Reporter {
-    pub async fn new<P: AsRef<Path>, T: Into<String>>(report_dir: P, task_id: T, flow: &Flow) -> Result<Reporter, Error>{
+    pub async fn new<P: AsRef<Path>, T: Into<String>>(report_dir: P, task_id: T, flow: &Flow) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
         let task_id = task_id.into();
         let report_file = report_dir.join(format!("{}_result.csv", task_id));
@@ -28,14 +30,17 @@ impl Reporter {
             point_id_vec: flow.case_point_id_vec()?,
             total_task_state: TaskState::Ok(vec![]),
             report_dir,
-            task_id
+            task_id,
         };
         prepare(&mut report.writer, &report.point_id_vec).await?;
         Ok(report)
     }
 
-    pub async fn write(&mut self, task_assess: &dyn TaskAssess)  -> Result<(), Error>{
-        report(&mut self.writer, task_assess, & self.point_id_vec).await?;
+    pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+        if self.task_id != task_assess.id() {
+            return rerr!("400", "task_id mismatch");
+        }
+        report(&mut self.writer, task_assess, &self.point_id_vec).await?;
         match task_assess.state() {
             TaskState::Ok(_) => {}
             TaskState::Fail(_) => {
@@ -173,10 +178,10 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
     if pa_vec.is_empty() {
         vec.push(String::from(""));
     } else {
-        match pa_vec.last().unwrap().state(){
+        match pa_vec.last().unwrap().state() {
             PointState::Fail(json) => {
                 vec.push(json.to_string());
-            },
+            }
             PointState::Err(e) => {
                 vec.push(e.to_string());
             }

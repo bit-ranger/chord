@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use async_std::fs::{read_dir, rename};
+use async_std::fs::{read_dir};
 use async_std::task::Builder;
 use futures::StreamExt;
 
@@ -63,33 +63,29 @@ async fn run_task<P: AsRef<Path>>(
     }
 }
 
-async fn run_task0<P: AsRef<Path>>(work_path: P,
-                                   task_path: P,
+async fn run_task0<P: AsRef<Path>>(output_dir: P,
+                                   input_dir: P,
                                    _execution_id: &str,
                                    app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
-    let task_path = Path::new(task_path.as_ref());
-    let task_id = task_path.file_name().unwrap().to_str().unwrap();
+    let input_dir = Path::new(input_dir.as_ref());
+    let task_id = input_dir.file_name().unwrap().to_str().unwrap();
     chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_owned()));
 
-    debug!("task start {}", task_path.to_str().unwrap());
+    debug!("task start {}", input_dir.to_str().unwrap());
 
-    let flow_path = task_path.clone().join("flow.yml");
-
-    let flow = chord_port::load::flow::yml::load(&flow_path)?;
+    let flow_file = input_dir.clone().join("flow.yml");
+    let flow = chord_port::load::flow::yml::load(&flow_file)?;
     let flow = Flow::new(flow.clone())?;
     let flow = Arc::new(flow);
 
     //read
-    let data_path = task_path.clone().join("data.csv");
+    let data_file = input_dir.clone().join("data.csv");
     let case_batch_size = 99999;
-    let mut data_loader = chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
-
+    let mut data_loader = chord_port::load::data::csv::Loader::new(data_file, case_batch_size).await?;
 
     //write
-    let result_path = work_path.as_ref().join(format!("{}_result.csv", task_id));
-    let mut result_writer = chord_port::report::csv::from_path(result_path.clone()).await?;
-    chord_port::report::csv::prepare(&mut result_writer, flow.as_ref()).await?;
-
+    let mut assess_reporter = chord_port::report::csv::Reporter::new(output_dir,
+                                                                     task_id, &flow).await?;
     //runner
     let mut runner = chord_flow::Runner::new(app_ctx, flow.clone(), String::from(task_id)).await?;
 
@@ -100,18 +96,15 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
 
         let task_assess = runner.run(data).await;
 
-        let _ = chord_port::report::csv::report(&mut result_writer, task_assess.as_ref(), flow.as_ref()).await?;
+        let _ = assess_reporter.write(task_assess.as_ref()).await?;
 
-        match task_assess.state() {
-            TaskState::Ok(_) => {}
-            TaskState::Fail(_) => {
-                total_task_state = TaskState::Fail(vec![]);
-            }
+        match task_assess.state(){
             TaskState::Err(e) => {
-                let result_path_new = work_path.as_ref().join(format!("{}_result_E.csv", task_id));
-                let _ = rename(result_path, result_path_new).await;
-                return Ok(TaskState::Err(e.clone()));
-            }
+                total_task_state = TaskState::Err(e.clone());
+                break;
+            },
+            TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
+            _ => ()
         }
 
         if data_len < case_batch_size {
@@ -119,15 +112,9 @@ async fn run_task0<P: AsRef<Path>>(work_path: P,
         }
     }
 
-    let task_state_view = match total_task_state {
-        TaskState::Ok(_) => "O",
-        TaskState::Err(_) => "E",
-        TaskState::Fail(_) => "F",
-    };
+    data_loader.close().await?;
+    assess_reporter.close().await?;
 
-    let result_path_new = work_path.as_ref().join(format!("{}_result_{}.csv", task_id, task_state_view));
-    rename(result_path, result_path_new).await.unwrap();
-
-    debug!("task end {}", task_path.to_str().unwrap());
+    debug!("task end {}", input_dir.to_str().unwrap());
     return Ok(total_task_state);
 }

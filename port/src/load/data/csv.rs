@@ -25,6 +25,10 @@ impl Loader {
     pub async fn load(&mut self) -> Result<Vec<Json>, Error>{
         load(&mut self.reader, self.size_limit).await
     }
+
+    pub async fn close(self) -> Result<(),Error>{
+        Ok(())
+    }
 }
 
 async fn load<R: std::io::Read>(reader: &mut Reader<R>, size_limit: usize) -> Result<Vec<Json>, Error> {

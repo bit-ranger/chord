@@ -2,27 +2,76 @@ use chord_common::case::{CaseState, CaseAssess};
 use chord_common::error::Error;
 use chord_common::point::PointState;
 use csv::Writer;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use chord_common::flow::Flow;
 use std::fs::File;
 use chord_common::task::{TaskAssess, TaskState};
 use chord_common::err;
+use async_std::fs::{rename};
 
 
-pub async fn from_writer<W: std::io::Write>(writer: W) -> Writer<W> {
-    csv::WriterBuilder::new().from_writer(writer)
+pub struct Reporter {
+    writer: Writer<File>,
+    point_id_vec: Vec<String>,
+    total_task_state: TaskState,
+    report_dir: PathBuf,
+    task_id: String
 }
 
-pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
+impl Reporter {
+    pub async fn new<P: AsRef<Path>, T: Into<String>>(report_dir: P, task_id: T, flow: &Flow) -> Result<Reporter, Error>{
+        let report_dir = PathBuf::from(report_dir.as_ref());
+        let task_id = task_id.into();
+        let report_file = report_dir.join(format!("{}_result.csv", task_id));
+        let mut report = Reporter {
+            writer: from_path(report_file).await?,
+            point_id_vec: flow.case_point_id_vec()?,
+            total_task_state: TaskState::Ok(vec![]),
+            report_dir,
+            task_id
+        };
+        prepare(&mut report.writer, &report.point_id_vec).await?;
+        Ok(report)
+    }
+
+    pub async fn write(&mut self, task_assess: &dyn TaskAssess)  -> Result<(), Error>{
+        report(&mut self.writer, task_assess, & self.point_id_vec).await?;
+        match task_assess.state() {
+            TaskState::Ok(_) => {}
+            TaskState::Fail(_) => {
+                self.total_task_state = TaskState::Fail(vec![]);
+            }
+            TaskState::Err(e) => {
+                self.total_task_state = TaskState::Err(e.clone());
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn close(self) -> Result<(), Error> {
+        let task_state_view = match self.total_task_state {
+            TaskState::Ok(_) => "O",
+            TaskState::Err(_) => "E",
+            TaskState::Fail(_) => "F",
+        };
+
+        let report_file = self.report_dir.join(format!("{}_result.csv", self.task_id));
+        let report_file_new = self.report_dir.join(format!("{}_result_{}.csv", self.task_id, task_state_view));
+        rename(report_file, report_file_new).await?;
+        Ok(())
+    }
+}
+
+
+async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
     csv::WriterBuilder::new().from_path(path).map_err(|e| err!("csv", e.to_string()))
 }
 
-pub async fn prepare<W: std::io::Write>(writer: &mut Writer<W>, flow: &Flow) -> Result<(), Error> {
-    writer.write_record(create_head(flow)).map_err(|e| err!("csv", e.to_string()))
+async fn prepare<W: std::io::Write>(writer: &mut Writer<W>, pt_id_vec: &Vec<String>) -> Result<(), Error> {
+    writer.write_record(create_head(pt_id_vec)).map_err(|e| err!("csv", e.to_string()))
 }
 
-fn create_head(flow: &Flow) -> Vec<String> {
-    let pt_id_vec: Vec<String> = flow.case_point_id_vec().unwrap_or(vec!());
+fn create_head(pt_id_vec: &Vec<String>) -> Vec<String> {
     let mut vec: Vec<String> = vec![];
     vec.push(String::from("case_state"));
     vec.push(String::from("case_info"));
@@ -38,12 +87,7 @@ fn create_head(flow: &Flow) -> Vec<String> {
 }
 
 
-
-pub async fn write_record<W: std::io::Write>(writer: &mut Writer<W>, record: &Vec<String>) -> Result<(), Error> {
-    Ok(writer.write_record(record)?)
-}
-
-pub async fn report<W: std::io::Write>(writer: &mut Writer<W>, task_assess: &dyn TaskAssess, flow: &Flow) -> Result<(), Error> {
+async fn report<W: std::io::Write>(writer: &mut Writer<W>, task_assess: &dyn TaskAssess, pt_id_vec: &Vec<String>) -> Result<(), Error> {
     let empty = &vec![];
     let ca_vec = match task_assess.state() {
         TaskState::Ok(ca_vec) => ca_vec,
@@ -55,7 +99,7 @@ pub async fn report<W: std::io::Write>(writer: &mut Writer<W>, task_assess: &dyn
         return Ok(());
     }
 
-    let head = create_head(flow);
+    let head = create_head(pt_id_vec);
     for sv in ca_vec.iter().map(|ca| to_value_vec(ca.as_ref(), head.len())) {
         writer.write_record(&sv)?
     }

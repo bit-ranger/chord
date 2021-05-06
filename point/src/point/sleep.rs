@@ -14,7 +14,7 @@ impl PointRunner for Sleep {
     }
 }
 
-pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
+pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>{
     Ok(Box::new(Sleep {}))
 }
 

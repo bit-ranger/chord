@@ -13,7 +13,7 @@ impl PointRunner for Md5 {
     }
 }
 
-pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
+pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>{
     Ok(Box::new(Md5 {}))
 }
 

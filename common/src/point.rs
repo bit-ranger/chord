@@ -11,6 +11,8 @@ pub trait PointArg: Sync+Send {
     fn config(&self) -> &Json;
 
     fn render(&self, text: &str) -> Result<String, Error>;
+
+    fn is_shared(&self, text: &str) -> bool;
 }
 
 #[async_trait]
@@ -22,7 +24,7 @@ pub trait PointRunner : Sync+Send{
 #[async_trait]
 pub trait PointRunnerFactory : Sync+Send{
 
-    async fn create_runner(&self, kind: &str, config: &Json) -> Result<Box<dyn PointRunner>, Error>;
+    async fn create_runner(&self, kind: &str, arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>;
 }
 
 #[derive(Debug, Clone)]

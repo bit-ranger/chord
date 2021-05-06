@@ -5,7 +5,7 @@ use log::{debug, warn, trace};
 use chord_common::rerr;
 use chord_common::error::Error;
 use chord_common::task::{TaskState, TaskAssess};
-use chord_common::value::{Json, Map};
+use chord_common::value::{Json, Map, to_json};
 use res::TaskAssessStruct;
 
 use crate::flow::case;
@@ -19,6 +19,8 @@ use chord_common::flow::Flow;
 use async_std::task_local;
 use std::cell::RefCell;
 use crate::CASE_ID;
+use handlebars::{Context};
+use crate::flow::point::arg::PointArgStruct;
 
 pub mod res;
 
@@ -41,10 +43,12 @@ impl Runner {
                      flow: Arc<Flow>,
                      id: String) -> Result<Runner, Error>{
         let pre_ctx=  pre_ctx(flow_ctx.clone(), flow.clone(), id.clone()).await?;
+        let pre_ctx= Arc::new(pre_ctx);
 
+        let render_context = create_render_context(flow_ctx.as_ref(), flow.as_ref(), pre_ctx.as_ref());
         let mut point_runner_vec = vec![];
         for pid in  flow.case_point_id_vec()?{
-            let pr = create_point_runner(flow_ctx.as_ref(), flow.as_ref(), pid.as_str()).await?;
+            let pr = create_point_runner(flow_ctx.as_ref(), flow.as_ref(), &render_context, pid.as_str()).await?;
             point_runner_vec.push((pid, pr));
         }
 
@@ -53,7 +57,7 @@ impl Runner {
             flow,
             point_runner_vec: Arc::new(point_runner_vec),
             id,
-            pre_ctx: Arc::new(pre_ctx),
+            pre_ctx,
             case_id_offset: 1
         };
         Ok(runner)
@@ -137,9 +141,10 @@ async fn pre_arg(flow_ctx: Arc<dyn FlowContext>, flow: Arc<Flow>) -> Result<Opti
     return if pre_pt_id_vec.is_empty() {
         Ok(None)
     } else {
+        let render_context = create_render_context(flow_ctx.as_ref(), flow.as_ref(), &Vec::new());
         let mut point_runner_vec = vec![];
         for pid in  pre_pt_id_vec{
-            let pr = create_point_runner(flow_ctx.as_ref(), flow.as_ref(), pid.as_str()).await?;
+            let pr = create_point_runner(flow_ctx.as_ref(), flow.as_ref(), &render_context, pid.as_str()).await?;
             point_runner_vec.push((pid, pr));
         }
 
@@ -193,11 +198,30 @@ async fn pre_ctx(flow_ctx: Arc<dyn FlowContext>,
     }
 }
 
+fn create_render_context(_: &dyn FlowContext, flow: &Flow, context_ext:  &Vec<(String, Json)>) -> Context{
+    let mut render_data: Map = Map::new();
+    let config_def = flow.task_def();
+    match config_def {
+        Some(def) => {
+            render_data.insert(String::from("def"), to_json(def).unwrap());
+        }
+        None => {}
+    }
 
-async fn create_point_runner(flow_ctx: &dyn FlowContext, flow: &Flow, point_id: &str) -> Result<Box<dyn PointRunner>, Error>{
+    for (k,v) in context_ext.iter(){
+        render_data.insert(k.clone(), v.clone());
+    }
+
+    return Context::wraps(render_data).unwrap();
+}
+
+async fn create_point_runner(flow_ctx: &dyn FlowContext,
+                             flow: &Flow,
+                             render_context: &Context,
+                             point_id: &str) -> Result<Box<dyn PointRunner>, Error>{
     let kind  = flow.point_kind(point_id);
-    let config = flow.point_config(point_id);
-    flow_ctx.get_point_runner_factory().create_runner(kind, config).await
+    let point_arg = PointArgStruct::new(flow, point_id, flow_ctx.get_handlebars(), render_context);
+    flow_ctx.get_point_runner_factory().create_runner(kind, &point_arg).await
 }
 
 

@@ -121,6 +121,19 @@ impl <'c, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'h, 'reg, 'r> {
     fn render(&self, text: &str) -> Result<String, Error> {
         return render(self.handlebars, self.render_context, text);
     }
+
+    fn is_shared(&self, text: &str) -> bool {
+        if let Some(_) = text.find("{{data."){
+            return false;
+        }
+        if let Some(_) = text.find("{{dyn."){
+            return false;
+        }
+        if let Some(_) = text.find("{{res."){
+            return false;
+        }
+        return true;
+    }
 }
 
 unsafe impl <'c, 'h, 'reg, 'r> Send for PointArgStruct<'c, 'h, 'reg, 'r>

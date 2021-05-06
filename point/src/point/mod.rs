@@ -1,7 +1,6 @@
 use chord_common::rerr;
-use chord_common::point::{PointRunner};
+use chord_common::point::{PointRunner, PointArg};
 use chord_common::error::Error;
-use chord_common::value::Json;
 
 pub mod sleep;
 
@@ -18,23 +17,23 @@ pub mod redis;
 #[cfg(feature = "pt_mongodb")]
 pub mod mongodb;
 
-pub async fn create_kind_runner(kind: &str, config: &Json) -> Result<Box<dyn PointRunner>, Error>{
+pub async fn create_kind_runner(kind: &str, arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>{
 
     let value = match kind.trim() {
-        "sleep" => sleep::create(config).await,
+        "sleep" => sleep::create(arg).await,
 
         #[cfg(feature = "pt_jsonapi")]
-        "jsonapi" => jsonapi::create(config).await,
+        "jsonapi" => jsonapi::create(arg).await,
         #[cfg(feature = "pt_md5")]
-        "md5" => md5::create(config).await,
+        "md5" => md5::create(arg).await,
         #[cfg(feature = "pt_dubbo")]
-        "dubbo" => dubbo::create(config).await,
+        "dubbo" => dubbo::create(arg).await,
         #[cfg(feature = "pt_mysql")]
-        "mysql" => mysql::create(config).await,
+        "mysql" => mysql::create(arg).await,
         #[cfg(feature = "pt_redis")]
-        "redis" => redis::create(config).await,
+        "redis" => redis::create(arg).await,
         #[cfg(feature = "pt_mongodb")]
-        "mongodb" => mongodb::create(config).await,
+        "mongodb" => mongodb::create(arg).await,
         _ => rerr!("002", format!("unsupported point kind {}", kind).as_str())
     };
 

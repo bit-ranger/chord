@@ -1,11 +1,26 @@
 use chord_common::value::{Json, Map, Number};
-use chord_common::point::{PointArg, PointValue};
+use chord_common::point::{PointArg, PointValue, PointRunner, Pin, Future};
 use chord_common::{err};
 use log::{debug};
 use rbatis::rbatis::Rbatis;
 use rbatis::plugin::page::{Page, PageRequest};
+use chord_common::error::Error;
 
-pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
+struct Mysql {}
+
+impl PointRunner for Mysql {
+
+    fn run<'a>(&self, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue> + Send + 'a>> {
+        Box::pin(run(arg))
+    }
+}
+
+pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
+    Ok(Box::new(Mysql {}))
+}
+
+
+async fn run(pt_arg: &dyn PointArg) -> PointValue {
     let url = pt_arg.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
     let sql = pt_arg.config_rendered(vec!["sql"]).ok_or(err!("011", "missing sql"))?;
     let rb = Rbatis::new();

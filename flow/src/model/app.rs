@@ -2,34 +2,34 @@ use std::borrow::Borrow;
 
 use handlebars::Handlebars;
 
-use chord_common::point::PointRunner;
+use chord_common::point::{PointRunnerFactory};
 
 use crate::model::helper::{BOOL_HELPER, NUM_HELPER, ALL_HELPER, ANY_HELPER};
 
-pub trait AppContext: Sync+Send{
+pub trait FlowContext: Sync+Send{
 
     fn get_handlebars(&self) -> &Handlebars;
 
-    fn get_point_runner(&self) -> &dyn PointRunner;
+    fn get_point_runner_factory(&self) -> &dyn PointRunnerFactory;
 }
 
 
-pub struct AppContextStruct<'reg> {
+pub struct FlowContextStruct<'reg> {
 
     handlebars: Handlebars<'reg>,
-    point_runner: Box<dyn PointRunner>
+    point_runner: Box<dyn PointRunnerFactory>
 }
 
-impl <'reg> AppContextStruct<'reg> {
+impl <'reg> FlowContextStruct<'reg> {
 
-    pub fn new(pt_runner: Box<dyn PointRunner>) -> AppContextStruct<'reg>{
+    pub fn new(pt_runner: Box<dyn PointRunnerFactory>) -> FlowContextStruct<'reg>{
         let mut  handlebars = Handlebars::new();
         handlebars.register_helper("num", Box::new(NUM_HELPER));
         handlebars.register_helper("bool", Box::new(BOOL_HELPER));
         handlebars.register_helper("all", Box::new(ALL_HELPER));
         handlebars.register_helper("any", Box::new(ANY_HELPER));
 
-        AppContextStruct{
+        FlowContextStruct {
             handlebars,
             point_runner: pt_runner
         }
@@ -37,24 +37,24 @@ impl <'reg> AppContextStruct<'reg> {
 
 }
 
-impl <'reg> AppContext for AppContextStruct <'reg>{
+impl <'reg> FlowContext for FlowContextStruct<'reg>{
 
-    fn get_handlebars(self: &AppContextStruct<'reg>) -> & Handlebars<'reg>
+    fn get_handlebars(self: &FlowContextStruct<'reg>) -> & Handlebars<'reg>
     {
         self.handlebars.borrow()
     }
 
-    fn get_point_runner(self: &AppContextStruct<'reg>) -> & dyn PointRunner{
+    fn get_point_runner_factory(self: &FlowContextStruct<'reg>) -> &dyn PointRunnerFactory{
         self.point_runner.as_ref()
     }
 
 }
 
-unsafe impl<'reg> Send for AppContextStruct<'reg>
+unsafe impl<'reg> Send for FlowContextStruct<'reg>
 {
 }
 
-unsafe impl<'reg> Sync for AppContextStruct<'reg>
+unsafe impl<'reg> Sync for FlowContextStruct<'reg>
 {
 }
 

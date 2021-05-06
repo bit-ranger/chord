@@ -1,5 +1,5 @@
-use std::future::Future;
-use std::pin::Pin;
+pub use std::future::Future;
+pub use std::pin::Pin;
 
 
 use crate::error::Error;
@@ -19,7 +19,12 @@ pub trait PointArg: Sync+Send {
 
 pub trait PointRunner: Sync+Send{
 
-    fn run<'a>(&self, kind: &'a str, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ Send + 'a>>;
+    fn run<'a>(&self, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ Send + 'a>>;
+}
+
+pub trait PointRunnerFactory: Sync+Send {
+
+    fn create_runner<'k>(&self, kind: &'k str, config: &'k Json) -> Pin<Box<dyn Future<Output=Result<Box<dyn PointRunner>, Error>>+ Send + 'k>>;
 }
 
 #[derive(Debug, Clone)]

@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 use chord_common::error::Error;
-use chord_flow::AppContext;
-use chord_point::PointRunnerDefault;
+use chord_flow::FlowContext;
+use chord_point::PointRunnerFactoryDefault;
 use crate::app::conf::Config;
 
 use crate::biz;
@@ -48,7 +48,7 @@ pub struct Rep {
 pub struct Ctl {
     input: PathBuf,
     ssh_key_private: PathBuf,
-    app_ctx: Arc<dyn AppContext>,
+    app_ctx: Arc<dyn FlowContext>,
 }
 
 static mut JOB_CTL: Option<Ctl> = Option::None;
@@ -61,7 +61,7 @@ impl Ctl {
         Ok(Ctl {
             input: Path::new(input).to_path_buf(),
             ssh_key_private: Path::new(ssh_key_private).to_path_buf(),
-            app_ctx: chord_flow::create_app_context(Box::new(PointRunnerDefault::new().await?)).await,
+            app_ctx: chord_flow::create_flow_context(Box::new(PointRunnerFactoryDefault::new().await?)).await,
         })
     }
 
@@ -108,7 +108,7 @@ async fn get_mongodb() -> Arc<Database>{
 }
 
 async fn checkout_run(
-    app_ctx: Arc<dyn AppContext>,
+    app_ctx: Arc<dyn FlowContext>,
     input: PathBuf,
     ssh_key_pri: PathBuf,
     req: Req,
@@ -216,7 +216,7 @@ async fn checkout(ssh_key_private: &Path,
         .clone(git_url, into)
 }
 
-async fn run(app_ctx: Arc<dyn AppContext>,
+async fn run(app_ctx: Arc<dyn FlowContext>,
              job_path: PathBuf,
              job_name: String,
              exec_id: String) {

@@ -11,12 +11,12 @@ use log::info;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
-use chord_flow::AppContext;
+use chord_flow::FlowContext;
 
 pub async fn run<P: AsRef<Path>>(input_dir: P,
                                  output_dir: P,
                                  execution_id: String,
-                                 app_ctx: Arc<dyn AppContext>) -> Vec<TaskState> {
+                                 app_ctx: Arc<dyn FlowContext>) -> Vec<TaskState> {
     let job_path_str = input_dir.as_ref().to_str().unwrap();
 
 
@@ -56,7 +56,7 @@ async fn run_task<P: AsRef<Path>>(
     input_dir: P,
     output_dir: P,
     execution_id: String,
-    app_ctx: Arc<dyn AppContext>) -> TaskState
+    app_ctx: Arc<dyn FlowContext>) -> TaskState
 {
     let input_dir = Path::new(input_dir.as_ref());
     let rt = run_task0(input_dir, output_dir, execution_id, app_ctx).await;
@@ -70,9 +70,9 @@ async fn run_task<P: AsRef<Path>>(
 }
 
 async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(input_dir: I,
-                                   output_dir: O,
-                                   _execution_id: String,
-                                   app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
+                                                   output_dir: O,
+                                                   _execution_id: String,
+                                                   app_ctx: Arc<dyn FlowContext>) -> Result<TaskState, Error> {
     let input_dir = Path::new(input_dir.as_ref());
     let task_id = input_dir.file_name().unwrap().to_str().unwrap();
     chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_owned()));

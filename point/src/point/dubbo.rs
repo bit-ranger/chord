@@ -1,12 +1,27 @@
 use log::{debug};
 use async_std::net::TcpStream;
-use async_std::prelude::*;
 use chord_common::value::{Json};
 use std::str::FromStr;
-use chord_common::point::{PointArg, PointValue};
+use chord_common::point::{PointArg, PointValue, PointRunner, Pin, Future};
 use chord_common::{rerr};
+use chord_common::error::Error;
+use async_std::prelude::*;
 
-pub async fn run(arg: &dyn PointArg) -> PointValue {
+
+struct Dubbo {}
+
+impl PointRunner for Dubbo {
+
+    fn run<'a>(&self, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue> + Send + 'a>> {
+        Box::pin(run(arg))
+    }
+}
+
+pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
+    Ok(Box::new(Dubbo {}))
+}
+
+async fn run(arg: &dyn PointArg) -> PointValue {
     let mut server_stream = match TcpStream::connect(arg.config_rendered(vec!["address"]).unwrap()).await {
         Ok(server_stream) => server_stream,
         Err(e) => {

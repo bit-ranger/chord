@@ -11,7 +11,7 @@ use log::info;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
-use chord_flow::AppContext;
+use chord_flow::FlowContext;
 use chord_port::report::mongodb::{Collection, Database, Document, Reporter};
 
 use crate::app::conf::Config;
@@ -19,7 +19,7 @@ use crate::app::conf::Config;
 pub async fn run<P: AsRef<Path>>(job_path: P,
                                  job_name: String,
                                  exec_id: String,
-                                 app_ctx: Arc<dyn AppContext>,
+                                 app_ctx: Arc<dyn FlowContext>,
                                  db: Arc<Database>) -> Result<Vec<TaskState>, Error>{
 
     debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
@@ -63,7 +63,7 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
 async fn run_task<P: AsRef<Path>>(
     input_dir: P,
     exec_id: String,
-    app_ctx: Arc<dyn AppContext>,
+    app_ctx: Arc<dyn FlowContext>,
     collection: Arc<Collection>
 ) -> TaskState
 {
@@ -80,7 +80,7 @@ async fn run_task<P: AsRef<Path>>(
 
 async fn run_task0<P: AsRef<Path>>(task_path: P,
                                    exec_id: String,
-                                   app_ctx: Arc<dyn AppContext>,
+                                   app_ctx: Arc<dyn FlowContext>,
                                    collection: Arc<Collection>) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let task_id = task_path.file_name().unwrap().to_str().unwrap();

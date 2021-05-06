@@ -4,14 +4,26 @@ use surf::{Body, RequestBuilder, Response, Url};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 
-use chord_common::point::{PointArg, PointValue};
-use chord_common::{rerr, err};
-
-use chord_common::value::{Json, Map, Number};
+use chord_common::{err, rerr};
 use chord_common::error::Error;
+use chord_common::point::{PointArg, PointValue, PointRunner, Pin, Future};
+use chord_common::value::{Json, Map, Number};
+
+struct Jsonapi {}
+
+impl PointRunner for Jsonapi {
+
+    fn run<'a>(&self, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue> + Send + 'a>> {
+        Box::pin(run(arg))
+    }
+}
+
+pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
+    Ok(Box::new(Jsonapi {}))
+}
 
 
-pub async fn run(context: &dyn PointArg) -> PointValue{
+async fn run(context: &dyn PointArg) -> PointValue{
     return run0(context).await.map_err(|e| e.0);
 }
 

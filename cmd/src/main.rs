@@ -5,7 +5,7 @@ use std::time::SystemTime;
 use chord_common::{rerr};
 use chord_common::error::Error;
 use chord_common::task::TaskState;
-use chord_point::PointRunnerDefault;
+use chord_point::PointRunnerFactoryDefault;
 use itertools::Itertools;
 use getopts::Matches;
 
@@ -47,8 +47,8 @@ async fn main() -> Result<(),Error> {
     let log_file_path = output_dir.join("log.log");
     let log_handler = logger::init(target_level(matches), &log_file_path).await?;
 
-    let app_ctx = chord_flow::create_app_context(Box::new(PointRunnerDefault::new().await?)).await;
-    let task_state_vec = job::run(input_dir, output_dir, execution_id, app_ctx).await;
+    let flow_ctx = chord_flow::create_flow_context(Box::new(PointRunnerFactoryDefault::new().await?)).await;
+    let task_state_vec = job::run(input_dir, output_dir, execution_id, flow_ctx).await;
 
     logger::terminal(log_handler).await?;
 

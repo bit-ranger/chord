@@ -5,15 +5,15 @@ use chord_common::value::Json;
 use chord_common::flow::Flow;
 
 use crate::flow::point::arg::PointArgStruct;
-use crate::model::app::AppContext;
+use crate::model::app::FlowContext;
 use async_std::sync::Arc;
+use chord_common::point::PointRunner;
 
-#[derive(Debug)]
 pub struct CaseArgStruct {
     id: usize,
     flow: Arc<Flow>,
+    point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
     data: Json,
-    point_id_vec: Vec<String>,
     context_ext:  Arc<Vec<(String, Json)>>
 }
 
@@ -21,15 +21,15 @@ pub struct CaseArgStruct {
 impl CaseArgStruct{
     pub fn new(id: usize,
                flow: Arc<Flow>,
+               point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
                data: Json,
-               point_id_vec: Vec<String>,
                context_ext: Arc<Vec<(String, Json)>>
     ) -> CaseArgStruct {
         let context = CaseArgStruct {
             id,
             flow,
+            point_runner_vec,
             data,
-            point_id_vec,
             context_ext
         };
 
@@ -59,7 +59,7 @@ impl CaseArgStruct{
 
     pub fn create_point_arg<'app, 'h, 'reg, 'r>(self: &CaseArgStruct,
                                                 point_id: &str,
-                                                app_ctx: &'app dyn AppContext,
+                                                app_ctx: &'app dyn FlowContext,
                                                 render_ctx: &'r RenderContext
 
     ) -> Option<PointArgStruct<'_, 'h, 'reg, 'r>>
@@ -73,9 +73,9 @@ impl CaseArgStruct{
             app_ctx.get_handlebars(),
             render_ctx))
     }
-    
-    pub fn point_id_vec(self: &CaseArgStruct) -> &Vec<String> {
-        &self.point_id_vec
+
+    pub fn point_runner_vec(self: &CaseArgStruct) -> &Vec<(String, Box<dyn PointRunner>)> {
+        self.point_runner_vec.as_ref()
     }
 
 

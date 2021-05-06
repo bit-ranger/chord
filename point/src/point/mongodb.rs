@@ -2,10 +2,25 @@ use mongodb::{Client, options::ClientOptions};
 use mongodb::bson::{Document, to_document};
 
 use chord_common::{err, rerr};
-use chord_common::point::{PointArg, PointValue};
+use chord_common::point::{PointArg, PointValue, PointRunner, Pin, Future};
 use chord_common::value::{Json, from_str};
+use chord_common::error::Error;
 
-pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
+struct Mongodb {}
+
+impl PointRunner for Mongodb {
+
+    fn run<'a>(&self, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue> + Send + 'a>> {
+        Box::pin(run(arg))
+    }
+}
+
+pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
+    Ok(Box::new(Mongodb {}))
+}
+
+
+async fn run(pt_arg: &dyn PointArg) -> PointValue {
     let url = pt_arg.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
     let database = pt_arg.config_rendered(vec!["database"]).ok_or(err!("010", "missing database"))?;
     let collection = pt_arg.config_rendered(vec!["collection"]).ok_or(err!("010", "missing collection"))?;

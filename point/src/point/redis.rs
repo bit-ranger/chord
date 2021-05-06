@@ -1,9 +1,25 @@
 use chord_common::value::{Json, Number, from_str};
 use redis::{Value as RedisValue};
-use chord_common::point::{PointArg, PointValue};
+use chord_common::point::{PointArg, PointValue, PointRunner, Pin, Future};
 use chord_common::{err};
+use chord_common::error::Error;
 
-pub async fn run(pt_arg: &dyn PointArg) -> PointValue {
+struct Redis {}
+
+impl PointRunner for Redis {
+
+    fn run<'a>(&self, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue> + Send + 'a>> {
+        Box::pin(run(arg))
+    }
+}
+
+pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
+    Ok(Box::new(Redis {}))
+}
+
+
+
+async fn run(pt_arg: &dyn PointArg) -> PointValue {
     let url = pt_arg.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
     let cmd = pt_arg.config_rendered(vec!["cmd"]).ok_or(err!("012", "missing cmd"))?;
 

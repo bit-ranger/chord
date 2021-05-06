@@ -1,11 +1,11 @@
 use chrono::Utc;
 
 use chord_common::error::Error;
-use chord_common::point::{PointValue};
+use chord_common::point::{PointValue, PointRunner};
 use res::PointAssessStruct;
 
 use crate::flow::point::arg::PointArgStruct;
-use crate::model::app::AppContext;
+use crate::model::app::FlowContext;
 use chord_common::point::{PointState};
 use async_std::future::timeout;
 use log::{trace};
@@ -14,11 +14,11 @@ pub mod arg;
 pub mod res;
 
 
-pub async fn run(app_ctx: &dyn AppContext, arg: &PointArgStruct<'_, '_, '_, '_>) -> PointAssessStruct
+pub async fn run(_: &dyn FlowContext, arg: &PointArgStruct<'_, '_, '_, '_>, runner: &dyn PointRunner) -> PointAssessStruct
 {
     trace!("point start {}", arg.id());
     let start = Utc::now();
-    let future = app_ctx.get_point_runner().run(arg.kind(), arg);
+    let future = runner.run(arg);
     let timeout_value = timeout(arg.timeout(), future).await;
     let value = match timeout_value {
         Ok(v) => v,

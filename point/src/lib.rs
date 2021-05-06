@@ -1,32 +1,33 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use chord_common::point::{PointArg, PointRunner};
+use chord_common::point::{PointRunner, PointRunnerFactory};
 use chord_common::error::Error;
+use chord_common::value::Json;
 
 mod point;
 
-pub struct PointRunnerDefault;
+pub struct PointRunnerFactoryDefault;
 
-impl PointRunnerDefault{
-    pub async fn new() -> Result<PointRunnerDefault, Error>{
-        Ok(PointRunnerDefault{})
+impl PointRunnerFactoryDefault {
+    pub async fn new() -> Result<PointRunnerFactoryDefault, Error>{
+        Ok(PointRunnerFactoryDefault {})
     }
 }
 
-impl PointRunner for PointRunnerDefault {
+impl PointRunnerFactory for PointRunnerFactoryDefault {
 
-    fn run<'a>(&self, kind: &'a str, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=chord_common::point::PointValue> + Send  + 'a>> {
-        Box::pin(point::run_point_kind(kind, arg))
+    fn create_runner<'k>(&self, kind: &'k str, config: &'k Json) -> Pin<Box<dyn Future<Output=Result<Box<dyn PointRunner>, Error>> + Send + 'k>> {
+        Box::pin(point::create_kind_runner(kind, config))
     }
 }
 
 
-unsafe impl Send for PointRunnerDefault
+unsafe impl Send for PointRunnerFactoryDefault
 {
 }
 
-unsafe impl Sync for PointRunnerDefault
+unsafe impl Sync for PointRunnerFactoryDefault
 {
 }
 

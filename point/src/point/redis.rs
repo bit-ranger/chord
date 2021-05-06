@@ -20,15 +20,19 @@ pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
 
 
 
-async fn run(pt_arg: &dyn PointArg) -> PointValue {
-    let url = pt_arg.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
-    let cmd = pt_arg.config_rendered(vec!["cmd"]).ok_or(err!("012", "missing cmd"))?;
+async fn run(arg: &dyn PointArg) -> PointValue {
+    let url = arg.config()["url"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing url"))??;
+    let cmd = arg.config()["cmd"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing cmd"))??;
 
     let client = redis::Client::open(url)?;
     let mut con = client.get_async_connection().await?;
 
     let mut command = redis::cmd(cmd.as_str());
-    let args_opt = pt_arg.config()["args"].as_array();
+    let args_opt = arg.config()["args"].as_array();
     if args_opt.is_some(){
         for arg in args_opt.unwrap() {
             command.arg(arg.to_string().as_str());

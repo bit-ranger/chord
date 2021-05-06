@@ -8,11 +8,9 @@ pub type PointValue = std::result::Result<Json, Error>;
 
 pub trait PointArg: Sync+Send {
 
-    fn config_rendered(&self, path: Vec<&str>) -> Option<String>;
-
     fn config(&self) -> &Json;
 
-    fn render(&self, text: &str) -> Result<String,Error>;
+    fn render(&self, text: &str) -> Result<String, Error>;
 }
 
 #[async_trait]

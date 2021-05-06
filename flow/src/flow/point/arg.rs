@@ -113,28 +113,6 @@ pub fn render(handlebars: & Handlebars<'_>,
 
 impl <'c, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'h, 'reg, 'r> {
 
-
-    fn config_rendered(self: &PointArgStruct<'c, 'h, 'reg, 'r>, path: Vec<&str>) -> Option<String>
-    {
-        let config = self.flow.point_config(self.id());
-
-        let raw_config = path.iter()
-            .fold(config,
-                  |acc, k| acc[k].borrow()
-            );
-
-        match raw_config.as_str(){
-            Some(s) => {
-                match render(self.handlebars, self.render_context, s){
-                    Ok(s) => Some(s),
-                    Err(_) => None
-                }
-            },
-            None=> None
-        }
-
-    }
-
     fn config(&self) -> &Json {
         let config = self.flow.point_config(self.id());
         return config;

@@ -21,12 +21,22 @@ pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
 }
 
 
-async fn run(pt_arg: &dyn PointArg) -> PointValue {
-    let url = pt_arg.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
-    let database = pt_arg.config_rendered(vec!["database"]).ok_or(err!("010", "missing database"))?;
-    let collection = pt_arg.config_rendered(vec!["collection"]).ok_or(err!("010", "missing collection"))?;
-    let operation = pt_arg.config_rendered(vec!["operation"]).ok_or(err!("010", "missing operation"))?;
-    let arg = pt_arg.config_rendered(vec!["arg"]).ok_or(err!("010", "missing arg"))?;
+async fn run(arg: &dyn PointArg) -> PointValue {
+    let url = arg.config()["url"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing url"))??;
+    let database = arg.config()["database"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing database"))??;
+    let collection = arg.config()["collection"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing collection"))??;
+    let op = arg.config()["operation"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing operation"))??;
+    let op_arg = arg.config()["arg"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing arg"))??;
 
     // Parse a connection string into an options struct.
     let client_options = ClientOptions::parse(url.as_str()).await?;
@@ -35,9 +45,9 @@ async fn run(pt_arg: &dyn PointArg) -> PointValue {
     let db = client.database(database.as_str());
     let collection = db.collection::<Document>(collection.as_str());
 
-    match operation.as_str() {
+    match op.as_str() {
         "insert_many" => {
-            let arg_json:Json = from_str(arg.as_str())?;
+            let arg_json:Json = from_str(op_arg.as_str())?;
             match arg_json {
                 Json::Array(arr) => {
                     let doc_vec: Vec<Document> = arr

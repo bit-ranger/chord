@@ -3,7 +3,7 @@ use async_std::net::TcpStream;
 use chord_common::value::{Json};
 use std::str::FromStr;
 use chord_common::point::{PointArg, PointValue, PointRunner, async_trait};
-use chord_common::{rerr};
+use chord_common::{rerr, err};
 use chord_common::error::Error;
 use async_std::prelude::*;
 
@@ -23,14 +23,19 @@ pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
 }
 
 async fn run(arg: &dyn PointArg) -> PointValue {
-    let mut server_stream = match TcpStream::connect(arg.config_rendered(vec!["address"]).unwrap()).await {
+    let address = arg.config()["address"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing address"))??;
+    let mut server_stream = match TcpStream::connect(address).await {
         Ok(server_stream) => server_stream,
         Err(e) => {
             return rerr!("connection error", format!("{}", e));
         }
     };
 
-    let invoke = arg.config_rendered(vec!["invoke"]).unwrap();
+    let invoke = arg.config()["invoke"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing invoke"))??;
     let invoke = format!("invoke {}", invoke);
     server_stream.write_all(invoke.as_bytes()).await?;
 

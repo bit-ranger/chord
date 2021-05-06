@@ -21,9 +21,13 @@ pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
 }
 
 
-async fn run(pt_arg: &dyn PointArg) -> PointValue {
-    let url = pt_arg.config_rendered(vec!["url"]).ok_or(err!("010", "missing url"))?;
-    let sql = pt_arg.config_rendered(vec!["sql"]).ok_or(err!("011", "missing sql"))?;
+async fn run(arg: &dyn PointArg) -> PointValue {
+    let url = arg.config()["url"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing url"))??;
+    let sql = arg.config()["sql"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing sql"))??;
     let rb = Rbatis::new();
     rb.link(url.as_str()).await?;
 

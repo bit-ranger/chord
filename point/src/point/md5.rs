@@ -1,6 +1,7 @@
 use chord_common::value::Json;
 use chord_common::point::{PointArg, PointValue, PointRunner, async_trait};
 use chord_common::error::Error;
+use chord_common::{err};
 
 struct Md5 {}
 
@@ -17,8 +18,10 @@ pub async fn create(_: &Json) -> Result<Box<dyn PointRunner>, Error>{
 }
 
 
-async fn run(pt_arg: &dyn PointArg) -> PointValue {
-    let raw = pt_arg.config_rendered(vec!["raw"]).unwrap();
+async fn run(arg: &dyn PointArg) -> PointValue {
+    let raw = arg.config()["raw"].as_str()
+        .map(|s|arg.render(s))
+        .ok_or(err!("010", "missing raw"))??;
     let digest = md5::compute(raw);
     let digest = format!("{:x}", digest);
     return Ok(Json::String(digest));

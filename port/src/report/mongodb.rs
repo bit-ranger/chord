@@ -12,11 +12,13 @@ use chord_common::error::Error;
 use chord_common::point::{PointAssess, PointState};
 use chord_common::rerr;
 use chord_common::task::{TaskAssess, TaskState};
+use mongodb::options::UpdateOptions;
 
 pub struct Reporter {
     collection: Arc<Collection>,
     exec_id: String,
     task_id: String,
+    total_task_state: TaskState,
 }
 
 impl Reporter {
@@ -24,10 +26,23 @@ impl Reporter {
                            task_id: T,
                            exec_id: E) -> Result<Reporter, Error>
         where T: Into<String>, E: Into<String> {
+        let exec_id = exec_id.into();
+        let task_id = task_id.into();
+        collection.update_one(
+            doc! {
+                "exec_id": exec_id.as_str()
+            },
+            doc! {
+                "task_assess": []
+            },
+            Some(UpdateOptions::builder().upsert(Some(true)).build())
+        ).await?;
+
         Ok(Reporter {
             collection,
-            exec_id: exec_id.into(),
-            task_id: task_id.into(),
+            exec_id,
+            task_id,
+            total_task_state: TaskState::Ok(vec![]),
         })
     }
 
@@ -35,13 +50,28 @@ impl Reporter {
         if self.task_id != task_assess.id() {
             return rerr!("400", "task_id mismatch");
         }
+
+        if let TaskState::Err(_) = self.total_task_state {
+            return rerr!("500", "task is error");
+        }
+
+        match task_assess.state() {
+            TaskState::Ok(_) => {}
+            TaskState::Fail(_) => {
+                self.total_task_state = TaskState::Fail(vec![]);
+            }
+            TaskState::Err(e) => {
+                self.total_task_state = TaskState::Err(e.clone());
+            }
+        }
+
         let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()}, None).await?;
         if let None = task_doc {
             self.collection.update_one(
                 doc! { "exec_id": self.exec_id.as_str()},
                 doc! { "$push": {
                                     "task_assess":
-                                    ta_doc(task_assess)
+                                    ta_doc_init(task_assess)
                                 }
                             },
                 None,
@@ -58,44 +88,55 @@ impl Reporter {
                                     {
                                         "$each": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
                                     }
-                                }
+                                },
+                            "end": task_assess.end()
                             },
                     None,
                 ).await?;
             }
-            TaskState::Err(_) => ()
+            TaskState::Err(e) => {
+                self.collection.update_one(
+                    doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()},
+                    doc! {
+                                "state": "E",
+                                "end": task_assess.end(),
+                                "error": e.to_string()
+                            },
+                    None,
+                ).await?;
+            }
         }
 
         return Ok(());
     }
 
     pub async fn close(self) -> Result<(), Error> {
-        //todo 计算task state
-        //todo 计算job state
+        let state = match self.total_task_state {
+            TaskState::Ok(_) => "O",
+            TaskState::Fail(_) => "F",
+            TaskState::Err(_) => "E"
+        };
+
+        self.collection.update_one(
+            doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": self.task_id},
+            doc! {"state": state},
+            None,
+        ).await?;
         Ok(())
     }
 }
 
-fn ta_doc(ta: &dyn TaskAssess) -> Document {
+fn ta_doc_init(ta: &dyn TaskAssess) -> Document {
     match ta.state() {
-        TaskState::Ok(ca_vec) => {
+        TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
             doc! {
                 "id": ta.id(),
                 "start": ta.start(),
                 "end": ta.end(),
-                "state": "O",
+                "state": "R",
                 "case_assess": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
             }
-        }
-        TaskState::Fail(ca_vec) => {
-            doc! {
-                "id": ta.id(),
-                "start": ta.start(),
-                "end": ta.end(),
-                "state": "F",
-                "case_assess": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
-            }
-        }
+        },
         TaskState::Err(e) => {
             doc! {
                 "id": ta.id(),

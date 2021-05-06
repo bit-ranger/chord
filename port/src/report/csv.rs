@@ -40,7 +40,11 @@ impl Reporter {
         if self.task_id != task_assess.id() {
             return rerr!("400", "task_id mismatch");
         }
-        report(&mut self.writer, task_assess, &self.point_id_vec).await?;
+
+        if let TaskState::Err(_) = self.total_task_state {
+            return rerr!("500", "task is error");
+        }
+
         match task_assess.state() {
             TaskState::Ok(_) => {}
             TaskState::Fail(_) => {
@@ -50,6 +54,9 @@ impl Reporter {
                 self.total_task_state = TaskState::Err(e.clone());
             }
         }
+
+        report(&mut self.writer, task_assess, &self.point_id_vec).await?;
+
         Ok(())
     }
 

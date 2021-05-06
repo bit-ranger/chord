@@ -10,7 +10,7 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::AppContext;
-use chord_port::report::mongodb::{Reporter, Database, Collection, Document, doc};
+use chord_port::report::mongodb::{Reporter, Database, Collection, Document};
 use crate::app::conf::Config;
 use futures::StreamExt;
 
@@ -22,10 +22,6 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
 
     debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
     let job_collection = Arc::new(db.collection::<Document>(job_name.as_str()));
-    job_collection.insert_one(doc! {
-        "exec_id": exec_id.as_str(),
-        "task_assess": []
-    }, None).await?;
 
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
 

@@ -1,5 +1,5 @@
 use chord_common::value::{Json, Map, Number};
-use chord_common::point::{PointArg, PointValue, PointRunner, Pin, Future};
+use chord_common::point::{PointArg, PointValue, PointRunner, async_trait};
 use chord_common::{err};
 use log::{debug};
 use rbatis::rbatis::Rbatis;
@@ -8,10 +8,11 @@ use chord_common::error::Error;
 
 struct Mysql {}
 
+#[async_trait]
 impl PointRunner for Mysql {
 
-    fn run<'a>(&self, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue> + Send + 'a>> {
-        Box::pin(run(arg))
+    async fn run(&self, arg: &dyn PointArg) -> PointValue {
+        run(arg).await
     }
 }
 

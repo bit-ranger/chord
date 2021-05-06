@@ -1,7 +1,4 @@
-use std::future::Future;
-use std::pin::Pin;
-
-use chord_common::point::{PointRunner, PointRunnerFactory};
+use chord_common::point::{PointRunner, PointRunnerFactory, async_trait};
 use chord_common::error::Error;
 use chord_common::value::Json;
 
@@ -15,22 +12,13 @@ impl PointRunnerFactoryDefault {
     }
 }
 
+#[async_trait]
 impl PointRunnerFactory for PointRunnerFactoryDefault {
 
-    fn create_runner<'k>(&self, kind: &'k str, config: &'k Json) -> Pin<Box<dyn Future<Output=Result<Box<dyn PointRunner>, Error>> + Send + 'k>> {
-        Box::pin(point::create_kind_runner(kind, config))
+    async fn create_runner(&self, kind: &str, config: &Json) ->  Result<Box<dyn PointRunner>, Error>{
+        point::create_kind_runner(kind, config).await
     }
 }
-
-
-unsafe impl Send for PointRunnerFactoryDefault
-{
-}
-
-unsafe impl Sync for PointRunnerFactoryDefault
-{
-}
-
 
 
 

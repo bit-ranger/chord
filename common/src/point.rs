@@ -1,10 +1,8 @@
-pub use std::future::Future;
-pub use std::pin::Pin;
-
+pub use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 
 use crate::error::Error;
 use crate::value::Json;
-use chrono::{DateTime, Utc};
 
 pub type PointValue = std::result::Result<Json, Error>;
 
@@ -17,14 +15,16 @@ pub trait PointArg: Sync+Send {
     fn render(&self, text: &str) -> Result<String,Error>;
 }
 
-pub trait PointRunner: Sync+Send{
+#[async_trait]
+pub trait PointRunner : Sync+Send{
 
-    fn run<'a>(&self, arg: &'a dyn PointArg) -> Pin<Box<dyn Future<Output=PointValue>+ Send + 'a>>;
+    async fn run(&self, arg: &dyn PointArg) -> PointValue;
 }
 
-pub trait PointRunnerFactory: Sync+Send {
+#[async_trait]
+pub trait PointRunnerFactory : Sync+Send{
 
-    fn create_runner<'k>(&self, kind: &'k str, config: &'k Json) -> Pin<Box<dyn Future<Output=Result<Box<dyn PointRunner>, Error>>+ Send + 'k>>;
+    async fn create_runner(&self, kind: &str, config: &Json) -> Result<Box<dyn PointRunner>, Error>;
 }
 
 #[derive(Debug, Clone)]

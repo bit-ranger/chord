@@ -33,7 +33,7 @@ impl Reporter {
                 "exec_id": exec_id.as_str()
             },
             doc! {
-                "task_assess": []
+                "$set": {"task_assess": []}
             },
             Some(UpdateOptions::builder().upsert(Some(true)).build())
         ).await?;
@@ -83,13 +83,15 @@ impl Reporter {
             TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
                 self.collection.update_one(
                     doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()},
-                    doc! { "$push": {
-                                    "task_assess.$.case_assess":
-                                    {
+                    doc! {
+                                "$push": {
+                                    "task_assess.$.case_assess": {
                                         "$each": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
                                     }
                                 },
-                            "end": task_assess.end()
+                                "$set": {
+                                    "task_assess.$.end": task_assess.end()
+                                }
                             },
                     None,
                 ).await?;
@@ -98,9 +100,11 @@ impl Reporter {
                 self.collection.update_one(
                     doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()},
                     doc! {
-                                "state": "E",
-                                "end": task_assess.end(),
-                                "error": e.to_string()
+                                "$set": {
+                                    "task_assess.$.state": "E",
+                                    "task_assess.$.end": task_assess.end(),
+                                    "task_assess.$.error": e.to_string()
+                                }
                             },
                     None,
                 ).await?;
@@ -119,7 +123,7 @@ impl Reporter {
 
         self.collection.update_one(
             doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": self.task_id},
-            doc! {"state": state},
+            doc! {"$set": {"task_assess.$.state": state}},
             None,
         ).await?;
         Ok(())

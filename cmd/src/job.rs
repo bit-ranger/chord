@@ -1,16 +1,17 @@
 use std::path::Path;
 
-use async_std::fs::{read_dir};
+use async_std::fs::read_dir;
+use async_std::sync::Arc;
 use async_std::task::Builder;
+use futures::future::join_all;
 use futures::StreamExt;
+use log::debug;
+use log::info;
 
 use chord_common::error::Error;
 use chord_common::flow::Flow;
-use chord_common::task::{TaskState};
+use chord_common::task::TaskState;
 use chord_flow::AppContext;
-use futures::future::join_all;
-use log::debug;
-use async_std::sync::Arc;
 
 pub async fn run<P: AsRef<Path>>(input_dir: P,
                                  output_dir: P,
@@ -57,15 +58,19 @@ async fn run_task<P: AsRef<Path>>(
     execution_id: String,
     app_ctx: Arc<dyn AppContext>) -> TaskState
 {
+    let input_dir = Path::new(input_dir.as_ref());
     let rt = run_task0(input_dir, output_dir, execution_id, app_ctx).await;
     match rt {
         Ok(ts) => ts,
-        Err(e) => TaskState::Err(e)
+        Err(e) => {
+            info!("task error {}, {}", input_dir.to_str().unwrap(), e);
+            TaskState::Err(e)
+        }
     }
 }
 
-async fn run_task0<P: AsRef<Path>>(input_dir: P,
-                                   output_dir: P,
+async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(input_dir: I,
+                                   output_dir: O,
                                    _execution_id: String,
                                    app_ctx: Arc<dyn AppContext>) -> Result<TaskState, Error> {
     let input_dir = Path::new(input_dir.as_ref());

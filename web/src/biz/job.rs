@@ -1,18 +1,20 @@
 use std::path::Path;
 
-use async_std::fs::{read_dir};
+use async_std::fs::read_dir;
 use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
+use futures::StreamExt;
 use log::debug;
+use log::info;
 
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::AppContext;
-use chord_port::report::mongodb::{Reporter, Database, Collection, Document};
+use chord_port::report::mongodb::{Collection, Database, Document, Reporter};
+
 use crate::app::conf::Config;
-use futures::StreamExt;
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
                                  job_name: String,
@@ -65,10 +67,14 @@ async fn run_task<P: AsRef<Path>>(
     collection: Arc<Collection>
 ) -> TaskState
 {
+    let input_dir = Path::new(input_dir.as_ref());
     let rt = run_task0(input_dir, exec_id, app_ctx, collection).await;
     match rt {
         Ok(ts) => ts,
-        Err(e) => TaskState::Err(e)
+        Err(e) => {
+            info!("task error {}, {}", input_dir.to_str().unwrap(), e);
+            TaskState::Err(e)
+        }
     }
 }
 

@@ -12,7 +12,7 @@ mod case;
 mod point;
 
 
-pub async fn create_flow_context(pt_runner: Box<dyn PointRunnerFactory>) -> Arc<dyn FlowContext> {
-    Arc::new(FlowContextStruct::<'_>::new(pt_runner))
+pub async fn create_context(point_runner_factory: Box<dyn PointRunnerFactory>) -> Arc<dyn FlowContext> {
+    Arc::new(FlowContextStruct::<'_>::new(point_runner_factory))
 }
 

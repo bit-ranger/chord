@@ -17,12 +17,12 @@ pub trait FlowContext: Sync+Send{
 pub struct FlowContextStruct<'reg> {
 
     handlebars: Handlebars<'reg>,
-    point_runner: Box<dyn PointRunnerFactory>
+    point_runner_factory: Box<dyn PointRunnerFactory>
 }
 
 impl <'reg> FlowContextStruct<'reg> {
 
-    pub fn new(pt_runner: Box<dyn PointRunnerFactory>) -> FlowContextStruct<'reg>{
+    pub fn new(point_runner_factory: Box<dyn PointRunnerFactory>) -> FlowContextStruct<'reg>{
         let mut  handlebars = Handlebars::new();
         handlebars.register_helper("num", Box::new(NUM_HELPER));
         handlebars.register_helper("bool", Box::new(BOOL_HELPER));
@@ -31,7 +31,7 @@ impl <'reg> FlowContextStruct<'reg> {
 
         FlowContextStruct {
             handlebars,
-            point_runner: pt_runner
+            point_runner_factory
         }
     }
 
@@ -45,7 +45,7 @@ impl <'reg> FlowContext for FlowContextStruct<'reg>{
     }
 
     fn get_point_runner_factory(self: &FlowContextStruct<'reg>) -> &dyn PointRunnerFactory{
-        self.point_runner.as_ref()
+        self.point_runner_factory.as_ref()
     }
 
 }

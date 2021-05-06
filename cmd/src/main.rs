@@ -47,7 +47,7 @@ async fn main() -> Result<(),Error> {
     let log_file_path = output_dir.join("log.log");
     let log_handler = logger::init(target_level(matches), &log_file_path).await?;
 
-    let flow_ctx = chord_flow::create_flow_context(Box::new(PointRunnerFactoryDefault::new().await?)).await;
+    let flow_ctx = chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?)).await;
     let task_state_vec = job::run(input_dir, output_dir, execution_id, flow_ctx).await;
 
     logger::terminal(log_handler).await?;

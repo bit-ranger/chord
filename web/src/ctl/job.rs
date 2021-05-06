@@ -61,7 +61,7 @@ impl Ctl {
         Ok(Ctl {
             input: Path::new(input).to_path_buf(),
             ssh_key_private: Path::new(ssh_key_private).to_path_buf(),
-            app_ctx: chord_flow::create_flow_context(Box::new(PointRunnerFactoryDefault::new().await?)).await,
+            app_ctx: chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?)).await,
         })
     }
 

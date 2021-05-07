@@ -32,10 +32,10 @@ openssl = {version = "0.10", features = ["vendored"]}
 
 [features]
 default = []
-pt_mysql = ["rbatis"]
-pt_dubbo = []
-pt_redis = ["redis"]
-pt_md5 = ["md5"]
-pt_jsonapi = ["surf"]
-pt_mongodb = ["mongodb"]
+point_mysql = ["rbatis"]
+point_dubbo = []
+point_redis = ["redis"]
+point_md5 = ["md5"]
+point_jsonapi = ["surf"]
+point_mongodb = ["mongodb"]
 

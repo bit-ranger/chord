@@ -1,3 +1,4 @@
+use chrono::Utc;
 use async_std::sync::Arc;
 use itertools::Itertools;
 pub use mongodb::bson::doc;
@@ -13,6 +14,7 @@ use chord_common::point::{PointAssess, PointState};
 use chord_common::rerr;
 use chord_common::task::{TaskAssess, TaskState};
 use mongodb::options::UpdateOptions;
+
 
 pub struct Reporter {
     collection: Arc<Collection>,
@@ -33,7 +35,11 @@ impl Reporter {
                 "exec_id": exec_id.as_str()
             },
             doc! {
-                "$set": {"task_assess": []}
+                "$set": {
+                    "exec_id": exec_id.as_str(),
+                    "exec_time": Utc::now(),
+                    "task_assess": []
+                    }
             },
             Some(UpdateOptions::builder().upsert(Some(true)).build())
         ).await?;

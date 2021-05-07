@@ -20,9 +20,9 @@ chord-common = {path = "../common"}
 chord-port = {path = "../port", features = ["report_csv"]}
 chord-point = {path = "../point", features = ["point_jsonapi", "point_md5", "point_dubbo", "point_redis", "point_mysql", "point_mongodb"]}
 log = { version = "0.4.14", features = ["std"]}
-getopts = "0.2.21"
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 time = "0.1.42"
 futures = "0.3.13"
 itertools = "0.10.0"
 flume = "0.10.5"
+structopt = "0.3"

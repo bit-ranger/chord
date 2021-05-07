@@ -1,10 +1,12 @@
 use std::fs::File;
 use std::path::Path;
+use std::path::PathBuf;
+
+use structopt::StructOpt;
 
 use chord_common::error::Error;
 use chord_common::rerr;
 use chord_common::value::Json;
-use std::env;
 
 mod ctl;
 
@@ -13,20 +15,8 @@ mod biz;
 
 #[async_std::main]
 async fn main() -> Result<(), Error> {
-    let args: Vec<_> = env::args().collect();
-    let mut opts = getopts::Options::new();
-    opts.optopt("c", "conf", "config path", "conf");
-
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(e) => {
-            println!("{}", opts.short_usage("chord"));
-            return rerr!("arg", e.to_string());
-        }
-    };
-
-    let conf_path = matches.opt_get_default("c", "/data/chord/conf/application.yml".to_owned()).unwrap();
-    let conf = load_conf(conf_path)?;
+    let opt = Opt::from_args();
+    let conf = load_conf(&opt.config)?;
     app::init(conf).await?;
     Ok(())
 }
@@ -45,4 +35,14 @@ pub fn load_conf<P: AsRef<Path>>(path: P) -> Result<Json, Error> {
     };
 }
 
+
+#[derive(StructOpt, Debug)]
+#[structopt(name = "chord")]
+struct Opt {
+
+    #[structopt(short, long, parse(from_os_str), default_value = "/data/chord/conf/application.yml")]
+    config: PathBuf,
+
+
+}
 

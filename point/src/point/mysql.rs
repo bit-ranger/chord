@@ -6,30 +6,63 @@ use rbatis::rbatis::Rbatis;
 use rbatis::plugin::page::{Page, PageRequest};
 use chord_common::error::Error;
 
-struct Mysql {}
+struct Mysql {
+    rb: Option<Rbatis>
+}
 
 #[async_trait]
 impl PointRunner for Mysql {
 
     async fn run(&self, arg: &dyn PointArg) -> PointValue {
-        run(arg).await
+        run(&self, arg).await
     }
 }
 
-pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>{
-    Ok(Box::new(Mysql {}))
+pub async fn create(arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>{
+    let url = arg.config()["url"].as_str()
+        .ok_or(err!("010", "missing url"))?;
+
+    if !arg.is_shared(url){
+        return Ok(Box::new(Mysql{
+            rb: None
+        }));
+    }
+
+    let url = arg.render(url)?;
+    let rb = create_rb(url.as_str()).await?;
+    return Ok(Box::new(Mysql{
+        rb: Some(rb)
+    }));
 }
 
 
-async fn run(arg: &dyn PointArg) -> PointValue {
-    let url = arg.config()["url"].as_str()
-        .map(|s|arg.render(s))
-        .ok_or(err!("010", "missing url"))??;
+async fn create_rb(url: &str) -> Result<Rbatis,Error>{
+    let rb = Rbatis::new();
+    rb.link(url).await?;
+    Ok(rb)
+}
+
+
+async fn run(obj: &Mysql, arg: &dyn PointArg) -> PointValue {
+    return match obj.rb.as_ref() {
+        Some(r) => {
+            run0(arg, r).await
+        },
+        None => {
+            let url = arg.config()["url"].as_str()
+                .map(|s| arg.render(s))
+                .ok_or(err!("010", "missing url"))??;
+            let rb = Rbatis::new();
+            rb.link(url.as_str()).await?;
+            run0(arg, &rb).await
+        }
+    }
+}
+
+async fn run0(arg: &dyn PointArg, rb: &Rbatis) -> PointValue{
     let sql = arg.config()["sql"].as_str()
         .map(|s|arg.render(s))
         .ok_or(err!("010", "missing sql"))??;
-    let rb = Rbatis::new();
-    rb.link(url.as_str()).await?;
 
     if sql.trim_start().to_uppercase().starts_with("SELECT "){
         let pr = PageRequest::new(1, 20);
@@ -58,12 +91,4 @@ async fn run(arg: &dyn PointArg) -> PointValue {
         debug!("mysql exec:\n{}", exec);
         return Ok(exec)
     }
-
-
 }
-
-// impl From<rbatis::Error> for PointError {
-//     fn from(err: rbatis::Error) -> PointError {
-//         PointError::new("rbatis", format!("{:?}", err))
-//     }
-// }

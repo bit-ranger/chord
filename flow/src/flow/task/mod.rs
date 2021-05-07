@@ -42,16 +42,14 @@ impl Runner {
     pub async fn new(flow_ctx: Arc<dyn FlowContext>,
                      flow: Arc<Flow>,
                      id: String) -> Result<Runner, Error>{
-        let pre_ctx=  pre_ctx(flow_ctx.clone(), flow.clone(), id.clone()).await?;
+        let pre_ctx=  create_pre_ctx(flow_ctx.clone(), flow.clone(), id.clone()).await?;
         let pre_ctx= Arc::new(pre_ctx);
 
-        let render_context = create_render_context(flow_ctx.as_ref(), flow.as_ref(), pre_ctx.as_ref());
-        let mut point_runner_vec = vec![];
-        for pid in  flow.case_point_id_vec()?{
-            let pr = create_point_runner(flow_ctx.as_ref(), flow.as_ref(), &render_context, pid.as_str()).await?;
-            point_runner_vec.push((pid, pr));
-        }
-
+        let point_runner_vec = create_point_runner_vec(
+            flow_ctx.as_ref(),
+            flow.as_ref(),
+            pre_ctx.as_ref(),
+            flow.case_point_id_vec()?).await?;
         let runner = Runner {
             flow_ctx,
             flow,
@@ -133,20 +131,14 @@ impl Runner {
 }
 
 async fn pre_arg(flow_ctx: Arc<dyn FlowContext>, flow: Arc<Flow>) -> Result<Option<CaseArgStruct>, Error> {
-    let pre_pt_id_vec = flow.pre_point_id_vec();
-    if pre_pt_id_vec.is_none() {
-        return Ok(None)
-    }
-    let pre_pt_id_vec = pre_pt_id_vec.unwrap();
-    return if pre_pt_id_vec.is_empty() {
+    return if flow.pre_point_id_vec().is_none() {
         Ok(None)
     } else {
-        let render_context = create_render_context(flow_ctx.as_ref(), flow.as_ref(), &Vec::new());
-        let mut point_runner_vec = vec![];
-        for pid in  pre_pt_id_vec{
-            let pr = create_point_runner(flow_ctx.as_ref(), flow.as_ref(), &render_context, pid.as_str()).await?;
-            point_runner_vec.push((pid, pr));
-        }
+        let point_runner_vec = create_point_runner_vec(
+            flow_ctx.as_ref(),
+            flow.as_ref(),
+            &Vec::new(),
+            flow.pre_point_id_vec().unwrap()).await?;
 
         Ok(Some(
             CaseArgStruct::new(
@@ -161,9 +153,9 @@ async fn pre_arg(flow_ctx: Arc<dyn FlowContext>, flow: Arc<Flow>) -> Result<Opti
 
 }
 
-async fn pre_ctx(flow_ctx: Arc<dyn FlowContext>,
-                 flow: Arc<Flow>,
-                 id: String) -> Result<Vec<(String, Json)>, Error>{
+async fn create_pre_ctx(flow_ctx: Arc<dyn FlowContext>,
+                        flow: Arc<Flow>,
+                        id: String) -> Result<Vec<(String, Json)>, Error>{
     let mut case_ctx = vec![];
     let pre_arg = pre_arg(flow_ctx.clone(), flow).await?;
     if pre_arg.is_none() {
@@ -198,7 +190,23 @@ async fn pre_ctx(flow_ctx: Arc<dyn FlowContext>,
     }
 }
 
-fn create_render_context(_: &dyn FlowContext, flow: &Flow, context_ext:  &Vec<(String, Json)>) -> Context{
+
+async fn create_point_runner_vec(flow_ctx: &dyn FlowContext,
+                                 flow: &Flow,
+                                 render_ctx_ext:  &Vec<(String, Json)>,
+                                 point_id_vec: Vec<String>) -> Result<Vec<(String, Box<dyn PointRunner>)>, Error>{
+    let render_context = create_render_context(flow_ctx, flow, render_ctx_ext);
+    let mut point_runner_vec = vec![];
+    for pid in  point_id_vec{
+        let pr = create_point_runner(flow_ctx, flow, &render_context, pid.as_str()).await?;
+        point_runner_vec.push((pid, pr));
+    }
+    Ok(point_runner_vec)
+}
+
+
+
+fn create_render_context(_: &dyn FlowContext, flow: &Flow, render_ctx_ext:  &Vec<(String, Json)>) -> Context{
     let mut render_data: Map = Map::new();
     let config_def = flow.task_def();
     match config_def {
@@ -208,7 +216,7 @@ fn create_render_context(_: &dyn FlowContext, flow: &Flow, context_ext:  &Vec<(S
         None => {}
     }
 
-    for (k,v) in context_ext.iter(){
+    for (k,v) in render_ctx_ext.iter(){
         render_data.insert(k.clone(), v.clone());
     }
 
@@ -223,6 +231,7 @@ async fn create_point_runner(flow_ctx: &dyn FlowContext,
     let point_arg = PointArgStruct::new(flow, point_id, flow_ctx.get_handlebars(), render_context);
     flow_ctx.get_point_runner_factory().create_runner(kind, &point_arg).await
 }
+
 
 
 async fn case_run(flow_ctx: &dyn FlowContext,

@@ -14,7 +14,7 @@ pub struct CaseArgStruct {
     flow: Arc<Flow>,
     point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
     data: Json,
-    context_ext:  Arc<Vec<(String, Json)>>
+    render_ctx_ext:  Arc<Vec<(String, Json)>>
 }
 
 
@@ -23,14 +23,14 @@ impl CaseArgStruct{
                flow: Arc<Flow>,
                point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
                data: Json,
-               context_ext: Arc<Vec<(String, Json)>>
+               render_ctx_ext: Arc<Vec<(String, Json)>>
     ) -> CaseArgStruct {
         let context = CaseArgStruct {
             id,
             flow,
             point_runner_vec,
             data,
-            context_ext
+            render_ctx_ext
         };
 
         return context;
@@ -49,7 +49,7 @@ impl CaseArgStruct{
         render_data.insert(String::from("dyn"), Json::Object(Map::new()));
         render_data.insert(String::from("res"), Json::Null);
 
-        for (k,v) in self.context_ext.iter(){
+        for (k,v) in self.render_ctx_ext.iter(){
             render_data.insert(k.clone(), v.clone());
         }
 

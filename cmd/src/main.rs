@@ -68,15 +68,15 @@ fn target_level(level: &Vec<String>) -> Vec<(String, String)>{
 #[structopt(name = "chord")]
 struct Opt {
 
-    /// Output file
+    /// input dir
     #[structopt(short, long, parse(from_os_str))]
     input: PathBuf,
 
-    /// Output file
+    /// output dir
     #[structopt(short, long, parse(from_os_str))]
     output: PathBuf,
 
-    /// admin_level to consider
+    /// log level
     #[structopt(short, long)]
     level: Vec<String>,
 

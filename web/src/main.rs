@@ -40,6 +40,7 @@ pub fn load_conf<P: AsRef<Path>>(path: P) -> Result<Json, Error> {
 #[structopt(name = "chord")]
 struct Opt {
 
+    /// config file path
     #[structopt(short, long, parse(from_os_str), default_value = "/data/chord/conf/application.yml")]
     config: PathBuf,
 

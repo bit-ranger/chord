@@ -14,9 +14,7 @@ use validator::Validate;
 use chord_common::error::Error;
 use chord_flow::FlowContext;
 use chord_point::PointRunnerFactoryDefault;
-use crate::app::conf::{Config, ConfigImpl};
-use shaku::Component;
-use shaku::Interface;
+use crate::app::conf::{Config};
 pub use async_trait::async_trait;
 
 use crate::biz;
@@ -49,56 +47,48 @@ pub struct Rep {
 }
 
 #[async_trait]
-pub trait Ctl: Interface{
+pub trait Ctl{
 
     async fn exec(&self, req: Req) -> Result<Rep, Error>;
 }
 
-#[derive(Component)]
-#[shaku(interface = Ctl)]
 pub struct CtlImpl {
     input_dir: PathBuf,
     ssh_key_private: PathBuf,
     flow_ctx: Arc<dyn FlowContext>,
+    mongodb: Arc<Database>,
+    config: Arc<dyn Config>
 }
 
-static mut JOB_CTL: Option<CtlImpl> = Option::None;
-static mut MONGO_DB: Option<Arc<Database>> = Option::None;
+unsafe impl Send for CtlImpl
+{
+}
+
+unsafe impl Sync for CtlImpl
+{
+}
+
 
 impl CtlImpl {
-    async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {
+    pub async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {
+        let opt = ClientOptions::parse(config.report_mongodb_url()?).await?;
+        let db_name = opt.credential
+            .as_ref()
+            .map(|c|
+                c.source.as_ref().map(|s| s.clone()).unwrap_or("chord".to_owned()))
+            .unwrap();
+        let client = Client::with_options(opt)?;
+        let db = client.database(db_name.as_str());
+        let mongodb = Arc::new(db);
+
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
             flow_ctx: chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?)).await,
+            mongodb,
+            config
         })
     }
-
-
-    // pub async fn create_singleton() ->  Result<(), Error>{
-    //     unsafe {
-    //         JOB_CTL = Some(CtlImpl::new(ConfigImpl::get_singleton().job_input_path(),
-    //                                     ConfigImpl::get_singleton().ssh_key_private_path()).await?);
-    //
-    //         // Get a handle to the deployment.
-    //         let opt = ClientOptions::parse(ConfigImpl::get_singleton().report_mongodb_url()?).await?;
-    //         let db_name = opt.credential
-    //             .as_ref()
-    //             .map(|c|
-    //                 c.source.as_ref().map(|s| s.clone()).unwrap_or("chord".to_owned()))
-    //             .unwrap();
-    //         let client = Client::with_options(opt)?;
-    //         let db = client.database(db_name.as_str());
-    //         MONGO_DB = Some(Arc::new(db));
-    //         Ok(())
-    //     }
-    //
-    // }
-
-    pub async fn get_singleton() -> &'static CtlImpl {
-        unsafe {&JOB_CTL.as_ref().unwrap()}
-    }
-    
 }
 
 #[async_trait]
@@ -111,22 +101,20 @@ impl Ctl for CtlImpl {
         let app_ctx_0 = self.flow_ctx.clone();
         let exec_id_0 = exec_id.clone();
         // self.pool.spawn(|| block_on(checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
-        spawn(checkout_run(app_ctx_0, input, ssh_key_pri, req, exec_id_0));
+        spawn(checkout_run(app_ctx_0, input, ssh_key_pri, req, exec_id_0, self.mongodb.clone(), self.config.case_batch_size()));
         return Ok(Rep{exec_id});
     }
 }
 
-
-async fn get_mongodb() -> Arc<Database>{
-    unsafe { MONGO_DB.clone().unwrap() }
-}
 
 async fn checkout_run(
     app_ctx: Arc<dyn FlowContext>,
     input: PathBuf,
     ssh_key_pri: PathBuf,
     req: Req,
-    exec_id: String) {
+    exec_id: String,
+    mongodb: Arc<Database>,
+    case_batch_size: usize,) {
     let is_delimiter = |c: char| ['@',':','/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
 
@@ -169,7 +157,7 @@ async fn checkout_run(
     };
 
     let job_name = format!("{}:{}/{}", host, group_name, repo_name);
-    run(app_ctx, job_path, job_name, exec_id).await;
+    run(app_ctx, job_path, job_name, exec_id, mongodb, case_batch_size).await;
     clear(checkout_path.as_path()).await;
 }
 
@@ -233,8 +221,11 @@ async fn checkout(ssh_key_private: &Path,
 async fn run(app_ctx: Arc<dyn FlowContext>,
              job_path: PathBuf,
              job_name: String,
-             exec_id: String) {
-    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, get_mongodb().await).await;
+             exec_id: String,
+             mongodb: Arc<Database>,
+             case_batch_size: usize,
+) {
+    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, mongodb, case_batch_size).await;
     if let Err(e) = job_result {
         error!("run job error {}", e);
     }

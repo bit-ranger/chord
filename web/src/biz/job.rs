@@ -14,14 +14,12 @@ use chord_common::task::TaskState;
 use chord_flow::FlowContext;
 use chord_port::report::mongodb::{Collection, Database, Document, Reporter};
 
-use crate::app::conf::{Config, ConfigImpl};
-
 pub async fn run<P: AsRef<Path>>(job_path: P,
                                  job_name: String,
                                  exec_id: String,
                                  app_ctx: Arc<dyn FlowContext>,
-                                 db: Arc<Database>) -> Result<Vec<TaskState>, Error>{
-
+                                 db: Arc<Database>,
+                                 case_batch_size: usize,) -> Result<Vec<TaskState>, Error> {
     debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
     let job_collection = Arc::new(db.collection::<Document>(job_name.as_str()));
 
@@ -29,16 +27,16 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
 
     let mut futures = Vec::new();
     loop {
-        let task_dir  = job_dir.next().await;
-        if task_dir.is_none(){
+        let task_dir = job_dir.next().await;
+        if task_dir.is_none() {
             break;
         }
         let task_dir = task_dir.unwrap();
-        if task_dir.is_err(){
+        if task_dir.is_err() {
             continue;
         }
         let task_dir = task_dir.unwrap();
-        if !task_dir.path().is_dir().await{
+        if !task_dir.path().is_dir().await {
             continue;
         }
 
@@ -50,7 +48,8 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
             task_input_dir,
             exec_id.clone(),
             app_ctx.clone(),
-            job_collection.clone()))
+            job_collection.clone(),
+            case_batch_size))
             .unwrap();
         futures.push(jh);
     }
@@ -64,11 +63,12 @@ async fn run_task<P: AsRef<Path>>(
     input_dir: P,
     exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
-    collection: Arc<Collection>
+    collection: Arc<Collection>,
+    case_batch_size: usize,
 ) -> TaskState
 {
     let input_dir = Path::new(input_dir.as_ref());
-    let rt = run_task0(input_dir, exec_id, app_ctx, collection).await;
+    let rt = run_task0(input_dir, exec_id, app_ctx, collection, case_batch_size).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => {
@@ -81,7 +81,9 @@ async fn run_task<P: AsRef<Path>>(
 async fn run_task0<P: AsRef<Path>>(task_path: P,
                                    exec_id: String,
                                    app_ctx: Arc<dyn FlowContext>,
-                                   collection: Arc<Collection>) -> Result<TaskState, Error> {
+                                   collection: Arc<Collection>,
+                                   case_batch_size: usize,
+) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
     chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_owned()));
@@ -94,7 +96,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
 
     //read
     let data_path = task_path.clone().join("data.csv");
-    let case_batch_size = ConfigImpl::get_singleton().case_batch_size();
+
     let mut data_loader = chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
     //write
@@ -104,7 +106,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
     let mut runner = chord_flow::Runner::new(app_ctx, Arc::new(flow), String::from(task_id)).await?;
 
     let mut total_task_state = TaskState::Ok(vec![]);
-    loop{
+    loop {
         let data = data_loader.load().await?;
         let data_len = data.len();
 
@@ -113,11 +115,11 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
         //write
         assess_reporter.write(task_assess.as_ref()).await?;
 
-        match task_assess.state(){
+        match task_assess.state() {
             TaskState::Err(e) => {
                 total_task_state = TaskState::Err(e.clone());
                 break;
-            },
+            }
             TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
             _ => ()
         }

@@ -8,10 +8,11 @@ use validator::{ValidationErrors, ValidationErrorsKind};
 use chord_common::error::Error;
 use chord_common::value::Json;
 
-use shaku::{module, Component, Interface, HasComponent};
 
-use crate::ctl;
-use crate::app::conf::{Config, ConfigImpl, ConfigImplParameters};
+use crate::ctl::job;
+use crate::app::conf::{Config, ConfigImpl};
+use async_std::sync::Arc;
+use crate::ctl::job::CtlImpl;
 
 mod logger;
 pub mod conf;
@@ -84,28 +85,34 @@ macro_rules! json_handler {
     }}
 }
 
-module! {
-    BeanPool {
-        components = [ConfigImpl],
-        providers = []
+
+static mut JOB_CTL: Option<Arc<CtlImpl>> = Option::None;
+
+
+pub fn set_job_ctl_static(ctl: Arc<CtlImpl>){
+    unsafe {
+        JOB_CTL = Some(ctl);
     }
+}
+
+pub fn get_job_ctl_static_ref() -> &'static CtlImpl {
+    unsafe {JOB_CTL.as_ref().unwrap()}
 }
 
 
 pub async fn init(data: Json) -> Result<(), Error>{
-    let bean_pool = BeanPool::builder()
-        .with_component_override_fn::<dyn Config>(Box::new(|c| Box::new(ConfigImpl::new(data))))
-        .build();
+    let config = Arc::new(ConfigImpl::new(data));
+    let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
+    set_job_ctl_static(job_ctl);
 
-    let config: &dyn Config = bean_pool.resolve_ref();
+
     let mut app = tide::new();
 
     let log_file_path = Path::new(config.log_path());
     let _log_handler = logger::init(config.log_level(), &log_file_path).await?;
 
-    // ctl::job::CtlImpl::create_singleton().await?;
     app.at("/job/exec").post(
-        json_handler!(ctl::job::CtlImpl::exec, ctl::job::CtlImpl::get_singleton().await)
+        json_handler!(job::Ctl::exec, get_job_ctl_static_ref())
     );
 
     app.listen(format!("{}:{}", config.server_ip(), config.server_port())).await?;

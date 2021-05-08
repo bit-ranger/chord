@@ -1,11 +1,8 @@
 use chord_common::error::Error;
 use chord_common::value::Json;
 use chord_common::err;
-use shaku::Component;
-use shaku::Interface;
 
-
-pub trait Config: Interface{
+pub trait Config{
 
     fn server_ip(&self) -> &str; 
 
@@ -25,8 +22,6 @@ pub trait Config: Interface{
 }
 
 
-#[derive(Component)]
-#[shaku(interface = Config)]
 #[derive(Debug, Clone)]
 pub struct ConfigImpl {
     conf: Json
@@ -34,7 +29,6 @@ pub struct ConfigImpl {
 
 
 
-static mut SINGLETON: Option<ConfigImpl> = Option::None;
 
 impl ConfigImpl{
 
@@ -43,25 +37,6 @@ impl ConfigImpl{
             conf
         }
     }
-
-    // pub fn create_singleton(conf: Json) -> &'static ConfigImpl{
-    //     unsafe {
-    //         SINGLETON = Some(ConfigImpl::new(conf));
-    //         ConfigImpl::get_singleton()
-    //     }
-    // }
-
-    pub fn get_singleton() -> &'static ConfigImpl{
-        unsafe {&SINGLETON.as_ref().unwrap()}
-    }
-}
-
-unsafe impl Send for ConfigImpl
-{
-}
-
-unsafe impl Sync for ConfigImpl
-{
 }
 
 

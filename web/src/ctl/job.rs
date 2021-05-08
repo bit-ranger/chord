@@ -14,7 +14,10 @@ use validator::Validate;
 use chord_common::error::Error;
 use chord_flow::FlowContext;
 use chord_point::PointRunnerFactoryDefault;
-use crate::app::conf::Config;
+use crate::app::conf::{Config, ConfigImpl};
+use shaku::Component;
+use shaku::Interface;
+pub use async_trait::async_trait;
 
 use crate::biz;
 use chord_port::report::mongodb::{Client, Database, ClientOptions};
@@ -45,61 +48,72 @@ pub struct Rep {
     exec_id: String
 }
 
-pub struct Ctl {
-    input: PathBuf,
-    ssh_key_private: PathBuf,
-    app_ctx: Arc<dyn FlowContext>,
+#[async_trait]
+pub trait Ctl: Interface{
+
+    async fn exec(&self, req: Req) -> Result<Rep, Error>;
 }
 
-static mut JOB_CTL: Option<Ctl> = Option::None;
+#[derive(Component)]
+#[shaku(interface = Ctl)]
+pub struct CtlImpl {
+    input_dir: PathBuf,
+    ssh_key_private: PathBuf,
+    flow_ctx: Arc<dyn FlowContext>,
+}
+
+static mut JOB_CTL: Option<CtlImpl> = Option::None;
 static mut MONGO_DB: Option<Arc<Database>> = Option::None;
 
-impl Ctl {
-    async fn new(input: &str,
-               ssh_key_private: &str,
-    ) -> Result<Ctl, Error> {
-        Ok(Ctl {
-            input: Path::new(input).to_path_buf(),
-            ssh_key_private: Path::new(ssh_key_private).to_path_buf(),
-            app_ctx: chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?)).await,
+impl CtlImpl {
+    async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {
+        Ok(CtlImpl {
+            input_dir: Path::new(config.job_input_path()).to_path_buf(),
+            ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
+            flow_ctx: chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?)).await,
         })
     }
 
-    pub async fn exec(&self, req: Req) -> Result<Rep, Error> {
+
+    // pub async fn create_singleton() ->  Result<(), Error>{
+    //     unsafe {
+    //         JOB_CTL = Some(CtlImpl::new(ConfigImpl::get_singleton().job_input_path(),
+    //                                     ConfigImpl::get_singleton().ssh_key_private_path()).await?);
+    //
+    //         // Get a handle to the deployment.
+    //         let opt = ClientOptions::parse(ConfigImpl::get_singleton().report_mongodb_url()?).await?;
+    //         let db_name = opt.credential
+    //             .as_ref()
+    //             .map(|c|
+    //                 c.source.as_ref().map(|s| s.clone()).unwrap_or("chord".to_owned()))
+    //             .unwrap();
+    //         let client = Client::with_options(opt)?;
+    //         let db = client.database(db_name.as_str());
+    //         MONGO_DB = Some(Arc::new(db));
+    //         Ok(())
+    //     }
+    //
+    // }
+
+    pub async fn get_singleton() -> &'static CtlImpl {
+        unsafe {&JOB_CTL.as_ref().unwrap()}
+    }
+    
+}
+
+#[async_trait]
+impl Ctl for CtlImpl {
+
+    async fn exec(&self, req: Req) -> Result<Rep, Error> {
         let exec_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
-        let input = self.input.clone();
+        let input = self.input_dir.clone();
         let ssh_key_pri = self.ssh_key_private.clone();
-        let app_ctx_0 = self.app_ctx.clone();
+        let app_ctx_0 = self.flow_ctx.clone();
         let exec_id_0 = exec_id.clone();
         // self.pool.spawn(|| block_on(checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
         spawn(checkout_run(app_ctx_0, input, ssh_key_pri, req, exec_id_0));
         return Ok(Rep{exec_id});
     }
-
-    pub async fn create_singleton() ->  Result<(), Error>{
-        unsafe {
-            JOB_CTL = Some(Ctl::new(Config::get_singleton().job_input_path(),
-                                    Config::get_singleton().ssh_key_private_path()).await?);
-
-            // Get a handle to the deployment.
-            let opt = ClientOptions::parse(Config::get_singleton().report_mongodb_url()?).await?;
-            let db_name = opt.credential
-                .as_ref()
-                .map(|c|
-                    c.source.as_ref().map(|s| s.clone()).unwrap_or("chord".to_owned()))
-                .unwrap();
-            let client = Client::with_options(opt)?;
-            let db = client.database(db_name.as_str());
-            MONGO_DB = Some(Arc::new(db));
-            Ok(())
-        }
-
-    }
-
-    pub async fn get_singleton() -> &'static Ctl{
-        unsafe {&JOB_CTL.as_ref().unwrap()}
-    }
-    
 }
 
 

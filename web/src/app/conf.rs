@@ -1,54 +1,93 @@
 use chord_common::error::Error;
 use chord_common::value::Json;
 use chord_common::err;
+use shaku::Component;
+use shaku::Interface;
 
+
+pub trait Config: Interface{
+
+    fn server_ip(&self) -> &str; 
+
+    fn server_port(&self) -> usize ;
+
+    fn log_path(&self) -> &str ;
+
+    fn job_input_path(&self) -> &str ; 
+
+    fn ssh_key_private_path(&self) -> &str ;
+
+    fn log_level(&self) -> Vec<(String, String)> ;
+
+    fn report_mongodb_url(&self) -> Result<&str, Error>;
+    
+    fn case_batch_size(&self) -> usize;
+}
+
+
+#[derive(Component)]
+#[shaku(interface = Config)]
 #[derive(Debug, Clone)]
-pub struct Config {
+pub struct ConfigImpl {
     conf: Json
 }
 
-static mut SINGLETON: Option<Config> = Option::None;
 
-impl Config {
 
-    fn new(conf: Json) -> Config{
-        Config {
+static mut SINGLETON: Option<ConfigImpl> = Option::None;
+
+impl ConfigImpl{
+
+    pub fn new(conf: Json) -> ConfigImpl{
+        ConfigImpl {
             conf
         }
     }
 
-    pub fn create_singleton(conf: Json) -> &'static Config{
-        unsafe {
-            SINGLETON = Some(Config::new(conf));
-            Config::get_singleton()
-        }
-    }
+    // pub fn create_singleton(conf: Json) -> &'static ConfigImpl{
+    //     unsafe {
+    //         SINGLETON = Some(ConfigImpl::new(conf));
+    //         ConfigImpl::get_singleton()
+    //     }
+    // }
 
-    pub fn get_singleton() -> &'static Config{
+    pub fn get_singleton() -> &'static ConfigImpl{
         unsafe {&SINGLETON.as_ref().unwrap()}
     }
+}
 
-    pub fn server_ip(&self) -> &str {
+unsafe impl Send for ConfigImpl
+{
+}
+
+unsafe impl Sync for ConfigImpl
+{
+}
+
+
+impl Config for ConfigImpl {
+
+    fn server_ip(&self) -> &str {
         self.conf["server"]["ip"].as_str().unwrap_or("127.0.0.1")
     }
 
-    pub fn server_port(&self) -> usize {
+    fn server_port(&self) -> usize {
         self.conf["server"]["port"].as_u64().unwrap_or(9999) as usize
     }
 
-    pub fn log_path(&self) -> &str {
+    fn log_path(&self) -> &str {
         self.conf["log"]["path"].as_str().unwrap_or("/data/chord/job/output/web.log")
     }
 
-    pub fn job_input_path(&self) -> &str {
+    fn job_input_path(&self) -> &str {
         self.conf["job"]["input"]["path"].as_str().unwrap_or("/data/chord/job/input")
     }
 
-    pub fn ssh_key_private_path(&self) -> &str {
+    fn ssh_key_private_path(&self) -> &str {
         self.conf["ssh"]["key"]["private"]["path"].as_str().unwrap_or("/data/chord/conf/ssh_key.pri")
     }
 
-    pub fn log_level(&self) -> Vec<(String, String)>{
+    fn log_level(&self) -> Vec<(String, String)>{
         let target_level: Vec<(String, String)> =  match self.conf["log"]["level"]
             .as_object(){
             None => Vec::new(),
@@ -63,11 +102,11 @@ impl Config {
         return target_level;
     }
 
-    pub fn report_mongodb_url(&self) -> Result<&str, Error> {
+    fn report_mongodb_url(&self) -> Result<&str, Error> {
         self.conf["report"]["mongodb"]["url"].as_str().ok_or(err!("config", "missing report.mongodb.url"))
     }
 
-    pub fn case_batch_size(&self) -> usize{
+    fn case_batch_size(&self) -> usize{
         self.conf["case"]["batch"]["size"].as_u64().unwrap_or(99999) as usize
     }
 }

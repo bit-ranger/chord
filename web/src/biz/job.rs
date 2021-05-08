@@ -14,7 +14,7 @@ use chord_common::task::TaskState;
 use chord_flow::FlowContext;
 use chord_port::report::mongodb::{Collection, Database, Document, Reporter};
 
-use crate::app::conf::Config;
+use crate::app::conf::{Config, ConfigImpl};
 
 pub async fn run<P: AsRef<Path>>(job_path: P,
                                  job_name: String,
@@ -94,7 +94,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
 
     //read
     let data_path = task_path.clone().join("data.csv");
-    let case_batch_size = Config::get_singleton().case_batch_size();
+    let case_batch_size = ConfigImpl::get_singleton().case_batch_size();
     let mut data_loader = chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
     //write

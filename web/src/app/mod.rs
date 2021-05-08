@@ -8,7 +8,10 @@ use validator::{ValidationErrors, ValidationErrorsKind};
 use chord_common::error::Error;
 use chord_common::value::Json;
 
+use shaku::{module, Component, Interface, HasComponent};
+
 use crate::ctl;
+use crate::app::conf::{Config, ConfigImpl, ConfigImplParameters};
 
 mod logger;
 pub mod conf;
@@ -81,20 +84,30 @@ macro_rules! json_handler {
     }}
 }
 
+module! {
+    BeanPool {
+        components = [ConfigImpl],
+        providers = []
+    }
+}
 
 
-pub async fn init(conf: Json) -> Result<(), Error>{
-    let conf = conf::Config::create_singleton(conf);
+pub async fn init(data: Json) -> Result<(), Error>{
+    let bean_pool = BeanPool::builder()
+        .with_component_override_fn::<dyn Config>(Box::new(|c| Box::new(ConfigImpl::new(data))))
+        .build();
+
+    let config: &dyn Config = bean_pool.resolve_ref();
     let mut app = tide::new();
 
-    let log_file_path = Path::new(conf.log_path());
-    let _log_handler = logger::init(conf.log_level(), &log_file_path).await?;
+    let log_file_path = Path::new(config.log_path());
+    let _log_handler = logger::init(config.log_level(), &log_file_path).await?;
 
-    ctl::job::Ctl::create_singleton().await?;
+    // ctl::job::CtlImpl::create_singleton().await?;
     app.at("/job/exec").post(
-        json_handler!(ctl::job::Ctl::exec, ctl::job::Ctl::get_singleton().await)
+        json_handler!(ctl::job::CtlImpl::exec, ctl::job::CtlImpl::get_singleton().await)
     );
 
-    app.listen(format!("{}:{}", conf.server_ip(), conf.server_port())).await?;
+    app.listen(format!("{}:{}", config.server_ip(), config.server_port())).await?;
     Ok(())
 }

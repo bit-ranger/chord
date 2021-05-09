@@ -10,9 +10,12 @@ use chord_common::value::Json;
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;
-use crate::ctl::job::CtlImpl;
 use async_std::sync::Arc;
 
+use crate::app::component::HasComponent;
+use crate::pool;
+
+mod component;
 pub mod conf;
 mod logger;
 
@@ -80,30 +83,25 @@ macro_rules! json_handler {
     }};
 }
 
-static mut JOB_CTL: Option<Arc<CtlImpl>> = Option::None;
-
-pub fn set_job_ctl_static(ctl: Arc<CtlImpl>) {
-    unsafe {
-        JOB_CTL = Some(ctl);
-    }
-}
-
-pub fn get_job_ctl_static_ref() -> &'static CtlImpl {
-    unsafe { JOB_CTL.as_ref().unwrap() }
-}
+pool!(config: crate::app::ConfigImpl, job_ctl: job::CtlImpl);
 
 pub async fn init(data: Json) -> Result<(), Error> {
+    init_pool();
+    let pool = mut_pool();
+
     let config = Arc::new(ConfigImpl::new(data));
     let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
-    set_job_ctl_static(job_ctl);
+    pool.set(config.clone());
+    pool.set(job_ctl.clone());
 
     let mut app = tide::new();
 
     let log_file_path = Path::new(config.log_path());
     let _log_handler = logger::init(config.log_level(), &log_file_path).await?;
+    let job_ctl: &job::CtlImpl = get_pool().get_ref().unwrap();
 
     app.at("/job/exec")
-        .post(json_handler!(job::Ctl::exec, get_job_ctl_static_ref()));
+        .post(json_handler!(job::Ctl::exec, get_pool().get_ref().unwrap()));
 
     app.listen(format!("{}:{}", config.server_ip(), config.server_port()))
         .await?;

@@ -1,30 +1,28 @@
 use chrono::{DateTime, Utc};
 
-use chord_common::task::{TaskState, TaskAssess};
+use chord_common::task::{TaskAssess, TaskState};
 
 pub struct TaskAssessStruct {
     id: String,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
-    state: TaskState
+    state: TaskState,
 }
 
 impl TaskAssessStruct {
-
-    pub fn new(id: &str,
-               start: DateTime<Utc>,
-               end: DateTime<Utc>,
-               state: TaskState
+    pub fn new(
+        id: &str,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+        state: TaskState,
     ) -> TaskAssessStruct {
         TaskAssessStruct {
             id: String::from(id),
             start,
             end,
-            state
+            state,
         }
     }
-
-
 }
 
 impl TaskAssess for TaskAssessStruct {
@@ -45,10 +43,6 @@ impl TaskAssess for TaskAssessStruct {
     }
 }
 
-unsafe impl Send for TaskAssessStruct
-{
-}
+unsafe impl Send for TaskAssessStruct {}
 
-unsafe impl Sync for TaskAssessStruct
-{
-}
+unsafe impl Sync for TaskAssessStruct {}

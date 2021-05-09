@@ -21,7 +21,11 @@ pub struct Reporter {
 }
 
 impl Reporter {
-    pub async fn new<P: AsRef<Path>, T: Into<String>>(report_dir: P, task_id: T, flow: &Flow) -> Result<Reporter, Error> {
+    pub async fn new<P: AsRef<Path>, T: Into<String>>(
+        report_dir: P,
+        task_id: T,
+        flow: &Flow,
+    ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
         let task_id = task_id.into();
         let report_file = report_dir.join(format!("{}_result.csv", task_id));
@@ -68,19 +72,27 @@ impl Reporter {
         };
 
         let report_file = self.report_dir.join(format!("{}_result.csv", self.task_id));
-        let report_file_new = self.report_dir.join(format!("{}_result_{}.csv", self.task_id, task_state_view));
+        let report_file_new = self
+            .report_dir
+            .join(format!("{}_result_{}.csv", self.task_id, task_state_view));
         rename(report_file, report_file_new).await?;
         Ok(())
     }
 }
 
-
 async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
-    csv::WriterBuilder::new().from_path(path).map_err(|e| err!("csv", e.to_string()))
+    csv::WriterBuilder::new()
+        .from_path(path)
+        .map_err(|e| err!("csv", e.to_string()))
 }
 
-async fn prepare<W: std::io::Write>(writer: &mut Writer<W>, pt_id_vec: &Vec<String>) -> Result<(), Error> {
-    writer.write_record(create_head(pt_id_vec)).map_err(|e| err!("csv", e.to_string()))
+async fn prepare<W: std::io::Write>(
+    writer: &mut Writer<W>,
+    pt_id_vec: &Vec<String>,
+) -> Result<(), Error> {
+    writer
+        .write_record(create_head(pt_id_vec))
+        .map_err(|e| err!("csv", e.to_string()))
 }
 
 fn create_head(pt_id_vec: &Vec<String>) -> Vec<String> {
@@ -90,21 +102,31 @@ fn create_head(pt_id_vec: &Vec<String>) -> Vec<String> {
     vec.push(String::from("case_start"));
     vec.push(String::from("case_end"));
 
-    let ph_vec: Vec<String> = pt_id_vec.iter()
-        .flat_map(|pid| vec![format!("{}_state", pid), format!("{}_start", pid), format!("{}_end", pid)])
+    let ph_vec: Vec<String> = pt_id_vec
+        .iter()
+        .flat_map(|pid| {
+            vec![
+                format!("{}_state", pid),
+                format!("{}_start", pid),
+                format!("{}_end", pid),
+            ]
+        })
         .collect();
     vec.extend(ph_vec);
     vec.push(String::from("last_point_info"));
     vec
 }
 
-
-async fn report<W: std::io::Write>(writer: &mut Writer<W>, task_assess: &dyn TaskAssess, pt_id_vec: &Vec<String>) -> Result<(), Error> {
+async fn report<W: std::io::Write>(
+    writer: &mut Writer<W>,
+    task_assess: &dyn TaskAssess,
+    pt_id_vec: &Vec<String>,
+) -> Result<(), Error> {
     let empty = &vec![];
     let ca_vec = match task_assess.state() {
         TaskState::Ok(ca_vec) => ca_vec,
         TaskState::Fail(ca_vec) => ca_vec,
-        TaskState::Err(_) => empty
+        TaskState::Err(_) => empty,
     };
 
     if ca_vec.len() == 0 {
@@ -112,13 +134,15 @@ async fn report<W: std::io::Write>(writer: &mut Writer<W>, task_assess: &dyn Tas
     }
 
     let head = create_head(pt_id_vec);
-    for sv in ca_vec.iter().map(|ca| to_value_vec(ca.as_ref(), head.len())) {
+    for sv in ca_vec
+        .iter()
+        .map(|ca| to_value_vec(ca.as_ref(), head.len()))
+    {
         writer.write_record(&sv)?
     }
     writer.flush()?;
     return Ok(());
 }
-
 
 fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
     let mut vec = vec![];
@@ -144,11 +168,12 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
     let pa_vec = match ca.state() {
         CaseState::Ok(pa_vec) => pa_vec,
         CaseState::Fail(pa_vec) => pa_vec,
-        _ => empty
+        _ => empty,
     };
 
     if !pa_vec.is_empty() {
-        let p_vec: Vec<String> = pa_vec.iter()
+        let p_vec: Vec<String> = pa_vec
+            .iter()
             .flat_map(|pa| match pa.state() {
                 PointState::Ok(_) => {
                     vec![
@@ -168,7 +193,7 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
                     vec![
                         String::from("F"),
                         pa.start().format("%T").to_string(),
-                        pa.end().format("%T").to_string()
+                        pa.end().format("%T").to_string(),
                     ]
                 }
             })
@@ -200,6 +225,3 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
 
     vec
 }
-
-
-

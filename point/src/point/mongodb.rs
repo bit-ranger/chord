@@ -1,41 +1,44 @@
-use mongodb::{Client, options::ClientOptions};
-use mongodb::bson::{Document, to_document};
+use mongodb::bson::{to_document, Document};
+use mongodb::{options::ClientOptions, Client};
 
-use chord_common::{err, rerr};
-use chord_common::point::{PointArg, PointValue, PointRunner, async_trait};
-use chord_common::value::{Json, from_str};
 use chord_common::error::Error;
+use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
+use chord_common::value::{from_str, Json};
+use chord_common::{err, rerr};
 
 struct Mongodb {}
 
 #[async_trait]
 impl PointRunner for Mongodb {
-
     async fn run(&self, arg: &dyn PointArg) -> PointValue {
         run(arg).await
     }
 }
 
-pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>{
+pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
     Ok(Box::new(Mongodb {}))
 }
 
-
 async fn run(arg: &dyn PointArg) -> PointValue {
-    let url = arg.config()["url"].as_str()
-        .map(|s|arg.render(s))
+    let url = arg.config()["url"]
+        .as_str()
+        .map(|s| arg.render(s))
         .ok_or(err!("010", "missing url"))??;
-    let database = arg.config()["database"].as_str()
-        .map(|s|arg.render(s))
+    let database = arg.config()["database"]
+        .as_str()
+        .map(|s| arg.render(s))
         .ok_or(err!("010", "missing database"))??;
-    let collection = arg.config()["collection"].as_str()
-        .map(|s|arg.render(s))
+    let collection = arg.config()["collection"]
+        .as_str()
+        .map(|s| arg.render(s))
         .ok_or(err!("010", "missing collection"))??;
-    let op = arg.config()["operation"].as_str()
-        .map(|s|arg.render(s))
+    let op = arg.config()["operation"]
+        .as_str()
+        .map(|s| arg.render(s))
         .ok_or(err!("010", "missing operation"))??;
-    let op_arg = arg.config()["arg"].as_str()
-        .map(|s|arg.render(s))
+    let op_arg = arg.config()["arg"]
+        .as_str()
+        .map(|s| arg.render(s))
         .ok_or(err!("010", "missing arg"))??;
 
     // Parse a connection string into an options struct.
@@ -47,19 +50,17 @@ async fn run(arg: &dyn PointArg) -> PointValue {
 
     match op.as_str() {
         "insert_many" => {
-            let arg_json:Json = from_str(op_arg.as_str())?;
+            let arg_json: Json = from_str(op_arg.as_str())?;
             match arg_json {
                 Json::Array(arr) => {
-                    let doc_vec: Vec<Document> = arr
-                        .iter()
-                        .map(|v| to_document(v).unwrap())
-                        .collect();
+                    let doc_vec: Vec<Document> =
+                        arr.iter().map(|v| to_document(v).unwrap()).collect();
                     collection.insert_many(doc_vec, None).await?;
                     return Ok(Json::Null);
-                },
-                _ => rerr!("010", "illegal arg")
+                }
+                _ => rerr!("010", "illegal arg"),
             }
-        },
-        _ => rerr!("010", "illegal operation")
+        }
+        _ => rerr!("010", "illegal operation"),
     }
 }

@@ -6,8 +6,7 @@ use crate::value::Json;
 
 pub type PointValue = std::result::Result<Json, Error>;
 
-pub trait PointArg: Sync+Send {
-
+pub trait PointArg: Sync + Send {
     fn config(&self) -> &Json;
 
     fn render(&self, text: &str) -> Result<String, Error>;
@@ -16,26 +15,27 @@ pub trait PointArg: Sync+Send {
 }
 
 #[async_trait]
-pub trait PointRunner : Sync+Send{
-
+pub trait PointRunner: Sync + Send {
     async fn run(&self, arg: &dyn PointArg) -> PointValue;
 }
 
 #[async_trait]
-pub trait PointRunnerFactory : Sync+Send{
-
-    async fn create_runner(&self, kind: &str, arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>;
+pub trait PointRunnerFactory: Sync + Send {
+    async fn create_runner(
+        &self,
+        kind: &str,
+        arg: &dyn PointArg,
+    ) -> Result<Box<dyn PointRunner>, Error>;
 }
 
 #[derive(Debug, Clone)]
 pub enum PointState {
     Ok(Json),
     Fail(Json),
-    Err(Error)
+    Err(Error),
 }
 
-pub trait PointAssess : Sync + Send{
-
+pub trait PointAssess: Sync + Send {
     fn id(&self) -> &str;
 
     fn start(&self) -> DateTime<Utc>;
@@ -45,11 +45,6 @@ pub trait PointAssess : Sync + Send{
     fn state(&self) -> &PointState;
 }
 
-unsafe impl Send for PointState
-{
-}
+unsafe impl Send for PointState {}
 
-unsafe impl Sync for PointState
-{
-}
-
+unsafe impl Sync for PointState {}

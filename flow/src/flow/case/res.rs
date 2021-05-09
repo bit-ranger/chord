@@ -1,32 +1,31 @@
 use chrono::{DateTime, Utc};
 
-use chord_common::case::{CaseState, CaseAssess};
+use chord_common::case::{CaseAssess, CaseState};
 
 pub struct CaseAssessStruct {
     id: usize,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
-    state: CaseState
+    state: CaseState,
 }
 
 impl CaseAssessStruct {
-
-    pub fn new(id: usize,
-               start: DateTime<Utc>,
-               end: DateTime<Utc>,
-               state: CaseState
+    pub fn new(
+        id: usize,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+        state: CaseState,
     ) -> CaseAssessStruct {
         CaseAssessStruct {
-            id,start,end,state
+            id,
+            start,
+            end,
+            state,
         }
     }
-
-
-
 }
 
 impl CaseAssess for CaseAssessStruct {
-
     fn id(&self) -> usize {
         self.id
     }
@@ -41,12 +40,6 @@ impl CaseAssess for CaseAssessStruct {
     }
 }
 
+unsafe impl Send for CaseAssessStruct {}
 
-unsafe impl Send for CaseAssessStruct
-{
-}
-
-unsafe impl Sync for CaseAssessStruct
-{
-}
-
+unsafe impl Sync for CaseAssessStruct {}

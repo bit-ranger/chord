@@ -1,26 +1,26 @@
-use chrono::{Utc};
+use chrono::Utc;
 use futures::future::join_all;
-use log::{debug, warn, trace};
+use log::{debug, trace, warn};
 
-use chord_common::rerr;
 use chord_common::error::Error;
-use chord_common::task::{TaskState, TaskAssess};
-use chord_common::value::{Json, Map, to_json};
+use chord_common::rerr;
+use chord_common::task::{TaskAssess, TaskState};
+use chord_common::value::{to_json, Json, Map};
 use res::TaskAssessStruct;
 
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
+use crate::flow::point::arg::PointArgStruct;
 use crate::model::app::FlowContext;
-use chord_common::case::{CaseAssess, CaseState};
-use chord_common::point::{PointState, PointRunner};
+use crate::CASE_ID;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
-use chord_common::flow::Flow;
 use async_std::task_local;
+use chord_common::case::{CaseAssess, CaseState};
+use chord_common::flow::Flow;
+use chord_common::point::{PointRunner, PointState};
+use handlebars::Context;
 use std::cell::RefCell;
-use crate::CASE_ID;
-use handlebars::{Context};
-use crate::flow::point::arg::PointArgStruct;
 
 pub mod res;
 
@@ -34,55 +34,62 @@ pub struct Runner {
     point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
     id: String,
     pre_ctx: Arc<Vec<(String, Json)>>,
-    case_id_offset: usize
+    case_id_offset: usize,
 }
 
 impl Runner {
-
-    pub async fn new(flow_ctx: Arc<dyn FlowContext>,
-                     flow: Arc<Flow>,
-                     id: String) -> Result<Runner, Error>{
-        let pre_ctx=  create_pre_ctx(flow_ctx.clone(), flow.clone(), id.clone()).await?;
-        let pre_ctx= Arc::new(pre_ctx);
+    pub async fn new(
+        flow_ctx: Arc<dyn FlowContext>,
+        flow: Arc<Flow>,
+        id: String,
+    ) -> Result<Runner, Error> {
+        let pre_ctx = create_pre_ctx(flow_ctx.clone(), flow.clone(), id.clone()).await?;
+        let pre_ctx = Arc::new(pre_ctx);
 
         let point_runner_vec = create_point_runner_vec(
             flow_ctx.as_ref(),
             flow.as_ref(),
             pre_ctx.as_ref(),
-            flow.case_point_id_vec()?).await?;
+            flow.case_point_id_vec()?,
+        )
+        .await?;
         let runner = Runner {
             flow_ctx,
             flow,
             point_runner_vec: Arc::new(point_runner_vec),
             id,
             pre_ctx,
-            case_id_offset: 1
+            case_id_offset: 1,
         };
         Ok(runner)
     }
 
-
-    pub async fn run(&mut self, data: Vec<Json>) -> Box<dyn TaskAssess>{
+    pub async fn run(&mut self, data: Vec<Json>) -> Box<dyn TaskAssess> {
         Box::new(self.run0(data).await)
     }
 
-    async fn run0(&mut self, data: Vec<Json>) -> TaskAssessStruct{
+    async fn run0(&mut self, data: Vec<Json>) -> TaskAssessStruct {
         let data_len = data.len();
         trace!("task start {}", self.id);
         let start = Utc::now();
 
-        let ca_vec = match self.case_arg_vec(data){
+        let ca_vec = match self.case_arg_vec(data) {
             Ok(v) => v,
             Err(e) => {
                 warn!("task Err {}", self.id);
-                return TaskAssessStruct::new(self.id.as_str(), start, Utc::now(), TaskState::Err(e))
+                return TaskAssessStruct::new(
+                    self.id.as_str(),
+                    start,
+                    Utc::now(),
+                    TaskState::Err(e),
+                );
             }
         };
         self.case_id_offset = self.case_id_offset + data_len;
         trace!("task load data {}, {}", self.id, ca_vec.len());
 
-        let mut case_assess_vec  = Vec::<Box<dyn CaseAssess>>::new();
-        let limit_concurrency =  self.flow.limit_concurrency();
+        let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
+        let limit_concurrency = self.flow.limit_concurrency();
         let mut futures = vec![];
         for ca in ca_vec {
             let f = case_spawn(self.flow_ctx.clone(), ca);
@@ -92,29 +99,35 @@ impl Runner {
                 case_assess_vec.extend(case_assess);
             }
         }
-        if !futures.is_empty(){
+        if !futures.is_empty() {
             let case_assess = join_all(futures).await;
             case_assess_vec.extend(case_assess);
         }
 
-        let any_fail = case_assess_vec.iter()
-            .any(|ca| !ca.state().is_ok());
+        let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
 
         return if any_fail {
             warn!("task Fail {}", self.id);
-            TaskAssessStruct::new(self.id.as_str(), start, Utc::now(),
-                                  TaskState::Fail(case_assess_vec))
+            TaskAssessStruct::new(
+                self.id.as_str(),
+                start,
+                Utc::now(),
+                TaskState::Fail(case_assess_vec),
+            )
         } else {
             debug!("task Ok {}", self.id);
-            TaskAssessStruct::new(self.id.as_str(), start, Utc::now(),
-                                  TaskState::Ok(case_assess_vec))
+            TaskAssessStruct::new(
+                self.id.as_str(),
+                start,
+                Utc::now(),
+                TaskState::Ok(case_assess_vec),
+            )
         };
     }
 
-
-
     pub fn case_arg_vec<'p>(&self, data: Vec<Json>) -> Result<Vec<CaseArgStruct>, Error> {
-        let vec = data.into_iter()
+        let vec = data
+            .into_iter()
             .enumerate()
             .map(|(i, d)| {
                 CaseArgStruct::new(
@@ -122,7 +135,7 @@ impl Runner {
                     self.flow.clone(),
                     self.point_runner_vec.clone(),
                     d,
-                    self.pre_ctx.clone()
+                    self.pre_ctx.clone(),
                 )
             })
             .collect();
@@ -130,7 +143,10 @@ impl Runner {
     }
 }
 
-async fn pre_arg(flow_ctx: Arc<dyn FlowContext>, flow: Arc<Flow>) -> Result<Option<CaseArgStruct>, Error> {
+async fn pre_arg(
+    flow_ctx: Arc<dyn FlowContext>,
+    flow: Arc<Flow>,
+) -> Result<Option<CaseArgStruct>, Error> {
     return if flow.pre_point_id_vec().is_none() {
         Ok(None)
     } else {
@@ -138,24 +154,25 @@ async fn pre_arg(flow_ctx: Arc<dyn FlowContext>, flow: Arc<Flow>) -> Result<Opti
             flow_ctx.as_ref(),
             flow.as_ref(),
             &Vec::new(),
-            flow.pre_point_id_vec().unwrap()).await?;
+            flow.pre_point_id_vec().unwrap(),
+        )
+        .await?;
 
-        Ok(Some(
-            CaseArgStruct::new(
-                0,
-                flow.clone(),
-                Arc::new(point_runner_vec),
-                Json::Null,
-                Arc::new(Vec::new())
-            )
-        ))
-    }
-
+        Ok(Some(CaseArgStruct::new(
+            0,
+            flow.clone(),
+            Arc::new(point_runner_vec),
+            Json::Null,
+            Arc::new(Vec::new()),
+        )))
+    };
 }
 
-async fn create_pre_ctx(flow_ctx: Arc<dyn FlowContext>,
-                        flow: Arc<Flow>,
-                        id: String) -> Result<Vec<(String, Json)>, Error>{
+async fn create_pre_ctx(
+    flow_ctx: Arc<dyn FlowContext>,
+    flow: Arc<Flow>,
+    id: String,
+) -> Result<Vec<(String, Json)>, Error> {
     let mut case_ctx = vec![];
     let pre_arg = pre_arg(flow_ctx.clone(), flow).await?;
     if pre_arg.is_none() {
@@ -171,8 +188,8 @@ async fn create_pre_ctx(flow_ctx: Arc<dyn FlowContext>,
                 match pa.state() {
                     PointState::Ok(pv) => {
                         pre_ctx.insert(String::from(pa.id()), pv.clone());
-                    },
-                    _ => return rerr!("012", "pre point run failure")
+                    }
+                    _ => return rerr!("012", "pre point run failure"),
                 }
             }
             let pre = Json::Object(pre_ctx);
@@ -183,30 +200,33 @@ async fn create_pre_ctx(flow_ctx: Arc<dyn FlowContext>,
         CaseState::Fail(pa_vec) => {
             let pa_last = pa_vec.last().unwrap();
             rerr!("020", format!("pre Fail : {}", pa_last.id()))
-        },
+        }
         CaseState::Err(e) => {
             rerr!("021", format!("pre Err  : {}", e.to_string()))
         }
     }
 }
 
-
-async fn create_point_runner_vec(flow_ctx: &dyn FlowContext,
-                                 flow: &Flow,
-                                 render_ctx_ext:  &Vec<(String, Json)>,
-                                 point_id_vec: Vec<String>) -> Result<Vec<(String, Box<dyn PointRunner>)>, Error>{
+async fn create_point_runner_vec(
+    flow_ctx: &dyn FlowContext,
+    flow: &Flow,
+    render_ctx_ext: &Vec<(String, Json)>,
+    point_id_vec: Vec<String>,
+) -> Result<Vec<(String, Box<dyn PointRunner>)>, Error> {
     let render_context = create_render_context(flow_ctx, flow, render_ctx_ext);
     let mut point_runner_vec = vec![];
-    for pid in  point_id_vec{
+    for pid in point_id_vec {
         let pr = create_point_runner(flow_ctx, flow, &render_context, pid.as_str()).await?;
         point_runner_vec.push((pid, pr));
     }
     Ok(point_runner_vec)
 }
 
-
-
-fn create_render_context(_: &dyn FlowContext, flow: &Flow, render_ctx_ext:  &Vec<(String, Json)>) -> Context{
+fn create_render_context(
+    _: &dyn FlowContext,
+    flow: &Flow,
+    render_ctx_ext: &Vec<(String, Json)>,
+) -> Context {
     let mut render_data: Map = Map::new();
     let config_def = flow.task_def();
     match config_def {
@@ -216,41 +236,49 @@ fn create_render_context(_: &dyn FlowContext, flow: &Flow, render_ctx_ext:  &Vec
         None => {}
     }
 
-    for (k,v) in render_ctx_ext.iter(){
+    for (k, v) in render_ctx_ext.iter() {
         render_data.insert(k.clone(), v.clone());
     }
 
     return Context::wraps(render_data).unwrap();
 }
 
-async fn create_point_runner(flow_ctx: &dyn FlowContext,
-                             flow: &Flow,
-                             render_context: &Context,
-                             point_id: &str) -> Result<Box<dyn PointRunner>, Error>{
-    let kind  = flow.point_kind(point_id);
+async fn create_point_runner(
+    flow_ctx: &dyn FlowContext,
+    flow: &Flow,
+    render_context: &Context,
+    point_id: &str,
+) -> Result<Box<dyn PointRunner>, Error> {
+    let kind = flow.point_kind(point_id);
     let point_arg = PointArgStruct::new(flow, point_id, flow_ctx.get_handlebars(), render_context);
-    flow_ctx.get_point_runner_factory().create_runner(kind, &point_arg).await
+    flow_ctx
+        .get_point_runner_factory()
+        .create_runner(kind, &point_arg)
+        .await
 }
 
-
-
-async fn case_run(flow_ctx: &dyn FlowContext,
-                  case_arg: &CaseArgStruct) -> Box<dyn CaseAssess>{
+async fn case_run(flow_ctx: &dyn FlowContext, case_arg: &CaseArgStruct) -> Box<dyn CaseAssess> {
     Box::new(case::run(flow_ctx, case_arg).await)
 }
 
-fn case_spawn(flow_ctx: Arc<dyn FlowContext>,
-              case_arg: CaseArgStruct,) -> JoinHandle<Box<dyn CaseAssess>>{
-    let task_id = TASK_ID.try_with(|c| c.borrow().clone()).unwrap_or("".to_owned());
+fn case_spawn(
+    flow_ctx: Arc<dyn FlowContext>,
+    case_arg: CaseArgStruct,
+) -> JoinHandle<Box<dyn CaseAssess>> {
+    let task_id = TASK_ID
+        .try_with(|c| c.borrow().clone())
+        .unwrap_or("".to_owned());
     let builder = Builder::new()
         .name(format!("case_{}", case_arg.id()))
         .spawn(case_run_arc(flow_ctx, task_id, case_arg));
     return builder.unwrap();
 }
 
-async fn case_run_arc(flow_ctx: Arc<dyn FlowContext>,
-                      task_id: String,
-                      case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run_arc(
+    flow_ctx: Arc<dyn FlowContext>,
+    task_id: String,
+    case_arg: CaseArgStruct,
+) -> Box<dyn CaseAssess> {
     TASK_ID.with(|tid| tid.replace(task_id));
     CASE_ID.with(|cid| cid.replace(case_arg.id()));
     case_run(flow_ctx.as_ref(), &case_arg).await

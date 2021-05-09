@@ -11,21 +11,21 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use crate::app::conf::Config;
+pub use async_trait::async_trait;
 use chord_common::error::Error;
 use chord_flow::FlowContext;
 use chord_point::PointRunnerFactoryDefault;
-use crate::app::conf::{Config};
-pub use async_trait::async_trait;
 
 use crate::biz;
-use chord_port::report::mongodb::{Client, Database, ClientOptions};
+use chord_port::report::mongodb::{Client, ClientOptions, Database};
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
 }
 
 #[test]
-fn regex(){
+fn regex() {
     assert!(GIT_URL.is_match("git@github.com:bit-ranger/chord.git"));
 }
 
@@ -38,17 +38,16 @@ pub struct Req {
     branch: Option<String>,
 
     #[validate(length(min = 1))]
-    job_path: Option<String>
+    job_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Rep {
-    exec_id: String
+    exec_id: String,
 }
 
 #[async_trait]
-pub trait Ctl{
-
+pub trait Ctl {
     async fn exec(&self, req: Req) -> Result<Rep, Error>;
 }
 
@@ -57,25 +56,25 @@ pub struct CtlImpl {
     ssh_key_private: PathBuf,
     flow_ctx: Arc<dyn FlowContext>,
     mongodb: Arc<Database>,
-    config: Arc<dyn Config>
+    config: Arc<dyn Config>,
 }
 
-unsafe impl Send for CtlImpl
-{
-}
+unsafe impl Send for CtlImpl {}
 
-unsafe impl Sync for CtlImpl
-{
-}
-
+unsafe impl Sync for CtlImpl {}
 
 impl CtlImpl {
     pub async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {
         let opt = ClientOptions::parse(config.report_mongodb_url()?).await?;
-        let db_name = opt.credential
+        let db_name = opt
+            .credential
             .as_ref()
-            .map(|c|
-                c.source.as_ref().map(|s| s.clone()).unwrap_or("chord".to_owned()))
+            .map(|c| {
+                c.source
+                    .as_ref()
+                    .map(|s| s.clone())
+                    .unwrap_or("chord".to_owned())
+            })
             .unwrap();
         let client = Client::with_options(opt)?;
         let db = client.database(db_name.as_str());
@@ -84,28 +83,39 @@ impl CtlImpl {
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
-            flow_ctx: chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?)).await,
+            flow_ctx: chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?))
+                .await,
             mongodb,
-            config
+            config,
         })
     }
 }
 
 #[async_trait]
 impl Ctl for CtlImpl {
-
     async fn exec(&self, req: Req) -> Result<Rep, Error> {
-        let exec_id = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis().to_string();
+        let exec_id = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
+            .to_string();
         let input = self.input_dir.clone();
         let ssh_key_pri = self.ssh_key_private.clone();
         let app_ctx_0 = self.flow_ctx.clone();
         let exec_id_0 = exec_id.clone();
         // self.pool.spawn(|| block_on(checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
-        spawn(checkout_run(app_ctx_0, input, ssh_key_pri, req, exec_id_0, self.mongodb.clone(), self.config.case_batch_size()));
-        return Ok(Rep{exec_id});
+        spawn(checkout_run(
+            app_ctx_0,
+            input,
+            ssh_key_pri,
+            req,
+            exec_id_0,
+            self.mongodb.clone(),
+            self.config.case_batch_size(),
+        ));
+        return Ok(Rep { exec_id });
     }
 }
-
 
 async fn checkout_run(
     app_ctx: Arc<dyn FlowContext>,
@@ -114,60 +124,76 @@ async fn checkout_run(
     req: Req,
     exec_id: String,
     mongodb: Arc<Database>,
-    case_batch_size: usize,) {
-    let is_delimiter = |c: char| ['@',':','/'].contains(&c);
+    case_batch_size: usize,
+) {
+    let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
 
     let host = git_url_splits[1];
     let group_name = git_url_splits[2];
     let repo_name = git_url_splits[3];
-    let checkout_path = input.clone()
-        .join(host)
-        .join(group_name)
-        .join(repo_name);
+    let checkout_path = input.clone().join(host).join(group_name).join(repo_name);
     if checkout_path.exists() {
         error!("checkout exist {}", checkout_path.to_str().unwrap());
         return;
     } else {
         if let Err(e) = async_std::fs::create_dir_all(checkout_path.clone()).await {
-            error!("checkout create_dir error {}, {}", checkout_path.to_str().unwrap(), e);
+            error!(
+                "checkout create_dir error {}, {}",
+                checkout_path.to_str().unwrap(),
+                e
+            );
             return;
         }
     }
 
-    if let Err(e) = checkout(ssh_key_pri.as_path(),
-                                  req.git_url.as_str(),
-                                  checkout_path.as_path(),
-                                  req.branch.unwrap_or_else(|| "master".to_owned()).as_str(),
-    ).await {
-        error!("checkout error {}, {}, {}", req.git_url, checkout_path.to_str().unwrap(), e);
+    if let Err(e) = checkout(
+        ssh_key_pri.as_path(),
+        req.git_url.as_str(),
+        checkout_path.as_path(),
+        req.branch.unwrap_or_else(|| "master".to_owned()).as_str(),
+    )
+    .await
+    {
+        error!(
+            "checkout error {}, {}, {}",
+            req.git_url,
+            checkout_path.to_str().unwrap(),
+            e
+        );
         clear(checkout_path.as_path()).await;
         return;
     }
 
-    let job_path = match req.job_path{
+    let job_path = match req.job_path {
         Some(p) => {
             let mut r = checkout_path.clone();
-            for seg in p.split("/"){
+            for seg in p.split("/") {
                 r = r.join(seg);
             }
             r
-        },
-        None => checkout_path.clone()
+        }
+        None => checkout_path.clone(),
     };
 
     let job_name = format!("{}:{}/{}", host, group_name, repo_name);
-    run(app_ctx, job_path, job_name, exec_id, mongodb, case_batch_size).await;
+    run(
+        app_ctx,
+        job_path,
+        job_name,
+        exec_id,
+        mongodb,
+        case_batch_size,
+    )
+    .await;
     clear(checkout_path.as_path()).await;
 }
 
 async fn clear(dir: &Path) {
     let path = dir.to_owned();
-    let result = spawn_blocking(move || {
-        rm_rf::ensure_removed(path)
-    }).await;
+    let result = spawn_blocking(move || rm_rf::ensure_removed(path)).await;
 
-    match result{
+    match result {
         Ok(()) => debug!("remove dir {}", dir.to_str().unwrap()),
         Err(e) => warn!("remove dir {}, {}", dir.to_str().unwrap(), e),
     }
@@ -190,7 +216,6 @@ fn credentials_callback<P: AsRef<Path>>(
     ssh_key_private: P,
     cred_types_allowed: git2::CredentialType,
 ) -> Result<git2::Cred, git2::Error> {
-
     if cred_types_allowed.contains(git2::CredentialType::SSH_KEY) {
         let cred = git2::Cred::ssh_key("git", None, ssh_key_private.as_ref(), None);
         if let Err(e) = &cred {
@@ -202,10 +227,11 @@ fn credentials_callback<P: AsRef<Path>>(
     return Err(git2::Error::from_str("ssh_key not allowed"));
 }
 
-async fn checkout(ssh_key_private: &Path,
-                  git_url: &str,
-                  into: &Path,
-                  branch: &str,
+async fn checkout(
+    ssh_key_private: &Path,
+    git_url: &str,
+    into: &Path,
+    branch: &str,
 ) -> Result<Repository, git2::Error> {
     let mut callbacks = git2::RemoteCallbacks::new();
     callbacks.credentials(|_, _, allowed| credentials_callback(ssh_key_private, allowed));
@@ -218,16 +244,24 @@ async fn checkout(ssh_key_private: &Path,
         .clone(git_url, into)
 }
 
-async fn run(app_ctx: Arc<dyn FlowContext>,
-             job_path: PathBuf,
-             job_name: String,
-             exec_id: String,
-             mongodb: Arc<Database>,
-             case_batch_size: usize,
+async fn run(
+    app_ctx: Arc<dyn FlowContext>,
+    job_path: PathBuf,
+    job_name: String,
+    exec_id: String,
+    mongodb: Arc<Database>,
+    case_batch_size: usize,
 ) {
-    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, mongodb, case_batch_size).await;
+    let job_result = biz::job::run(
+        job_path,
+        job_name,
+        exec_id,
+        app_ctx,
+        mongodb,
+        case_batch_size,
+    )
+    .await;
     if let Err(e) = job_result {
         error!("run job error {}", e);
     }
 }
-

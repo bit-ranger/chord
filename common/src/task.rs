@@ -1,27 +1,25 @@
 use chrono::{DateTime, Utc};
 
-use crate::error::Error;
 use crate::case::CaseAssess;
+use crate::error::Error;
 
 pub enum TaskState {
     Ok(Vec<Box<dyn CaseAssess>>),
     Err(Error),
-    Fail(Vec<Box<dyn CaseAssess>>)
+    Fail(Vec<Box<dyn CaseAssess>>),
 }
 
-impl TaskState{
-
+impl TaskState {
     #[allow(dead_code)]
-    pub fn is_ok(&self) -> bool{
+    pub fn is_ok(&self) -> bool {
         match self {
             TaskState::Ok(_) => true,
-            _ => false
+            _ => false,
         }
     }
 }
 
-pub trait TaskAssess : Sync + Send{
-
+pub trait TaskAssess: Sync + Send {
     fn id(&self) -> &str;
 
     fn start(&self) -> DateTime<Utc>;
@@ -31,11 +29,6 @@ pub trait TaskAssess : Sync + Send{
     fn state(&self) -> &TaskState;
 }
 
+unsafe impl Send for TaskState {}
 
-unsafe impl Send for TaskState
-{
-}
-
-unsafe impl Sync for TaskState
-{
-}
+unsafe impl Sync for TaskState {}

@@ -1,21 +1,20 @@
 use std::path::Path;
 
-use tide::{Request, Response};
 use tide::http::StatusCode;
 use tide::prelude::*;
+use tide::{Request, Response};
 use validator::{ValidationErrors, ValidationErrorsKind};
 
 use chord_common::error::Error;
 use chord_common::value::Json;
 
-
-use crate::ctl::job;
 use crate::app::conf::{Config, ConfigImpl};
-use async_std::sync::Arc;
+use crate::ctl::job;
 use crate::ctl::job::CtlImpl;
+use async_std::sync::Arc;
 
-mod logger;
 pub mod conf;
+mod logger;
 
 #[derive(Serialize, Deserialize)]
 struct ErrorBody {
@@ -24,33 +23,30 @@ struct ErrorBody {
 }
 
 fn common_error_json(e: &Error) -> Json {
-    json!(ErrorBody{
-                code: e.code().into(),
-                message: e.message().into()
-            })
+    json!(ErrorBody {
+        code: e.code().into(),
+        message: e.message().into()
+    })
 }
 
 fn validator_error_json_nested(e: &ValidationErrors) -> Vec<String> {
-    return e.errors()
+    return e
+        .errors()
         .iter()
-        .map(|(k, e)|
-            match e {
-                ValidationErrorsKind::Field(ev) =>
-                    ev.iter()
-                        .map(|e| format!("[{}] {}", k, e.to_string()))
-                        .collect(),
-                ValidationErrorsKind::Struct(f) =>
-                    validator_error_json_nested(f.as_ref()),
-                ValidationErrorsKind::List(m) =>
-                    m.iter()
-                        .map(|(_i, e)|
-                            validator_error_json_nested(e.as_ref()))
-                        .fold(Vec::new(), |mut l, e| {
-                            l.extend(e);
-                            return l;
-                        })
-            }
-        )
+        .map(|(k, e)| match e {
+            ValidationErrorsKind::Field(ev) => ev
+                .iter()
+                .map(|e| format!("[{}] {}", k, e.to_string()))
+                .collect(),
+            ValidationErrorsKind::Struct(f) => validator_error_json_nested(f.as_ref()),
+            ValidationErrorsKind::List(m) => m
+                .iter()
+                .map(|(_i, e)| validator_error_json_nested(e.as_ref()))
+                .fold(Vec::new(), |mut l, e| {
+                    l.extend(e);
+                    return l;
+                }),
+        })
         .fold(Vec::new(), |mut l, e| {
             l.extend(e);
             return l;
@@ -58,63 +54,58 @@ fn validator_error_json_nested(e: &ValidationErrors) -> Vec<String> {
 }
 
 fn validator_error_json(e: &ValidationErrors) -> Json {
-    json!(ErrorBody{
-                code: "400".into(),
-                message: validator_error_json_nested(e).into_iter().last().unwrap()
-            })
+    json!(ErrorBody {
+        code: "400".into(),
+        message: validator_error_json_nested(e).into_iter().last().unwrap()
+    })
 }
-
 
 #[macro_export]
 macro_rules! json_handler {
     ($func:path, $ctl:expr) => {{
-        |mut req: Request<()>| async move{
-            let rb =  req.body_json().await?;
-            if let Err(e) = validator::Validate::validate(&rb){
-                return Ok(Response::builder(StatusCode::BadRequest)
-                    .body(validator_error_json(&e)))
+        |mut req: Request<()>| async move {
+            let rb = req.body_json().await?;
+            if let Err(e) = validator::Validate::validate(&rb) {
+                return Ok(Response::builder(StatusCode::BadRequest).body(validator_error_json(&e)));
             };
             let rst = $func($ctl, rb).await;
-            match rst{
-                Ok(r) => Ok(Response::builder(StatusCode::Ok)
-                    .body(json!(r))),
-                Err(e) => Ok(Response::builder(StatusCode::InternalServerError)
-                    .body(common_error_json(&e)))
+            match rst {
+                Ok(r) => Ok(Response::builder(StatusCode::Ok).body(json!(r))),
+                Err(e) => {
+                    Ok(Response::builder(StatusCode::InternalServerError)
+                        .body(common_error_json(&e)))
+                }
             }
         }
-    }}
+    }};
 }
-
 
 static mut JOB_CTL: Option<Arc<CtlImpl>> = Option::None;
 
-
-pub fn set_job_ctl_static(ctl: Arc<CtlImpl>){
+pub fn set_job_ctl_static(ctl: Arc<CtlImpl>) {
     unsafe {
         JOB_CTL = Some(ctl);
     }
 }
 
 pub fn get_job_ctl_static_ref() -> &'static CtlImpl {
-    unsafe {JOB_CTL.as_ref().unwrap()}
+    unsafe { JOB_CTL.as_ref().unwrap() }
 }
 
-
-pub async fn init(data: Json) -> Result<(), Error>{
+pub async fn init(data: Json) -> Result<(), Error> {
     let config = Arc::new(ConfigImpl::new(data));
     let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
     set_job_ctl_static(job_ctl);
-
 
     let mut app = tide::new();
 
     let log_file_path = Path::new(config.log_path());
     let _log_handler = logger::init(config.log_level(), &log_file_path).await?;
 
-    app.at("/job/exec").post(
-        json_handler!(job::Ctl::exec, get_job_ctl_static_ref())
-    );
+    app.at("/job/exec")
+        .post(json_handler!(job::Ctl::exec, get_job_ctl_static_ref()));
 
-    app.listen(format!("{}:{}", config.server_ip(), config.server_port())).await?;
+    app.listen(format!("{}:{}", config.server_ip(), config.server_port()))
+        .await?;
     Ok(())
 }

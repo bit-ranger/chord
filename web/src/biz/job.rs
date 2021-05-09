@@ -14,13 +14,19 @@ use chord_common::task::TaskState;
 use chord_flow::FlowContext;
 use chord_port::report::mongodb::{Collection, Database, Document, Reporter};
 
-pub async fn run<P: AsRef<Path>>(job_path: P,
-                                 job_name: String,
-                                 exec_id: String,
-                                 app_ctx: Arc<dyn FlowContext>,
-                                 db: Arc<Database>,
-                                 case_batch_size: usize,) -> Result<Vec<TaskState>, Error> {
-    debug!("job start {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
+pub async fn run<P: AsRef<Path>>(
+    job_path: P,
+    job_name: String,
+    exec_id: String,
+    app_ctx: Arc<dyn FlowContext>,
+    db: Arc<Database>,
+    case_batch_size: usize,
+) -> Result<Vec<TaskState>, Error> {
+    debug!(
+        "job start {}, {}",
+        job_path.as_ref().to_str().unwrap(),
+        job_name.as_str()
+    );
     let job_collection = Arc::new(db.collection::<Document>(job_name.as_str()));
 
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
@@ -40,22 +46,27 @@ pub async fn run<P: AsRef<Path>>(job_path: P,
             continue;
         }
 
-        let builder = Builder::new()
-            .name(task_dir.file_name().to_str().unwrap().into());
+        let builder = Builder::new().name(task_dir.file_name().to_str().unwrap().into());
 
         let task_input_dir = job_path.as_ref().join(task_dir.path());
-        let jh = builder.spawn(run_task(
-            task_input_dir,
-            exec_id.clone(),
-            app_ctx.clone(),
-            job_collection.clone(),
-            case_batch_size))
+        let jh = builder
+            .spawn(run_task(
+                task_input_dir,
+                exec_id.clone(),
+                app_ctx.clone(),
+                job_collection.clone(),
+                case_batch_size,
+            ))
             .unwrap();
         futures.push(jh);
     }
 
     let task_state_vec = join_all(futures).await;
-    debug!("job end {}, {}", job_path.as_ref().to_str().unwrap(), job_name.as_str());
+    debug!(
+        "job end {}, {}",
+        job_path.as_ref().to_str().unwrap(),
+        job_name.as_str()
+    );
     return Ok(task_state_vec);
 }
 
@@ -65,8 +76,7 @@ async fn run_task<P: AsRef<Path>>(
     app_ctx: Arc<dyn FlowContext>,
     collection: Arc<Collection>,
     case_batch_size: usize,
-) -> TaskState
-{
+) -> TaskState {
     let input_dir = Path::new(input_dir.as_ref());
     let rt = run_task0(input_dir, exec_id, app_ctx, collection, case_batch_size).await;
     match rt {
@@ -78,11 +88,12 @@ async fn run_task<P: AsRef<Path>>(
     }
 }
 
-async fn run_task0<P: AsRef<Path>>(task_path: P,
-                                   exec_id: String,
-                                   app_ctx: Arc<dyn FlowContext>,
-                                   collection: Arc<Collection>,
-                                   case_batch_size: usize,
+async fn run_task0<P: AsRef<Path>>(
+    task_path: P,
+    exec_id: String,
+    app_ctx: Arc<dyn FlowContext>,
+    collection: Arc<Collection>,
+    case_batch_size: usize,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
@@ -97,13 +108,15 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
     //read
     let data_path = task_path.clone().join("data.csv");
 
-    let mut data_loader = chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
+    let mut data_loader =
+        chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
     //write
     let mut assess_reporter = Reporter::new(collection, task_id, exec_id).await?;
 
     //runner
-    let mut runner = chord_flow::Runner::new(app_ctx, Arc::new(flow), String::from(task_id)).await?;
+    let mut runner =
+        chord_flow::Runner::new(app_ctx, Arc::new(flow), String::from(task_id)).await?;
 
     let mut total_task_state = TaskState::Ok(vec![]);
     loop {
@@ -121,7 +134,7 @@ async fn run_task0<P: AsRef<Path>>(task_path: P,
                 break;
             }
             TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
-            _ => ()
+            _ => (),
         }
 
         if data_len < case_batch_size {

@@ -1,30 +1,29 @@
-use log::{debug};
 use async_std::net::TcpStream;
-use chord_common::value::{Json};
-use std::str::FromStr;
-use chord_common::point::{PointArg, PointValue, PointRunner, async_trait};
-use chord_common::{rerr, err};
-use chord_common::error::Error;
 use async_std::prelude::*;
-
+use chord_common::error::Error;
+use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
+use chord_common::value::Json;
+use chord_common::{err, rerr};
+use log::debug;
+use std::str::FromStr;
 
 struct Dubbo {}
 
 #[async_trait]
 impl PointRunner for Dubbo {
-
     async fn run(&self, arg: &dyn PointArg) -> PointValue {
         run(arg).await
     }
 }
 
-pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>{
+pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
     Ok(Box::new(Dubbo {}))
 }
 
 async fn run(arg: &dyn PointArg) -> PointValue {
-    let address = arg.config()["address"].as_str()
-        .map(|s|arg.render(s))
+    let address = arg.config()["address"]
+        .as_str()
+        .map(|s| arg.render(s))
         .ok_or(err!("010", "missing address"))??;
     let mut server_stream = match TcpStream::connect(address).await {
         Ok(server_stream) => server_stream,
@@ -33,13 +32,14 @@ async fn run(arg: &dyn PointArg) -> PointValue {
         }
     };
 
-    let invoke = arg.config()["invoke"].as_str()
-        .map(|s|arg.render(s))
+    let invoke = arg.config()["invoke"]
+        .as_str()
+        .map(|s| arg.render(s))
         .ok_or(err!("010", "missing invoke"))??;
     let invoke = format!("invoke {}", invoke);
     server_stream.write_all(invoke.as_bytes()).await?;
 
-    let suffix ="dubbo>".as_bytes();
+    let suffix = "dubbo>".as_bytes();
     let mut response = vec![0; 0];
     let mut seek_idx = 0;
     loop {
@@ -50,9 +50,9 @@ async fn run(arg: &dyn PointArg) -> PointValue {
             Some(i) => {
                 response.truncate(seek_idx + i);
                 break;
-            },
+            }
             None => {
-                seek_idx = std::cmp::min(response.len()-1,response.len()-suffix.len());
+                seek_idx = std::cmp::min(response.len() - 1, response.len() - suffix.len());
             }
         }
     }
@@ -65,15 +65,12 @@ async fn run(arg: &dyn PointArg) -> PointValue {
             value.truncate(i);
             let json = Json::from_str(value.as_str())?;
             PointValue::Ok(json)
-        },
+        }
         None => {
             rerr!("001", value)
         }
     }
-
-
 }
-
 
 fn sub_vec_index(vec: &[u8], sub_vec: &[u8]) -> Option<usize> {
     let mut sub_vec_index = 0;
@@ -85,20 +82,19 @@ fn sub_vec_index(vec: &[u8], sub_vec: &[u8]) -> Option<usize> {
                 return Some(sub_vec_index);
             }
         } else {
-            sub_vec_index = i+1;
+            sub_vec_index = i + 1;
         }
     }
 
     return None;
 }
 
-
 #[test]
 fn sub_vec_index_test() {
-    let vec = vec![0,1,2,3,4,5,6,7,8];
-    assert_eq!(3, sub_vec_index(&vec, &vec![3,4,5]).unwrap());
+    let vec = vec![0, 1, 2, 3, 4, 5, 6, 7, 8];
+    assert_eq!(3, sub_vec_index(&vec, &vec![3, 4, 5]).unwrap());
 
-    assert_eq!(6, sub_vec_index(&vec, &vec![6,7,8]).unwrap());
+    assert_eq!(6, sub_vec_index(&vec, &vec![6, 7, 8]).unwrap());
 
-    assert_eq!(true, sub_vec_index(&vec, &vec![7,8, 9]).is_none());
+    assert_eq!(true, sub_vec_index(&vec, &vec![7, 8, 9]).is_none());
 }

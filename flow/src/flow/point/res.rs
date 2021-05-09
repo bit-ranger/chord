@@ -6,14 +6,16 @@ pub struct PointAssessStruct {
     pub id: String,
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
-    pub state: PointState
+    pub state: PointState,
 }
 
 impl PointAssessStruct {
-    pub fn new(id: &str,
-               start: DateTime<Utc>,
-               end: DateTime<Utc>,
-               state: PointState) -> PointAssessStruct {
+    pub fn new(
+        id: &str,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+        state: PointState,
+    ) -> PointAssessStruct {
         PointAssessStruct {
             id: String::from(id),
             start,
@@ -24,7 +26,6 @@ impl PointAssessStruct {
 }
 
 impl PointAssess for PointAssessStruct {
-
     fn id(&self) -> &str {
         &self.id
     }
@@ -42,13 +43,6 @@ impl PointAssess for PointAssessStruct {
     }
 }
 
+unsafe impl Send for PointAssessStruct {}
 
-unsafe impl Send for PointAssessStruct
-{
-}
-
-unsafe impl Sync for PointAssessStruct
-{
-}
-
-
+unsafe impl Sync for PointAssessStruct {}

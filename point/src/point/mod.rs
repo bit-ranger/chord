@@ -1,24 +1,26 @@
-use chord_common::rerr;
-use chord_common::point::{PointRunner, PointArg};
 use chord_common::error::Error;
+use chord_common::point::{PointArg, PointRunner};
+use chord_common::rerr;
 
 pub mod sleep;
 
+#[cfg(feature = "point_dubbo")]
+pub mod dubbo;
 #[cfg(feature = "point_jsonapi")]
 pub mod jsonapi;
 #[cfg(feature = "point_md5")]
 pub mod md5;
-#[cfg(feature = "point_dubbo")]
-pub mod dubbo;
+#[cfg(feature = "point_mongodb")]
+pub mod mongodb;
 #[cfg(feature = "point_mysql")]
 pub mod mysql;
 #[cfg(feature = "point_redis")]
 pub mod redis;
-#[cfg(feature = "point_mongodb")]
-pub mod mongodb;
 
-pub async fn create_kind_runner(kind: &str, arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error>{
-
+pub async fn create_kind_runner(
+    kind: &str,
+    arg: &dyn PointArg,
+) -> Result<Box<dyn PointRunner>, Error> {
     let value = match kind.trim() {
         "sleep" => sleep::create(arg).await,
 
@@ -34,7 +36,7 @@ pub async fn create_kind_runner(kind: &str, arg: &dyn PointArg) -> Result<Box<dy
         "redis" => redis::create(arg).await,
         #[cfg(feature = "point_mongodb")]
         "mongodb" => mongodb::create(arg).await,
-        _ => rerr!("002", format!("unsupported point kind {}", kind).as_str())
+        _ => rerr!("002", format!("unsupported point kind {}", kind).as_str()),
     };
 
     return value;

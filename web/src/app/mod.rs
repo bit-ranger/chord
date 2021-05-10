@@ -65,13 +65,13 @@ fn validator_error_json(e: &ValidationErrors) -> Json {
 
 #[macro_export]
 macro_rules! json_handler {
-    ($func:path, $ctl:expr) => {{
+    ($closure:tt) => {{
         |mut req: Request<()>| async move {
             let rb = req.body_json().await?;
             if let Err(e) = validator::Validate::validate(&rb) {
                 return Ok(Response::builder(StatusCode::BadRequest).body(validator_error_json(&e)));
             };
-            let rst = $func($ctl, rb).await;
+            let rst = $closure(rb).await;
             match rst {
                 Ok(r) => Ok(Response::builder(StatusCode::Ok).body(json!(r))),
                 Err(e) => {
@@ -83,11 +83,10 @@ macro_rules! json_handler {
     }};
 }
 
-pool!(config: crate::app::ConfigImpl, job_ctl: job::CtlImpl);
+pool!(Controller, {config: crate::app::ConfigImpl, job_ctl: job::CtlImpl});
 
 pub async fn init(data: Json) -> Result<(), Error> {
-    init_pool();
-    let pool = mut_pool();
+    let pool = Controller::pool_init();
 
     let config = Arc::new(ConfigImpl::new(data));
     let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
@@ -98,10 +97,12 @@ pub async fn init(data: Json) -> Result<(), Error> {
 
     let log_file_path = Path::new(config.log_path());
     let _log_handler = logger::init(config.log_level(), &log_file_path).await?;
-    let job_ctl: &job::CtlImpl = get_pool().get_ref().unwrap();
 
     app.at("/job/exec")
-        .post(json_handler!(job::Ctl::exec, get_pool().get_ref().unwrap()));
+        .post(json_handler!((|rb: job::Req| async {
+            let job_ctl: Arc<job::CtlImpl> = Controller::pool_ref().get().unwrap();
+            job::Ctl::exec(job_ctl.as_ref(), rb).await
+        })));
 
     app.listen(format!("{}:{}", config.server_ip(), config.server_port()))
         .await?;

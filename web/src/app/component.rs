@@ -1,23 +1,21 @@
-pub trait HasComponent<T> {
-    fn set(&mut self, component: async_std::sync::Arc<T>);
+pub trait HasComponent<C> {
+    fn set(&mut self, component: async_std::sync::Arc<C>);
 
-    fn get(&self) -> Option<async_std::sync::Arc<T>>;
-
-    fn get_ref(&self) -> Option<&T>;
+    fn get(&self) -> Option<async_std::sync::Arc<C>>;
 }
 
 #[macro_export]
 macro_rules! pool {
-    ($($cn:ident: $ct:ty),+) => {
+    ($pn:ident, {$($cn:ident: $ct:ty),+}) => {
         #[derive(Default)]
-        pub struct Container {
+        pub struct $pn {
             $(
                 $cn: Option<async_std::sync::Arc<$ct>>,
             )*
         }
 
         $(
-            impl crate::app::component::HasComponent<$ct> for Container {
+            impl crate::app::component::HasComponent<$ct> for $pn {
                 fn set(&mut self, component: async_std::sync::Arc<$ct>) {
                     self.$cn = Some(component)
                 }
@@ -25,40 +23,23 @@ macro_rules! pool {
                 fn get(&self) -> Option<async_std::sync::Arc<$ct>> {
                     self.$cn.as_ref().map(|c| c.clone())
                 }
-
-                fn get_ref(&self) -> Option<& $ct> {
-                    self.$cn.as_ref()
-                }
             }
         )*
 
-        static mut __pool: Option<Container> = Option::None;
+        static mut POOL: Option<$pn> = Option::None;
 
-        pub fn init_pool() {
-            unsafe {
-                __pool = Some(Container::default());
+        impl $pn {
+
+            fn pool_init() -> &'static mut $pn{
+                unsafe {
+                    POOL = Some($pn::default());
+                    POOL.as_mut().unwrap()
+                }
+            }
+
+            pub fn pool_ref() -> &'static $pn {
+                unsafe { POOL.as_ref().unwrap() }
             }
         }
-
-        pub fn get_pool() -> &'static Container {
-            unsafe { __pool.as_ref().unwrap() }
-        }
-
-        pub fn mut_pool() -> &'static mut Container {
-            unsafe { __pool.as_ref().unwrap() }
-        }
     };
-}
-
-mod test {
-    use crate::app::component::HasComponent;
-    use crate::app::conf::ConfigImpl;
-    use async_std::sync::Arc;
-    pool!(config: crate::app::ConfigImpl);
-
-    #[test]
-    fn test() {
-        init_pool();
-        let config: Option<Arc<ConfigImpl>> = get_pool().get();
-    }
 }

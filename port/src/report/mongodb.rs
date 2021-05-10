@@ -216,6 +216,11 @@ fn pa_doc(pa: &dyn PointAssess) -> Document {
            PointState::Ok(_) => "O",
            PointState::Fail(_) => "F",
            PointState::Err(_) => "E",
+        },
+        "value": match pa.state(){
+           PointState::Ok(_) => "".to_string(),
+           PointState::Fail(v) => v.to_string(),
+           PointState::Err(e) => e.to_string(),
         }
     }
 }

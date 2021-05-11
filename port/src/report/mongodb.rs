@@ -1,19 +1,22 @@
+use std::convert::TryFrom;
+
 use async_std::sync::Arc;
 use chrono::Utc;
 use itertools::Itertools;
-pub use mongodb::bson::doc;
+pub use mongodb::bson::{Array, bson, Bson, doc, to_bson, to_document};
 pub use mongodb::bson::Document;
-pub use mongodb::options::ClientOptions;
 pub use mongodb::Client;
 pub use mongodb::Collection;
 pub use mongodb::Database;
+pub use mongodb::options::ClientOptions;
+use mongodb::options::UpdateOptions;
 
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
 use chord_common::point::{PointAssess, PointState};
 use chord_common::rerr;
 use chord_common::task::{TaskAssess, TaskState};
-use mongodb::options::UpdateOptions;
+use chord_common::value::Json;
 
 pub struct Reporter {
     collection: Arc<Collection>,
@@ -218,9 +221,18 @@ fn pa_doc(pa: &dyn PointAssess) -> Document {
            PointState::Err(_) => "E",
         },
         "value": match pa.state(){
-           PointState::Ok(_) => "".to_string(),
-           PointState::Fail(v) => v.to_string(),
-           PointState::Err(e) => e.to_string(),
+           PointState::Ok(v) => json_bson(&v),
+           PointState::Fail(v) => json_bson(&v),
+           PointState::Err(e) => Bson::String(e.to_string())
         }
     }
+}
+
+
+fn json_bson(json: &Json) -> Bson{
+    Bson::try_from(json.clone())
+        .unwrap_or_else(|e| Bson::Document(doc! {
+            "fallback": json.to_string(),
+            "error": e.to_string()
+        }))
 }

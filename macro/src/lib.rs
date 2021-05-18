@@ -10,6 +10,8 @@ use syn::Result;
 use syn::token::{Brace};
 use syn::{Type};
 use syn::Token;
+use std::hash::Hash;
+use std::collections::HashSet;
 
 
 struct Syntax  {
@@ -18,14 +20,9 @@ struct Syntax  {
     brace_fields: Punctuated<Type, Token![,]>,
 }
 
-struct Field {
-    name: Ident,
-    ty: Type
-}
-
 struct PoolStructure {
     name: Ident,
-    fields: Vec<Field>
+    tys: Vec<Type>
 }
 
 
@@ -40,29 +37,39 @@ impl Parse for PoolStructure {
         };
 
         let type_vec: Vec<Type> = syntax.brace_fields.into_iter().collect();
-        let fields: Vec<Field> = type_vec.into_iter()
-            .enumerate()
-            .map(|(i, t)|
-                Field {
-                    name: Ident::new(format!("_com_{}_", i).as_str(), Span::call_site()),
-                    ty: t
-                }
-            )
-            .collect();
+
         Ok(PoolStructure{
             name: syntax.ident,
-            fields
+            tys: type_vec
         })
     }
 }
 
+fn has_unique_elements<T>(iter: T) -> bool
+    where
+        T: IntoIterator,
+        T::Item: Eq + Hash,
+{
+    let mut unique = HashSet::new();
+    iter.into_iter().all(move |x| unique.insert(x))
+}
 
 #[proc_macro]
 pub fn pool(input: TokenStream) -> TokenStream {
     let pool_structure = syn::parse_macro_input!(input as PoolStructure);
     let pool_name = pool_structure.name;
-    let field_names: Vec<Ident> = pool_structure.fields.iter().map(|f| f.name.clone()).collect();
-    let field_types: Vec<Type> = pool_structure.fields.iter().map(|f| f.ty.clone()).collect();
+
+    if !has_unique_elements(pool_structure.tys.clone()) {
+        panic!("duplicate type exist")
+    }
+
+    let field_types: Vec<Type> = pool_structure.tys.clone();
+    let field_names: Vec<Ident> = field_types
+        .clone()
+        .into_iter()
+        .enumerate()
+        .map(|(i, _t)| Ident::new(format!("_com_{}_", i).as_str(), Span::call_site()))
+        .collect();
 
     let struct_def = quote!{
         #[derive(Default)]

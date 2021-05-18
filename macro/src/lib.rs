@@ -67,38 +67,43 @@ pub fn pool(input: TokenStream) -> TokenStream {
     let struct_def = quote!{
         #[derive(Default)]
         pub struct #pool_name {
-            #(#field_names: Option<async_std::sync::Arc<#field_types>>),*
+            #(#field_names: std::collections::HashMap<String, async_std::sync::Arc<#field_types>>),*
         }
     };
 
     let comp_trait_impl = quote!{
         #(
             impl chord_common::component::HasComponent<#field_types> for #pool_name {
-                fn set(&mut self, component: async_std::sync::Arc<#field_types>) {
-                    self.#field_names = Some(component)
+                fn add(&mut self, name: &str, component: async_std::sync::Arc<#field_types>) {
+                    self.#field_names.insert(name.to_owned(), component);
                 }
 
-                fn get(&self) -> Option<async_std::sync::Arc<#field_types>> {
-                    self.#field_names.as_ref().map(|c| c.clone())
+                fn get(&self, name: &str) -> Option<async_std::sync::Arc<#field_types>> {
+                    self.#field_names.get(name).map(|c| c.clone())
+                }
+
+               fn get_all(&self) -> Vec<(&str, async_std::sync::Arc<#field_types>)> {
+                    self.#field_names.iter().map(|(k,v)| (k.as_str(), v.clone())).collect()
                 }
             }
         )*
     };
 
+    let pool_static_var = Ident::new(format!("__pool_{}__", pool_name).as_str(), Span::call_site());
 
     let pool_def = quote!{
-        static mut POOL: Option<#pool_name> = Option::None;
+        static mut #pool_static_var: Option<#pool_name> = Option::None;
         impl #pool_name {
 
             fn pool_init() -> &'static mut #pool_name{
                 unsafe {
-                    POOL = Some(#pool_name::default());
-                    POOL.as_mut().unwrap()
+                    #pool_static_var = Some(#pool_name::default());
+                    #pool_static_var.as_mut().unwrap()
                 }
             }
 
             pub fn pool_ref() -> &'static #pool_name {
-                unsafe { POOL.as_ref().unwrap() }
+                unsafe { #pool_static_var.as_ref().unwrap() }
             }
         }
     };

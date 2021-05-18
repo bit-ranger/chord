@@ -89,8 +89,8 @@ pub async fn init(data: Json) -> Result<(), Error> {
 
     let config = Arc::new(ConfigImpl::new(data));
     let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
-    pool.set(config.clone());
-    pool.set(job_ctl.clone());
+    pool.add("default", config.clone());
+    pool.add("default", job_ctl.clone());
 
     let mut app = tide::new();
 
@@ -99,7 +99,7 @@ pub async fn init(data: Json) -> Result<(), Error> {
 
     app.at("/job/exec")
         .post(json_handler!((|rb: job::Req| async {
-            let job_ctl: Arc<job::CtlImpl> = Controller::pool_ref().get().unwrap();
+            let job_ctl: Arc<job::CtlImpl> = Controller::pool_ref().get("default").unwrap();
             job::Ctl::exec(job_ctl.as_ref(), rb).await
         })));
 

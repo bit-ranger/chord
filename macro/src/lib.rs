@@ -31,21 +31,12 @@ struct PoolStructure {
 
 impl Parse for PoolStructure {
 
-
     fn parse(stream: ParseStream) -> Result<Self> {
-
-        let ident: Ident = stream.parse().unwrap();
-
         let content;
-        let _brace_token: Brace = braced!(content in stream);
-        println!("content: {}", content);
-
-        let brace_fields: Punctuated<Type, Token![,]> = content.parse_terminated(Type::parse).unwrap();
-
         let syntax = Syntax {
-            ident,
-            _brace_token,
-            brace_fields,
+            ident: stream.parse().unwrap(),
+            _brace_token: braced!(content in stream),
+            brace_fields: content.parse_terminated(Type::parse).unwrap()
         };
 
         let type_vec: Vec<Type> = syntax.brace_fields.into_iter().collect();

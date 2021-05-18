@@ -1,22 +1,20 @@
-use std::convert::TryFrom;
-
-use async_std::sync::Arc;
 use chrono::Utc;
+use async_std::sync::Arc;
 use itertools::Itertools;
-pub use mongodb::bson::{Array, bson, Bson, doc, to_bson, to_document};
+pub use mongodb::bson::doc;
 pub use mongodb::bson::Document;
 pub use mongodb::Client;
 pub use mongodb::Collection;
 pub use mongodb::Database;
 pub use mongodb::options::ClientOptions;
-use mongodb::options::UpdateOptions;
 
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
 use chord_common::point::{PointAssess, PointState};
 use chord_common::rerr;
 use chord_common::task::{TaskAssess, TaskState};
-use chord_common::value::Json;
+use mongodb::options::UpdateOptions;
+
 
 pub struct Reporter {
     collection: Arc<Collection>,
@@ -26,32 +24,25 @@ pub struct Reporter {
 }
 
 impl Reporter {
-    pub async fn new<T, E>(
-        collection: Arc<Collection>,
-        task_id: T,
-        exec_id: E,
-    ) -> Result<Reporter, Error>
-    where
-        T: Into<String>,
-        E: Into<String>,
-    {
+    pub async fn new<T, E>(collection: Arc<Collection>,
+                           task_id: T,
+                           exec_id: E) -> Result<Reporter, Error>
+        where T: Into<String>, E: Into<String> {
         let exec_id = exec_id.into();
         let task_id = task_id.into();
-        collection
-            .update_one(
-                doc! {
-                    "exec_id": exec_id.as_str()
-                },
-                doc! {
-                    "$set": {
-                        "exec_id": exec_id.as_str(),
-                        "exec_time": Utc::now(),
-                        "task_assess": []
-                        }
-                },
-                Some(UpdateOptions::builder().upsert(true).build()),
-            )
-            .await?;
+        collection.update_one(
+            doc! {
+                "exec_id": exec_id.as_str()
+            },
+            doc! {
+                "$set": {
+                    "exec_id": exec_id.as_str(),
+                    "exec_time": Utc::now(),
+                    "task_assess": []
+                    }
+            },
+            Some(UpdateOptions::builder().upsert(true).build())
+        ).await?;
 
         Ok(Reporter {
             collection,
@@ -80,25 +71,17 @@ impl Reporter {
             }
         }
 
-        let task_doc = self
-            .collection
-            .find_one(
-                doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()},
-                None,
-            )
-            .await?;
+        let task_doc = self.collection.find_one(doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()}, None).await?;
         if let None = task_doc {
-            self.collection
-                .update_one(
-                    doc! { "exec_id": self.exec_id.as_str()},
-                    doc! { "$push": {
-                            "task_assess":
-                            ta_doc_init(task_assess)
-                        }
-                    },
-                    false,
-                )
-                .await?;
+            self.collection.update_one(
+                doc! { "exec_id": self.exec_id.as_str()},
+                doc! { "$push": {
+                                    "task_assess":
+                                    ta_doc_init(task_assess)
+                                }
+                            },
+                None,
+            ).await?;
             return Ok(());
         }
 
@@ -116,7 +99,7 @@ impl Reporter {
                                     "task_assess.$.end": task_assess.end()
                                 }
                             },
-                    false,
+                    None,
                 ).await?;
             }
             TaskState::Err(e) => {
@@ -129,7 +112,7 @@ impl Reporter {
                                     "task_assess.$.error": e.to_string()
                                 }
                             },
-                    false,
+                    None,
                 ).await?;
             }
         }
@@ -141,16 +124,14 @@ impl Reporter {
         let state = match self.total_task_state {
             TaskState::Ok(_) => "O",
             TaskState::Fail(_) => "F",
-            TaskState::Err(_) => "E",
+            TaskState::Err(_) => "E"
         };
 
-        self.collection
-            .update_one(
-                doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": self.task_id},
-                doc! {"$set": {"task_assess.$.state": state}},
-                false,
-            )
-            .await?;
+        self.collection.update_one(
+            doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": self.task_id},
+            doc! {"$set": {"task_assess.$.state": state}},
+            None,
+        ).await?;
         Ok(())
     }
 }
@@ -165,7 +146,7 @@ fn ta_doc_init(ta: &dyn TaskAssess) -> Document {
                 "state": "R",
                 "case_assess": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
             }
-        }
+        },
         TaskState::Err(e) => {
             doc! {
                 "id": ta.id(),
@@ -212,27 +193,15 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
 
 fn pa_doc(pa: &dyn PointAssess) -> Document {
     doc! {
-        "id": pa.id(),
-        "start": pa.start(),
-        "end": pa.end(),
-        "state": match pa.state(){
-           PointState::Ok(_) => "O",
-           PointState::Fail(_) => "F",
-           PointState::Err(_) => "E",
-        },
-        "value": match pa.state(){
-           PointState::Ok(v) => json_bson(&v),
-           PointState::Fail(v) => json_bson(&v),
-           PointState::Err(e) => Bson::String(e.to_string())
+            "id": pa.id(),
+            "start": pa.start(),
+            "end": pa.end(),
+            "state": match pa.state(){
+               PointState::Ok(_) => "O",
+               PointState::Fail(_) => "F",
+               PointState::Err(_) => "E",
+            }
         }
-    }
 }
 
 
-fn json_bson(json: &Json) -> Bson{
-    Bson::try_from(json.clone())
-        .unwrap_or_else(|e| Bson::Document(doc! {
-            "fallback": json.to_string(),
-            "error": e.to_string()
-        }))
-}

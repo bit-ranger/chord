@@ -49,7 +49,7 @@ impl Reporter {
                         "task_assess": []
                         }
                 },
-                Some(UpdateOptions::builder().upsert(Some(true)).build()),
+                Some(UpdateOptions::builder().upsert(true).build()),
             )
             .await?;
 
@@ -96,7 +96,7 @@ impl Reporter {
                             ta_doc_init(task_assess)
                         }
                     },
-                    None,
+                    false,
                 )
                 .await?;
             return Ok(());
@@ -116,7 +116,7 @@ impl Reporter {
                                     "task_assess.$.end": task_assess.end()
                                 }
                             },
-                    None,
+                    false,
                 ).await?;
             }
             TaskState::Err(e) => {
@@ -129,7 +129,7 @@ impl Reporter {
                                     "task_assess.$.error": e.to_string()
                                 }
                             },
-                    None,
+                    false,
                 ).await?;
             }
         }
@@ -148,7 +148,7 @@ impl Reporter {
             .update_one(
                 doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": self.task_id},
                 doc! {"$set": {"task_assess.$.state": state}},
-                None,
+                false,
             )
             .await?;
         Ok(())

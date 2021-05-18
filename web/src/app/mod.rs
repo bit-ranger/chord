@@ -12,10 +12,9 @@ use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;
 use async_std::sync::Arc;
 
-use crate::app::component::HasComponent;
-use crate::pool;
+use chord_common::component::HasComponent;
+use chord_macro::pool;
 
-mod component;
 pub mod conf;
 mod logger;
 
@@ -83,7 +82,7 @@ macro_rules! json_handler {
     }};
 }
 
-pool!(Controller, {config: crate::app::ConfigImpl, job_ctl: job::CtlImpl});
+pool!(Controller {ConfigImpl, job::CtlImpl});
 
 pub async fn init(data: Json) -> Result<(), Error> {
     let pool = Controller::pool_init();

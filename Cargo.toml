@@ -5,7 +5,8 @@ members = [
     'port',
     'point',
     'cmd',
-    'web'
+    'web',
+    'macro'
 ]
 
 

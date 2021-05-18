@@ -4,3 +4,4 @@ pub mod flow;
 pub mod point;
 pub mod task;
 pub mod value;
+pub mod component;

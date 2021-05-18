@@ -19,6 +19,7 @@ chord-common = {path = "../common"}
 chord-point = {path = "../point", features = ["point_jsonapi", "point_md5", "point_dubbo", "point_redis", "point_mysql", "point_mongodb"]}
 chord-flow = {path = "../flow"}
 chord-port = {path = "../port", features = ["report_mongodb"]}
+chord-macro = {path = "../macro"}
 serde = { version = "1.0", features = ["derive"] }
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 time = "0.1.42"
@@ -36,4 +37,3 @@ regex = "1.4.6"
 rm_rf = "0.6.1"
 structopt = "0.3"
 async-trait = "0.1.50"
-shaku = "0.6.1"

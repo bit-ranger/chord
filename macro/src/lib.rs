@@ -20,13 +20,13 @@ struct Syntax  {
     brace_fields: Punctuated<Type, Token![,]>,
 }
 
-struct PoolStructure {
+struct Structure {
     name: Ident,
     tys: Vec<Type>
 }
 
 
-impl Parse for PoolStructure {
+impl Parse for Structure {
 
     fn parse(stream: ParseStream) -> Result<Self> {
         let content;
@@ -38,7 +38,7 @@ impl Parse for PoolStructure {
 
         let type_vec: Vec<Type> = syntax.brace_fields.into_iter().collect();
 
-        Ok(PoolStructure{
+        Ok(Structure {
             name: syntax.ident,
             tys: type_vec
         })
@@ -55,15 +55,15 @@ fn has_unique_elements<T>(iter: T) -> bool
 }
 
 #[proc_macro]
-pub fn pool(input: TokenStream) -> TokenStream {
-    let pool_structure = syn::parse_macro_input!(input as PoolStructure);
-    let pool_name = pool_structure.name;
+pub fn container(input: TokenStream) -> TokenStream {
+    let container_structure = syn::parse_macro_input!(input as Structure);
+    let container_name = container_structure.name;
 
-    if !has_unique_elements(pool_structure.tys.clone()) {
+    if !has_unique_elements(container_structure.tys.clone()) {
         panic!("duplicate type exist")
     }
 
-    let field_types: Vec<Type> = pool_structure.tys.clone();
+    let field_types: Vec<Type> = container_structure.tys.clone();
     let field_names: Vec<Ident> = field_types
         .clone()
         .into_iter()
@@ -73,14 +73,14 @@ pub fn pool(input: TokenStream) -> TokenStream {
 
     let struct_def = quote!{
         #[derive(Default)]
-        pub struct #pool_name {
+        pub struct #container_name {
             #(#field_names: std::collections::HashMap<String, async_std::sync::Arc<#field_types>>),*
         }
     };
 
     let comp_trait_impl = quote!{
         #(
-            impl chord_common::component::HasComponent<#field_types> for #pool_name {
+            impl chord_common::component::HasComponent<#field_types> for #container_name {
                 fn add(&mut self, name: &str, component: async_std::sync::Arc<#field_types>) {
                     self.#field_names.insert(name.to_owned(), component);
                 }
@@ -96,21 +96,21 @@ pub fn pool(input: TokenStream) -> TokenStream {
         )*
     };
 
-    let pool_static_var = Ident::new(format!("__pool_{}__", pool_name).as_str(), Span::call_site());
+    let static_var = Ident::new(format!("__CONTAINER_{}__", container_name).as_str(), Span::call_site());
 
-    let pool_def = quote!{
-        static mut #pool_static_var: Option<#pool_name> = Option::None;
-        impl #pool_name {
+    let container_def = quote!{
+        static mut #static_var: Option<#container_name> = Option::None;
+        impl #container_name {
 
-            fn pool_init() -> &'static mut #pool_name{
+            fn init() -> &'static mut #container_name{
                 unsafe {
-                    #pool_static_var = Some(#pool_name::default());
-                    #pool_static_var.as_mut().unwrap()
+                    #static_var = Some(#container_name::default());
+                    #static_var.as_mut().unwrap()
                 }
             }
 
-            pub fn pool_ref() -> &'static #pool_name {
-                unsafe { #pool_static_var.as_ref().unwrap() }
+            pub fn borrow() -> &'static #container_name {
+                unsafe { #static_var.as_ref().unwrap() }
             }
         }
     };
@@ -119,7 +119,7 @@ pub fn pool(input: TokenStream) -> TokenStream {
     let tokens = quote! {
         #struct_def
         #comp_trait_impl
-        #pool_def
+        #container_def
     };
 
     TokenStream::from(tokens)

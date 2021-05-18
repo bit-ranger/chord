@@ -13,7 +13,7 @@ use crate::ctl::job;
 use async_std::sync::Arc;
 
 use chord_common::component::HasComponent;
-use chord_macro::pool;
+use chord_macro::container;
 
 pub mod conf;
 mod logger;
@@ -82,10 +82,10 @@ macro_rules! json_handler {
     }};
 }
 
-pool!(Controller {ConfigImpl, job::CtlImpl});
+container!(Web {ConfigImpl, job::CtlImpl});
 
 pub async fn init(data: Json) -> Result<(), Error> {
-    let pool = Controller::pool_init();
+    let pool = Web::init();
 
     let config = Arc::new(ConfigImpl::new(data));
     let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
@@ -99,7 +99,7 @@ pub async fn init(data: Json) -> Result<(), Error> {
 
     app.at("/job/exec")
         .post(json_handler!((|rb: job::Req| async {
-            let job_ctl: Arc<job::CtlImpl> = Controller::pool_ref().get("default").unwrap();
+            let job_ctl: Arc<job::CtlImpl> = Web::borrow().get("default").unwrap();
             job::Ctl::exec(job_ctl.as_ref(), rb).await
         })));
 

@@ -12,8 +12,8 @@ use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;
 use async_std::sync::Arc;
 
-use chord_common::component::HasComponent;
-use chord_macro::container;
+use bean::component::HasComponent;
+use bean_macro::container;
 
 pub mod conf;
 mod logger;

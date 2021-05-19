@@ -13,7 +13,7 @@ use crate::ctl::job;
 use async_std::sync::Arc;
 
 use bean::component::HasComponent;
-use bean_macro::container;
+use bean::container;
 
 pub mod conf;
 mod logger;

@@ -15,7 +15,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Boot services
-      run: docker-compose up -d
-    - name: Run job
-      run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://localhost:8080/
+      - uses: actions/checkout@v2
+      - name: Boot services
+        run: docker-compose up -d
+      - name: Run job
+        run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://localhost:8080/

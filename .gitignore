@@ -14,4 +14,3 @@ Cargo.lock
 **/*.rs.bk
 
 .idea/
-.devops

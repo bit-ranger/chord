@@ -1,7 +1,7 @@
 version: '3.5'
 
 services:
-  web:
+  chord-web:
     container_name: chord-web
     build: .
     ports:

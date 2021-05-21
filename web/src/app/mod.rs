@@ -103,6 +103,8 @@ pub async fn init(data: Json) -> Result<(), Error> {
             job::Ctl::exec(job_ctl.as_ref(), rb).await
         })));
 
+    app.at("/").get(|_| async { Ok("Hello, world!") });
+
     app.listen(format!("{}:{}", config.server_ip(), config.server_port()))
         .await?;
     Ok(())

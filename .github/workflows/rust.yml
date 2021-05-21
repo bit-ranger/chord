@@ -15,8 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+    - name: Boot services
+      run: docker-compose up -d
+    - name: Run job
+      run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://localhost:8080/

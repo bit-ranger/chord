@@ -18,5 +18,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Compose services
         run: docker-compose up -d
+      - name: Install curl
+        run: docker pull appropriate/curl
       - name: Check health
-        run: docker run chord-web:1 curl http://localhost:9999/
+        run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://localhost:9999/

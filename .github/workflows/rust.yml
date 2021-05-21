@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Boot services
+      - name: Compose services
         run: docker-compose up -d
-      - name: Run job
-        run: curl http://localhost:9999
+      - name: Check health
+        run: docker run container:chord-web curl http://localhost:9999/

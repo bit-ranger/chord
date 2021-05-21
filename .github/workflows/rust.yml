@@ -15,10 +15,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Install curl
         run: docker pull appropriate/curl
       - name: Compose services
         run: docker-compose up -d
-      - name: Check health
-        run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://localhost:9999/
+      - name: Github Action for curl
+        uses: wei/curl@v1.1.1
+        with:
+            args: -X GET http://localhost:9999/

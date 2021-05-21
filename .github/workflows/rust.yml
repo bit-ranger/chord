@@ -19,4 +19,4 @@ jobs:
       - name: Compose services
         run: docker-compose up -d
       - name: Check health
-        run: docker run chord-web curl http://localhost:9999/
+        run: docker run chord-web:1 curl http://localhost:9999/

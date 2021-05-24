@@ -7,10 +7,17 @@ services:
     build: .
     ports:
       - "9999:9999"
+    command:
+      - cargo
+      - run
+      - --package
+      - chord-web
+      - --bin
+      - chord-web
 
   mongo:
     image: mongo
-    ports: 
+    ports:
       - "27017:27017"
     restart: always
     environment:

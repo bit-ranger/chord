@@ -16,3 +16,15 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+
+  curl:
+    image: appropriate/curl
+    depends_on:
+      - chord-web
+      - mongo
+    command:
+      - curl
+      - -X
+      - GET
+      - "http://localhost:9999/"
+

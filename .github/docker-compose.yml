@@ -9,7 +9,7 @@ services:
       dockerfile: github.Dockerfile
     ports:
       - "9999:9999"
-    command: chord-web
+    command: ./chord-web
 
   mongo:
     image: mongo

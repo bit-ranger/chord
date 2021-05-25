@@ -6,7 +6,7 @@ services:
     image: chord-web:1
     ports:
       - "9999:9999"
-    command: chord-web
+    command: ./chord-web
 
   mongo:
     image: mongo

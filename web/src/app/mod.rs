@@ -85,23 +85,24 @@ macro_rules! json_handler {
 container!(Web {ConfigImpl, job::CtlImpl});
 
 pub async fn init(data: Json) -> Result<(), Error> {
-    let pool = Web::init();
-
     let config = Arc::new(ConfigImpl::new(data));
     let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
-    pool.add("default", config.clone());
-    pool.add("default", job_ctl.clone());
+
+    Web::init()
+        .put("default", config.clone())
+        .put("default", job_ctl.clone());
 
     let mut app = tide::new();
 
     let log_file_path = Path::new(config.log_path());
     let _log_handler = logger::init(config.log_level(), &log_file_path).await?;
 
-    app.at("/job/exec")
-        .post(json_handler!((|rb: job::Req| async {
+    app.at("/job/exec").post(json_handler!(
+        (|rb: job::Req| async {
             let job_ctl: Arc<job::CtlImpl> = Web::borrow().get("default").unwrap();
             job::Ctl::exec(job_ctl.as_ref(), rb).await
-        })));
+        })
+    ));
 
     app.at("/").get(|_| async { Ok("Hello, world!") });
 

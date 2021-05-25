@@ -8,11 +8,8 @@ WORKDIR /data
 
 EXPOSE 9999
 
-ENV CARGO_HTTP_MULTIPLEXING false
-COPY .local/apt /etc/apt
-COPY .local/cargo /usr/local/cargo
-COPY .local/chord /data/chord
-COPY . .
+COPY chord/* /data/chord/
+COPY .. .
 RUN cargo build --verbose
 RUN cargo test --verbose
 

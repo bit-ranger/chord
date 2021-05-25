@@ -13,8 +13,10 @@ COPY .local/apt /etc/apt
 COPY .local/cargo /usr/local/cargo
 COPY .local/chord /data/chord
 COPY . .
-RUN cargo build --verbose
 RUN cargo test --verbose
-
+RUN cargo build --release --verbose
+RUN mv ./target/release/chord-web ./chord-web
+RUN cargo clean
+RUN rm -rf /usr/local/cargo/registry
 
 

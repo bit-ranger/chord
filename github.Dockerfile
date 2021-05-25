@@ -12,6 +12,8 @@ COPY .github/chord /data/chord
 COPY . .
 RUN cargo build --verbose
 RUN cargo test --verbose
-
+RUN mv ./target/release/chord-web ./chord-web
+RUN cargo clean
+RUN rm -rf /usr/local/cargo/registry
 
 

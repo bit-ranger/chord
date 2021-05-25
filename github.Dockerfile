@@ -10,10 +10,9 @@ EXPOSE 9999
 
 COPY .github/chord /data/chord
 COPY . .
-RUN cargo build --verbose
-RUN cargo test --verbose
-RUN mv ./target/release/chord-web ./chord-web
-RUN cargo clean
-RUN rm -rf /usr/local/cargo/registry
-
+RUN cargo test --verbose \
+&& cargo build --release --verbose \
+&& mv ./target/release/chord-web ./chord-web \
+&& cargo clean \
+&& rm -rf /usr/local/cargo/registry
 

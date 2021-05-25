@@ -20,4 +20,4 @@ jobs:
       - name: Compose services
         run: docker-compose -f .github/docker-compose.yml up -d
       - name: Check health
-        run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://localhost:9999/
+        run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://127.0.0.1:9999/

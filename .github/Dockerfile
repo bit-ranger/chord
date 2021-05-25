@@ -9,7 +9,7 @@ WORKDIR /data
 EXPOSE 9999
 
 COPY chord/* /data/chord/
-COPY .. .
+COPY . .
 RUN cargo build --verbose
 RUN cargo test --verbose
 

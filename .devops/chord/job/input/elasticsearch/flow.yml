@@ -1,0 +1,126 @@
+task:
+  limit:
+      concurrency: 9999
+  def:
+      es:
+          url:  http://localhost:9200
+
+case:
+    chain:
+        - delete_index
+        - create_index
+        - insert_data
+        - wait_data
+        - search_data
+
+
+point:
+
+    delete_index:
+      kind: jsonapi
+      config:
+        url: "{{def.es.url}}/article"
+        method: DELETE
+
+    create_index:
+        kind: jsonapi
+        config:
+            url: "{{def.es.url}}/article"
+            method: PUT
+            header:
+              Content-Type: application/json
+            body: |+
+              {
+                "settings": {
+                  "index": {
+                    "analysis.analyzer.default.type": "ik_max_word"
+                  }
+                },
+                "mappings": {
+                  "properties": {
+                    "user": {
+                      "type": "text",
+                      "analyzer": "ik_max_word",
+                      "search_analyzer": "ik_max_word"
+                    },
+                    "title": {
+                      "type": "text",
+                      "analyzer": "ik_max_word",
+                      "search_analyzer": "ik_max_word"
+                    },
+                    "desc": {
+                      "type": "text",
+                      "analyzer": "ik_max_word",
+                      "search_analyzer": "ik_max_word"
+                    }
+                  }
+                }
+              }
+        assert: |+
+            (all
+              (eq res.status 200)
+              (eq res.body.acknowledged true)
+            )
+
+    insert_data:
+        kind: jsonapi
+        timeout: 5
+        config:
+          url: "{{def.es.url}}/article/_doc/1"
+          method: PUT
+          header:
+            Content-Type: application/json
+          body: |+
+                  {
+                    "author": "{{data.author}}",
+                    "title": "{{data.title}}",
+                    "desc": "{{data.desc}}"
+                  }
+              
+        assert: |+
+            (all
+              (eq res.status 201)
+              (eq res.body.result "created")
+            )
+
+    wait_data:
+        kind: sleep
+        timeout: 10
+        config:
+            seconds: 9
+
+    search_data:
+        kind: jsonapi
+        timeout: 5
+        config:
+          url: "{{def.es.url}}/article/_search"
+          method: GET
+          header:
+            Content-Type: application/json
+          body: |+
+            {
+              "size": 10,
+              "from": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                    {
+                      "match": {
+                        "desc": "{{data.match}}"
+                      }
+                    },
+                    {
+                      "term": {
+                        "author": "{{data.term}}"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+
+        assert: |+
+          (all
+            (eq res.status 200)
+            (eq res.body.hits.total.value 1)
+          )

@@ -16,6 +16,7 @@ COPY . .
 RUN cargo test --verbose \
 && cargo build --release --verbose \
 && mv ./target/release/chord-web ./chord-web \
+&& mv ./target/release/chord-cmd ./chord-cmd \
 && cargo clean \
 && rm -rf /usr/local/cargo/registry
 

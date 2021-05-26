@@ -9,9 +9,9 @@ WORKDIR /data
 EXPOSE 9999
 
 ENV CARGO_HTTP_MULTIPLEXING false
-COPY .local/apt /etc/apt
-COPY .local/cargo /usr/local/cargo
-COPY .local/chord /data/chord
+COPY .devops/apt /etc/apt
+COPY .devops/cargo /usr/local/cargo
+COPY .devops/chord /data/chord
 COPY . .
 RUN cargo test --verbose \
 && cargo build --release --verbose \

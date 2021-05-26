@@ -8,7 +8,7 @@ WORKDIR /data
 
 EXPOSE 9999
 
-COPY .github/chord /data/chord
+COPY .devops/chord /data/chord
 COPY . .
 RUN cargo test --verbose \
 && cargo build --release --verbose \

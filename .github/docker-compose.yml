@@ -1,20 +1,8 @@
 version: '3.5'
 
 services:
-  chord-web:
-    container_name: chord-web
-    image: chord-web:1
-    build:
-      context: ..
-      dockerfile: github.Dockerfile
-    ports:
-      - "9999:9999"
-    depends_on:
-      - elasticsearch
-      - mongo
-    command: ./chord-web
 
-  mongo:
+  mongodb:
     container_name: mongodb
     image: mongo:4.2.14
     ports:
@@ -31,4 +19,34 @@ services:
       - discovery.type=single-node
     ports:
       - 9200:9200
+
+  chord-cmd:
+    container_name: chord-cmd
+    image: chord:1
+    build:
+      context: ..
+      dockerfile: github.Dockerfile
+    ports:
+      - "9999:9999"
+    depends_on:
+      - elasticsearch
+      - mongo
+    command:
+      - ./chord-cmd
+      - -i/data/chord/job/input
+      - -o/data/chord/job/output
+
+  chord-web:
+    container_name: chord-web
+    image: chord:1
+    build:
+      context: ..
+      dockerfile: github.Dockerfile
+    ports:
+      - "9999:9999"
+    depends_on:
+      - chord-cmd
+    command: ./chord-web
+
+
 

@@ -14,7 +14,7 @@ services:
 
   elasticsearch:
     container_name: elasticsearch
-    image: elasticsearch:7.12.1
+    image: bitranger/elasticsearch:ik-7.12.1
     environment:
       - discovery.type=single-node
     ports:

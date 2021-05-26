@@ -20,20 +20,6 @@ services:
     ports:
       - 9200:9200
 
-  chord-cmd:
-    container_name: chord-cmd
-    image: chord:1
-    build:
-      context: ..
-      dockerfile: github.Dockerfile
-    depends_on:
-      - elasticsearch
-      - mongodb
-    command:
-      - ./chord-cmd
-      - -i/data/chord/job/input
-      - -o/data/chord/job/output
-
   chord-web:
     container_name: chord-web
     image: chord:1
@@ -43,7 +29,8 @@ services:
     ports:
       - "9999:9999"
     depends_on:
-      - chord-cmd
+      - elasticsearch
+      - mongodb
     command: ./chord-web
 
 

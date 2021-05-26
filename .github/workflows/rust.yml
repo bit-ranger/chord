@@ -17,7 +17,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Compose services
+      - name: Boot services
         run: docker-compose -f .github/docker-compose.yml up -d
-      - name: Check health
+      - name: Check chord-web health
         run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://127.0.0.1:9999/
+      - name: Test chord-cmd
+        run: docker run chord:1 ./chord-cmd -i/data/chord/job/input -o/data/chord/job/output

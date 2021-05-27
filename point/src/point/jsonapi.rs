@@ -6,8 +6,9 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord_common::error::Error;
 use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
-use chord_common::value::{Json, Map, Number};
+use chord_common::value::{Json, Map, Number, to_string};
 use chord_common::{err, rerr};
+use std::borrow::Borrow;
 
 struct Jsonapi {}
 
@@ -56,8 +57,15 @@ async fn run0(arg: &dyn PointArg) -> std::result::Result<Json, Rae> {
         }
     }
 
-    if let Some(body) = arg.config()["body"].as_str() {
-        rb = rb.body(Body::from_string(arg.render(body)?));
+    let body_content = arg.config()["body"].borrow();
+    if !body_content.is_null(){
+        let body_str:String = if body_content.is_string() {
+             body_content.as_str().ok_or(err!("032", "invalid body"))?.to_owned()
+         } else {
+             to_string(body_content).or(rerr!("032", "invalid body"))?
+         };
+        let body_str = arg.render(body_str.as_str())?;
+        rb = rb.body(Body::from_string(body_str));
     }
 
     let mut res: Response = rb.send().await?;

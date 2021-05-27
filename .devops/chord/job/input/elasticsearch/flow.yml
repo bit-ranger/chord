@@ -29,7 +29,7 @@ point:
             method: PUT
             header:
               Content-Type: application/json
-            body: |+
+            body:
               {
                 "settings": {
                   "index": {
@@ -70,7 +70,7 @@ point:
           method: PUT
           header:
             Content-Type: application/json
-          body: |+
+          body:
                   {
                     "author": "{{data.author}}",
                     "title": "{{data.title}}",
@@ -97,7 +97,7 @@ point:
           method: GET
           header:
             Content-Type: application/json
-          body: |+
+          body:
             {
               "size": 10,
               "from": 0,

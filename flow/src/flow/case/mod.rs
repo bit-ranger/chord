@@ -96,7 +96,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: &CaseArgStruct) -> CaseAssessS
                 register_dynamic(&mut render_context, point_id, &json).await;
                 if let Some(con) = assert_present {
                     if assert(flow_ctx.get_handlebars(), &mut render_context, &con).await {
-                        debug!("point Ok   {}", arg.id());
+                        debug!("point Ok   {}", id);
                         let point_assess =
                             PointAssessStruct::new(id.as_str(), start, end, PointState::Ok(json));
                         point_assess_vec.push(Box::new(point_assess));
@@ -107,7 +107,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: &CaseArgStruct) -> CaseAssessS
                             config_raw.as_str(),
                         )
                         .unwrap_or("".to_owned());
-                        info!("point Fail {} - {} <<< {}", arg.id(), json, config_rendered);
+                        info!("point Fail {} - {} <<< {}", id, json, config_rendered);
                         let point_assess =
                             PointAssessStruct::new(id.as_str(), start, end, PointState::Fail(json));
                         point_assess_vec.push(Box::new(point_assess));
@@ -120,7 +120,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: &CaseArgStruct) -> CaseAssessS
                         );
                     }
                 } else {
-                    debug!("point Ok   {}", arg.id());
+                    debug!("point Ok   {}", id);
                     let point_assess =
                         PointAssessStruct::new(id.as_str(), start, end, PointState::Ok(json));
                     point_assess_vec.push(Box::new(point_assess));

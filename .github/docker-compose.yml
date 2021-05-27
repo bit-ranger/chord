@@ -28,6 +28,8 @@ services:
             dockerfile: github.Dockerfile
         ports:
             - "9999:9999"
+        links: 
+            - elasticsearch
         depends_on:
             - elasticsearch
             - mongodb

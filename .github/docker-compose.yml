@@ -5,6 +5,8 @@ services:
   mongodb:
     container_name: mongodb
     image: mongo:4.2.14
+    networks:
+      - chrod
     ports:
       - "27017:27017"
     restart: always
@@ -12,26 +14,36 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
 
+
   elasticsearch:
     container_name: elasticsearch
     image: bitranger/elasticsearch:ik-7.12.1
     environment:
       - discovery.type=single-node
+    networks:
+      - chrod
     ports:
       - 9200:9200
 
-  chord-web:
-    container_name: chord-web
+
+  chord:
+    container_name: chord
     image: chord:1
     build:
       context: ..
       dockerfile: github.Dockerfile
+    networks:
+      - chrod
     ports:
       - "9999:9999"
     depends_on:
       - elasticsearch
       - mongodb
     command: ./chord-web
+
+networks:
+  chord:
+    driver: bridge
 
 
 

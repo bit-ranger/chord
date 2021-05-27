@@ -22,4 +22,4 @@ jobs:
       - name: Check chord-web health
         run: docker run --network container:chord-web appropriate/curl -s --retry 10 --retry-connrefused http://127.0.0.1:9999/
       - name: Test chord-cmd
-        run: docker exec chord-web /bin/sh -c "./chord-cmd -i/data/chord/job/input -o/data/chord/job/output"
+        run: docker exec chord /bin/sh -c "./chord-cmd -i/data/chord/job/input -o/data/chord/job/output"

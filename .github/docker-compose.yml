@@ -30,6 +30,7 @@ services:
             - "9999:9999"
         links: 
             - elasticsearch
+            - mongodb
         depends_on:
             - elasticsearch
             - mongodb

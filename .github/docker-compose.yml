@@ -20,6 +20,11 @@ services:
         ports:
             - "9200:9200"
             - "9300:9300"
+        healthcheck:
+            test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+            interval: 1m30s
+            timeout: 10s
+            retries: 3
     
     chord:
         container_name: chord

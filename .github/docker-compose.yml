@@ -5,8 +5,8 @@ services:
     mongodb:
         container_name: mongodb
         image: mongo:4.2.14
-        expose:
-            - "27017"
+        ports:
+            - "27017:27017"
         restart: always
         environment:
             MONGO_INITDB_ROOT_USERNAME: root
@@ -17,8 +17,8 @@ services:
         image: bitranger/elasticsearch:ik-7.12.1
         environment:
             - discovery.type=single-node
-        expose:
-            - "9200"
+        ports:
+            - "9200:9200"
     
     chord:
         container_name: chord
@@ -26,8 +26,8 @@ services:
         build:
             context: ..
             dockerfile: github.Dockerfile
-        expose:
-            - "9999"
+        ports:
+            - "9999:9999"
         depends_on:
             - elasticsearch
             - mongodb

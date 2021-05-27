@@ -6,7 +6,7 @@ services:
     container_name: mongodb
     image: mongo:4.2.14
     networks:
-      - chrod
+      - chord
     ports:
       - "27017:27017"
     restart: always
@@ -21,7 +21,7 @@ services:
     environment:
       - discovery.type=single-node
     networks:
-      - chrod
+      - chord
     ports:
       - 9200:9200
 
@@ -33,7 +33,7 @@ services:
       context: ..
       dockerfile: github.Dockerfile
     networks:
-      - chrod
+      - chord
     ports:
       - "9999:9999"
     depends_on:

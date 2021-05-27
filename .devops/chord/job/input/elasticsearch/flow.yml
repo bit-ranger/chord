@@ -3,7 +3,7 @@ task:
         concurrency: 9999
     def:
         es:
-            url: http://localhost:9200
+            url: http://elasticsearch:9200
 
 case:
     chain:

@@ -13,4 +13,4 @@ case:
 
 report:
     mongodb:
-        url: mongodb://root:example@localhost:27017/admin?retryWrites=true&w=majority
+        url: mongodb://root:example@mongodb:27017/admin?retryWrites=true&w=majority

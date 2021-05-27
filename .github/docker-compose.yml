@@ -18,7 +18,7 @@ services:
         environment:
             - discovery.type=single-node
         expose:
-            - 9200
+            - "9200"
     
     chord:
         container_name: chord

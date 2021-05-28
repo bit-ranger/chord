@@ -10,6 +10,10 @@ pub mod dubbo;
 pub mod jsonapi;
 #[cfg(feature = "point_md5")]
 pub mod md5;
+#[cfg(feature = "point_url_encode")]
+pub mod url_encode;
+#[cfg(feature = "point_url_encode")]
+pub mod url_decode;
 #[cfg(feature = "point_mongodb")]
 pub mod mongodb;
 #[cfg(feature = "point_mysql")]
@@ -28,6 +32,10 @@ pub async fn create_kind_runner(
         "jsonapi" => jsonapi::create(arg).await,
         #[cfg(feature = "point_md5")]
         "md5" => md5::create(arg).await,
+        #[cfg(feature = "point_url_encode")]
+        "url_encode" => url_encode::create(arg).await,
+        #[cfg(feature = "point_url_decode")]
+        "url_decode" => url_decode::create(arg).await,
         #[cfg(feature = "point_dubbo")]
         "dubbo" => dubbo::create(arg).await,
         #[cfg(feature = "point_mysql")]

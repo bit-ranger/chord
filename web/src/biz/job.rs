@@ -12,14 +12,14 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::FlowContext;
-use chord_port::report::mongodb::{Collection, Database, Document, Reporter};
+use chord_port::report::elasticsearch::Reporter;
 
 pub async fn run<P: AsRef<Path>>(
     job_path: P,
     job_name: String,
     exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
-    db: Arc<Database>,
+    es_url: String,
     case_batch_size: usize,
 ) -> Result<Vec<TaskState>, Error> {
     debug!(
@@ -27,9 +27,9 @@ pub async fn run<P: AsRef<Path>>(
         job_path.as_ref().to_str().unwrap(),
         job_name.as_str()
     );
-    let job_collection = Arc::new(db.collection::<Document>(job_name.as_str()));
 
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
+    let es_index = job_name.clone();
 
     let mut futures = Vec::new();
     loop {
@@ -54,7 +54,8 @@ pub async fn run<P: AsRef<Path>>(
                 task_input_dir,
                 exec_id.clone(),
                 app_ctx.clone(),
-                job_collection.clone(),
+                es_url.clone(),
+                es_index.clone(),
                 case_batch_size,
             ))
             .unwrap();
@@ -74,11 +75,12 @@ async fn run_task<P: AsRef<Path>>(
     input_dir: P,
     exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
-    collection: Arc<Collection>,
+    es_url: String,
+    es_index: String,
     case_batch_size: usize,
 ) -> TaskState {
     let input_dir = Path::new(input_dir.as_ref());
-    let rt = run_task0(input_dir, exec_id, app_ctx, collection, case_batch_size).await;
+    let rt = run_task0(input_dir, exec_id, app_ctx, es_url, es_index, case_batch_size).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => {
@@ -92,7 +94,8 @@ async fn run_task0<P: AsRef<Path>>(
     task_path: P,
     exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
-    collection: Arc<Collection>,
+    es_url: String,
+    es_index: String,
     case_batch_size: usize,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
@@ -112,7 +115,7 @@ async fn run_task0<P: AsRef<Path>>(
         chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
     //write
-    let mut assess_reporter = Reporter::new(collection, task_id, exec_id).await?;
+    let mut assess_reporter = Reporter::new(es_url, es_index, task_id, exec_id).await?;
 
     //runner
     let mut runner =

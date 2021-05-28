@@ -18,6 +18,8 @@ pub trait Config {
     fn report_mongodb_url(&self) -> Result<&str, Error>;
 
     fn case_batch_size(&self) -> usize;
+
+    fn report_elasticsearch_url(&self) -> Result<&str, Error>;
 }
 
 #[derive(Debug, Clone)]
@@ -79,5 +81,11 @@ impl Config for ConfigImpl {
 
     fn case_batch_size(&self) -> usize {
         self.conf["case"]["batch"]["size"].as_u64().unwrap_or(99999) as usize
+    }
+
+    fn report_elasticsearch_url(&self) -> Result<&str, Error> {
+        self.conf["report"]["elasticsearch"]["url"]
+            .as_str()
+            .ok_or(err!("config", "missing report.mongodb.url"))
     }
 }

@@ -18,7 +18,6 @@ use chord_flow::FlowContext;
 use chord_point::PointRunnerFactoryDefault;
 
 use crate::biz;
-use chord_port::report::mongodb::{Client, ClientOptions, Database};
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
@@ -55,7 +54,6 @@ pub struct CtlImpl {
     input_dir: PathBuf,
     ssh_key_private: PathBuf,
     flow_ctx: Arc<dyn FlowContext>,
-    mongodb: Arc<Database>,
     config: Arc<dyn Config>,
 }
 
@@ -65,28 +63,12 @@ unsafe impl Sync for CtlImpl {}
 
 impl CtlImpl {
     pub async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {
-        let opt = ClientOptions::parse(config.report_mongodb_url()?).await?;
-        let db_name = opt
-            .credential
-            .as_ref()
-            .map(|c| {
-                c.source
-                    .as_ref()
-                    .map(|s| s.clone())
-                    .unwrap_or("chord".to_owned())
-            })
-            .unwrap();
-        let client = Client::with_options(opt)?;
-        let db = client.database(db_name.as_str());
-        let mongodb = Arc::new(db);
-
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
             flow_ctx: chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?))
                 .await,
-            mongodb,
-            config,
+            config
         })
     }
 }
@@ -110,7 +92,7 @@ impl Ctl for CtlImpl {
             ssh_key_pri,
             req,
             exec_id_0,
-            self.mongodb.clone(),
+            self.config.report_elasticsearch_url()?.to_owned(),
             self.config.case_batch_size(),
         ));
         return Ok(Rep { exec_id });
@@ -123,7 +105,7 @@ async fn checkout_run(
     ssh_key_pri: PathBuf,
     req: Req,
     exec_id: String,
-    mongodb: Arc<Database>,
+    es_url: String,
     case_batch_size: usize,
 ) {
     let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
@@ -132,6 +114,8 @@ async fn checkout_run(
     let host = git_url_splits[1];
     let group_name = git_url_splits[2];
     let repo_name = git_url_splits[3];
+    let last_point_idx =  repo_name.len()-4;
+    let repo_name = &repo_name.to_owned()[..last_point_idx];
     let checkout_path = input.clone().join(host).join(group_name).join(repo_name);
     if checkout_path.exists() {
         error!("checkout exist {}", checkout_path.to_str().unwrap());
@@ -176,13 +160,13 @@ async fn checkout_run(
         None => checkout_path.clone(),
     };
 
-    let job_name = format!("{}:{}/{}", host, group_name, repo_name);
+    let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
     run(
         app_ctx,
         job_path,
         job_name,
         exec_id,
-        mongodb,
+        es_url,
         case_batch_size,
     )
     .await;
@@ -249,7 +233,7 @@ async fn run(
     job_path: PathBuf,
     job_name: String,
     exec_id: String,
-    mongodb: Arc<Database>,
+    es_url: String,
     case_batch_size: usize,
 ) {
     let job_result = biz::job::run(
@@ -257,7 +241,7 @@ async fn run(
         job_name,
         exec_id,
         app_ctx,
-        mongodb,
+        es_url,
         case_batch_size,
     )
     .await;

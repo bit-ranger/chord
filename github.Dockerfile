@@ -10,8 +10,8 @@ EXPOSE 9999
 
 COPY zero/devops/chord /data/chord
 COPY . .
-RUN cargo test --verbose \
-&& cargo build --release --verbose \
+RUN cargo build --release --verbose \
+&& cargo test --release --verbose \
 && mv ./target/release/chord-web ./chord-web \
 && mv ./target/release/chord-cmd ./chord-cmd \
 && cargo clean \

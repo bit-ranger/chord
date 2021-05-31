@@ -30,6 +30,7 @@ struct Data{
     layer: String,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
+    elapse: usize,
     state: String,
     result: Json
 }
@@ -114,12 +115,14 @@ impl Reporter {
 }
 
 fn ta_doc_init(exec_id: &str, task_id: &str) -> Data {
+    let now = Utc::now();
     Data {
         id: format!("{}::{}", exec_id, task_id),
         id_in_layer: task_id.to_owned(),
         layer: "task".to_owned(),
-        start: Utc::now(),
-        end: Utc::now(),
+        start: now,
+        end: now,
+        elapse: 0,
         state: "R".to_owned(),
         result: Json::Null
     }
@@ -132,6 +135,7 @@ fn ta_doc(exec_id: &str, task_id: &str, start: DateTime<Utc>, ts: &TaskState) ->
         layer: "task".to_owned(),
         start: start,
         end: Utc::now(),
+        elapse: (Utc::now() - start).num_microseconds().unwrap_or(-1) as usize,
         state: match ts {
             TaskState::Ok(_) => "O",
             TaskState::Fail(_) => "F",
@@ -152,6 +156,7 @@ fn ca_doc(exec_id: &str, task_id: &str, ca: &dyn CaseAssess) -> Data {
         layer: "case".to_owned(),
         start: ca.start(),
         end: ca.end(),
+        elapse: (ca.end() - ca.start()).num_microseconds().unwrap_or(-1) as usize,
         state: match ca.state() {
             CaseState::Ok(_) => "O",
             CaseState::Fail(_) => "F",
@@ -174,6 +179,7 @@ fn pa_doc(exec_id: &str, task_id: &str, case_id: usize, pa: &dyn PointAssess) ->
         layer: "point".to_owned(),
         start: pa.start(),
         end: pa.end(),
+        elapse: (pa.end() - pa.start()).num_microseconds().unwrap_or(-1) as usize,
         state: match pa.state() {
             PointState::Ok(_) => "O",
             PointState::Fail(_) => "F",

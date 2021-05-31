@@ -8,11 +8,18 @@ use futures::StreamExt;
 use log::debug;
 use log::info;
 
+use crate::rerr;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::FlowContext;
 use chord_port::report::elasticsearch::Reporter;
+use lazy_static::lazy_static;
+use regex::Regex;
+
+lazy_static! {
+    static ref TASK_ID: Regex = Regex::new(r"^[\w]+$").unwrap();
+}
 
 pub async fn run<P: AsRef<Path>>(
     job_path: P,
@@ -80,7 +87,15 @@ async fn run_task<P: AsRef<Path>>(
     case_batch_size: usize,
 ) -> TaskState {
     let input_dir = Path::new(input_dir.as_ref());
-    let rt = run_task0(input_dir, exec_id, app_ctx, es_url, es_index, case_batch_size).await;
+    let rt = run_task0(
+        input_dir,
+        exec_id,
+        app_ctx,
+        es_url,
+        es_index,
+        case_batch_size,
+    )
+    .await;
     match rt {
         Ok(ts) => ts,
         Err(e) => {
@@ -100,6 +115,10 @@ async fn run_task0<P: AsRef<Path>>(
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
+    if !TASK_ID.is_match(task_id) {
+        return rerr!("task", format!("invalid task_id {}", task_id));
+    }
+
     chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_owned()));
     debug!("task start {}", task_path.to_str().unwrap());
 

@@ -6,20 +6,22 @@ pub mod sleep;
 
 #[cfg(feature = "point_dubbo")]
 pub mod dubbo;
+#[cfg(feature = "point_dynlib")]
+pub mod dynlib;
 #[cfg(feature = "point_jsonapi")]
 pub mod jsonapi;
 #[cfg(feature = "point_md5")]
 pub mod md5;
-#[cfg(feature = "point_url_encode")]
-pub mod url_encode;
-#[cfg(feature = "point_url_encode")]
-pub mod url_decode;
 #[cfg(feature = "point_mongodb")]
 pub mod mongodb;
 #[cfg(feature = "point_mysql")]
 pub mod mysql;
 #[cfg(feature = "point_redis")]
 pub mod redis;
+#[cfg(feature = "point_url_encode")]
+pub mod url_decode;
+#[cfg(feature = "point_url_encode")]
+pub mod url_encode;
 
 pub async fn create_kind_runner(
     kind: &str,
@@ -44,6 +46,8 @@ pub async fn create_kind_runner(
         "redis" => redis::create(arg).await,
         #[cfg(feature = "point_mongodb")]
         "mongodb" => mongodb::create(arg).await,
+        #[cfg(feature = "point_dynlib")]
+        "dynlib" => dynlib::create(arg).await,
         _ => rerr!("002", format!("unsupported point kind {}", kind).as_str()),
     };
 

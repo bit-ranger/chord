@@ -18,7 +18,7 @@ repository = "https://github.com/bit-ranger/chord"
 chord-flow = {path = "../flow"}
 chord-common = {path = "../common"}
 chord-port = {path = "../port", features = ["report_csv"]}
-chord-point = {path = "../point", features = ["point_jsonapi", "point_md5", "point_dubbo", "point_redis", "point_mysql", "point_mongodb", "point_url_encode", "point_url_decode"]}
+chord-point = {path = "../point", features = ["point_jsonapi", "point_md5", "point_dubbo", "point_redis", "point_mysql", "point_mongodb", "point_url_encode", "point_url_decode", "point_dynlib"]}
 log = { version = "0.4.14", features = ["std"]}
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 time = "0.1.42"

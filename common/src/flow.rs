@@ -1,6 +1,8 @@
-use crate::err;
 use crate::error::Error;
 use crate::value::{Json, Map};
+use crate::{err, rerr};
+use lazy_static::lazy_static;
+use regex::Regex;
 use std::borrow::Borrow;
 use std::time::Duration;
 
@@ -9,11 +11,19 @@ pub struct Flow {
     flow: Json,
 }
 
+lazy_static! {
+    static ref POINT_ID: Regex = Regex::new(r"^[\w]+$").unwrap();
+}
+
 impl Flow {
     pub fn new(flow: Json) -> Result<Flow, Error> {
         let flow = Flow { flow };
         let pt_id_vec = flow.case_point_id_vec()?;
         for pt_id in pt_id_vec {
+            if !POINT_ID.is_match(pt_id.as_str()) {
+                return rerr!("point", format!("invalid point_id {}", pt_id));
+            }
+
             flow.point(pt_id.as_str())
                 .as_object()
                 .ok_or_else(|| err!("point", format!("invalid point_id {}", pt_id)))?;

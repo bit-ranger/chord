@@ -27,9 +27,6 @@ jobs:
             -   name: Inspect elasticsearch
                 run: docker inspect elasticsearch
                 
-            -   name: Inspect mongodb
-                run: docker inspect mongodb
-                
             -   name: Test elasticsearch
                 run: docker run --network container:elasticsearch appropriate/curl -s --retry 10 --retry-connrefused http://127.0.0.1:9200/
                 

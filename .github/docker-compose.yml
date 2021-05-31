@@ -2,15 +2,6 @@ version: '3.5'
 
 services:
     
-    mongodb:
-        container_name: mongodb
-        image: mongo:4.2.14
-        ports:
-            - "27017:27017"
-        restart: always
-        environment:
-            MONGO_INITDB_ROOT_USERNAME: root
-            MONGO_INITDB_ROOT_PASSWORD: example
     
     elasticsearch:
         container_name: elasticsearch
@@ -36,7 +27,6 @@ services:
             - "9999:9999"
         depends_on:
             - elasticsearch
-            - mongodb
         command: ./chord-web
         healthcheck:
             test: [ "CMD", "curl", "-f", "http://localhost:9999" ]

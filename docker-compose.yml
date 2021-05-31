@@ -2,16 +2,6 @@ version: '3.5'
 
 services:
     
-    mongo:
-        container_name: mongodb
-        image: mongo:4.2.14
-        ports:
-            - "27017:27017"
-        restart: always
-        environment:
-            MONGO_INITDB_ROOT_USERNAME: root
-            MONGO_INITDB_ROOT_PASSWORD: example
-    
     elasticsearch:
         container_name: elasticsearch
         image: bitranger/elasticsearch:ik-7.12.1

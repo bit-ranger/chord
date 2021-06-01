@@ -15,7 +15,7 @@ pub mod res;
 
 pub async fn run(
     _: &dyn FlowContext,
-    arg: &PointArgStruct<'_, '_, '_, '_>,
+    arg: &PointArgStruct<'_, '_, '_, '_, '_, '_>,
     runner: &dyn PointRunner,
 ) -> PointAssessStruct {
     trace!("point start {}", arg.id());

@@ -22,13 +22,13 @@ async fn main() -> Result<(), Error> {
         panic!("input is not a dir {}", input_dir.to_str().unwrap());
     }
 
-    let execution_id = SystemTime::now()
+    let exec_id = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
         .as_millis()
         .to_string();
 
-    let output_dir = Path::new(&opt.output).join(execution_id.as_str());
+    let output_dir = Path::new(&opt.output).join(exec_id.as_str());
     let output_dir = output_dir.as_path();
     async_std::fs::create_dir_all(output_dir).await?;
 
@@ -38,7 +38,7 @@ async fn main() -> Result<(), Error> {
     let flow_ctx =
         chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new(Map::new()).await?))
             .await;
-    let task_state_vec = job::run(input_dir, output_dir, execution_id, flow_ctx).await;
+    let task_state_vec = job::run(input_dir, output_dir, exec_id, flow_ctx).await;
 
     logger::terminal(log_handler).await?;
 

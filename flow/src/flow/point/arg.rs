@@ -12,37 +12,46 @@ use crate::flow::case::arg::RenderContext;
 use std::time::Duration;
 
 #[derive(Debug)]
-pub struct PointArgStruct<'c, 'h, 'reg, 'r> {
+pub struct PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
     flow: &'c Flow,
     id: String,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
+    case_id: usize,
+    task_id: &'t str,
+    exec_id: &'e str,
 }
 
-impl<'c, 'h, 'reg, 'r> PointArgStruct<'c, 'h, 'reg, 'r> {
+impl<'c, 'h, 'reg, 'r, 't, 'e> PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
     pub fn new(
         flow: &'c Flow,
         id: &str,
         handlebars: &'h Handlebars<'reg>,
         render_context: &'r RenderContext,
-    ) -> PointArgStruct<'c, 'h, 'reg, 'r> {
+        case_id: usize,
+        task_id: &'t str,
+        exec_id: &'e str,
+    ) -> PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
         let context = PointArgStruct {
             flow,
-            id: String::from(id),
+            id: id.to_owned(),
             handlebars,
             render_context,
+            case_id,
+            task_id,
+            exec_id,
         };
 
         return context;
     }
 
     #[allow(dead_code)]
-    pub fn id(self: &PointArgStruct<'c, 'h, 'reg, 'r>) -> &str {
+    pub fn id(self: &PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e>) -> &str {
         return self.id.as_str();
     }
 
     pub async fn meta_str(
-        self: &PointArgStruct<'c, 'h, 'reg, 'r>,
+        self: &PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e>,
         path: Vec<&str>,
     ) -> Option<String> {
         let config = self.flow.point(self.id());
@@ -105,7 +114,7 @@ pub fn render(
     };
 }
 
-impl<'c, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'h, 'reg, 'r> {
+impl<'c, 'h, 'reg, 'r, 't, 'e> PointArg for PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
     fn config(&self) -> &Json {
         let config = self.flow.point_config(self.id());
         return config;
@@ -129,6 +138,6 @@ impl<'c, 'h, 'reg, 'r> PointArg for PointArgStruct<'c, 'h, 'reg, 'r> {
     }
 }
 
-unsafe impl<'c, 'h, 'reg, 'r> Send for PointArgStruct<'c, 'h, 'reg, 'r> {}
+unsafe impl<'c, 'h, 'reg, 'r, 't, 'e> Send for PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {}
 
-unsafe impl<'c, 'h, 'reg, 'r> Sync for PointArgStruct<'c, 'h, 'reg, 'r> {}
+unsafe impl<'c, 'h, 'reg, 'r, 't, 'e> Sync for PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {}

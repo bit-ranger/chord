@@ -134,11 +134,16 @@ async fn run_task0<P: AsRef<Path>>(
         chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
     //write
-    let mut assess_reporter = Reporter::new(es_url, es_index, task_id, exec_id).await?;
+    let mut assess_reporter = Reporter::new(es_url, es_index, task_id, exec_id.clone()).await?;
 
     //runner
-    let mut runner =
-        chord_flow::Runner::new(app_ctx, Arc::new(flow), String::from(task_id)).await?;
+    let mut runner = chord_flow::Runner::new(
+        app_ctx,
+        Arc::new(flow),
+        String::from(task_id),
+        exec_id.clone(),
+    )
+    .await?;
 
     let mut total_task_state = TaskState::Ok(vec![]);
     loop {

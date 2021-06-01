@@ -24,7 +24,7 @@ lazy_static! {
 pub async fn run<P: AsRef<Path>>(
     input_dir: P,
     output_dir: P,
-    execution_id: String,
+    exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
 ) -> Vec<TaskState> {
     let job_path_str = input_dir.as_ref().to_str().unwrap();
@@ -55,7 +55,7 @@ pub async fn run<P: AsRef<Path>>(
             .spawn(run_task(
                 task_input_dir,
                 output_dir,
-                execution_id.clone(),
+                exec_id.clone(),
                 app_ctx.clone(),
             ))
             .unwrap();
@@ -70,11 +70,11 @@ pub async fn run<P: AsRef<Path>>(
 async fn run_task<P: AsRef<Path>>(
     input_dir: P,
     output_dir: P,
-    execution_id: String,
+    exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
 ) -> TaskState {
     let input_dir = Path::new(input_dir.as_ref());
-    let rt = run_task0(input_dir, output_dir, execution_id, app_ctx).await;
+    let rt = run_task0(input_dir, output_dir, exec_id, app_ctx).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => {
@@ -87,7 +87,7 @@ async fn run_task<P: AsRef<Path>>(
 async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     input_dir: I,
     output_dir: O,
-    _execution_id: String,
+    exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
 ) -> Result<TaskState, Error> {
     let input_dir = Path::new(input_dir.as_ref());
@@ -114,7 +114,8 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     let mut assess_reporter =
         chord_port::report::csv::Reporter::new(output_dir, task_id, &flow).await?;
     //runner
-    let mut runner = chord_flow::Runner::new(app_ctx, flow.clone(), String::from(task_id)).await?;
+    let mut runner =
+        chord_flow::Runner::new(app_ctx, flow.clone(), String::from(task_id), exec_id).await?;
 
     let mut total_task_state = TaskState::Ok(vec![]);
     loop {

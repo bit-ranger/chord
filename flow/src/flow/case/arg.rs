@@ -15,6 +15,8 @@ pub struct CaseArgStruct {
     point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
     data: Json,
     render_ctx_ext: Arc<Vec<(String, Json)>>,
+    task_id: Arc<String>,
+    exec_id: Arc<String>,
 }
 
 impl CaseArgStruct {
@@ -24,6 +26,8 @@ impl CaseArgStruct {
         point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
         data: Json,
         render_ctx_ext: Arc<Vec<(String, Json)>>,
+        task_id: Arc<String>,
+        exec_id: Arc<String>,
     ) -> CaseArgStruct {
         let context = CaseArgStruct {
             id,
@@ -31,6 +35,8 @@ impl CaseArgStruct {
             point_runner_vec,
             data,
             render_ctx_ext,
+            task_id,
+            exec_id,
         };
 
         return context;
@@ -61,7 +67,7 @@ impl CaseArgStruct {
         point_id: &str,
         app_ctx: &'app dyn FlowContext,
         render_ctx: &'r RenderContext,
-    ) -> Option<PointArgStruct<'_, 'h, 'reg, 'r>>
+    ) -> Option<PointArgStruct<'_, 'h, 'reg, 'r, '_, '_>>
     where
         'app: 'h,
         'app: 'reg,
@@ -73,6 +79,9 @@ impl CaseArgStruct {
             point_id,
             app_ctx.get_handlebars(),
             render_ctx,
+            self.id,
+            self.task_id.as_str(),
+            self.exec_id.as_str(),
         ))
     }
 

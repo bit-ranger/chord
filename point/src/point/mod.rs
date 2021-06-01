@@ -1,6 +1,7 @@
 use chord_common::error::Error;
 use chord_common::point::{PointArg, PointRunner};
 use chord_common::rerr;
+use chord_common::value::Json;
 
 pub mod sleep;
 
@@ -25,29 +26,30 @@ pub mod url_encode;
 
 pub async fn create_kind_runner(
     kind: &str,
+    config: Option<&Json>,
     arg: &dyn PointArg,
 ) -> Result<Box<dyn PointRunner>, Error> {
     let value = match kind.trim() {
-        "sleep" => sleep::create(arg).await,
+        "sleep" => sleep::create(config, arg).await,
 
         #[cfg(feature = "point_jsonapi")]
-        "jsonapi" => jsonapi::create(arg).await,
+        "jsonapi" => jsonapi::create(config, arg).await,
         #[cfg(feature = "point_md5")]
-        "md5" => md5::create(arg).await,
+        "md5" => md5::create(config, arg).await,
         #[cfg(feature = "point_url_encode")]
-        "url_encode" => url_encode::create(arg).await,
+        "url_encode" => url_encode::create(config, arg).await,
         #[cfg(feature = "point_url_decode")]
-        "url_decode" => url_decode::create(arg).await,
+        "url_decode" => url_decode::create(config, arg).await,
         #[cfg(feature = "point_dubbo")]
-        "dubbo" => dubbo::create(arg).await,
+        "dubbo" => dubbo::create(config, arg).await,
         #[cfg(feature = "point_mysql")]
-        "mysql" => mysql::create(arg).await,
+        "mysql" => mysql::create(config, arg).await,
         #[cfg(feature = "point_redis")]
-        "redis" => redis::create(arg).await,
+        "redis" => redis::create(config, arg).await,
         #[cfg(feature = "point_mongodb")]
-        "mongodb" => mongodb::create(arg).await,
+        "mongodb" => mongodb::create(config, arg).await,
         #[cfg(feature = "point_dynlib")]
-        "dynlib" => dynlib::create(arg).await,
+        "dynlib" => dynlib::create(config, arg).await,
         _ => rerr!("002", format!("unsupported point kind {}", kind).as_str()),
     };
 

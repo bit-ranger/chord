@@ -4,6 +4,7 @@ use std::time::SystemTime;
 use chord_common::error::Error;
 use chord_common::rerr;
 use chord_common::task::TaskState;
+use chord_common::value::Map;
 use chord_point::PointRunnerFactoryDefault;
 use itertools::Itertools;
 use std::path::PathBuf;
@@ -35,7 +36,8 @@ async fn main() -> Result<(), Error> {
     let log_handler = logger::init(target_level(&opt.level), &log_file_path).await?;
 
     let flow_ctx =
-        chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new().await?)).await;
+        chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new(Map::new()).await?))
+            .await;
     let task_state_vec = job::run(input_dir, output_dir, execution_id, flow_ctx).await;
 
     logger::terminal(log_handler).await?;

@@ -1,6 +1,7 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::value::Json;
+use chord_common::value::{Json, Map};
+use lazy_static::lazy_static;
 
 pub trait Config {
     fn server_ip(&self) -> &str;
@@ -20,6 +21,8 @@ pub trait Config {
     fn case_batch_size(&self) -> usize;
 
     fn report_elasticsearch_url(&self) -> Result<&str, Error>;
+
+    fn point_config(&self) -> &Map;
 }
 
 #[derive(Debug, Clone)]
@@ -31,6 +34,10 @@ impl ConfigImpl {
     pub fn new(conf: Json) -> ConfigImpl {
         ConfigImpl { conf }
     }
+}
+
+lazy_static! {
+    static ref EMPTY_MAP: Map = Map::new();
 }
 
 impl Config for ConfigImpl {
@@ -87,5 +94,9 @@ impl Config for ConfigImpl {
         self.conf["report"]["elasticsearch"]["url"]
             .as_str()
             .ok_or(err!("config", "missing report.mongodb.url"))
+    }
+
+    fn point_config(&self) -> &Map {
+        self.conf["point"].as_object().unwrap_or(&EMPTY_MAP)
     }
 }

@@ -12,12 +12,11 @@ impl PointRunner for UrlEncode {
     }
 }
 
-pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
     Ok(Box::new(UrlEncode {}))
 }
 
 async fn run(arg: &dyn PointArg) -> PointValue {
-
     let raw = arg.config()["raw"]
         .as_str()
         .map(|s| arg.render(s))

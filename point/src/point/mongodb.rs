@@ -15,7 +15,7 @@ impl PointRunner for Mongodb {
     }
 }
 
-pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
     Ok(Box::new(Mongodb {}))
 }
 

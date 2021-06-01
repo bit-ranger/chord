@@ -1,6 +1,7 @@
 use chord_common::err;
 use chord_common::error::Error;
 use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
+use chord_common::value::Json;
 use libloading::Library;
 
 struct Dynlib {
@@ -21,25 +22,20 @@ impl PointRunner for Dynlib {
             args_rendered.push(x);
         }
 
-        let args_dynlib: Vec<&str>= args_rendered.iter().map(|a| a.as_str()).collect();
+        let args_dynlib: Vec<&str> = args_rendered.iter().map(|a| a.as_str()).collect();
 
-        let dynlib_run: libloading::Symbol<
-            fn(
-                Vec<&str>
-            ) ->  PointValue
-        > = unsafe { self.lib.get(b"run")? };
+        let dynlib_run: libloading::Symbol<fn(Vec<&str>) -> PointValue> =
+            unsafe { self.lib.get(b"run")? };
         dynlib_run(args_dynlib)
     }
 }
 
-pub async fn create(arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
     let path = arg.config()["path"]
         .as_str()
         .ok_or(err!("010", "missing path"))?;
 
     let lib = unsafe { libloading::Library::new(path)? };
 
-    Ok(Box::new(Dynlib {
-        lib
-    }))
+    Ok(Box::new(Dynlib { lib }))
 }

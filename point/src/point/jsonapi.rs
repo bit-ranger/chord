@@ -6,7 +6,7 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord_common::error::Error;
 use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
-use chord_common::value::{Json, Map, Number, to_string};
+use chord_common::value::{to_string, Json, Map, Number};
 use chord_common::{err, rerr};
 use std::borrow::Borrow;
 
@@ -19,7 +19,7 @@ impl PointRunner for Jsonapi {
     }
 }
 
-pub async fn create(_: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
     Ok(Box::new(Jsonapi {}))
 }
 
@@ -58,12 +58,15 @@ async fn run0(arg: &dyn PointArg) -> std::result::Result<Json, Rae> {
     }
 
     let body_content = arg.config()["body"].borrow();
-    if !body_content.is_null(){
-        let body_str:String = if body_content.is_string() {
-             body_content.as_str().ok_or(err!("032", "invalid body"))?.to_owned()
-         } else {
-             to_string(body_content).or(rerr!("032", "invalid body"))?
-         };
+    if !body_content.is_null() {
+        let body_str: String = if body_content.is_string() {
+            body_content
+                .as_str()
+                .ok_or(err!("032", "invalid body"))?
+                .to_owned()
+        } else {
+            to_string(body_content).or(rerr!("032", "invalid body"))?
+        };
         let body_str = arg.render(body_str.as_str())?;
         rb = rb.body(Body::from_string(body_str));
     }

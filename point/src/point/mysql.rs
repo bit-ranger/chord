@@ -17,7 +17,7 @@ impl PointRunner for Mysql {
     }
 }
 
-pub async fn create(arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
     let url = arg.config()["url"]
         .as_str()
         .ok_or(err!("010", "missing url"))?;

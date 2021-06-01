@@ -7,6 +7,14 @@ use crate::value::Json;
 pub type PointValue = std::result::Result<Json, Error>;
 
 pub trait PointArg: Sync + Send {
+    fn id(&self) -> &str;
+
+    fn case_id(&self) -> usize;
+
+    fn task_id(&self) -> &str;
+
+    fn exec_id(&self) -> &str;
+
     fn config(&self) -> &Json;
 
     fn render(&self, text: &str) -> Result<String, Error>;

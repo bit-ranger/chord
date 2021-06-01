@@ -45,7 +45,6 @@ impl<'c, 'h, 'reg, 'r, 't, 'e> PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
         return context;
     }
 
-    #[allow(dead_code)]
     pub fn id(self: &PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e>) -> &str {
         return self.id.as_str();
     }
@@ -115,6 +114,22 @@ pub fn render(
 }
 
 impl<'c, 'h, 'reg, 'r, 't, 'e> PointArg for PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
+    fn id(&self) -> &str {
+        self.id()
+    }
+
+    fn case_id(&self) -> usize {
+        self.case_id
+    }
+
+    fn task_id(&self) -> &str {
+        self.task_id
+    }
+
+    fn exec_id(&self) -> &str {
+        self.exec_id
+    }
+
     fn config(&self) -> &Json {
         let config = self.flow.point_config(self.id());
         return config;

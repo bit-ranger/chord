@@ -4,10 +4,10 @@ use chord_common::point::{PointAssess, PointState, PointId};
 use crate::flow::point::arg::PointIdStruct;
 
 pub struct PointAssessStruct {
-    id: PointIdStruct,
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
-    state: PointState,
+    pub id: PointIdStruct,
+    pub start: DateTime<Utc>,
+    pub end: DateTime<Utc>,
+    pub state: PointState,
 }
 
 impl PointAssessStruct {

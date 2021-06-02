@@ -95,7 +95,7 @@ async fn run_task<P: AsRef<Path>>(
         es_index,
         case_batch_size,
     )
-    .await;
+        .await;
     match rt {
         Ok(ts) => ts,
         Err(e) => {
@@ -137,35 +137,41 @@ async fn run_task0<P: AsRef<Path>>(
     let mut assess_reporter = Reporter::new(es_url, es_index, task_id, exec_id.clone()).await?;
 
     //runner
-    let mut runner = chord_flow::Runner::new(
+    let runner = chord_flow::Runner::new(
         app_ctx,
         Arc::new(flow),
         String::from(task_id),
         exec_id.clone(),
-    )
-    .await?;
+    ).await;
 
     let mut total_task_state = TaskState::Ok(vec![]);
-    loop {
-        let data = data_loader.load().await?;
-        let data_len = data.len();
-
-        let task_assess = runner.run(data).await;
-
-        //write
-        assess_reporter.write(task_assess.as_ref()).await?;
-
-        match task_assess.state() {
-            TaskState::Err(e) => {
-                total_task_state = TaskState::Err(e.clone());
-                break;
-            }
-            TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
-            _ => (),
+    match runner {
+        Err(e) => {
+            total_task_state = TaskState::Err(e.clone());
+            assess_reporter.state(TaskState::Err(e)).await?;
         }
+        Ok(mut runner) => {
+            loop {
+                let data = data_loader.load().await?;
+                let data_len = data.len();
 
-        if data_len < case_batch_size {
-            break;
+                let task_assess = runner.run(data).await;
+
+                assess_reporter.write(task_assess.as_ref()).await?;
+
+                match task_assess.state() {
+                    TaskState::Err(e) => {
+                        total_task_state = TaskState::Err(e.clone());
+                        break;
+                    }
+                    TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
+                    _ => (),
+                }
+
+                if data_len < case_batch_size {
+                    break;
+                }
+            }
         }
     }
 

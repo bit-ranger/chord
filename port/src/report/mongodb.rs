@@ -52,6 +52,11 @@ impl Reporter {
         })
     }
 
+    pub async fn state(&mut self, state: TaskState)-> Result<(), Error> {
+        self.total_task_state = state;
+        Ok(())
+    }
+
     pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
         if self.task_id != task_assess.id() {
             return rerr!("400", "task_id mismatch");

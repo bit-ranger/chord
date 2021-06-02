@@ -113,32 +113,42 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     //write
     let mut assess_reporter =
         chord_port::report::csv::Reporter::new(output_dir, task_id, &flow).await?;
+
     //runner
-    let mut runner =
-        chord_flow::Runner::new(app_ctx, flow.clone(), String::from(task_id), exec_id).await?;
+    let runner =
+        chord_flow::Runner::new(app_ctx, flow.clone(), String::from(task_id), exec_id).await;
 
     let mut total_task_state = TaskState::Ok(vec![]);
-    loop {
-        let data = data_loader.load().await?;
-        let data_len = data.len();
+    match runner {
+        Err(e) => {
+            total_task_state = TaskState::Err(e.clone());
+            assess_reporter.state(TaskState::Err(e)).await?;
+        },
+        Ok(mut runner) => {
+            loop {
+                let data = data_loader.load().await?;
+                let data_len = data.len();
 
-        let task_assess = runner.run(data).await;
+                let task_assess = runner.run(data).await;
 
-        assess_reporter.write(task_assess.as_ref()).await?;
+                assess_reporter.write(task_assess.as_ref()).await?;
 
-        match task_assess.state() {
-            TaskState::Err(e) => {
-                total_task_state = TaskState::Err(e.clone());
-                break;
+                match task_assess.state() {
+                    TaskState::Err(e) => {
+                        total_task_state = TaskState::Err(e.clone());
+                        break;
+                    }
+                    TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
+                    _ => (),
+                }
+
+                if data_len < case_batch_size {
+                    break;
+                }
             }
-            TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
-            _ => (),
-        }
-
-        if data_len < case_batch_size {
-            break;
         }
     }
+
 
     data_loader.close().await?;
     assess_reporter.close().await?;

@@ -1,8 +1,6 @@
-use std::cell::RefCell;
-
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
-use async_std::task_local;
+
 use chrono::Utc;
 use futures::future::join_all;
 use handlebars::Context;
@@ -17,19 +15,17 @@ use chord_common::task::{TaskAssess, TaskState, TaskId};
 use chord_common::value::{Json, Map, to_json};
 use res::TaskAssessStruct;
 
-use crate::CASE_ID;
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::point::arg::CreateArgStruct;
 use crate::model::app::FlowContext;
 use crate::flow::task::arg::TaskIdStruct;
+use crate::CTX_ID;
 
 pub mod res;
 pub mod arg;
 
-task_local! {
-    pub static TASK_ID: RefCell<String> = RefCell::new(String::new());
-}
+
 
 
 pub struct Runner {
@@ -296,21 +292,16 @@ fn case_spawn(
     flow_ctx: Arc<dyn FlowContext>,
     case_arg: CaseArgStruct,
 ) -> JoinHandle<Box<dyn CaseAssess>> {
-    let task_id = TASK_ID
-        .try_with(|c| c.borrow().clone())
-        .unwrap_or("".to_owned());
     let builder = Builder::new()
         .name(format!("case_{}", case_arg.id()))
-        .spawn(case_run_arc(flow_ctx, task_id, case_arg));
+        .spawn(case_run_arc(flow_ctx, case_arg));
     return builder.unwrap();
 }
 
 async fn case_run_arc(
     flow_ctx: Arc<dyn FlowContext>,
-    task_id: String,
     case_arg: CaseArgStruct,
 ) -> Box<dyn CaseAssess> {
-    TASK_ID.with(|tid| tid.replace(task_id));
-    CASE_ID.with(|cid| cid.replace(case_arg.id().to_string()));
+    CTX_ID.with(|cid| cid.replace(case_arg.id().to_string()));
     case_run(flow_ctx.as_ref(), case_arg).await
 }

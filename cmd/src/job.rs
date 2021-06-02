@@ -87,7 +87,7 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     let task_id = input_dir.file_name().unwrap().to_str().unwrap();
 
     let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned())?);
-    chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_string()));
+    chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
 
     debug!("task start {}", input_dir.to_str().unwrap());
 

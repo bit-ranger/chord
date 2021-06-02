@@ -115,7 +115,7 @@ async fn run_task0<P: AsRef<Path>>(
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
 
     let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned())?);
-    chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_string()));
+    chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
     debug!("task start {}", task_path.to_str().unwrap());
 
     let flow_path = task_path.clone().join("flow.yml");

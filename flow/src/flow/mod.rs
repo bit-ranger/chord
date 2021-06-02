@@ -1,16 +1,21 @@
-use async_std::sync::Arc;
+use std::cell::RefCell;
 
-pub use case::CASE_ID;
+use async_std::sync::Arc;
+use async_std::task_local;
+
 use chord_common::point::PointRunnerFactory;
-pub use task::Runner;
 pub use task::arg::TaskIdStruct;
-pub use task::TASK_ID;
+pub use task::Runner;
 
 use crate::model::app::{FlowContext, FlowContextStruct};
 
 mod case;
 mod point;
 mod task;
+
+task_local! {
+    pub static CTX_ID: RefCell<String> = RefCell::new(String::new());
+}
 
 pub async fn create_context(
     point_runner_factory: Box<dyn PointRunnerFactory>,

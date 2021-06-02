@@ -62,7 +62,7 @@ impl CaseArgStruct {
         return Context::wraps(render_data).unwrap();
     }
 
-    pub fn create_point_arg<'app, 'h, 'reg, 'r>(
+    pub fn point_arg_create<'app, 'h, 'reg, 'r>(
         self: &CaseArgStruct,
         point_id: &str,
         app_ctx: &'app dyn FlowContext,
@@ -76,7 +76,7 @@ impl CaseArgStruct {
 
         Some(PointArgStruct::new(
             self.flow.as_ref(),
-            point_id,
+            point_id.to_owned(),
             app_ctx.get_handlebars(),
             render_ctx,
             self.id,

@@ -20,13 +20,13 @@ task_local! {
     pub static CASE_ID: RefCell<usize> = RefCell::new(0);
 }
 
-pub async fn run(flow_ctx: &dyn FlowContext, arg: &CaseArgStruct) -> CaseAssessStruct {
+pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
     let start = Utc::now();
     let mut render_context = arg.create_render_context();
     let mut point_assess_vec = Vec::<Box<dyn PointAssess>>::new();
     for (point_id, point_runner) in arg.point_runner_vec() {
-        let point_arg = arg.create_point_arg(point_id, flow_ctx, &render_context);
+        let point_arg = arg.point_arg_create(point_id, flow_ctx, &render_context);
         if point_arg.is_none() {
             warn!("case  Err {}", arg.id());
             return CaseAssessStruct::new(

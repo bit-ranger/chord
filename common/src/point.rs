@@ -24,6 +24,7 @@ pub trait PointArg: Sync + Send {
 
 #[async_trait]
 pub trait PointRunner: Sync + Send {
+
     async fn run(&self, arg: &dyn PointArg) -> PointValue;
 }
 

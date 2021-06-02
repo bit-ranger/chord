@@ -25,7 +25,7 @@ pub struct PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
 impl<'c, 'h, 'reg, 'r, 't, 'e> PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
     pub fn new(
         flow: &'c Flow,
-        id: &str,
+        id: String,
         handlebars: &'h Handlebars<'reg>,
         render_context: &'r RenderContext,
         case_id: usize,
@@ -34,7 +34,7 @@ impl<'c, 'h, 'reg, 'r, 't, 'e> PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
     ) -> PointArgStruct<'c, 'h, 'reg, 'r, 't, 'e> {
         let context = PointArgStruct {
             flow,
-            id: id.to_owned(),
+            id,
             handlebars,
             render_context,
             case_id,

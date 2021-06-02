@@ -75,7 +75,7 @@ impl log::Log for ChannelLogger {
                 .unwrap_or("".to_owned());
             let case_id = chord_flow::CASE_ID
                 .try_with(|c| c.borrow().clone())
-                .unwrap_or(0);
+                .unwrap_or("".to_owned());
 
             let _ = write!(
                 &mut data,

@@ -17,7 +17,7 @@ use log::{debug, info, trace, warn};
 use std::cell::RefCell;
 
 task_local! {
-    pub static CASE_ID: RefCell<usize> = RefCell::new(0);
+    pub static CASE_ID: RefCell<String> = RefCell::new(String::new());
 }
 
 pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessStruct {

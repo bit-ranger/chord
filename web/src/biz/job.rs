@@ -17,9 +17,7 @@ use chord_port::report::elasticsearch::Reporter;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-lazy_static! {
-    static ref TASK_ID: Regex = Regex::new(r"^[\w]+$").unwrap();
-}
+
 
 pub async fn run<P: AsRef<Path>>(
     job_path: P,
@@ -115,11 +113,9 @@ async fn run_task0<P: AsRef<Path>>(
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
-    if !TASK_ID.is_match(task_id) {
-        return rerr!("task", format!("invalid task_id {}", task_id));
-    }
 
-    chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_owned()));
+    let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned())?);
+    chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_string()));
     debug!("task start {}", task_path.to_str().unwrap());
 
     let flow_path = task_path.clone().join("flow.yml");
@@ -133,7 +129,7 @@ async fn run_task0<P: AsRef<Path>>(
     let mut data_loader =
         chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
-    let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned()));
+
     //write
     let mut assess_reporter = Reporter::new(es_url, es_index, task_id.clone()).await?;
 

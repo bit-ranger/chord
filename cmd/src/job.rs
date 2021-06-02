@@ -13,13 +13,6 @@ use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::{FlowContext, TaskIdStruct};
 
-use crate::rerr;
-use lazy_static::lazy_static;
-use regex::Regex;
-
-lazy_static! {
-    static ref TASK_ID: Regex = Regex::new(r"^[\w]+$").unwrap();
-}
 
 pub async fn run<P: AsRef<Path>>(
     input_dir: P,
@@ -92,10 +85,9 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
 ) -> Result<TaskState, Error> {
     let input_dir = Path::new(input_dir.as_ref());
     let task_id = input_dir.file_name().unwrap().to_str().unwrap();
-    if !TASK_ID.is_match(task_id) {
-        return rerr!("task", format!("invalid task_id {}", task_id));
-    }
-    chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_owned()));
+
+    let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned())?);
+    chord_flow::TASK_ID.with(|tid| tid.replace(task_id.to_string()));
 
     debug!("task start {}", input_dir.to_str().unwrap());
 
@@ -110,7 +102,7 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     let mut data_loader =
         chord_port::load::data::csv::Loader::new(data_file, case_batch_size).await?;
 
-    let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned()));
+
     //write
     let mut assess_reporter =
         chord_port::report::csv::Reporter::new(output_dir, &flow, task_id.clone()).await?;

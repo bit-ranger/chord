@@ -5,9 +5,14 @@ use crate::error::Error;
 use crate::value::Json;
 use crate::case::CaseId;
 use std::fmt::Display;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 pub type PointValue = std::result::Result<Json, Error>;
 
+lazy_static! {
+    pub static ref POINT_ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
+}
 
 pub trait PointId: Sync + Send + Display{
     fn point_id(&self) -> &str;

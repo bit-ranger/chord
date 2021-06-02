@@ -1,5 +1,9 @@
 use chord_common::task::TaskId;
 use std::fmt::{Display, Formatter};
+use chord_common::task::TASK_ID_PATTERN;
+use chord_common::error::Error;
+use chord_common::rerr;
+
 
 #[derive(Debug, Clone)]
 pub struct TaskIdStruct {
@@ -9,10 +13,15 @@ pub struct TaskIdStruct {
 
 impl TaskIdStruct {
 
-    pub fn new(exec_id: String, task_id: String) -> TaskIdStruct{
-        TaskIdStruct {
-            exec_id, task_id
+    pub fn new(exec_id: String, task_id: String) -> Result<TaskIdStruct, Error>{
+
+        if !TASK_ID_PATTERN.is_match(task_id.as_str()) {
+            return rerr!("task", format!("invalid task_id {}", task_id));
         }
+
+        Ok(TaskIdStruct {
+            exec_id, task_id
+        })
     }
 
 }

@@ -8,7 +8,7 @@ use futures::future::join_all;
 use handlebars::Context;
 use log::{debug, trace, warn};
 
-use chord_common::case::{CaseAssess, CaseState, CaseId};
+use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::point::{PointRunner, PointState};
@@ -311,6 +311,6 @@ async fn case_run_arc(
     case_arg: CaseArgStruct,
 ) -> Box<dyn CaseAssess> {
     TASK_ID.with(|tid| tid.replace(task_id));
-    CASE_ID.with(|cid| cid.replace(case_arg.id().case_id()));
+    CASE_ID.with(|cid| cid.replace(case_arg.id().to_string()));
     case_run(flow_ctx.as_ref(), case_arg).await
 }

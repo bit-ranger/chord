@@ -42,7 +42,7 @@ unsafe impl Sync for CaseIdStruct {}
 
 impl Display for CaseIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}", self.task_id, self.case_id).as_str())
+        f.write_str(format!("{}::{}", self.task_id, self.case_id).as_str())
     }
 }
 

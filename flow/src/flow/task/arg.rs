@@ -33,6 +33,6 @@ unsafe impl Sync for TaskIdStruct {}
 
 impl Display for TaskIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}", self.exec_id, self.task_id).as_str())
+        f.write_str(format!("{}::{}", self.exec_id, self.task_id).as_str())
     }
 }

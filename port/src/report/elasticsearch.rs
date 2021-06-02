@@ -66,7 +66,7 @@ impl Reporter {
 
     pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
 
-        if self.task_id != task_assess.id() {
+        if self.task_id != task_assess.id().task_id() {
             return rerr!("400", "task_id mismatch");
         }
 
@@ -93,7 +93,7 @@ impl Reporter {
                     match ca.state() {
                         CaseState::Ok(pa_vec)  | CaseState::Fail(pa_vec)=> {
                             for pa in pa_vec {
-                                let pa_data = pa_doc(&self.exec_id, &self.task_id, ca.id(), pa.as_ref());
+                                let pa_data = pa_doc(&self.exec_id, &self.task_id, ca.id().case_id(), pa.as_ref());
                                 data_vec.push(pa_data);
                             }
                         },
@@ -180,7 +180,7 @@ fn ca_doc(exec_id: &str, task_id: &str, ca: &dyn CaseAssess) -> Data {
 fn pa_doc(exec_id: &str, task_id: &str, case_id: usize, pa: &dyn PointAssess) -> Data {
     Data {
         id: format!("{}::{}::{}::{}", exec_id, task_id, case_id, pa.id()),
-        id_in_layer: pa.id().to_owned(),
+        id_in_layer: pa.id().point_id().to_owned(),
         layer: "point".to_owned(),
         start: pa.start(),
         end: pa.end(),

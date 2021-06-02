@@ -38,7 +38,7 @@ unsafe impl Sync for PointIdStruct {}
 impl Display for PointIdStruct {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}", self.case_id, self.point_id).as_str())
+        f.write_str(format!("{}::{}", self.case_id, self.point_id).as_str())
     }
 }
 

@@ -2,6 +2,16 @@ use chrono::{DateTime, Utc};
 
 use crate::case::CaseAssess;
 use crate::error::Error;
+use std::fmt::Display;
+
+
+pub trait TaskId: Sync + Send + Display{
+
+    fn task_id(&self) -> &str;
+
+    fn exec_id(&self) -> &str;
+}
+
 
 pub enum TaskState {
     Ok(Vec<Box<dyn CaseAssess>>),
@@ -19,8 +29,14 @@ impl TaskState {
     }
 }
 
+unsafe impl Send for TaskState {}
+
+unsafe impl Sync for TaskState {}
+
+
 pub trait TaskAssess: Sync + Send {
-    fn id(&self) -> &str;
+
+    fn id(&self) -> &dyn TaskId;
 
     fn start(&self) -> DateTime<Utc>;
 
@@ -29,6 +45,4 @@ pub trait TaskAssess: Sync + Send {
     fn state(&self) -> &TaskState;
 }
 
-unsafe impl Send for TaskState {}
 
-unsafe impl Sync for TaskState {}

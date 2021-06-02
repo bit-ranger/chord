@@ -4,7 +4,7 @@ use chord_common::error::Error;
 use chord_common::point::{PointRunner, PointValue};
 use res::PointAssessStruct;
 
-use crate::flow::point::arg::PointArgStruct;
+use crate::flow::point::arg::RunArgStruct;
 use crate::model::app::FlowContext;
 use async_std::future::timeout;
 use chord_common::point::PointState;
@@ -15,7 +15,7 @@ pub mod res;
 
 pub async fn run(
     _: &dyn FlowContext,
-    arg: &PointArgStruct<'_, '_, '_, '_, '_, '_>,
+    arg: &RunArgStruct<'_, '_, '_, '_>,
     runner: &dyn PointRunner,
 ) -> PointAssessStruct {
     trace!("point start {}", arg.id());
@@ -26,7 +26,7 @@ pub async fn run(
         Ok(v) => v,
         Err(_) => {
             return PointAssessStruct::new(
-                arg.id(),
+                arg.id().clone(),
                 start,
                 Utc::now(),
                 PointState::Err(Error::new("002", "timeout")),
@@ -36,10 +36,10 @@ pub async fn run(
 
     return match value {
         PointValue::Ok(json) => {
-            PointAssessStruct::new(arg.id(), start, Utc::now(), PointState::Ok(json))
+            PointAssessStruct::new(arg.id().clone(), start, Utc::now(), PointState::Ok(json))
         }
         PointValue::Err(e) => {
-            PointAssessStruct::new(arg.id(), start, Utc::now(), PointState::Err(e))
+            PointAssessStruct::new(arg.id().clone(), start, Utc::now(), PointState::Err(e))
         }
     };
 }

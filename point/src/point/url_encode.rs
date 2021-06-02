@@ -1,22 +1,22 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
+use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
 use chord_common::value::Json;
 
 struct UrlEncode {}
 
 #[async_trait]
 impl PointRunner for UrlEncode {
-    async fn run(&self, arg: &dyn PointArg) -> PointValue {
+    async fn run(&self, arg: &dyn RunArg) -> PointValue {
         run(arg).await
     }
 }
 
-pub async fn create(_: Option<&Json>, _: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
     Ok(Box::new(UrlEncode {}))
 }
 
-async fn run(arg: &dyn PointArg) -> PointValue {
+async fn run(arg: &dyn RunArg) -> PointValue {
     let raw = arg.config()["raw"]
         .as_str()
         .map(|s| arg.render(s))

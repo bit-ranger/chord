@@ -1,9 +1,11 @@
 use chrono::{DateTime, Utc};
 
-use chord_common::task::{TaskAssess, TaskState};
+use chord_common::task::{TaskAssess, TaskState, TaskId};
+use std::sync::Arc;
+use crate::flow::task::arg::TaskIdStruct;
 
 pub struct TaskAssessStruct {
-    id: String,
+    id: Arc<TaskIdStruct>,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: TaskState,
@@ -11,13 +13,13 @@ pub struct TaskAssessStruct {
 
 impl TaskAssessStruct {
     pub fn new(
-        id: &str,
+        id: Arc<TaskIdStruct>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         state: TaskState,
     ) -> TaskAssessStruct {
         TaskAssessStruct {
-            id: String::from(id),
+            id,
             start,
             end,
             state,
@@ -26,8 +28,8 @@ impl TaskAssessStruct {
 }
 
 impl TaskAssess for TaskAssessStruct {
-    fn id(&self) -> &str {
-        &self.id
+    fn id(&self) -> &dyn TaskId {
+        self.id.as_ref()
     }
 
     fn start(&self) -> DateTime<Utc> {

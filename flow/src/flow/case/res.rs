@@ -1,9 +1,11 @@
 use chrono::{DateTime, Utc};
 
-use chord_common::case::{CaseAssess, CaseState};
+use chord_common::case::{CaseAssess, CaseState, CaseId};
+use crate::flow::case::arg::CaseIdStruct;
+use std::rc::Rc;
 
 pub struct CaseAssessStruct {
-    id: usize,
+    id: Rc<CaseIdStruct>,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: CaseState,
@@ -11,7 +13,7 @@ pub struct CaseAssessStruct {
 
 impl CaseAssessStruct {
     pub fn new(
-        id: usize,
+        id: Rc<CaseIdStruct>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         state: CaseState,
@@ -26,8 +28,8 @@ impl CaseAssessStruct {
 }
 
 impl CaseAssess for CaseAssessStruct {
-    fn id(&self) -> usize {
-        self.id
+    fn id(&self) -> &dyn CaseId {
+        self.id.as_ref()
     }
     fn start(&self) -> DateTime<Utc> {
         self.start

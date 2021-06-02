@@ -2,7 +2,7 @@ use mongodb::bson::{to_document, Document};
 use mongodb::{options::ClientOptions, Client};
 
 use chord_common::error::Error;
-use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
+use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
 use chord_common::value::{from_str, Json};
 use chord_common::{err, rerr};
 
@@ -10,16 +10,16 @@ struct Mongodb {}
 
 #[async_trait]
 impl PointRunner for Mongodb {
-    async fn run(&self, arg: &dyn PointArg) -> PointValue {
+    async fn run(&self, arg: &dyn RunArg) -> PointValue {
         run(arg).await
     }
 }
 
-pub async fn create(_: Option<&Json>, _: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
     Ok(Box::new(Mongodb {}))
 }
 
-async fn run(arg: &dyn PointArg) -> PointValue {
+async fn run(arg: &dyn RunArg) -> PointValue {
     let url = arg.config()["url"]
         .as_str()
         .map(|s| arg.render(s))

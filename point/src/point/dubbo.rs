@@ -1,7 +1,7 @@
 use async_std::net::TcpStream;
 use async_std::prelude::*;
 use chord_common::error::Error;
-use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
+use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
 use chord_common::value::Json;
 use chord_common::{err, rerr};
 use log::debug;
@@ -11,16 +11,16 @@ struct Dubbo {}
 
 #[async_trait]
 impl PointRunner for Dubbo {
-    async fn run(&self, arg: &dyn PointArg) -> PointValue {
+    async fn run(&self, arg: &dyn RunArg) -> PointValue {
         run(arg).await
     }
 }
 
-pub async fn create(_: Option<&Json>, _: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
     Ok(Box::new(Dubbo {}))
 }
 
-async fn run(arg: &dyn PointArg) -> PointValue {
+async fn run(arg: &dyn RunArg) -> PointValue {
     let address = arg.config()["address"]
         .as_str()
         .map(|s| arg.render(s))

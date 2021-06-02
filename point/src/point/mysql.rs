@@ -1,6 +1,6 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
+use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
 use chord_common::value::{Json, Map, Number};
 use log::debug;
 use rbatis::plugin::page::{Page, PageRequest};
@@ -12,17 +12,17 @@ struct Mysql {
 
 #[async_trait]
 impl PointRunner for Mysql {
-    async fn run(&self, arg: &dyn PointArg) -> PointValue {
+    async fn run(&self, arg: &dyn RunArg) -> PointValue {
         run(&self, arg).await
     }
 }
 
-pub async fn create(_: Option<&Json>, arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, arg: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
     let url = arg.config()["url"]
         .as_str()
         .ok_or(err!("010", "missing url"))?;
 
-    if !arg.is_shared(url) {
+    if !arg.is_task_shared(url) {
         return Ok(Box::new(Mysql { rb: None }));
     }
 
@@ -37,7 +37,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
     Ok(rb)
 }
 
-async fn run(obj: &Mysql, arg: &dyn PointArg) -> PointValue {
+async fn run(obj: &Mysql, arg: &dyn RunArg) -> PointValue {
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {
@@ -52,7 +52,7 @@ async fn run(obj: &Mysql, arg: &dyn PointArg) -> PointValue {
     };
 }
 
-async fn run0(arg: &dyn PointArg, rb: &Rbatis) -> PointValue {
+async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> PointValue {
     let sql = arg.config()["sql"]
         .as_str()
         .map(|s| arg.render(s))

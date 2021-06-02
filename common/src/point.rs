@@ -3,39 +3,42 @@ use chrono::{DateTime, Utc};
 
 use crate::error::Error;
 use crate::value::Json;
+use crate::case::CaseId;
+use std::fmt::Display;
 
 pub type PointValue = std::result::Result<Json, Error>;
 
-pub trait PointArg: Sync + Send {
-    fn id(&self) -> &str;
 
-    fn case_id(&self) -> usize;
+pub trait PointId: Sync + Send + Display{
+    fn point_id(&self) -> &str;
 
-    fn task_id(&self) -> &str;
+    fn case_id(&self) -> &dyn CaseId;
+}
 
-    fn exec_id(&self) -> &str;
+
+pub trait RunArg: Sync + Send {
+
+    fn id(&self) -> &dyn PointId;
+
+    fn config(&self) -> &Json;
+
+    fn render(&self, text: &str) -> Result<String, Error>;
+}
+
+
+pub trait CreateArg: Sync + Send {
+
+    fn id(&self) -> &dyn PointId;
+
+    fn kind(&self) -> &str;
 
     fn config(&self) -> &Json;
 
     fn render(&self, text: &str) -> Result<String, Error>;
 
-    fn is_shared(&self, text: &str) -> bool;
+    fn is_task_shared(&self, text: &str) -> bool;
 }
 
-#[async_trait]
-pub trait PointRunner: Sync + Send {
-
-    async fn run(&self, arg: &dyn PointArg) -> PointValue;
-}
-
-#[async_trait]
-pub trait PointRunnerFactory: Sync + Send {
-    async fn create_runner(
-        &self,
-        kind: &str,
-        arg: &dyn PointArg,
-    ) -> Result<Box<dyn PointRunner>, Error>;
-}
 
 #[derive(Debug, Clone)]
 pub enum PointState {
@@ -43,9 +46,13 @@ pub enum PointState {
     Fail(Json),
     Err(Error),
 }
+unsafe impl Send for PointState {}
+unsafe impl Sync for PointState {}
+
 
 pub trait PointAssess: Sync + Send {
-    fn id(&self) -> &str;
+
+    fn id(&self) -> &dyn PointId;
 
     fn start(&self) -> DateTime<Utc>;
 
@@ -54,6 +61,13 @@ pub trait PointAssess: Sync + Send {
     fn state(&self) -> &PointState;
 }
 
-unsafe impl Send for PointState {}
 
-unsafe impl Sync for PointState {}
+#[async_trait]
+pub trait PointRunner: Sync + Send {
+    async fn run(&self, arg: &dyn RunArg) -> PointValue;
+}
+
+#[async_trait]
+pub trait PointRunnerFactory: Sync + Send {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error>;
+}

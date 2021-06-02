@@ -1,5 +1,5 @@
 use chord_common::error::Error;
-use chord_common::point::{PointArg, PointRunner};
+use chord_common::point::{PointRunner, CreateArg};
 use chord_common::rerr;
 use chord_common::value::Json;
 
@@ -27,7 +27,7 @@ pub mod url_encode;
 pub async fn create_kind_runner(
     kind: &str,
     config: Option<&Json>,
-    arg: &dyn PointArg,
+    arg: &dyn CreateArg,
 ) -> Result<Box<dyn PointRunner>, Error> {
     let value = match kind.trim() {
         "sleep" => sleep::create(config, arg).await,

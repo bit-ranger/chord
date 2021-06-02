@@ -1,23 +1,24 @@
 use chrono::{DateTime, Utc};
 
-use chord_common::point::{PointAssess, PointState};
+use chord_common::point::{PointAssess, PointState, PointId};
+use crate::flow::point::arg::PointIdStruct;
 
 pub struct PointAssessStruct {
-    pub id: String,
-    pub start: DateTime<Utc>,
-    pub end: DateTime<Utc>,
-    pub state: PointState,
+    id: PointIdStruct,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    state: PointState,
 }
 
 impl PointAssessStruct {
     pub fn new(
-        id: &str,
+        id: PointIdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         state: PointState,
     ) -> PointAssessStruct {
         PointAssessStruct {
-            id: String::from(id),
+            id,
             start,
             end,
             state,
@@ -26,7 +27,7 @@ impl PointAssessStruct {
 }
 
 impl PointAssess for PointAssessStruct {
-    fn id(&self) -> &str {
+    fn id(&self) -> &dyn PointId {
         &self.id
     }
 

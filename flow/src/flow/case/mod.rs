@@ -6,7 +6,7 @@ use crate::flow::case::arg::{CaseArgStruct, RenderContext};
 use crate::flow::point;
 use crate::model::app::FlowContext;
 use chord_common::case::CaseState;
-use chord_common::point::{PointArg, PointAssess, PointState};
+use chord_common::point::{RunArg, PointAssess, PointState};
 pub mod arg;
 pub mod res;
 use crate::flow::point::arg::{assert, render};
@@ -30,7 +30,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
         if point_arg.is_none() {
             warn!("case  Err {}", arg.id());
             return CaseAssessStruct::new(
-                arg.id(),
+                arg.id().clone(),
                 start,
                 Utc::now(),
                 CaseState::Err(err!("010", format!("invalid point {}", point_id))),
@@ -56,7 +56,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                 info!("point Err  {} - {} <<< {}", id, e, config_rendered);
                 info!("case  Fail {}", arg.id());
                 return CaseAssessStruct::new(
-                    arg.id(),
+                    arg.id().clone(),
                     start,
                     Utc::now(),
                     CaseState::Fail(point_assess_vec),
@@ -76,11 +76,11 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                 .unwrap_or("".to_owned());
                 info!("point Fail {} - {} <<< {}", arg.id(), json, config_rendered);
                 let point_assess =
-                    PointAssessStruct::new(id.as_str(), start, end, PointState::Fail(json));
+                    PointAssessStruct::new(id, start, end, PointState::Fail(json));
                 point_assess_vec.push(Box::new(point_assess));
                 info!("case  Fail {}", arg.id());
                 return CaseAssessStruct::new(
-                    arg.id(),
+                    arg.id().clone(),
                     start,
                     Utc::now(),
                     CaseState::Fail(point_assess_vec),
@@ -98,7 +98,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                     if assert(flow_ctx.get_handlebars(), &mut render_context, &con).await {
                         debug!("point Ok   {}", id);
                         let point_assess =
-                            PointAssessStruct::new(id.as_str(), start, end, PointState::Ok(json));
+                            PointAssessStruct::new(id, start, end, PointState::Ok(json));
                         point_assess_vec.push(Box::new(point_assess));
                     } else {
                         let config_rendered = render(
@@ -109,11 +109,11 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                         .unwrap_or("".to_owned());
                         info!("point Fail {} - {} <<< {}", id, json, config_rendered);
                         let point_assess =
-                            PointAssessStruct::new(id.as_str(), start, end, PointState::Fail(json));
+                            PointAssessStruct::new(id, start, end, PointState::Fail(json));
                         point_assess_vec.push(Box::new(point_assess));
                         info!("case  Fail {}", arg.id());
                         return CaseAssessStruct::new(
-                            arg.id(),
+                            arg.id().clone(),
                             start,
                             Utc::now(),
                             CaseState::Fail(point_assess_vec),
@@ -122,7 +122,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                 } else {
                     debug!("point Ok   {}", id);
                     let point_assess =
-                        PointAssessStruct::new(id.as_str(), start, end, PointState::Ok(json));
+                        PointAssessStruct::new(id, start, end, PointState::Ok(json));
                     point_assess_vec.push(Box::new(point_assess));
                 }
             }
@@ -130,7 +130,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
     }
 
     debug!("case Ok {}", arg.id());
-    return CaseAssessStruct::new(arg.id(), start, Utc::now(), CaseState::Ok(point_assess_vec));
+    return CaseAssessStruct::new(arg.id().clone(), start, Utc::now(), CaseState::Ok(point_assess_vec));
 }
 
 pub async fn register_dynamic(render_context: &mut RenderContext, pt_id: &str, result: &Json) {

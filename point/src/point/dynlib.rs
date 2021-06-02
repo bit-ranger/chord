@@ -1,6 +1,6 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::point::{async_trait, PointArg, PointRunner, PointValue};
+use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
 use chord_common::value::Json;
 use libloading::Library;
 
@@ -10,7 +10,7 @@ struct Dynlib {
 
 #[async_trait]
 impl PointRunner for Dynlib {
-    async fn run(&self, arg: &dyn PointArg) -> PointValue {
+    async fn run(&self, arg: &dyn RunArg) -> PointValue {
         let args_raw = arg.config()["args"]
             .as_array()
             .ok_or(err!("010", "missing args"))?;
@@ -30,7 +30,7 @@ impl PointRunner for Dynlib {
     }
 }
 
-pub async fn create(_: Option<&Json>, arg: &dyn PointArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, arg: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
     let path = arg.config()["path"]
         .as_str()
         .ok_or(err!("010", "missing path"))?;

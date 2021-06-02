@@ -1,41 +1,47 @@
-use chrono::Utc;
-use futures::future::join_all;
-use log::{debug, trace, warn};
+use std::cell::RefCell;
+use std::fmt::Display;
 
-use chord_common::error::Error;
-use chord_common::rerr;
-use chord_common::task::{TaskAssess, TaskState};
-use chord_common::value::{to_json, Json, Map};
-use res::TaskAssessStruct;
-
-use crate::flow::case;
-use crate::flow::case::arg::CaseArgStruct;
-use crate::flow::point::arg::PointArgStruct;
-use crate::model::app::FlowContext;
-use crate::CASE_ID;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
 use async_std::task_local;
-use chord_common::case::{CaseAssess, CaseState};
+use chrono::Utc;
+use futures::future::join_all;
+use handlebars::Context;
+use log::{debug, trace, warn};
+use serde::__private::Formatter;
+
+use chord_common::case::{CaseAssess, CaseState, CaseId};
+use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::point::{PointRunner, PointState};
-use handlebars::Context;
-use std::cell::RefCell;
+use chord_common::rerr;
+use chord_common::task::{TaskAssess, TaskId, TaskState};
+use chord_common::value::{Json, Map, to_json};
+use res::TaskAssessStruct;
+
+use crate::CASE_ID;
+use crate::flow::case;
+use crate::flow::case::arg::CaseArgStruct;
+use crate::flow::point::arg::CreateArgStruct;
+use crate::flow::point::arg::RunArgStruct;
+use crate::model::app::FlowContext;
+use crate::flow::task::arg::TaskIdStruct;
 
 pub mod res;
+pub mod arg;
 
 task_local! {
     pub static TASK_ID: RefCell<String> = RefCell::new(String::new());
 }
 
+
 pub struct Runner {
     flow_ctx: Arc<dyn FlowContext>,
     flow: Arc<Flow>,
     point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
-    id: Arc<String>,
+    id: Arc<TaskIdStruct>,
     pre_ctx: Arc<Vec<(String, Json)>>,
     case_id_offset: usize,
-    exec_id: Arc<String>,
 }
 
 impl Runner {
@@ -43,23 +49,27 @@ impl Runner {
         flow_ctx: Arc<dyn FlowContext>,
         flow: Arc<Flow>,
         id: String,
-        exec_id: String,
+        exec_id: String
     ) -> Result<Runner, Error> {
-        let id = Arc::new(id);
-        let exec_id = Arc::new(exec_id);
+
+        let id = Arc::new(TaskIdStruct::new(
+            exec_id,
+            id
+        ));
+
         let pre_ctx =
-            pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone(), exec_id.clone()).await?;
+            pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone()).await?;
         let pre_ctx = Arc::new(pre_ctx);
+
+
 
         let point_runner_vec = point_runner_vec_create(
             flow_ctx.clone(),
             flow.clone(),
             pre_ctx.clone(),
             flow.case_point_id_vec()?,
-            id.clone(),
-            exec_id.clone(),
-        )
-        .await?;
+            id.clone()
+        ).await?;
         let runner = Runner {
             flow_ctx,
             flow,
@@ -67,7 +77,6 @@ impl Runner {
             id,
             pre_ctx,
             case_id_offset: 1,
-            exec_id,
         };
         Ok(runner)
     }
@@ -86,7 +95,7 @@ impl Runner {
             Err(e) => {
                 warn!("task Err {}", self.id);
                 return TaskAssessStruct::new(
-                    self.id.as_str(),
+                    self.id.clone(),
                     start,
                     Utc::now(),
                     TaskState::Err(e),
@@ -117,7 +126,7 @@ impl Runner {
         return if any_fail {
             warn!("task Fail {}", self.id);
             TaskAssessStruct::new(
-                self.id.as_str(),
+                self.id.clone(),
                 start,
                 Utc::now(),
                 TaskState::Fail(case_assess_vec),
@@ -125,7 +134,7 @@ impl Runner {
         } else {
             debug!("task Ok {}", self.id);
             TaskAssessStruct::new(
-                self.id.as_str(),
+                self.id.clone(),
                 start,
                 Utc::now(),
                 TaskState::Ok(case_assess_vec),
@@ -139,13 +148,12 @@ impl Runner {
             .enumerate()
             .map(|(i, d)| {
                 CaseArgStruct::new(
-                    self.case_id_offset + i,
                     self.flow.clone(),
                     self.point_runner_vec.clone(),
                     d,
                     self.pre_ctx.clone(),
                     self.id.clone(),
-                    self.exec_id.clone(),
+                    self.case_id_offset + i,
                 )
             })
             .collect();
@@ -156,8 +164,7 @@ impl Runner {
 async fn pre_arg(
     flow_ctx: Arc<dyn FlowContext>,
     flow: Arc<Flow>,
-    task_id: Arc<String>,
-    exec_id: Arc<String>,
+    task_id: Arc<dyn TaskId>
 ) -> Result<Option<CaseArgStruct>, Error> {
     return if flow.pre_point_id_vec().is_none() {
         Ok(None)
@@ -167,19 +174,17 @@ async fn pre_arg(
             flow.clone(),
             Arc::new(Vec::new()),
             flow.pre_point_id_vec().unwrap(),
-            task_id.clone(),
-            exec_id.clone(),
+            task_id.clone()
         )
         .await?;
 
         Ok(Some(CaseArgStruct::new(
-            0,
             flow.clone(),
             Arc::new(point_runner_vec),
             Json::Null,
             Arc::new(Vec::new()),
             task_id.clone(),
-            exec_id.clone(),
+            0
         )))
     };
 }
@@ -187,11 +192,10 @@ async fn pre_arg(
 async fn pre_ctx_create(
     flow_ctx: Arc<dyn FlowContext>,
     flow: Arc<Flow>,
-    task_id: Arc<String>,
-    exec_id: Arc<String>,
+    task_id: Arc<dyn TaskId>
 ) -> Result<Vec<(String, Json)>, Error> {
     let mut case_ctx = vec![];
-    let pre_arg = pre_arg(flow_ctx.clone(), flow, task_id.clone(), exec_id).await?;
+    let pre_arg = pre_arg(flow_ctx.clone(), flow, task_id.clone()).await?;
     if pre_arg.is_none() {
         return Ok(case_ctx);
     }
@@ -204,7 +208,7 @@ async fn pre_ctx_create(
             for pa in pa_vec {
                 match pa.state() {
                     PointState::Ok(pv) => {
-                        pre_ctx.insert(String::from(pa.id()), pv.clone());
+                        pre_ctx.insert(String::from(pa.id().point_id()), pv.clone());
                     }
                     _ => return rerr!("012", "pre point run failure"),
                 }
@@ -229,8 +233,7 @@ async fn point_runner_vec_create(
     flow: Arc<Flow>,
     render_ctx_ext: Arc<Vec<(String, Json)>>,
     point_id_vec: Vec<String>,
-    task_id: Arc<String>,
-    exec_id: Arc<String>,
+    task_id: Arc<dyn TaskId>
 ) -> Result<Vec<(String, Box<dyn PointRunner>)>, Error> {
     let render_context = render_context_create(flow_ctx.clone(), flow.clone(), render_ctx_ext.clone());
     let mut point_runner_vec = vec![];
@@ -239,11 +242,9 @@ async fn point_runner_vec_create(
             flow_ctx.as_ref(),
             flow.as_ref(),
             &render_context,
+            task_id.clone(),
             pid.clone(),
-            task_id.as_str(),
-            exec_id.as_str(),
-        )
-        .await?;
+        ).await?;
         point_runner_vec.push((pid, pr));
     }
     Ok(point_runner_vec)
@@ -274,23 +275,21 @@ async fn point_runner_create(
     flow_ctx: &dyn FlowContext,
     flow: &Flow,
     render_context: &Context,
+    task_id: Arc<dyn TaskId>,
     point_id: String,
-    task_id: &str,
-    exec_id: &str,
 ) -> Result<Box<dyn PointRunner>, Error> {
     let kind = flow.point_kind(point_id.as_ref());
-    let point_arg = PointArgStruct::new(
+    let create_arg = CreateArgStruct::new(
         flow,
-        point_id,
         flow_ctx.get_handlebars(),
         render_context,
-        0,
         task_id,
-        exec_id,
+        kind.to_owned(),
+        point_id,
     );
     flow_ctx
         .get_point_runner_factory()
-        .create_runner(kind, &point_arg)
+        .create(&create_arg)
         .await
 }
 
@@ -317,6 +316,6 @@ async fn case_run_arc(
     case_arg: CaseArgStruct,
 ) -> Box<dyn CaseAssess> {
     TASK_ID.with(|tid| tid.replace(task_id));
-    CASE_ID.with(|cid| cid.replace(case_arg.id()));
+    CASE_ID.with(|cid| cid.replace(case_arg.id().case_id()));
     case_run(flow_ctx.as_ref(), case_arg).await
 }

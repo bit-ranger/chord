@@ -4,39 +4,81 @@ use chord_common::flow::Flow;
 use chord_common::value::Json;
 use chord_common::value::{to_json, Map};
 
-use crate::flow::point::arg::PointArgStruct;
+use crate::flow::point::arg::RunArgStruct;
 use crate::model::app::FlowContext;
 use async_std::sync::Arc;
 use chord_common::point::PointRunner;
+use chord_common::task::TaskId;
+use chord_common::case::CaseId;
+use std::fmt::{Display, Formatter};
+use std::rc::Rc;
+
+#[derive(Clone)]
+pub struct CaseIdStruct{
+    task_id: Arc<dyn TaskId>,
+    case_id: usize
+}
+
+impl CaseIdStruct{
+    pub fn new(task_id: Arc<dyn TaskId>, case_id: usize) -> CaseIdStruct{
+        CaseIdStruct {
+            task_id, case_id
+        }
+    }
+}
+
+impl CaseId for CaseIdStruct {
+
+    fn case_id(&self) -> usize {
+        self.case_id
+    }
+
+    fn task_id(&self) -> &dyn TaskId {
+        self.task_id.as_ref()
+    }
+}
+unsafe impl Send for CaseIdStruct {}
+unsafe impl Sync for CaseIdStruct {}
+
+impl Display for CaseIdStruct {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(format!("{}-{}", self.task_id, self.case_id).as_str())
+    }
+}
+
 
 pub struct CaseArgStruct {
-    id: usize,
+
     flow: Arc<Flow>,
     point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
     data: Json,
     render_ctx_ext: Arc<Vec<(String, Json)>>,
-    task_id: Arc<String>,
-    exec_id: Arc<String>,
+    id: Rc<CaseIdStruct>,
 }
+unsafe impl Send for CaseArgStruct {}
+unsafe impl Sync for CaseArgStruct {}
 
 impl CaseArgStruct {
     pub fn new(
-        id: usize,
         flow: Arc<Flow>,
         point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
         data: Json,
         render_ctx_ext: Arc<Vec<(String, Json)>>,
-        task_id: Arc<String>,
-        exec_id: Arc<String>,
+        task_id: Arc<dyn TaskId>,
+        case_id: usize
     ) -> CaseArgStruct {
+
+        let id = Rc::new(CaseIdStruct::new(
+            task_id,
+            case_id
+        ));
+
         let context = CaseArgStruct {
-            id,
             flow,
             point_runner_vec,
             data,
             render_ctx_ext,
-            task_id,
-            exec_id,
+            id
         };
 
         return context;
@@ -65,23 +107,21 @@ impl CaseArgStruct {
     pub fn point_arg_create<'app, 'h, 'reg, 'r>(
         self: &CaseArgStruct,
         point_id: &str,
-        app_ctx: &'app dyn FlowContext,
+        flow_ctx: &'app dyn FlowContext,
         render_ctx: &'r RenderContext,
-    ) -> Option<PointArgStruct<'_, 'h, 'reg, 'r, '_, '_>>
+    ) -> Option<RunArgStruct<'_, 'h, 'reg, 'r>>
     where
         'app: 'h,
         'app: 'reg,
     {
         let _ = self.flow.point(point_id).as_object()?;
 
-        Some(PointArgStruct::new(
+        Some(RunArgStruct::new(
             self.flow.as_ref(),
-            point_id.to_owned(),
-            app_ctx.get_handlebars(),
+            flow_ctx.get_handlebars(),
             render_ctx,
-            self.id,
-            self.task_id.as_str(),
-            self.exec_id.as_str(),
+            self.id.clone(),
+            point_id.to_owned(),
         ))
     }
 
@@ -89,8 +129,8 @@ impl CaseArgStruct {
         self.point_runner_vec.as_ref()
     }
 
-    pub fn id(&self) -> usize {
-        self.id
+    pub fn id(&self) -> Rc<CaseIdStruct> {
+        self.id.clone()
     }
 }
 

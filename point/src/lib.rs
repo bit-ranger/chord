@@ -1,5 +1,5 @@
 use chord_common::error::Error;
-use chord_common::point::{async_trait, PointArg, PointRunner, PointRunnerFactory};
+use chord_common::point::{async_trait, PointRunner, PointRunnerFactory, CreateArg};
 use chord_common::value::Map;
 
 mod point;
@@ -16,11 +16,11 @@ impl PointRunnerFactoryDefault {
 
 #[async_trait]
 impl PointRunnerFactory for PointRunnerFactoryDefault {
-    async fn create_runner(
+    async fn create(
         &self,
-        kind: &str,
-        arg: &dyn PointArg,
+        arg: &dyn CreateArg,
     ) -> Result<Box<dyn PointRunner>, Error> {
+        let kind = arg.kind();
         point::create_kind_runner(kind, self.point_config.get(kind), arg).await
     }
 }

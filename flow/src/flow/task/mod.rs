@@ -13,7 +13,7 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::point::{PointRunner, PointState};
 use chord_common::rerr;
-use chord_common::task::{TaskAssess, TaskState};
+use chord_common::task::{TaskAssess, TaskState, TaskId};
 use chord_common::value::{Json, Map, to_json};
 use res::TaskAssessStruct;
 
@@ -42,21 +42,16 @@ pub struct Runner {
 }
 
 impl Runner {
+
+
     pub async fn new(
         flow_ctx: Arc<dyn FlowContext>,
         flow: Arc<Flow>,
-        id: String,
-        exec_id: String,
+        id: Arc<TaskIdStruct>,
     ) -> Result<Runner, Error> {
-        let id = Arc::new(TaskIdStruct::new(
-            exec_id,
-            id,
-        ));
-
         let pre_ctx =
             pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone()).await?;
         let pre_ctx = Arc::new(pre_ctx);
-
 
         let point_runner_vec = point_runner_vec_create(
             flow_ctx.clone(),
@@ -74,6 +69,10 @@ impl Runner {
             case_id_offset: 1,
         };
         Ok(runner)
+    }
+
+    pub fn id(&self) -> Arc<dyn TaskId>{
+        self.id.clone()
     }
 
     pub async fn run(&mut self, data: Vec<Json>) -> Box<dyn TaskAssess> {

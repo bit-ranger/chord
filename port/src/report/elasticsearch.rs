@@ -10,15 +10,15 @@ use chord_common::{err, rerr};
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
 use chord_common::point::{PointAssess, PointState};
-use chord_common::task::{TaskAssess, TaskState};
+use chord_common::task::{TaskAssess, TaskState, TaskId};
 use chord_common::value::{Json, to_string};
 use log::warn;
+use async_std::sync::Arc;
 
 pub struct Reporter {
     es_url: String,
     es_index: String,
-    exec_id: String,
-    task_id: String,
+    task_id: Arc<dyn TaskId>,
     start: DateTime<Utc>,
     total_task_state: TaskState,
 }
@@ -37,22 +37,16 @@ struct Data{
 
 impl Reporter {
 
-    pub async fn new<T, E>(
+    pub async fn new(
         es_url: String,
         es_index: String,
-        task_id: T,
-        exec_id: E) -> Result<Reporter, Error>
-        where T: Into<String>, E: Into<String> {
-        let exec_id = exec_id.into();
-        let task_id = task_id.into();
-
-        let task_data = ta_doc_init(exec_id.as_str(), task_id.as_str());
+        task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
+        let task_data = ta_doc_init(task_id.as_ref());
         send_data(es_url.as_str(), es_index.as_str(), task_data).await?;
 
         Ok(Reporter {
             es_url,
             es_index,
-            exec_id,
             task_id,
             start: Utc::now(),
             total_task_state: TaskState::Ok(vec![]),
@@ -65,10 +59,6 @@ impl Reporter {
     }
 
     pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
-
-        if self.task_id != task_assess.id().task_id() {
-            return rerr!("400", "task_id mismatch");
-        }
 
         if let TaskState::Err(_) = self.total_task_state {
             return rerr!("500", "task is error");
@@ -88,12 +78,12 @@ impl Reporter {
             TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
                 let mut data_vec: Vec<Data> = vec![];
                 for ca in ca_vec {
-                    let ca_data = ca_doc(&self.exec_id, &self.task_id, ca.as_ref());
+                    let ca_data = ca_doc(ca.as_ref());
                     data_vec.push(ca_data);
                     match ca.state() {
                         CaseState::Ok(pa_vec)  | CaseState::Fail(pa_vec)=> {
                             for pa in pa_vec {
-                                let pa_data = pa_doc(&self.exec_id, &self.task_id, ca.id().case_id(), pa.as_ref());
+                                let pa_data = pa_doc(pa.as_ref());
                                 data_vec.push(pa_data);
                             }
                         },
@@ -113,17 +103,17 @@ impl Reporter {
     }
 
     pub async fn close(self) -> Result<(), Error> {
-        let task_data = ta_doc(&self.exec_id, &self.task_id, self.start, &self.total_task_state);
+        let task_data = ta_doc(self.task_id.as_ref(), self.start, &self.total_task_state);
         send_data(self.es_url.as_str(), self.es_index.as_str(), task_data).await?;
         Ok(())
     }
 }
 
-fn ta_doc_init(exec_id: &str, task_id: &str) -> Data {
+fn ta_doc_init(task_id: &dyn TaskId) -> Data {
     let now = Utc::now();
     Data {
-        id: format!("{}::{}", exec_id, task_id),
-        id_in_layer: task_id.to_owned(),
+        id: task_id.to_string(),
+        id_in_layer: task_id.task_id().to_owned(),
         layer: "task".to_owned(),
         start: now,
         end: now,
@@ -133,12 +123,12 @@ fn ta_doc_init(exec_id: &str, task_id: &str) -> Data {
     }
 }
 
-fn ta_doc(exec_id: &str, task_id: &str, start: DateTime<Utc>, ts: &TaskState) -> Data {
+fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, ts: &TaskState) -> Data {
     Data {
-        id: format!("{}::{}", exec_id, task_id),
-        id_in_layer: task_id.to_owned(),
+        id: task_id.to_string(),
+        id_in_layer: task_id.task_id().to_owned(),
         layer: "task".to_owned(),
-        start: start,
+        start,
         end: Utc::now(),
         elapse: (Utc::now() - start).num_microseconds().unwrap_or(-1) as usize,
         state: match ts {
@@ -154,10 +144,10 @@ fn ta_doc(exec_id: &str, task_id: &str, start: DateTime<Utc>, ts: &TaskState) ->
     }
 }
 
-fn ca_doc(exec_id: &str, task_id: &str, ca: &dyn CaseAssess) -> Data {
+fn ca_doc(ca: &dyn CaseAssess) -> Data {
     Data {
-        id: format!("{}::{}::{}", exec_id, task_id, ca.id()),
-        id_in_layer: ca.id().to_string(),
+        id: ca.id().to_string(),
+        id_in_layer: ca.id().case_id().to_string(),
         layer: "case".to_owned(),
         start: ca.start(),
         end: ca.end(),
@@ -177,9 +167,9 @@ fn ca_doc(exec_id: &str, task_id: &str, ca: &dyn CaseAssess) -> Data {
 
 }
 
-fn pa_doc(exec_id: &str, task_id: &str, case_id: usize, pa: &dyn PointAssess) -> Data {
+fn pa_doc(pa: &dyn PointAssess) -> Data {
     Data {
-        id: format!("{}::{}::{}::{}", exec_id, task_id, case_id, pa.id()),
+        id: pa.id().to_string(),
         id_in_layer: pa.id().point_id().to_owned(),
         layer: "point".to_owned(),
         start: pa.start(),

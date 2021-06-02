@@ -12,7 +12,7 @@ use crate::rerr;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
-use chord_flow::FlowContext;
+use chord_flow::{FlowContext, TaskIdStruct};
 use chord_port::report::elasticsearch::Reporter;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -133,15 +133,15 @@ async fn run_task0<P: AsRef<Path>>(
     let mut data_loader =
         chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
 
+    let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned()));
     //write
-    let mut assess_reporter = Reporter::new(es_url, es_index, task_id, exec_id.clone()).await?;
+    let mut assess_reporter = Reporter::new(es_url, es_index, task_id.clone()).await?;
 
     //runner
     let runner = chord_flow::Runner::new(
         app_ctx,
         Arc::new(flow),
-        String::from(task_id),
-        exec_id.clone(),
+        task_id.clone(),
     ).await;
 
     let mut total_task_state = TaskState::Ok(vec![]);

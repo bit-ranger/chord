@@ -3,6 +3,7 @@ use async_std::sync::Arc;
 pub use case::CASE_ID;
 use chord_common::point::PointRunnerFactory;
 pub use task::Runner;
+pub use task::arg::TaskIdStruct;
 pub use task::TASK_ID;
 
 use crate::model::app::{FlowContext, FlowContextStruct};

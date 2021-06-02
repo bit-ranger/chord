@@ -10,25 +10,25 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::point::PointState;
 use chord_common::rerr;
-use chord_common::task::{TaskAssess, TaskState};
+use chord_common::task::{TaskAssess, TaskState, TaskId};
+use async_std::sync::Arc;
 
 pub struct Reporter {
     writer: Writer<File>,
     point_id_vec: Vec<String>,
     total_task_state: TaskState,
     report_dir: PathBuf,
-    task_id: String,
+    task_id: Arc<dyn TaskId>,
 }
 
 impl Reporter {
-    pub async fn new<P: AsRef<Path>, T: Into<String>>(
+    pub async fn new<P: AsRef<Path>>(
         report_dir: P,
-        task_id: T,
         flow: &Flow,
+        task_id: Arc<dyn TaskId>,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
-        let task_id = task_id.into();
-        let report_file = report_dir.join(format!("{}_result.csv", task_id));
+        let report_file = report_dir.join(format!("{}_result.csv", task_id.task_id()));
         let mut report = Reporter {
             writer: from_path(report_file).await?,
             point_id_vec: flow.case_point_id_vec()?,
@@ -46,9 +46,6 @@ impl Reporter {
     }
 
     pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
-        if self.task_id != task_assess.id().task_id() {
-            return rerr!("400", "task_id mismatch");
-        }
 
         if let TaskState::Err(_) = self.total_task_state {
             return rerr!("500", "task is error");
@@ -76,10 +73,10 @@ impl Reporter {
             TaskState::Fail(_) => "F",
         };
 
-        let report_file = self.report_dir.join(format!("{}_result.csv", self.task_id));
+        let report_file = self.report_dir.join(format!("{}_result.csv", self.task_id.task_id()));
         let report_file_new = self
             .report_dir
-            .join(format!("{}_result_{}.csv", self.task_id, task_state_view));
+            .join(format!("{}_result_{}.csv", self.task_id.task_id(), task_state_view));
         rename(report_file, report_file_new).await?;
         Ok(())
     }

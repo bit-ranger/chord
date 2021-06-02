@@ -11,7 +11,7 @@ use log::info;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
-use chord_flow::FlowContext;
+use chord_flow::{FlowContext, TaskIdStruct};
 
 use crate::rerr;
 use lazy_static::lazy_static;
@@ -110,13 +110,14 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     let mut data_loader =
         chord_port::load::data::csv::Loader::new(data_file, case_batch_size).await?;
 
+    let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned()));
     //write
     let mut assess_reporter =
-        chord_port::report::csv::Reporter::new(output_dir, task_id, &flow).await?;
+        chord_port::report::csv::Reporter::new(output_dir, &flow, task_id.clone()).await?;
 
     //runner
     let runner =
-        chord_flow::Runner::new(app_ctx, flow.clone(), String::from(task_id), exec_id).await;
+        chord_flow::Runner::new(app_ctx, flow.clone(), task_id.clone()).await;
 
     let mut total_task_state = TaskState::Ok(vec![]);
     match runner {

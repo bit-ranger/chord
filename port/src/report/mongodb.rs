@@ -163,16 +163,16 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "O",
-                "step_assess": pa_vec.iter().map(|pa|pa_doc(pa.as_ref())).collect_vec()
+                "step_assess": pa_vec.iter().map(|pa|sa_doc(pa.as_ref())).collect_vec()
             }
         }
-        CaseState::Fail(pa_vec) => {
+        CaseState::Fail(sa_vec) => {
             doc! {
                 "id": ca.id().case_id() as u64,
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "F",
-                "step_assess": pa_vec.iter().map(|pa|pa_doc(pa.as_ref())).collect_vec()
+                "step_assess": sa_vec.iter().map(|pa|sa_doc(sa.as_ref())).collect_vec()
             }
         }
         CaseState::Err(e) => {
@@ -187,12 +187,12 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
     }
 }
 
-fn pa_doc(pa: &dyn StepAssess) -> Document {
+fn sa_doc(sa: &dyn StepAssess) -> Document {
     doc! {
-            "id": pa.id().step_id(),
-            "start": pa.start(),
-            "end": pa.end(),
-            "state": match pa.state(){
+            "id": sa.id().step_id(),
+            "start": sa.start(),
+            "end": sa.end(),
+            "state": match sa.state(){
                StepState::Ok(_) => "O",
                StepState::Fail(_) => "F",
                StepState::Err(_) => "E",

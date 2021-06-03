@@ -83,7 +83,7 @@ impl Reporter {
                     match ca.state() {
                         CaseState::Ok(pa_vec)  | CaseState::Fail(pa_vec)=> {
                             for pa in pa_vec {
-                                let pa_data = pa_doc(pa.as_ref());
+                                let pa_data = sa_doc(pa.as_ref());
                                 data_vec.push(pa_data);
                             }
                         },
@@ -167,20 +167,20 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
 
 }
 
-fn pa_doc(pa: &dyn StepAssess) -> Data {
+fn sa_doc(sa: &dyn StepAssess) -> Data {
     Data {
-        id: pa.id().to_string(),
-        id_in_layer: pa.id().step_id().to_owned(),
+        id: sa.id().to_string(),
+        id_in_layer: sa.id().step_id().to_owned(),
         layer: "step".to_owned(),
-        start: pa.start(),
-        end: pa.end(),
-        elapse: (pa.end() - pa.start()).num_microseconds().unwrap_or(-1) as usize,
-        state: match pa.state() {
+        start: sa.start(),
+        end: sa.end(),
+        elapse: (sa.end() - sa.start()).num_microseconds().unwrap_or(-1) as usize,
+        state: match sa.state() {
             StepState::Ok(_) => "O",
             StepState::Fail(_) => "F",
             StepState::Err(_) => "E"
         }.to_owned(),
-        result: match pa.state() {
+        result: match sa.state() {
             StepState::Ok(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
             StepState::Fail(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
             StepState::Err(e) => Json::String(e.to_string())

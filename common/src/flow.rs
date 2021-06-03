@@ -95,7 +95,7 @@ impl Flow {
     pub fn ctrl_concurrency(&self) -> usize {
         let num = match self.flow["ctrl"]["concurrency"].as_u64() {
             Some(n) => n as usize,
-            None => 9999,
+            None => 100,
         };
 
         return num;

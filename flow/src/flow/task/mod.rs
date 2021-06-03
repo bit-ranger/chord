@@ -9,24 +9,21 @@ use log::{debug, trace, warn};
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
 use chord_common::flow::Flow;
-use chord_common::step::{StepRunner, StepState};
 use chord_common::rerr;
-use chord_common::task::{TaskAssess, TaskState, TaskId};
-use chord_common::value::{Json, Map, to_json};
+use chord_common::step::{StepRunner, StepState};
+use chord_common::task::{TaskAssess, TaskId, TaskState};
+use chord_common::value::{to_json, Json, Map};
 use res::TaskAssessStruct;
 
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step::arg::CreateArgStruct;
-use crate::model::app::FlowContext;
 use crate::flow::task::arg::TaskIdStruct;
+use crate::model::app::FlowContext;
 use crate::CTX_ID;
 
-pub mod res;
 pub mod arg;
-
-
-
+pub mod res;
 
 pub struct Runner {
     flow_ctx: Arc<dyn FlowContext>,
@@ -38,15 +35,12 @@ pub struct Runner {
 }
 
 impl Runner {
-
-
     pub async fn new(
         flow_ctx: Arc<dyn FlowContext>,
         flow: Arc<Flow>,
         id: Arc<TaskIdStruct>,
     ) -> Result<Runner, Error> {
-        let pre_ctx =
-            pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone()).await?;
+        let pre_ctx = pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone()).await?;
         let pre_ctx = Arc::new(pre_ctx);
 
         let step_runner_vec = step_runner_vec_create(
@@ -55,7 +49,8 @@ impl Runner {
             pre_ctx.clone(),
             flow.case_step_id_vec()?,
             id.clone(),
-        ).await?;
+        )
+        .await?;
         let runner = Runner {
             flow_ctx,
             flow,
@@ -67,7 +62,7 @@ impl Runner {
         Ok(runner)
     }
 
-    pub fn id(&self) -> Arc<dyn TaskId>{
+    pub fn id(&self) -> Arc<dyn TaskId> {
         self.id.clone()
     }
 
@@ -96,7 +91,7 @@ impl Runner {
         trace!("task load data {}, {}", self.id, ca_vec.len());
 
         let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
-        let limit_concurrency = self.flow.limit_concurrency();
+        let limit_concurrency = self.flow.ctrl_concurrency();
         let mut futures = vec![];
         for ca in ca_vec {
             let f = case_spawn(self.flow_ctx.clone(), ca);
@@ -166,7 +161,7 @@ async fn pre_arg(
             flow.pre_step_id_vec().unwrap(),
             task_id.clone(),
         )
-            .await?;
+        .await?;
 
         Ok(Some(CaseArgStruct::new(
             flow.clone(),
@@ -225,7 +220,8 @@ async fn step_runner_vec_create(
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdStruct>,
 ) -> Result<Vec<(String, Box<dyn StepRunner>)>, Error> {
-    let render_context = render_context_create(flow_ctx.clone(), flow.clone(), render_ctx_ext.clone());
+    let render_context =
+        render_context_create(flow_ctx.clone(), flow.clone(), render_ctx_ext.clone());
     let mut step_runner_vec = vec![];
     for sid in step_id_vec {
         let pr = step_runner_create(
@@ -234,7 +230,8 @@ async fn step_runner_vec_create(
             &render_context,
             task_id.clone(),
             sid.clone(),
-        ).await?;
+        )
+        .await?;
         step_runner_vec.push((sid, pr));
     }
     Ok(step_runner_vec)
@@ -278,10 +275,7 @@ async fn step_runner_create(
         step_id,
     );
 
-    flow_ctx
-        .get_step_runner_factory()
-        .create(&create_arg)
-        .await
+    flow_ctx.get_step_runner_factory().create(&create_arg).await
 }
 
 async fn case_run(flow_ctx: &dyn FlowContext, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {

@@ -33,15 +33,15 @@ pub struct Runner {
     id: Arc<TaskIdStruct>,
     pre_ctx: Arc<Vec<(String, Json)>>,
     case_id_offset: usize,
-    assess_report: Arc<dyn AssessReport>,
-    data_load: Arc<dyn DataLoad>,
+    assess_report: Box<dyn AssessReport>,
+    data_load: Box<dyn DataLoad>,
     state: TaskState,
 }
 
 impl Runner {
     pub async fn new(
-        data_load: Arc<dyn DataLoad>,
-        assess_report: Arc<dyn AssessReport>,
+        data_load: Box<dyn DataLoad>,
+        assess_report: Box<dyn AssessReport>,
         flow_ctx: Arc<dyn FlowContext>,
         flow: Arc<Flow>,
         id: Arc<TaskIdStruct>,
@@ -75,24 +75,27 @@ impl Runner {
         self.id.clone()
     }
 
-    pub async fn run(&mut self) -> Box<dyn TaskAssess> {
+    pub async fn run(&mut self) -> Result<Box<dyn TaskAssess>, Error> {
         trace!("task start {}", self.id);
         let start = Utc::now();
         let assess = self.run0().await;
-        return if let Err(e) = assess {
+        let assess = if let Err(e) = assess {
             warn!("task Err {}", self.id);
             let assess =
                 TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Err(e));
             Box::new(assess)
         } else {
-            Box::new(assess)
+            Box::new(assess.unwrap())
         };
+
+        self.assess_report.end(assess.as_ref()).await?;
+        Ok(assess)
     }
 
     async fn run0(&mut self) -> Result<TaskAssessStruct, Error> {
         let start = Utc::now();
 
-        self.assess_report.start(self.id.as_ref(), start)?;
+        self.assess_report.start(start).await?;
 
         let load_len = self.flow.ctrl_concurrency();
 
@@ -100,18 +103,18 @@ impl Runner {
             let data_vec = self.data_load.load(load_len).await?;
             let data_len = data_vec.len();
             trace!("task load data {}, {}", self.id, data_len);
-            let case_assess_vec = self.data_vec_run(data_vec)?;
+            let case_assess_vec = self.data_vec_run(data_vec).await?;
             let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
             if any_fail {
                 self.state = TaskState::Fail;
             }
-            self.assess_report.report(&case_assess_vec)?;
+            self.assess_report.report(&case_assess_vec).await?;
             if data_len < load_len {
                 break;
             }
         }
 
-        return match &self.state {
+        let task_assess = match &self.state {
             TaskState::Ok => {
                 debug!("task Ok {}", self.id);
                 let assess =
@@ -126,9 +129,10 @@ impl Runner {
             }
             TaskState::Err(e) => Err(e.clone()),
         };
+        task_assess
     }
 
-    fn data_vec_run(&mut self, data: Vec<Json>) -> Result<Vec<Box<dyn CaseAssess>>, Error> {
+    async fn data_vec_run(&mut self, data: Vec<Json>) -> Result<Vec<Box<dyn CaseAssess>>, Error> {
         let data_size = data.len();
         let ca_vec = self.case_arg_vec(data)?;
         self.case_id_offset = self.case_id_offset + data_size;

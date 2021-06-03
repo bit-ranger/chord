@@ -119,14 +119,14 @@ async fn run_task0<P: AsRef<Path>>(
     let flow_path = task_path.clone().join("flow.yml");
 
     let flow = chord_port::load::flow::yml::load(&flow_path)?;
-    let flow = Flow::new(flow.clone())?;
+    let flow = Flow::new(flow)?;
 
     //read
     let data_file_path = task_path.clone().join("data.csv");
-    let mut data_loader = Arc::new(chord_port::load::data::csv::Loader::new(data_file_path).await?);
+    let mut data_loader = Box::new(chord_port::load::data::csv::Loader::new(data_file_path).await?);
 
     //write
-    let mut assess_reporter = Arc::new(Reporter::new(es_url, es_index, task_id.clone()).await?);
+    let mut assess_reporter = Box::new(Reporter::new(es_url, es_index, task_id.clone()).await?);
 
     //runner
     let mut runner = chord_flow::Runner::new(
@@ -139,9 +139,7 @@ async fn run_task0<P: AsRef<Path>>(
     .await?;
 
     let task_assess = runner.run().await?;
-    data_loader.close().await?;
-    assess_reporter.close().await?;
 
     debug!("task end {}", task_path.to_str().unwrap());
-    return Ok(task_assess.state());
+    return Ok(task_assess.state().clone());
 }

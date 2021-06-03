@@ -45,9 +45,9 @@ async fn main() -> Result<(), Error> {
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
     return match et {
         Some(et) => match et {
-            TaskState::Ok(_) => Ok(()),
+            TaskState::Ok => Ok(()),
             TaskState::Err(e) => Err(e.clone()),
-            TaskState::Fail(_) => rerr!("task", "fail"),
+            TaskState::Fail => rerr!("task", "fail"),
         },
         None => Ok(()),
     };

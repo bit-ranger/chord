@@ -11,7 +11,6 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::output::async_trait;
 use chord_common::output::AssessReport;
-use chord_common::rerr;
 use chord_common::step::StepState;
 use chord_common::task::{TaskAssess, TaskId, TaskState};
 use chrono::{DateTime, Utc};
@@ -26,7 +25,7 @@ pub struct Reporter {
 #[async_trait]
 impl AssessReport for Reporter {
     async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
-        prepare(&mut report.writer, &report.step_id_vec).await?;
+        prepare(&mut self.writer, &self.step_id_vec).await?;
         Ok(())
     }
 
@@ -36,9 +35,9 @@ impl AssessReport for Reporter {
 
     async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
         let task_state_view = match task_assess.state() {
-            TaskState::Ok() => "O",
+            TaskState::Ok => "O",
             TaskState::Err(_) => "E",
-            TaskState::Fail() => "F",
+            TaskState::Fail => "F",
         };
 
         let report_file = self
@@ -62,7 +61,7 @@ impl Reporter {
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task_id()));
-        let mut report = Reporter {
+        let report = Reporter {
             writer: from_path(report_file).await?,
             step_id_vec: flow.case_step_id_vec()?,
             report_dir,

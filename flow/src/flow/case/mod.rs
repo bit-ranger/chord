@@ -1,4 +1,4 @@
-use chord_common::value::{Json, Map};
+use chord_common::value::Json;
 use chrono::Utc;
 use res::CaseAssessStruct;
 

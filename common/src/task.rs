@@ -3,7 +3,6 @@ use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 
-use crate::case::CaseAssess;
 use crate::error::Error;
 use regex::Regex;
 
@@ -17,6 +16,7 @@ pub trait TaskId: Sync + Send + Display {
     fn exec_id(&self) -> &str;
 }
 
+#[derive(Clone)]
 pub enum TaskState {
     Ok,
     Fail,

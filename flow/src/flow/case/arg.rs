@@ -7,28 +7,25 @@ use chord_common::value::{to_json, Map};
 use crate::flow::step::arg::RunArgStruct;
 use crate::model::app::FlowContext;
 use async_std::sync::Arc;
+use chord_common::case::CaseId;
 use chord_common::step::StepRunner;
 use chord_common::task::TaskId;
-use chord_common::case::CaseId;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct CaseIdStruct{
+pub struct CaseIdStruct {
     task_id: Arc<dyn TaskId>,
-    case_id: usize
+    case_id: usize,
 }
 
-impl CaseIdStruct{
-    pub fn new(task_id: Arc<dyn TaskId>, case_id: usize) -> CaseIdStruct{
-        CaseIdStruct {
-            task_id, case_id
-        }
+impl CaseIdStruct {
+    pub fn new(task_id: Arc<dyn TaskId>, case_id: usize) -> CaseIdStruct {
+        CaseIdStruct { task_id, case_id }
     }
 }
 
 impl CaseId for CaseIdStruct {
-
     fn case_id(&self) -> usize {
         self.case_id
     }
@@ -46,9 +43,7 @@ impl Display for CaseIdStruct {
     }
 }
 
-
 pub struct CaseArgStruct {
-
     flow: Arc<Flow>,
     step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
     data: Json,
@@ -65,20 +60,16 @@ impl CaseArgStruct {
         data: Json,
         render_ctx_ext: Arc<Vec<(String, Json)>>,
         task_id: Arc<dyn TaskId>,
-        case_id: usize
+        case_id: usize,
     ) -> CaseArgStruct {
-
-        let id = Rc::new(CaseIdStruct::new(
-            task_id,
-            case_id
-        ));
+        let id = Rc::new(CaseIdStruct::new(task_id, case_id));
 
         let context = CaseArgStruct {
             flow,
             step_runner_vec,
             data,
             render_ctx_ext,
-            id
+            id,
         };
 
         return context;
@@ -95,7 +86,7 @@ impl CaseArgStruct {
         }
         render_data.insert(String::from("data"), self.data.clone());
         render_data.insert(String::from("step"), Json::Object(Map::new()));
-        render_data.insert(String::from("current"), Json::Null);
+        render_data.insert(String::from("curr"), Json::Null);
 
         for (k, v) in self.render_ctx_ext.iter() {
             render_data.insert(k.clone(), v.clone());

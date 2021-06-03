@@ -14,7 +14,6 @@ use crate::flow::step::res::StepAssessStruct;
 use chord_common::err;
 use log::{debug, info, trace, warn};
 
-
 pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
     let start = Utc::now();
@@ -70,8 +69,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                 )
                 .unwrap_or("".to_owned());
                 info!("step Fail {} - {} <<< {}", arg.id(), json, config_rendered);
-                let step_assess =
-                    StepAssessStruct::new(id, start, end, StepState::Fail(json));
+                let step_assess = StepAssessStruct::new(id, start, end, StepState::Fail(json));
                 step_assess_vec.push(Box::new(step_assess));
                 info!("case  Fail {}", arg.id());
                 return CaseAssessStruct::new(
@@ -116,8 +114,7 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                     }
                 } else {
                     debug!("step Ok   {}", id);
-                    let step_assess =
-                        StepAssessStruct::new(id, start, end, StepState::Ok(json));
+                    let step_assess = StepAssessStruct::new(id, start, end, StepState::Ok(json));
                     step_assess_vec.push(Box::new(step_assess));
                 }
             }
@@ -125,12 +122,17 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
     }
 
     debug!("case Ok {}", arg.id());
-    return CaseAssessStruct::new(arg.id().clone(), start, Utc::now(), CaseState::Ok(step_assess_vec));
+    return CaseAssessStruct::new(
+        arg.id().clone(),
+        start,
+        Utc::now(),
+        CaseState::Ok(step_assess_vec),
+    );
 }
 
 pub async fn register_dynamic(render_context: &mut RenderContext, sid: &str, value: &Json) {
     if let Json::Object(data) = render_context.data_mut() {
         data["step"][sid]["value"] = value.clone();
-        data["current"]["value"] = value.clone();
+        data["curr"]["value"] = value.clone();
     }
 }

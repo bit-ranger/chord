@@ -95,7 +95,6 @@ impl Ctl for CtlImpl {
             req,
             exec_id_0,
             self.config.report_elasticsearch_url()?.to_owned(),
-            self.config.case_batch_size(),
         ));
         return Ok(Rep { exec_id });
     }
@@ -108,7 +107,6 @@ async fn checkout_run(
     req: Req,
     exec_id: String,
     es_url: String,
-    case_batch_size: usize,
 ) {
     let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
@@ -163,15 +161,7 @@ async fn checkout_run(
     };
 
     let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
-    run(
-        app_ctx,
-        job_path,
-        job_name,
-        exec_id,
-        es_url,
-        case_batch_size,
-    )
-    .await;
+    run(app_ctx, job_path, job_name, exec_id, es_url).await;
     clear(checkout_path.as_path()).await;
 }
 
@@ -236,17 +226,8 @@ async fn run(
     job_name: String,
     exec_id: String,
     es_url: String,
-    case_batch_size: usize,
 ) {
-    let job_result = biz::job::run(
-        job_path,
-        job_name,
-        exec_id,
-        app_ctx,
-        es_url,
-        case_batch_size,
-    )
-    .await;
+    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, es_url).await;
     if let Err(e) = job_result {
         error!("run job error {}", e);
     }

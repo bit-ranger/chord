@@ -9,13 +9,13 @@ use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
 use chord_common::case::{CaseAssess, CaseState};
+use chord_common::err;
 use chord_common::error::Error;
 use chord_common::output::async_trait;
 use chord_common::output::AssessReport;
 use chord_common::step::{StepAssess, StepState};
 use chord_common::task::{TaskAssess, TaskId, TaskState};
 use chord_common::value::{to_string, Json};
-use chord_common::{err, rerr};
 
 pub struct Reporter {
     es_url: String,
@@ -68,7 +68,7 @@ impl AssessReport for Reporter {
             self.task_id.as_ref(),
             task_assess.start(),
             task_assess.end(),
-            ask_assess.state(),
+            task_assess.state(),
         );
         send_data(self.es_url.as_str(), self.es_index.as_str(), task_data).await?;
         Ok(())

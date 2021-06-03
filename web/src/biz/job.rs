@@ -8,14 +8,11 @@ use futures::StreamExt;
 use log::debug;
 use log::info;
 
-use crate::rerr;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::{FlowContext, TaskIdStruct};
 use chord_port::report::elasticsearch::Reporter;
-use lazy_static::lazy_static;
-use regex::Regex;
 
 pub async fn run<P: AsRef<Path>>(
     job_path: P,
@@ -23,7 +20,6 @@ pub async fn run<P: AsRef<Path>>(
     exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
     es_url: String,
-    case_batch_size: usize,
 ) -> Result<Vec<TaskState>, Error> {
     debug!(
         "job start {}, {}",
@@ -59,7 +55,6 @@ pub async fn run<P: AsRef<Path>>(
                 app_ctx.clone(),
                 es_url.clone(),
                 es_index.clone(),
-                case_batch_size,
             ))
             .unwrap();
         futures.push(jh);
@@ -80,18 +75,9 @@ async fn run_task<P: AsRef<Path>>(
     app_ctx: Arc<dyn FlowContext>,
     es_url: String,
     es_index: String,
-    case_batch_size: usize,
 ) -> TaskState {
     let input_dir = Path::new(input_dir.as_ref());
-    let rt = run_task0(
-        input_dir,
-        exec_id,
-        app_ctx,
-        es_url,
-        es_index,
-        case_batch_size,
-    )
-    .await;
+    let rt = run_task0(input_dir, exec_id, app_ctx, es_url, es_index).await;
     match rt {
         Ok(ts) => ts,
         Err(e) => {
@@ -107,7 +93,6 @@ async fn run_task0<P: AsRef<Path>>(
     app_ctx: Arc<dyn FlowContext>,
     es_url: String,
     es_index: String,
-    case_batch_size: usize,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
@@ -123,10 +108,10 @@ async fn run_task0<P: AsRef<Path>>(
 
     //read
     let data_file_path = task_path.clone().join("data.csv");
-    let mut data_loader = Box::new(chord_port::load::data::csv::Loader::new(data_file_path).await?);
+    let data_loader = Box::new(chord_port::load::data::csv::Loader::new(data_file_path).await?);
 
     //write
-    let mut assess_reporter = Box::new(Reporter::new(es_url, es_index, task_id.clone()).await?);
+    let assess_reporter = Box::new(Reporter::new(es_url, es_index, task_id.clone()).await?);
 
     //runner
     let mut runner = chord_flow::Runner::new(

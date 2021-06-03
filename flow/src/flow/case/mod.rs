@@ -1,4 +1,4 @@
-use chord_common::value::Json;
+use chord_common::value::{Json, Map};
 use chrono::Utc;
 use res::CaseAssessStruct;
 
@@ -128,9 +128,9 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
     return CaseAssessStruct::new(arg.id().clone(), start, Utc::now(), CaseState::Ok(step_assess_vec));
 }
 
-pub async fn register_dynamic(render_context: &mut RenderContext, sid: &str, result: &Json) {
+pub async fn register_dynamic(render_context: &mut RenderContext, sid: &str, value: &Json) {
     if let Json::Object(data) = render_context.data_mut() {
-        data["step"][sid] = result.clone();
-        data["res"] = result.clone();
+        data["step"][sid]["value"] = value.clone();
+        data["current"]["value"] = value.clone();
     }
 }

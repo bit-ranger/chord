@@ -95,7 +95,7 @@ impl CaseArgStruct {
         }
         render_data.insert(String::from("data"), self.data.clone());
         render_data.insert(String::from("step"), Json::Object(Map::new()));
-        render_data.insert(String::from("res"), Json::Null);
+        render_data.insert(String::from("current"), Json::Null);
 
         for (k, v) in self.render_ctx_ext.iter() {
             render_data.insert(k.clone(), v.clone());

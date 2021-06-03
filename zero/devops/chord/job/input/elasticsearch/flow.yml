@@ -50,8 +50,8 @@ case:
                   }
             assert: |+
                 (all
-                  (eq res.status 200)
-                  (eq res.body.acknowledged true)
+                  (eq current.value.status 200)
+                  (eq current.value.body.acknowledged true)
                 )
         
         insert_data:
@@ -71,8 +71,8 @@ case:
             
             assert: |+
                 (all
-                  (eq res.status 201)
-                  (eq res.body.result "created")
+                  (eq current.value.status 201)
+                  (eq current.value.body.result "created")
                 )
         
         wait_data:
@@ -113,6 +113,6 @@ case:
             
             assert: |+
                 (all
-                  (eq res.status 200)
-                  (eq res.body.hits.total.value 1)
+                  (eq current.value.status 200)
+                  (eq current.value.body.hits.total.value 1)
                 )

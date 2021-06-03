@@ -3,10 +3,10 @@ members = [
     'common',
     'flow',
     'port',
-    'point',
+    'step',
     'cmd',
     'web',
-    "zero/point-dyn"
+    "zero/step-dyn"
 ]
 
 

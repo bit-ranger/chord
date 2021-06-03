@@ -5,7 +5,7 @@ use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
 use chord_common::error::Error;
-use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
+use chord_common::step::{async_trait, RunArg, StepRunner, StepValue, CreateArg};
 use chord_common::value::{to_string, Json, Map, Number};
 use chord_common::{err, rerr};
 use std::borrow::Borrow;
@@ -13,17 +13,17 @@ use std::borrow::Borrow;
 struct Jsonapi {}
 
 #[async_trait]
-impl PointRunner for Jsonapi {
-    async fn run(&self, arg: &dyn RunArg) -> PointValue {
+impl StepRunner for Jsonapi {
+    async fn run(&self, arg: &dyn RunArg) -> StepValue {
         run(arg).await
     }
 }
 
-pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
     Ok(Box::new(Jsonapi {}))
 }
 
-async fn run(arg: &dyn RunArg) -> PointValue {
+async fn run(arg: &dyn RunArg) -> StepValue {
     return run0(arg).await.map_err(|e| e.0);
 }
 

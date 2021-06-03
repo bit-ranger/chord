@@ -9,7 +9,7 @@ use log::{debug, trace, warn};
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
 use chord_common::flow::Flow;
-use chord_common::point::{PointRunner, PointState};
+use chord_common::step::{StepRunner, StepState};
 use chord_common::rerr;
 use chord_common::task::{TaskAssess, TaskState, TaskId};
 use chord_common::value::{Json, Map, to_json};
@@ -17,7 +17,7 @@ use res::TaskAssessStruct;
 
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
-use crate::flow::point::arg::CreateArgStruct;
+use crate::flow::step::arg::CreateArgStruct;
 use crate::model::app::FlowContext;
 use crate::flow::task::arg::TaskIdStruct;
 use crate::CTX_ID;
@@ -31,7 +31,7 @@ pub mod arg;
 pub struct Runner {
     flow_ctx: Arc<dyn FlowContext>,
     flow: Arc<Flow>,
-    point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
+    step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
     id: Arc<TaskIdStruct>,
     pre_ctx: Arc<Vec<(String, Json)>>,
     case_id_offset: usize,
@@ -49,17 +49,17 @@ impl Runner {
             pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone()).await?;
         let pre_ctx = Arc::new(pre_ctx);
 
-        let point_runner_vec = point_runner_vec_create(
+        let step_runner_vec = step_runner_vec_create(
             flow_ctx.clone(),
             flow.clone(),
             pre_ctx.clone(),
-            flow.case_point_id_vec()?,
+            flow.case_step_id_vec()?,
             id.clone(),
         ).await?;
         let runner = Runner {
             flow_ctx,
             flow,
-            point_runner_vec: Arc::new(point_runner_vec),
+            step_runner_vec: Arc::new(step_runner_vec),
             id,
             pre_ctx,
             case_id_offset: 1,
@@ -139,7 +139,7 @@ impl Runner {
             .map(|(i, d)| {
                 CaseArgStruct::new(
                     self.flow.clone(),
-                    self.point_runner_vec.clone(),
+                    self.step_runner_vec.clone(),
                     d,
                     self.pre_ctx.clone(),
                     self.id.clone(),
@@ -156,21 +156,21 @@ async fn pre_arg(
     flow: Arc<Flow>,
     task_id: Arc<TaskIdStruct>,
 ) -> Result<Option<CaseArgStruct>, Error> {
-    return if flow.pre_point_id_vec().is_none() {
+    return if flow.pre_step_id_vec().is_none() {
         Ok(None)
     } else {
-        let point_runner_vec = point_runner_vec_create(
+        let step_runner_vec = step_runner_vec_create(
             flow_ctx.clone(),
             flow.clone(),
             Arc::new(Vec::new()),
-            flow.pre_point_id_vec().unwrap(),
+            flow.pre_step_id_vec().unwrap(),
             task_id.clone(),
         )
             .await?;
 
         Ok(Some(CaseArgStruct::new(
             flow.clone(),
-            Arc::new(point_runner_vec),
+            Arc::new(step_runner_vec),
             Json::Null,
             Arc::new(Vec::new()),
             task_id.clone(),
@@ -197,10 +197,10 @@ async fn pre_ctx_create(
             let mut pre_ctx = Map::new();
             for pa in pa_vec {
                 match pa.state() {
-                    PointState::Ok(pv) => {
-                        pre_ctx.insert(String::from(pa.id().point_id()), pv.clone());
+                    StepState::Ok(pv) => {
+                        pre_ctx.insert(String::from(pa.id().step_id()), pv.clone());
                     }
-                    _ => return rerr!("012", "pre point run failure"),
+                    _ => return rerr!("012", "pre step run failure"),
                 }
             }
             let pre = Json::Object(pre_ctx);
@@ -218,26 +218,26 @@ async fn pre_ctx_create(
     }
 }
 
-async fn point_runner_vec_create(
+async fn step_runner_vec_create(
     flow_ctx: Arc<dyn FlowContext>,
     flow: Arc<Flow>,
     render_ctx_ext: Arc<Vec<(String, Json)>>,
-    point_id_vec: Vec<String>,
+    step_id_vec: Vec<String>,
     task_id: Arc<TaskIdStruct>,
-) -> Result<Vec<(String, Box<dyn PointRunner>)>, Error> {
+) -> Result<Vec<(String, Box<dyn StepRunner>)>, Error> {
     let render_context = render_context_create(flow_ctx.clone(), flow.clone(), render_ctx_ext.clone());
-    let mut point_runner_vec = vec![];
-    for pid in point_id_vec {
-        let pr = point_runner_create(
+    let mut step_runner_vec = vec![];
+    for sid in step_id_vec {
+        let pr = step_runner_create(
             flow_ctx.as_ref(),
             flow.as_ref(),
             &render_context,
             task_id.clone(),
-            pid.clone(),
+            sid.clone(),
         ).await?;
-        point_runner_vec.push((pid, pr));
+        step_runner_vec.push((sid, pr));
     }
-    Ok(point_runner_vec)
+    Ok(step_runner_vec)
 }
 
 fn render_context_create(
@@ -246,7 +246,7 @@ fn render_context_create(
     render_ctx_ext: Arc<Vec<(String, Json)>>,
 ) -> Context {
     let mut render_data: Map = Map::new();
-    let config_def = flow.task_def();
+    let config_def = flow.def();
     match config_def {
         Some(def) => {
             render_data.insert(String::from("def"), to_json(def).unwrap());
@@ -261,25 +261,25 @@ fn render_context_create(
     return Context::wraps(render_data).unwrap();
 }
 
-async fn point_runner_create(
+async fn step_runner_create(
     flow_ctx: &dyn FlowContext,
     flow: &Flow,
     render_context: &Context,
     task_id: Arc<TaskIdStruct>,
-    point_id: String,
-) -> Result<Box<dyn PointRunner>, Error> {
-    let kind = flow.point_kind(point_id.as_ref());
+    step_id: String,
+) -> Result<Box<dyn StepRunner>, Error> {
+    let kind = flow.step_kind(step_id.as_ref());
     let create_arg = CreateArgStruct::new(
         flow,
         flow_ctx.get_handlebars(),
         render_context,
         task_id,
         kind.to_owned(),
-        point_id,
+        step_id,
     );
 
     flow_ctx
-        .get_point_runner_factory()
+        .get_step_runner_factory()
         .create(&create_arg)
         .await
 }

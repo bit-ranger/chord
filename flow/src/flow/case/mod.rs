@@ -3,14 +3,14 @@ use chrono::Utc;
 use res::CaseAssessStruct;
 
 use crate::flow::case::arg::{CaseArgStruct, RenderContext};
-use crate::flow::point;
+use crate::flow::step;
 use crate::model::app::FlowContext;
 use chord_common::case::CaseState;
-use chord_common::point::{RunArg, PointAssess, PointState};
+use chord_common::step::{RunArg, StepAssess, StepState};
 pub mod arg;
 pub mod res;
-use crate::flow::point::arg::{assert, render};
-use crate::flow::point::res::PointAssessStruct;
+use crate::flow::step::arg::{assert, render};
+use crate::flow::step::res::StepAssessStruct;
 use chord_common::err;
 use log::{debug, info, trace, warn};
 
@@ -19,25 +19,25 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
     trace!("case start {}", arg.id());
     let start = Utc::now();
     let mut render_context = arg.create_render_context();
-    let mut point_assess_vec = Vec::<Box<dyn PointAssess>>::new();
-    for (point_id, point_runner) in arg.point_runner_vec() {
-        let point_arg = arg.point_arg_create(point_id, flow_ctx, &render_context);
-        if point_arg.is_none() {
+    let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
+    for (step_id, step_runner) in arg.step_runner_vec() {
+        let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
+        if step_arg.is_none() {
             warn!("case  Err {}", arg.id());
             return CaseAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
-                CaseState::Err(err!("010", format!("invalid point {}", point_id))),
+                CaseState::Err(err!("010", format!("invalid step {}", step_id))),
             );
         }
-        let point_arg = point_arg.unwrap();
-        let point_assess = point::run(flow_ctx, &point_arg, point_runner.as_ref()).await;
+        let step_arg = step_arg.unwrap();
+        let step_assess = step::run(flow_ctx, &step_arg, step_runner.as_ref()).await;
 
-        let config_raw = point_arg.config().to_string();
-        match point_assess {
-            PointAssessStruct {
-                state: PointState::Err(e),
+        let config_raw = step_arg.config().to_string();
+        match step_assess {
+            StepAssessStruct {
+                state: StepState::Err(e),
                 id,
                 start,
                 end: _,
@@ -48,17 +48,17 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                     config_raw.as_str(),
                 )
                 .unwrap_or("".to_owned());
-                info!("point Err  {} - {} <<< {}", id, e, config_rendered);
+                info!("step Err  {} - {} <<< {}", id, e, config_rendered);
                 info!("case  Fail {}", arg.id());
                 return CaseAssessStruct::new(
                     arg.id().clone(),
                     start,
                     Utc::now(),
-                    CaseState::Fail(point_assess_vec),
+                    CaseState::Fail(step_assess_vec),
                 );
             }
-            PointAssessStruct {
-                state: PointState::Fail(json),
+            StepAssessStruct {
+                state: StepState::Fail(json),
                 id,
                 start,
                 end,
@@ -69,32 +69,32 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                     config_raw.as_str(),
                 )
                 .unwrap_or("".to_owned());
-                info!("point Fail {} - {} <<< {}", arg.id(), json, config_rendered);
-                let point_assess =
-                    PointAssessStruct::new(id, start, end, PointState::Fail(json));
-                point_assess_vec.push(Box::new(point_assess));
+                info!("step Fail {} - {} <<< {}", arg.id(), json, config_rendered);
+                let step_assess =
+                    StepAssessStruct::new(id, start, end, StepState::Fail(json));
+                step_assess_vec.push(Box::new(step_assess));
                 info!("case  Fail {}", arg.id());
                 return CaseAssessStruct::new(
                     arg.id().clone(),
                     start,
                     Utc::now(),
-                    CaseState::Fail(point_assess_vec),
+                    CaseState::Fail(step_assess_vec),
                 );
             }
-            PointAssessStruct {
-                state: PointState::Ok(json),
+            StepAssessStruct {
+                state: StepState::Ok(json),
                 id,
                 start,
                 end,
             } => {
-                let assert_present = point_arg.meta_str(vec!["assert"]).await;
-                register_dynamic(&mut render_context, point_id, &json).await;
+                let assert_present = step_arg.meta_str(vec!["assert"]).await;
+                register_dynamic(&mut render_context, step_id, &json).await;
                 if let Some(con) = assert_present {
                     if assert(flow_ctx.get_handlebars(), &mut render_context, &con).await {
-                        debug!("point Ok   {}", id);
-                        let point_assess =
-                            PointAssessStruct::new(id, start, end, PointState::Ok(json));
-                        point_assess_vec.push(Box::new(point_assess));
+                        debug!("step Ok   {}", id);
+                        let step_assess =
+                            StepAssessStruct::new(id, start, end, StepState::Ok(json));
+                        step_assess_vec.push(Box::new(step_assess));
                     } else {
                         let config_rendered = render(
                             flow_ctx.get_handlebars(),
@@ -102,35 +102,35 @@ pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessSt
                             config_raw.as_str(),
                         )
                         .unwrap_or("".to_owned());
-                        info!("point Fail {} - {} <<< {}", id, json, config_rendered);
-                        let point_assess =
-                            PointAssessStruct::new(id, start, end, PointState::Fail(json));
-                        point_assess_vec.push(Box::new(point_assess));
+                        info!("step Fail {} - {} <<< {}", id, json, config_rendered);
+                        let step_assess =
+                            StepAssessStruct::new(id, start, end, StepState::Fail(json));
+                        step_assess_vec.push(Box::new(step_assess));
                         info!("case  Fail {}", arg.id());
                         return CaseAssessStruct::new(
                             arg.id().clone(),
                             start,
                             Utc::now(),
-                            CaseState::Fail(point_assess_vec),
+                            CaseState::Fail(step_assess_vec),
                         );
                     }
                 } else {
-                    debug!("point Ok   {}", id);
-                    let point_assess =
-                        PointAssessStruct::new(id, start, end, PointState::Ok(json));
-                    point_assess_vec.push(Box::new(point_assess));
+                    debug!("step Ok   {}", id);
+                    let step_assess =
+                        StepAssessStruct::new(id, start, end, StepState::Ok(json));
+                    step_assess_vec.push(Box::new(step_assess));
                 }
             }
         }
     }
 
     debug!("case Ok {}", arg.id());
-    return CaseAssessStruct::new(arg.id().clone(), start, Utc::now(), CaseState::Ok(point_assess_vec));
+    return CaseAssessStruct::new(arg.id().clone(), start, Utc::now(), CaseState::Ok(step_assess_vec));
 }
 
-pub async fn register_dynamic(render_context: &mut RenderContext, pt_id: &str, result: &Json) {
+pub async fn register_dynamic(render_context: &mut RenderContext, sid: &str, result: &Json) {
     if let Json::Object(data) = render_context.data_mut() {
-        data["dyn"][pt_id] = result.clone();
+        data["step"][sid] = result.clone();
         data["res"] = result.clone();
     }
 }

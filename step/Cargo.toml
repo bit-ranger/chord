@@ -1,5 +1,5 @@
 [package]
-name = "chord-point"
+name = "chord-step"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2018"
@@ -34,13 +34,13 @@ openssl = {version = "0.10", features = ["vendored"]}
 
 [features]
 default = []
-point_mysql = ["rbatis"]
-point_dubbo = []
-point_redis = ["redis"]
-point_md5 = ["md5"]
-point_jsonapi = ["surf"]
-point_mongodb = ["mongodb"]
-point_url_encode = ["urlencoding"]
-point_url_decode = ["urlencoding"]
-point_dynlib = ["libloading"]
+step_mysql = ["rbatis"]
+step_dubbo = []
+step_redis = ["redis"]
+step_md5 = ["md5"]
+step_jsonapi = ["surf"]
+step_mongodb = ["mongodb"]
+step_url_encode = ["urlencoding"]
+step_url_decode = ["urlencoding"]
+step_dynlib = ["libloading"]
 

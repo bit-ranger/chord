@@ -5,7 +5,7 @@ use chord_common::error::Error;
 use chord_common::rerr;
 use chord_common::task::TaskState;
 use chord_common::value::Map;
-use chord_point::PointRunnerFactoryDefault;
+use chord_step::StepRunnerFactoryDefault;
 use itertools::Itertools;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -36,7 +36,7 @@ async fn main() -> Result<(), Error> {
     let log_handler = logger::init(target_level(&opt.level), &log_file_path).await?;
 
     let flow_ctx =
-        chord_flow::create_context(Box::new(PointRunnerFactoryDefault::new(Map::new()).await?))
+        chord_flow::create_context(Box::new(StepRunnerFactoryDefault::new(Map::new()).await?))
             .await;
     let task_state_vec = job::run(input_dir, output_dir, exec_id, flow_ctx).await;
 

@@ -22,7 +22,7 @@ pub trait Config {
 
     fn report_elasticsearch_url(&self) -> Result<&str, Error>;
 
-    fn point_config(&self) -> &Map;
+    fn step_config(&self) -> &Map;
 }
 
 #[derive(Debug, Clone)]
@@ -96,7 +96,7 @@ impl Config for ConfigImpl {
             .ok_or(err!("config", "missing report.mongodb.url"))
     }
 
-    fn point_config(&self) -> &Map {
-        self.conf["point"].as_object().unwrap_or(&EMPTY_MAP)
+    fn step_config(&self) -> &Map {
+        self.conf["step"].as_object().unwrap_or(&EMPTY_MAP)
     }
 }

@@ -16,7 +16,7 @@ repository = "https://github.com/bit-ranger/chord"
 
 [dependencies]
 chord-common = {path = "../common"}
-chord-point = {path = "../point", features = ["point_jsonapi", "point_md5", "point_dubbo", "point_redis", "point_mysql", "point_mongodb", "point_url_encode", "point_url_decode"]}
+chord-step = {path = "../step", features = ["step_jsonapi", "step_md5", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url_encode", "step_url_decode"]}
 chord-flow = {path = "../flow"}
 chord-port = {path = "../port", features = ["report_elasticsearch"]}
 serde = { version = "1.0", features = ["derive"] }

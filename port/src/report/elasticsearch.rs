@@ -9,7 +9,7 @@ use surf::http::Method;
 use chord_common::{err, rerr};
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
-use chord_common::point::{PointAssess, PointState};
+use chord_common::step::{StepAssess, StepState};
 use chord_common::task::{TaskAssess, TaskState, TaskId};
 use chord_common::value::{Json, to_string};
 use log::warn;
@@ -167,23 +167,23 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
 
 }
 
-fn pa_doc(pa: &dyn PointAssess) -> Data {
+fn pa_doc(pa: &dyn StepAssess) -> Data {
     Data {
         id: pa.id().to_string(),
-        id_in_layer: pa.id().point_id().to_owned(),
-        layer: "point".to_owned(),
+        id_in_layer: pa.id().step_id().to_owned(),
+        layer: "step".to_owned(),
         start: pa.start(),
         end: pa.end(),
         elapse: (pa.end() - pa.start()).num_microseconds().unwrap_or(-1) as usize,
         state: match pa.state() {
-            PointState::Ok(_) => "O",
-            PointState::Fail(_) => "F",
-            PointState::Err(_) => "E"
+            StepState::Ok(_) => "O",
+            StepState::Fail(_) => "F",
+            StepState::Err(_) => "E"
         }.to_owned(),
         result: match pa.state() {
-            PointState::Ok(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
-            PointState::Fail(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
-            PointState::Err(e) => Json::String(e.to_string())
+            StepState::Ok(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
+            StepState::Fail(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
+            StepState::Err(e) => Json::String(e.to_string())
         }
     }
 }

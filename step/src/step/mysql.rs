@@ -1,6 +1,6 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
+use chord_common::step::{async_trait, RunArg, StepRunner, StepValue, CreateArg};
 use chord_common::value::{Json, Map, Number};
 use log::debug;
 use rbatis::plugin::page::{Page, PageRequest};
@@ -11,13 +11,13 @@ struct Mysql {
 }
 
 #[async_trait]
-impl PointRunner for Mysql {
-    async fn run(&self, arg: &dyn RunArg) -> PointValue {
+impl StepRunner for Mysql {
+    async fn run(&self, arg: &dyn RunArg) -> StepValue {
         run(&self, arg).await
     }
 }
 
-pub async fn create(_: Option<&Json>, arg: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
     let url = arg.config()["url"]
         .as_str()
         .ok_or(err!("010", "missing url"))?;
@@ -37,7 +37,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
     Ok(rb)
 }
 
-async fn run(obj: &Mysql, arg: &dyn RunArg) -> PointValue {
+async fn run(obj: &Mysql, arg: &dyn RunArg) -> StepValue {
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {
@@ -52,7 +52,7 @@ async fn run(obj: &Mysql, arg: &dyn RunArg) -> PointValue {
     };
 }
 
-async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> PointValue {
+async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> StepValue {
     let sql = arg.config()["sql"]
         .as_str()
         .map(|s| arg.render(s))

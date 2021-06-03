@@ -1,7 +1,7 @@
 use async_std::net::TcpStream;
 use async_std::prelude::*;
 use chord_common::error::Error;
-use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
+use chord_common::step::{async_trait, RunArg, StepRunner, StepValue, CreateArg};
 use chord_common::value::Json;
 use chord_common::{err, rerr};
 use log::debug;
@@ -10,17 +10,17 @@ use std::str::FromStr;
 struct Dubbo {}
 
 #[async_trait]
-impl PointRunner for Dubbo {
-    async fn run(&self, arg: &dyn RunArg) -> PointValue {
+impl StepRunner for Dubbo {
+    async fn run(&self, arg: &dyn RunArg) -> StepValue {
         run(arg).await
     }
 }
 
-pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
     Ok(Box::new(Dubbo {}))
 }
 
-async fn run(arg: &dyn RunArg) -> PointValue {
+async fn run(arg: &dyn RunArg) -> StepValue {
     let address = arg.config()["address"]
         .as_str()
         .map(|s| arg.render(s))
@@ -64,7 +64,7 @@ async fn run(arg: &dyn RunArg) -> PointValue {
         Some(i) => {
             value.truncate(i);
             let json = Json::from_str(value.as_str())?;
-            PointValue::Ok(json)
+            StepValue::Ok(json)
         }
         None => {
             rerr!("001", value)

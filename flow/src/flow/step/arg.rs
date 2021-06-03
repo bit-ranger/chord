@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 
 use chord_common::error::Error;
 use chord_common::flow::Flow;
-use chord_common::point::{RunArg, CreateArg, PointId};
+use chord_common::step::{RunArg, CreateArg, StepId};
 use chord_common::rerr;
 use chord_common::value::Json;
 use handlebars::{Context, Handlebars};
@@ -17,28 +17,28 @@ use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct PointIdStruct {
-    point_id: String,
+pub struct StepIdStruct {
+    step_id: String,
     case_id: Rc<dyn CaseId>
 }
 
 
-impl PointId for PointIdStruct {
-    fn point_id(&self) -> &str {
-        self.point_id.as_str()
+impl StepId for StepIdStruct {
+    fn step_id(&self) -> &str {
+        self.step_id.as_str()
     }
 
     fn case_id(&self) -> &dyn CaseId {
         self.case_id.as_ref()
     }
 }
-unsafe impl Send for PointIdStruct {}
-unsafe impl Sync for PointIdStruct {}
+unsafe impl Send for StepIdStruct {}
+unsafe impl Sync for StepIdStruct {}
 
-impl Display for PointIdStruct {
+impl Display for StepIdStruct {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}::{}", self.case_id, self.point_id).as_str())
+        f.write_str(format!("{}::{}", self.case_id, self.step_id).as_str())
     }
 }
 
@@ -48,7 +48,7 @@ pub struct CreateArgStruct <'f, 'h, 'reg, 'r>{
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
     kind: String,
-    id: PointIdStruct,
+    id: StepIdStruct,
 }
 unsafe impl<'f, 'h, 'reg, 'r> Send for CreateArgStruct<'f, 'h, 'reg, 'r> {}
 unsafe impl<'f, 'h, 'reg, 'r> Sync for CreateArgStruct<'f, 'h, 'reg, 'r> {}
@@ -69,9 +69,9 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
             handlebars,
             render_context,
             kind,
-            id: PointIdStruct{
+            id: StepIdStruct{
                 case_id: Rc::new(CaseIdStruct::new(task_id, 0)),
-                point_id: id
+                step_id: id
             }
         };
 
@@ -82,7 +82,7 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
 impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r>{
 
 
-    fn id(&self) -> &dyn PointId {
+    fn id(&self) -> &dyn StepId {
         &self.id
     }
 
@@ -91,7 +91,7 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r>{
     }
 
     fn config(&self) -> &Json {
-        self.flow.point_config(self.id.point_id())
+        self.flow.step_config(self.id.step_id())
     }
 
     fn render(&self, text: &str) -> Result<String, Error> {
@@ -102,7 +102,7 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r>{
         if let Some(_) = text.find("{{data.") {
             return false;
         }
-        if let Some(_) = text.find("{{dyn.") {
+        if let Some(_) = text.find("{{step.") {
             return false;
         }
         if let Some(_) = text.find("{{res.") {
@@ -117,7 +117,7 @@ pub struct RunArgStruct<'f, 'h, 'reg, 'r> {
     flow: &'f Flow,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
-    id: PointIdStruct,
+    id: StepIdStruct,
 }
 
 unsafe impl<'f, 'h, 'reg, 'r> Send for RunArgStruct<'f, 'h, 'reg, 'r> {}
@@ -131,9 +131,9 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         case_id: Rc<dyn CaseId>,
         id: String,
     ) -> RunArgStruct<'f, 'h, 'reg, 'r> {
-        let id  = PointIdStruct {
+        let id  = StepIdStruct {
             case_id,
-            point_id: id
+            step_id: id
         };
 
         let context = RunArgStruct {
@@ -146,7 +146,7 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         return context;
     }
 
-    pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r>) -> &PointIdStruct{
+    pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r>) -> &StepIdStruct{
         return &self.id;
     }
 
@@ -154,7 +154,7 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         self: &RunArgStruct<'f, 'h, 'reg, 'r>,
         path: Vec<&str>,
     ) -> Option<String> {
-        let config = self.flow.point(self.id().point_id());
+        let config = self.flow.step(self.id().step_id());
 
         let raw_config = path.iter().fold(config, |acc, k| acc[k].borrow());
 
@@ -168,17 +168,17 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
     }
 
     pub fn timeout(&self) -> Duration {
-        self.flow.point_timeout(self.id().point_id())
+        self.flow.step_timeout(self.id().step_id())
     }
 }
 
 impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
-    fn id(&self) -> &dyn PointId {
+    fn id(&self) -> &dyn StepId {
         self.id()
     }
 
     fn config(&self) -> &Json {
-        let config = self.flow.point_config(self.id().point_id());
+        let config = self.flow.step_config(self.id().step_id());
         return config;
     }
 

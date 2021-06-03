@@ -8,14 +8,14 @@ use chord_common::case::{CaseAssess, CaseState};
 use chord_common::err;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
-use chord_common::point::PointState;
+use chord_common::step::StepState;
 use chord_common::rerr;
 use chord_common::task::{TaskAssess, TaskState, TaskId};
 use async_std::sync::Arc;
 
 pub struct Reporter {
     writer: Writer<File>,
-    point_id_vec: Vec<String>,
+    step_id_vec: Vec<String>,
     total_task_state: TaskState,
     report_dir: PathBuf,
     task_id: Arc<dyn TaskId>,
@@ -31,12 +31,12 @@ impl Reporter {
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task_id()));
         let mut report = Reporter {
             writer: from_path(report_file).await?,
-            point_id_vec: flow.case_point_id_vec()?,
+            step_id_vec: flow.case_step_id_vec()?,
             total_task_state: TaskState::Ok(vec![]),
             report_dir,
             task_id,
         };
-        prepare(&mut report.writer, &report.point_id_vec).await?;
+        prepare(&mut report.writer, &report.step_id_vec).await?;
         Ok(report)
     }
 
@@ -61,7 +61,7 @@ impl Reporter {
             }
         }
 
-        report(&mut self.writer, task_assess, &self.point_id_vec).await?;
+        report(&mut self.writer, task_assess, &self.step_id_vec).await?;
 
         Ok(())
     }
@@ -90,39 +90,39 @@ async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
 
 async fn prepare<W: std::io::Write>(
     writer: &mut Writer<W>,
-    pt_id_vec: &Vec<String>,
+    sid_vec: &Vec<String>,
 ) -> Result<(), Error> {
     writer
-        .write_record(create_head(pt_id_vec))
+        .write_record(create_head(sid_vec))
         .map_err(|e| err!("csv", e.to_string()))
 }
 
-fn create_head(pt_id_vec: &Vec<String>) -> Vec<String> {
+fn create_head(sid_vec: &Vec<String>) -> Vec<String> {
     let mut vec: Vec<String> = vec![];
     vec.push(String::from("case_state"));
     vec.push(String::from("case_info"));
     vec.push(String::from("case_start"));
     vec.push(String::from("case_end"));
 
-    let ph_vec: Vec<String> = pt_id_vec
+    let ph_vec: Vec<String> = sid_vec
         .iter()
-        .flat_map(|pid| {
+        .flat_map(|sid| {
             vec![
-                format!("{}_state", pid),
-                format!("{}_start", pid),
-                format!("{}_end", pid),
+                format!("{}_state", sid),
+                format!("{}_start", sid),
+                format!("{}_end", sid),
             ]
         })
         .collect();
     vec.extend(ph_vec);
-    vec.push(String::from("last_point_info"));
+    vec.push(String::from("last_step_info"));
     vec
 }
 
 async fn report<W: std::io::Write>(
     writer: &mut Writer<W>,
     task_assess: &dyn TaskAssess,
-    pt_id_vec: &Vec<String>,
+    sid_vec: &Vec<String>,
 ) -> Result<(), Error> {
     let empty = &vec![];
     let ca_vec = match task_assess.state() {
@@ -135,7 +135,7 @@ async fn report<W: std::io::Write>(
         return Ok(());
     }
 
-    let head = create_head(pt_id_vec);
+    let head = create_head(sid_vec);
     for sv in ca_vec
         .iter()
         .map(|ca| to_value_vec(ca.as_ref(), head.len()))
@@ -177,21 +177,21 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
         let p_vec: Vec<String> = pa_vec
             .iter()
             .flat_map(|pa| match pa.state() {
-                PointState::Ok(_) => {
+                StepState::Ok(_) => {
                     vec![
                         String::from("O"),
                         pa.start().format("%T").to_string(),
                         pa.end().format("%T").to_string(),
                     ]
                 }
-                PointState::Err(_) => {
+                StepState::Err(_) => {
                     vec![
                         String::from("E"),
                         pa.start().format("%T").to_string(),
                         pa.end().format("%T").to_string(),
                     ]
                 }
-                PointState::Fail(_) => {
+                StepState::Fail(_) => {
                     vec![
                         String::from("F"),
                         pa.start().format("%T").to_string(),
@@ -213,10 +213,10 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
         vec.push(String::from(""));
     } else {
         match pa_vec.last().unwrap().state() {
-            PointState::Fail(json) => {
+            StepState::Fail(json) => {
                 vec.push(json.to_string());
             }
-            PointState::Err(e) => {
+            StepState::Err(e) => {
                 vec.push(e.to_string());
             }
             _ => {

@@ -1,7 +1,7 @@
 use crate::error::Error;
 use crate::value::{Json, Map};
 use crate::{err, rerr};
-use crate::point::POINT_ID_PATTERN;
+use crate::step::POINT_ID_PATTERN;
 
 
 use std::borrow::Borrow;
@@ -17,60 +17,89 @@ pub struct Flow {
 impl Flow {
     pub fn new(flow: Json) -> Result<Flow, Error> {
         let flow = Flow { flow };
-        let pt_id_vec = flow.case_point_id_vec()?;
-        for pt_id in pt_id_vec {
-            if !POINT_ID_PATTERN.is_match(pt_id.as_str()) {
-                return rerr!("point", format!("invalid point_id {}", pt_id));
+        let case_sid_vec = flow.case_step_id_vec()?;
+        for case_sid in case_sid_vec {
+            if !POINT_ID_PATTERN.is_match(case_sid.as_str()) {
+                return rerr!("step", format!("invalid step_id {}", case_sid));
             }
 
-            flow.point(pt_id.as_str())
+            flow.step(case_sid.as_str())
                 .as_object()
-                .ok_or_else(|| err!("point", format!("invalid point_id {}", pt_id)))?;
+                .ok_or_else(|| err!("step", format!("invalid step_id {}", case_sid)))?;
 
-            let _ = flow.point_kind(pt_id.as_str());
+            let _ = flow.step_kind(case_sid.as_str());
         }
+
+
+        let pre_sid_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
+        for pre_sid in pre_sid_vec.iter() {
+            if !POINT_ID_PATTERN.is_match(pre_sid.as_str()) {
+                return rerr!("step", format!("invalid step_id {}", pre_sid));
+            }
+
+            if pre_sid_vec.contains(pre_sid){
+                return rerr!("step", format!("duplicate step_id {}", pre_sid));
+            }
+
+            flow.step(pre_sid.as_str())
+                .as_object()
+                .ok_or_else(|| err!("step", format!("invalid step_id {}", pre_sid)))?;
+
+            let _ = flow.step_kind(pre_sid.as_str());
+        }
+
+
         return Ok(flow);
     }
 
-    pub fn case_point_id_vec(self: &Flow) -> Result<Vec<String>, Error> {
-        let task_pt_chain_arr = self.flow["case"]["chain"]
-            .as_array()
-            .ok_or(Error::new("case", "missing case.chain"))?;
-        return Ok(Flow::conv_to_string_vec(task_pt_chain_arr));
+    pub fn case_step_id_vec(self: &Flow) -> Result<Vec<String>, Error> {
+        let sid_vec = self.flow["case"]["step"]
+            .as_object()
+            .map(|p| p.keys().map(|k| k.to_string()).collect())
+            .ok_or(Error::new("case", "missing case.step"))?;
+        return Ok(sid_vec);
     }
 
-    pub fn point(&self, point_id: &str) -> &Json {
-        self.flow["point"][point_id].borrow()
+    pub fn pre_step_id_vec(&self) -> Option<Vec<String>> {
+        let task_step_chain_arr = self.flow["pre"]["step"]
+            .as_object()
+            .map(|p| p.keys().map(|k| k.to_string()).collect());
+        if task_step_chain_arr.is_none() {
+            return None;
+        }
+        return Some(task_step_chain_arr.unwrap());
     }
 
-    pub fn point_config(&self, point_id: &str) -> &Json {
-        self.flow["point"][point_id]["config"].borrow()
+    pub fn step(&self, step_id: &str) -> &Json {
+         let case_step  = self.flow["case"]["step"][step_id].borrow();
+        if !case_step.is_null() {
+            case_step
+        } else {
+            self.flow["pre"]["step"][step_id].borrow()
+        }
     }
 
-    pub fn point_timeout(&self, point_id: &str) -> Duration {
-        self.flow["point"][point_id]["timeout"]
+    pub fn step_config(&self, step_id: &str) -> &Json {
+        self.step(step_id)["config"].borrow()
+    }
+
+    pub fn step_timeout(&self, step_id: &str) -> Duration {
+        self.step(step_id)["timeout"]
             .as_u64()
             .map_or(Duration::from_secs(5), |sec| Duration::from_secs(sec))
     }
 
-    pub fn point_kind(&self, point_id: &str) -> &str {
-        self.flow["point"][point_id]["kind"].as_str().unwrap()
+    pub fn step_kind(&self, step_id: &str) -> &str {
+        self.step(step_id)["kind"].as_str().unwrap()
     }
 
-    pub fn task_def(&self) -> Option<&Map> {
-        self.flow["task"]["def"].as_object()
+    pub fn def(&self) -> Option<&Map> {
+        self.flow["def"].as_object()
     }
 
-    pub fn pre_point_id_vec(&self) -> Option<Vec<String>> {
-        let task_pt_chain_arr = self.flow["task"]["pre"]["chain"].as_array();
-        if task_pt_chain_arr.is_none() {
-            return None;
-        }
-        return Some(Flow::conv_to_string_vec(task_pt_chain_arr.unwrap()));
-    }
 
     pub fn limit_concurrency(&self) -> usize {
-        let num = match self.flow["task"]["limit"]["concurrency"].as_u64() {
+        let num = match self.flow["limit"]["concurrency"].as_u64() {
             Some(n) => n as usize,
             None => 9999,
         };
@@ -78,11 +107,4 @@ impl Flow {
         return num;
     }
 
-    fn conv_to_string_vec(vec: &Vec<Json>) -> Vec<String> {
-        let string_vec: Vec<String> = vec
-            .iter()
-            .map(|e| e.as_str().map(|s| String::from(s)).unwrap())
-            .collect();
-        return string_vec;
-    }
 }

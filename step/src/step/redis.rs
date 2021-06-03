@@ -1,23 +1,23 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
+use chord_common::step::{async_trait, RunArg, StepRunner, StepValue, CreateArg};
 use chord_common::value::{from_str, Json, Number};
 use redis::Value as RedisValue;
 
 struct Redis {}
 
 #[async_trait]
-impl PointRunner for Redis {
-    async fn run(&self, arg: &dyn RunArg) -> PointValue {
+impl StepRunner for Redis {
+    async fn run(&self, arg: &dyn RunArg) -> StepValue {
         run(arg).await
     }
 }
 
-pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
     Ok(Box::new(Redis {}))
 }
 
-async fn run(arg: &dyn RunArg) -> PointValue {
+async fn run(arg: &dyn RunArg) -> StepValue {
     let url = arg.config()["url"]
         .as_str()
         .map(|s| arg.render(s))

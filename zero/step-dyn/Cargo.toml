@@ -1,5 +1,5 @@
 [package]
-name = "chord-point-dyn"
+name = "chord-step-dyn"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2018"
@@ -11,5 +11,5 @@ chord-common = {path = "../../common" }
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 
 [lib]
-name = "point_dyn"
+name = "step_dyn"
 crate-type = ["dylib"]

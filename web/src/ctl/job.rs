@@ -15,7 +15,7 @@ use crate::app::conf::Config;
 pub use async_trait::async_trait;
 use chord_common::error::Error;
 use chord_flow::FlowContext;
-use chord_point::PointRunnerFactoryDefault;
+use chord_step::StepRunnerFactoryDefault;
 
 use crate::biz;
 
@@ -67,7 +67,7 @@ impl CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
             flow_ctx: chord_flow::create_context(Box::new(
-                PointRunnerFactoryDefault::new(config.point_config().clone()).await?,
+                StepRunnerFactoryDefault::new(config.step_config().clone()).await?,
             ))
             .await,
             config,
@@ -116,8 +116,8 @@ async fn checkout_run(
     let host = git_url_splits[1];
     let group_name = git_url_splits[2];
     let repo_name = git_url_splits[3];
-    let last_point_idx = repo_name.len() - 4;
-    let repo_name = &repo_name.to_owned()[..last_point_idx];
+    let last_step_idx = repo_name.len() - 4;
+    let repo_name = &repo_name.to_owned()[..last_step_idx];
     let checkout_path = input.clone().join(host).join(group_name).join(repo_name);
     if checkout_path.exists() {
         error!("checkout exist {}", checkout_path.to_str().unwrap());

@@ -1,6 +1,6 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::point::{async_trait, RunArg, PointRunner, PointValue, CreateArg};
+use chord_common::step::{async_trait, RunArg, StepRunner, StepValue, CreateArg};
 use chord_common::value::Json;
 use libloading::Library;
 
@@ -9,8 +9,8 @@ struct Dynlib {
 }
 
 #[async_trait]
-impl PointRunner for Dynlib {
-    async fn run(&self, arg: &dyn RunArg) -> PointValue {
+impl StepRunner for Dynlib {
+    async fn run(&self, arg: &dyn RunArg) -> StepValue {
         let args_raw = arg.config()["args"]
             .as_array()
             .ok_or(err!("010", "missing args"))?;
@@ -24,13 +24,13 @@ impl PointRunner for Dynlib {
 
         let args_dynlib: Vec<&str> = args_rendered.iter().map(|a| a.as_str()).collect();
 
-        let dynlib_run: libloading::Symbol<fn(Vec<&str>) -> PointValue> =
+        let dynlib_run: libloading::Symbol<fn(Vec<&str>) -> StepValue> =
             unsafe { self.lib.get(b"run")? };
         dynlib_run(args_dynlib)
     }
 }
 
-pub async fn create(_: Option<&Json>, arg: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error> {
+pub async fn create(_: Option<&Json>, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
     let path = arg.config()["path"]
         .as_str()
         .ok_or(err!("010", "missing path"))?;

@@ -8,14 +8,14 @@ use std::fmt::Display;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-pub type PointValue = std::result::Result<Json, Error>;
+pub type StepValue = std::result::Result<Json, Error>;
 
 lazy_static! {
     pub static ref POINT_ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
 }
 
-pub trait PointId: Sync + Send + Display{
-    fn point_id(&self) -> &str;
+pub trait StepId: Sync + Send + Display{
+    fn step_id(&self) -> &str;
 
     fn case_id(&self) -> &dyn CaseId;
 }
@@ -23,7 +23,7 @@ pub trait PointId: Sync + Send + Display{
 
 pub trait RunArg: Sync + Send {
 
-    fn id(&self) -> &dyn PointId;
+    fn id(&self) -> &dyn StepId;
 
     fn config(&self) -> &Json;
 
@@ -33,7 +33,7 @@ pub trait RunArg: Sync + Send {
 
 pub trait CreateArg: Sync + Send {
 
-    fn id(&self) -> &dyn PointId;
+    fn id(&self) -> &dyn StepId;
 
     fn kind(&self) -> &str;
 
@@ -46,33 +46,33 @@ pub trait CreateArg: Sync + Send {
 
 
 #[derive(Debug, Clone)]
-pub enum PointState {
+pub enum StepState {
     Ok(Json),
     Fail(Json),
     Err(Error),
 }
-unsafe impl Send for PointState {}
-unsafe impl Sync for PointState {}
+unsafe impl Send for StepState {}
+unsafe impl Sync for StepState {}
 
 
-pub trait PointAssess: Sync + Send {
+pub trait StepAssess: Sync + Send {
 
-    fn id(&self) -> &dyn PointId;
+    fn id(&self) -> &dyn StepId;
 
     fn start(&self) -> DateTime<Utc>;
 
     fn end(&self) -> DateTime<Utc>;
 
-    fn state(&self) -> &PointState;
+    fn state(&self) -> &StepState;
 }
 
 
 #[async_trait]
-pub trait PointRunner: Sync + Send {
-    async fn run(&self, arg: &dyn RunArg) -> PointValue;
+pub trait StepRunner: Sync + Send {
+    async fn run(&self, arg: &dyn RunArg) -> StepValue;
 }
 
 #[async_trait]
-pub trait PointRunnerFactory: Sync + Send {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn PointRunner>, Error>;
+pub trait StepRunnerFactory: Sync + Send {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error>;
 }

@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 
 use crate::error::Error;
 
-use crate::point::PointAssess;
+use crate::step::StepAssess;
 use crate::task::TaskId;
 use std::fmt::Display;
 
@@ -26,9 +26,9 @@ pub trait CaseAssess: Sync + Send {
 }
 
 pub enum CaseState {
-    Ok(Vec<Box<dyn PointAssess>>),
+    Ok(Vec<Box<dyn StepAssess>>),
     Err(Error),
-    Fail(Vec<Box<dyn PointAssess>>),
+    Fail(Vec<Box<dyn StepAssess>>),
 }
 
 

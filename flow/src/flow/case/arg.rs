@@ -4,10 +4,10 @@ use chord_common::flow::Flow;
 use chord_common::value::Json;
 use chord_common::value::{to_json, Map};
 
-use crate::flow::point::arg::RunArgStruct;
+use crate::flow::step::arg::RunArgStruct;
 use crate::model::app::FlowContext;
 use async_std::sync::Arc;
-use chord_common::point::PointRunner;
+use chord_common::step::StepRunner;
 use chord_common::task::TaskId;
 use chord_common::case::CaseId;
 use std::fmt::{Display, Formatter};
@@ -50,7 +50,7 @@ impl Display for CaseIdStruct {
 pub struct CaseArgStruct {
 
     flow: Arc<Flow>,
-    point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
+    step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
     data: Json,
     render_ctx_ext: Arc<Vec<(String, Json)>>,
     id: Rc<CaseIdStruct>,
@@ -61,7 +61,7 @@ unsafe impl Sync for CaseArgStruct {}
 impl CaseArgStruct {
     pub fn new(
         flow: Arc<Flow>,
-        point_runner_vec: Arc<Vec<(String, Box<dyn PointRunner>)>>,
+        step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
         data: Json,
         render_ctx_ext: Arc<Vec<(String, Json)>>,
         task_id: Arc<dyn TaskId>,
@@ -75,7 +75,7 @@ impl CaseArgStruct {
 
         let context = CaseArgStruct {
             flow,
-            point_runner_vec,
+            step_runner_vec,
             data,
             render_ctx_ext,
             id
@@ -86,7 +86,7 @@ impl CaseArgStruct {
 
     pub fn create_render_context(self: &CaseArgStruct) -> RenderContext {
         let mut render_data: Map = Map::new();
-        let config_def = self.flow.task_def();
+        let config_def = self.flow.def();
         match config_def {
             Some(def) => {
                 render_data.insert(String::from("def"), to_json(def).unwrap());
@@ -94,7 +94,7 @@ impl CaseArgStruct {
             None => {}
         }
         render_data.insert(String::from("data"), self.data.clone());
-        render_data.insert(String::from("dyn"), Json::Object(Map::new()));
+        render_data.insert(String::from("step"), Json::Object(Map::new()));
         render_data.insert(String::from("res"), Json::Null);
 
         for (k, v) in self.render_ctx_ext.iter() {
@@ -104,9 +104,9 @@ impl CaseArgStruct {
         return Context::wraps(render_data).unwrap();
     }
 
-    pub fn point_arg_create<'app, 'h, 'reg, 'r>(
+    pub fn step_arg_create<'app, 'h, 'reg, 'r>(
         self: &CaseArgStruct,
-        point_id: &str,
+        step_id: &str,
         flow_ctx: &'app dyn FlowContext,
         render_ctx: &'r RenderContext,
     ) -> Option<RunArgStruct<'_, 'h, 'reg, 'r>>
@@ -114,19 +114,19 @@ impl CaseArgStruct {
         'app: 'h,
         'app: 'reg,
     {
-        let _ = self.flow.point(point_id).as_object()?;
+        let _ = self.flow.step(step_id).as_object()?;
 
         Some(RunArgStruct::new(
             self.flow.as_ref(),
             flow_ctx.get_handlebars(),
             render_ctx,
             self.id.clone(),
-            point_id.to_owned(),
+            step_id.to_owned(),
         ))
     }
 
-    pub fn point_runner_vec(self: &CaseArgStruct) -> &Vec<(String, Box<dyn PointRunner>)> {
-        self.point_runner_vec.as_ref()
+    pub fn step_runner_vec(self: &CaseArgStruct) -> &Vec<(String, Box<dyn StepRunner>)> {
+        self.step_runner_vec.as_ref()
     }
 
     pub fn id(&self) -> Rc<CaseIdStruct> {

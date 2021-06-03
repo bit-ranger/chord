@@ -10,7 +10,7 @@ pub use mongodb::options::ClientOptions;
 
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
-use chord_common::point::{PointAssess, PointState};
+use chord_common::step::{StepAssess, StepState};
 use chord_common::rerr;
 use chord_common::task::{TaskAssess, TaskState, TaskId};
 use mongodb::options::UpdateOptions;
@@ -163,7 +163,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "O",
-                "point_assess": pa_vec.iter().map(|pa|pa_doc(pa.as_ref())).collect_vec()
+                "step_assess": pa_vec.iter().map(|pa|pa_doc(pa.as_ref())).collect_vec()
             }
         }
         CaseState::Fail(pa_vec) => {
@@ -172,7 +172,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "F",
-                "point_assess": pa_vec.iter().map(|pa|pa_doc(pa.as_ref())).collect_vec()
+                "step_assess": pa_vec.iter().map(|pa|pa_doc(pa.as_ref())).collect_vec()
             }
         }
         CaseState::Err(e) => {
@@ -187,15 +187,15 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
     }
 }
 
-fn pa_doc(pa: &dyn PointAssess) -> Document {
+fn pa_doc(pa: &dyn StepAssess) -> Document {
     doc! {
-            "id": pa.id().point_id(),
+            "id": pa.id().step_id(),
             "start": pa.start(),
             "end": pa.end(),
             "state": match pa.state(){
-               PointState::Ok(_) => "O",
-               PointState::Fail(_) => "F",
-               PointState::Err(_) => "E",
+               StepState::Ok(_) => "O",
+               StepState::Fail(_) => "F",
+               StepState::Err(_) => "E",
             }
         }
 }

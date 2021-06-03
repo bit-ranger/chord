@@ -1,5 +1,5 @@
 # 基础镜像 
-FROM rust:1.50
+FROM rust:1.52.1
 
 # 作者及联系方式   
 MAINTAINER bitranger sincerebravefight@gmail.com

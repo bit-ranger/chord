@@ -17,8 +17,6 @@ use chord_port::report::elasticsearch::Reporter;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-
-
 pub async fn run<P: AsRef<Path>>(
     job_path: P,
     job_name: String,
@@ -93,7 +91,7 @@ async fn run_task<P: AsRef<Path>>(
         es_index,
         case_batch_size,
     )
-        .await;
+    .await;
     match rt {
         Ok(ts) => ts,
         Err(e) => {
@@ -124,56 +122,26 @@ async fn run_task0<P: AsRef<Path>>(
     let flow = Flow::new(flow.clone())?;
 
     //read
-    let data_path = task_path.clone().join("data.csv");
-
-    let mut data_loader =
-        chord_port::load::data::csv::Loader::new(data_path, case_batch_size).await?;
-
+    let data_file_path = task_path.clone().join("data.csv");
+    let mut data_loader = Arc::new(chord_port::load::data::csv::Loader::new(data_file_path).await?);
 
     //write
-    let mut assess_reporter = Reporter::new(es_url, es_index, task_id.clone()).await?;
+    let mut assess_reporter = Arc::new(Reporter::new(es_url, es_index, task_id.clone()).await?);
 
     //runner
-    let runner = chord_flow::Runner::new(
+    let mut runner = chord_flow::Runner::new(
+        data_loader,
+        assess_reporter,
         app_ctx,
         Arc::new(flow),
         task_id.clone(),
-    ).await;
+    )
+    .await?;
 
-    let mut total_task_state = TaskState::Ok(vec![]);
-    match runner {
-        Err(e) => {
-            total_task_state = TaskState::Err(e.clone());
-            assess_reporter.state(TaskState::Err(e)).await?;
-        }
-        Ok(mut runner) => {
-            loop {
-                let data = data_loader.load().await?;
-                let data_len = data.len();
-
-                let task_assess = runner.run(data).await;
-
-                assess_reporter.write(task_assess.as_ref()).await?;
-
-                match task_assess.state() {
-                    TaskState::Err(e) => {
-                        total_task_state = TaskState::Err(e.clone());
-                        break;
-                    }
-                    TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
-                    _ => (),
-                }
-
-                if data_len < case_batch_size {
-                    break;
-                }
-            }
-        }
-    }
-
+    let task_assess = runner.run().await?;
     data_loader.close().await?;
     assess_reporter.close().await?;
 
     debug!("task end {}", task_path.to_str().unwrap());
-    return Ok(total_task_state);
+    return Ok(task_assess.state());
 }

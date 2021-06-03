@@ -4,21 +4,54 @@ use std::path::{Path, PathBuf};
 use async_std::fs::rename;
 use csv::Writer;
 
+use async_std::sync::Arc;
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::err;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
-use chord_common::step::StepState;
+use chord_common::output::async_trait;
+use chord_common::output::AssessReport;
 use chord_common::rerr;
-use chord_common::task::{TaskAssess, TaskState, TaskId};
-use async_std::sync::Arc;
+use chord_common::step::StepState;
+use chord_common::task::{TaskAssess, TaskId, TaskState};
+use chrono::{DateTime, Utc};
 
 pub struct Reporter {
     writer: Writer<File>,
     step_id_vec: Vec<String>,
-    total_task_state: TaskState,
     report_dir: PathBuf,
     task_id: Arc<dyn TaskId>,
+}
+
+#[async_trait]
+impl AssessReport for Reporter {
+    async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
+        prepare(&mut report.writer, &report.step_id_vec).await?;
+        Ok(())
+    }
+
+    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
+        report(&mut self.writer, ca_vec, &self.step_id_vec).await
+    }
+
+    async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+        let task_state_view = match task_assess.state() {
+            TaskState::Ok() => "O",
+            TaskState::Err(_) => "E",
+            TaskState::Fail() => "F",
+        };
+
+        let report_file = self
+            .report_dir
+            .join(format!("{}_result.csv", self.task_id.task_id()));
+        let report_file_new = self.report_dir.join(format!(
+            "{}_result_{}.csv",
+            self.task_id.task_id(),
+            task_state_view
+        ));
+        rename(report_file, report_file_new).await?;
+        Ok(())
+    }
 }
 
 impl Reporter {
@@ -32,53 +65,10 @@ impl Reporter {
         let mut report = Reporter {
             writer: from_path(report_file).await?,
             step_id_vec: flow.case_step_id_vec()?,
-            total_task_state: TaskState::Ok(vec![]),
             report_dir,
             task_id,
         };
-        prepare(&mut report.writer, &report.step_id_vec).await?;
         Ok(report)
-    }
-
-    pub async fn state(&mut self, state: TaskState)-> Result<(), Error> {
-        self.total_task_state = state;
-        Ok(())
-    }
-
-    pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
-
-        if let TaskState::Err(_) = self.total_task_state {
-            return rerr!("500", "task is error");
-        }
-
-        match task_assess.state() {
-            TaskState::Ok(_) => {}
-            TaskState::Fail(_) => {
-                self.total_task_state = TaskState::Fail(vec![]);
-            }
-            TaskState::Err(e) => {
-                self.total_task_state = TaskState::Err(e.clone());
-            }
-        }
-
-        report(&mut self.writer, task_assess, &self.step_id_vec).await?;
-
-        Ok(())
-    }
-
-    pub async fn close(self) -> Result<(), Error> {
-        let task_state_view = match self.total_task_state {
-            TaskState::Ok(_) => "O",
-            TaskState::Err(_) => "E",
-            TaskState::Fail(_) => "F",
-        };
-
-        let report_file = self.report_dir.join(format!("{}_result.csv", self.task_id.task_id()));
-        let report_file_new = self
-            .report_dir
-            .join(format!("{}_result_{}.csv", self.task_id.task_id(), task_state_view));
-        rename(report_file, report_file_new).await?;
-        Ok(())
     }
 }
 
@@ -121,16 +111,9 @@ fn create_head(sid_vec: &Vec<String>) -> Vec<String> {
 
 async fn report<W: std::io::Write>(
     writer: &mut Writer<W>,
-    task_assess: &dyn TaskAssess,
+    ca_vec: &Vec<Box<dyn CaseAssess>>,
     sid_vec: &Vec<String>,
 ) -> Result<(), Error> {
-    let empty = &vec![];
-    let ca_vec = match task_assess.state() {
-        TaskState::Ok(ca_vec) => ca_vec,
-        TaskState::Fail(ca_vec) => ca_vec,
-        TaskState::Err(_) => empty,
-    };
-
     if ca_vec.len() == 0 {
         return Ok(());
     }

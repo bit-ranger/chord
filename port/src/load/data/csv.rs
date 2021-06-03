@@ -1,5 +1,7 @@
 use chord_common::err;
 use chord_common::error::Error;
+use chord_common::input::async_trait;
+use chord_common::input::DataLoad;
 use chord_common::rerr;
 use chord_common::value::{Json, Map};
 use csv::{Reader, ReaderBuilder};
@@ -8,20 +10,14 @@ use std::path::Path;
 
 pub struct Loader {
     reader: Reader<File>,
-    size_limit: usize,
 }
 
 impl Loader {
-    pub async fn new<P: AsRef<Path>>(path: P, size_limit: usize) -> Result<Loader, Error> {
+    pub async fn new<P: AsRef<Path>>(path: P) -> Result<Loader, Error> {
         let loader = Loader {
             reader: from_path(path).await?,
-            size_limit,
         };
         Ok(loader)
-    }
-
-    pub async fn load(&mut self) -> Result<Vec<Json>, Error> {
-        load(&mut self.reader, self.size_limit).await
     }
 
     pub async fn close(self) -> Result<(), Error> {
@@ -29,10 +25,14 @@ impl Loader {
     }
 }
 
-async fn load<R: std::io::Read>(
-    reader: &mut Reader<R>,
-    size_limit: usize,
-) -> Result<Vec<Json>, Error> {
+#[async_trait]
+impl DataLoad for Loader {
+    async fn load(&mut self, size: usize) -> Result<Vec<Json>, Error> {
+        load(&mut self.reader, size).await
+    }
+}
+
+async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<Vec<Json>, Error> {
     let mut hashmap_vec = Vec::new();
     let mut curr_size = 0;
     for result in reader.deserialize() {
@@ -46,7 +46,7 @@ async fn load<R: std::io::Read>(
         hashmap_vec.push(Json::Object(record));
 
         curr_size += 1;
-        if curr_size == size_limit {
+        if curr_size == size {
             break;
         }
     }

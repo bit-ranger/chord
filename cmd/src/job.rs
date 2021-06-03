@@ -13,7 +13,6 @@ use chord_common::flow::Flow;
 use chord_common::task::TaskState;
 use chord_flow::{FlowContext, TaskIdStruct};
 
-
 pub async fn run<P: AsRef<Path>>(
     input_dir: P,
     output_dir: P,
@@ -97,52 +96,24 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     let flow = Arc::new(flow);
 
     //read
-    let data_file = input_dir.clone().join("data.csv");
-    let case_batch_size = 99999;
-    let mut data_loader =
-        chord_port::load::data::csv::Loader::new(data_file, case_batch_size).await?;
-
+    let data_file_path = input_dir.clone().join("data.csv");
+    let mut data_loader = Arc::new(chord_port::load::data::csv::Loader::new(data_file_path).await?);
 
     //write
     let mut assess_reporter =
-        chord_port::report::csv::Reporter::new(output_dir, &flow, task_id.clone()).await?;
+        Arc::new(chord_port::report::csv::Reporter::new(output_dir, &flow, task_id.clone()).await?);
 
     //runner
-    let runner =
-        chord_flow::Runner::new(app_ctx, flow.clone(), task_id.clone()).await;
+    let mut runner = chord_flow::Runner::new(
+        data_loader,
+        assess_reporter,
+        app_ctx,
+        Arc::new(flow),
+        task_id.clone(),
+    )
+    .await?;
 
-    let mut total_task_state = TaskState::Ok(vec![]);
-    match runner {
-        Err(e) => {
-            total_task_state = TaskState::Err(e.clone());
-            assess_reporter.state(TaskState::Err(e)).await?;
-        },
-        Ok(mut runner) => {
-            loop {
-                let data = data_loader.load().await?;
-                let data_len = data.len();
-
-                let task_assess = runner.run(data).await;
-
-                assess_reporter.write(task_assess.as_ref()).await?;
-
-                match task_assess.state() {
-                    TaskState::Err(e) => {
-                        total_task_state = TaskState::Err(e.clone());
-                        break;
-                    }
-                    TaskState::Fail(_) => total_task_state = TaskState::Fail(vec![]),
-                    _ => (),
-                }
-
-                if data_len < case_batch_size {
-                    break;
-                }
-            }
-        }
-    }
-
-
+    let task_assess = runner.run().await?;
     data_loader.close().await?;
     assess_reporter.close().await?;
 

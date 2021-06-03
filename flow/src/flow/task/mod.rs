@@ -1,6 +1,5 @@
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
-
 use chrono::Utc;
 use futures::future::join_all;
 use handlebars::Context;
@@ -9,6 +8,8 @@ use log::{debug, trace, warn};
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
 use chord_common::flow::Flow;
+use chord_common::input::DataLoad;
+use chord_common::output::AssessReport;
 use chord_common::rerr;
 use chord_common::step::{StepRunner, StepState};
 use chord_common::task::{TaskAssess, TaskId, TaskState};
@@ -32,10 +33,15 @@ pub struct Runner {
     id: Arc<TaskIdStruct>,
     pre_ctx: Arc<Vec<(String, Json)>>,
     case_id_offset: usize,
+    assess_report: Arc<dyn AssessReport>,
+    data_load: Arc<dyn DataLoad>,
+    state: TaskState,
 }
 
 impl Runner {
     pub async fn new(
+        data_load: Arc<dyn DataLoad>,
+        assess_report: Arc<dyn AssessReport>,
         flow_ctx: Arc<dyn FlowContext>,
         flow: Arc<Flow>,
         id: Arc<TaskIdStruct>,
@@ -52,12 +58,15 @@ impl Runner {
         )
         .await?;
         let runner = Runner {
+            assess_report,
+            data_load,
             flow_ctx,
             flow,
             step_runner_vec: Arc::new(step_runner_vec),
             id,
             pre_ctx,
             case_id_offset: 1,
+            state: TaskState::Ok,
         };
         Ok(runner)
     }
@@ -66,37 +75,71 @@ impl Runner {
         self.id.clone()
     }
 
-    pub async fn run(&mut self, data: Vec<Json>) -> Box<dyn TaskAssess> {
-        Box::new(self.run0(data).await)
-    }
-
-    async fn run0(&mut self, data: Vec<Json>) -> TaskAssessStruct {
-        let data_len = data.len();
+    pub async fn run(&mut self) -> Box<dyn TaskAssess> {
         trace!("task start {}", self.id);
         let start = Utc::now();
-
-        let ca_vec = match self.case_arg_vec(data) {
-            Ok(v) => v,
-            Err(e) => {
-                warn!("task Err {}", self.id);
-                return TaskAssessStruct::new(
-                    self.id.clone(),
-                    start,
-                    Utc::now(),
-                    TaskState::Err(e),
-                );
-            }
+        let assess = self.run0().await;
+        return if let Err(e) = assess {
+            warn!("task Err {}", self.id);
+            let assess =
+                TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Err(e));
+            Box::new(assess)
+        } else {
+            Box::new(assess)
         };
-        self.case_id_offset = self.case_id_offset + data_len;
-        trace!("task load data {}, {}", self.id, ca_vec.len());
+    }
+
+    async fn run0(&mut self) -> Result<TaskAssessStruct, Error> {
+        let start = Utc::now();
+
+        self.assess_report.start(self.id.as_ref(), start)?;
+
+        let load_len = self.flow.ctrl_concurrency();
+
+        loop {
+            let data_vec = self.data_load.load(load_len).await?;
+            let data_len = data_vec.len();
+            trace!("task load data {}, {}", self.id, data_len);
+            let case_assess_vec = self.data_vec_run(data_vec)?;
+            let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
+            if any_fail {
+                self.state = TaskState::Fail;
+            }
+            self.assess_report.report(&case_assess_vec)?;
+            if data_len < load_len {
+                break;
+            }
+        }
+
+        return match &self.state {
+            TaskState::Ok => {
+                debug!("task Ok {}", self.id);
+                let assess =
+                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok);
+                Ok(assess)
+            }
+            TaskState::Fail => {
+                debug!("task Fail {}", self.id);
+                let assess =
+                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Fail);
+                Ok(assess)
+            }
+            TaskState::Err(e) => Err(e.clone()),
+        };
+    }
+
+    fn data_vec_run(&mut self, data: Vec<Json>) -> Result<Vec<Box<dyn CaseAssess>>, Error> {
+        let data_size = data.len();
+        let ca_vec = self.case_arg_vec(data)?;
+        self.case_id_offset = self.case_id_offset + data_size;
 
         let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
-        let limit_concurrency = self.flow.ctrl_concurrency();
         let mut futures = vec![];
+        let concurrency = self.flow.ctrl_concurrency();
         for ca in ca_vec {
             let f = case_spawn(self.flow_ctx.clone(), ca);
             futures.push(f);
-            if futures.len() >= limit_concurrency {
+            if futures.len() >= concurrency {
                 let case_assess = join_all(futures.split_off(0)).await;
                 case_assess_vec.extend(case_assess);
             }
@@ -105,29 +148,10 @@ impl Runner {
             let case_assess = join_all(futures).await;
             case_assess_vec.extend(case_assess);
         }
-
-        let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
-
-        return if any_fail {
-            warn!("task Fail {}", self.id);
-            TaskAssessStruct::new(
-                self.id.clone(),
-                start,
-                Utc::now(),
-                TaskState::Fail(case_assess_vec),
-            )
-        } else {
-            debug!("task Ok {}", self.id);
-            TaskAssessStruct::new(
-                self.id.clone(),
-                start,
-                Utc::now(),
-                TaskState::Ok(case_assess_vec),
-            )
-        };
+        Ok(case_assess_vec)
     }
 
-    pub fn case_arg_vec<'p>(&self, data: Vec<Json>) -> Result<Vec<CaseArgStruct>, Error> {
+    fn case_arg_vec<'p>(&self, data: Vec<Json>) -> Result<Vec<CaseArgStruct>, Error> {
         let vec = data
             .into_iter()
             .enumerate()

@@ -1,8 +1,7 @@
 use crate::error::Error;
+use crate::step::POINT_ID_PATTERN;
 use crate::value::{Json, Map};
 use crate::{err, rerr};
-use crate::step::POINT_ID_PATTERN;
-
 
 use std::borrow::Borrow;
 use std::time::Duration;
@@ -11,8 +10,6 @@ use std::time::Duration;
 pub struct Flow {
     flow: Json,
 }
-
-
 
 impl Flow {
     pub fn new(flow: Json) -> Result<Flow, Error> {
@@ -30,14 +27,13 @@ impl Flow {
             let _ = flow.step_kind(case_sid.as_str());
         }
 
-
         let pre_sid_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
         for pre_sid in pre_sid_vec.iter() {
             if !POINT_ID_PATTERN.is_match(pre_sid.as_str()) {
                 return rerr!("step", format!("invalid step_id {}", pre_sid));
             }
 
-            if pre_sid_vec.contains(pre_sid){
+            if pre_sid_vec.contains(pre_sid) {
                 return rerr!("step", format!("duplicate step_id {}", pre_sid));
             }
 
@@ -47,7 +43,6 @@ impl Flow {
 
             let _ = flow.step_kind(pre_sid.as_str());
         }
-
 
         return Ok(flow);
     }
@@ -71,7 +66,7 @@ impl Flow {
     }
 
     pub fn step(&self, step_id: &str) -> &Json {
-         let case_step  = self.flow["case"]["step"][step_id].borrow();
+        let case_step = self.flow["case"]["step"][step_id].borrow();
         if !case_step.is_null() {
             case_step
         } else {
@@ -97,14 +92,12 @@ impl Flow {
         self.flow["def"].as_object()
     }
 
-
-    pub fn limit_concurrency(&self) -> usize {
-        let num = match self.flow["limit"]["concurrency"].as_u64() {
+    pub fn ctrl_concurrency(&self) -> usize {
+        let num = match self.flow["ctrl"]["concurrency"].as_u64() {
             Some(n) => n as usize,
             None => 9999,
         };
 
         return num;
     }
-
 }

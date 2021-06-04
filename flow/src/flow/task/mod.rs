@@ -1,3 +1,4 @@
+use async_std::future::timeout;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
 use chrono::Utc;
@@ -97,9 +98,9 @@ impl Runner {
 
         self.assess_report.start(start).await?;
 
-        let load_len = self.flow.ctrl_concurrency();
+        let concurrency = self.flow.ctrl_concurrency();
 
-        self.data_vec_run_remaining(load_len).await?;
+        self.benchmark_run(concurrency).await?;
 
         let task_assess = match &self.state {
             TaskState::Ok => {
@@ -119,9 +120,33 @@ impl Runner {
         task_assess
     }
 
-    async fn data_vec_run_remaining(&mut self, load_len: usize) -> Result<(), Error>{
+    async fn benchmark_run(&mut self, concurrency: usize) -> Result<(), Error> {
+        let duration = self.flow.ctrl_benchmark_duration();
+        let brr = self.benchmark_run_round(concurrency);
+        match timeout(duration, brr).await {
+            Ok(r) => r?,
+            Err(_) => (),
+        }
+        return Ok(());
+    }
+
+    async fn benchmark_run_round(&mut self, concurrency: usize) -> Result<(), Error> {
+        let round_ctrl = self.flow.ctrl_benchmark_round();
+        let mut round_count = 0;
         loop {
-            let data_vec = self.data_load.load(load_len).await?;
+            self.data_vec_run_remaining(concurrency).await?;
+            round_count += 1;
+            if round_ctrl > 0 && round_count >= round_ctrl {
+                break;
+            }
+            self.data_load.reset().await?;
+        }
+        return Ok(());
+    }
+
+    async fn data_vec_run_remaining(&mut self, concurrency: usize) -> Result<(), Error> {
+        loop {
+            let data_vec = self.data_load.load(concurrency).await?;
             let data_len = data_vec.len();
             trace!("task load data {}, {}", self.id, data_len);
             let case_assess_vec = self.data_vec_run(data_vec).await?;
@@ -130,7 +155,7 @@ impl Runner {
                 self.state = TaskState::Fail;
             }
             self.assess_report.report(&case_assess_vec).await?;
-            if data_len < load_len {
+            if data_len < concurrency {
                 break;
             }
         }
@@ -222,7 +247,7 @@ async fn pre_ctx_create(
     match pre_assess.state() {
         CaseState::Ok(pa_vec) => {
             let mut pre_ctx = Map::new();
-            pre_ctx.insert("step".to_owned(),Json::Object(Map::new()));
+            pre_ctx.insert("step".to_owned(), Json::Object(Map::new()));
             for pa in pa_vec {
                 match pa.state() {
                     StepState::Ok(pv) => {
@@ -251,8 +276,7 @@ async fn step_runner_vec_create(
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdStruct>,
 ) -> Result<Vec<(String, Box<dyn StepRunner>)>, Error> {
-    let render_context =
-        render_context_create(flow_ctx.clone(), flow.clone(), pre_ctx.clone());
+    let render_context = render_context_create(flow_ctx.clone(), flow.clone(), pre_ctx.clone());
     let mut step_runner_vec = vec![];
     for sid in step_id_vec {
         let pr = step_runner_create(
@@ -268,11 +292,7 @@ async fn step_runner_vec_create(
     Ok(step_runner_vec)
 }
 
-fn render_context_create(
-    _: Arc<dyn FlowContext>,
-    flow: Arc<Flow>,
-    pre_ctx: Arc<Json>,
-) -> Context {
+fn render_context_create(_: Arc<dyn FlowContext>, flow: Arc<Flow>, pre_ctx: Arc<Json>) -> Context {
     let mut render_data: Map = Map::new();
     let config_def = flow.def();
     match config_def {

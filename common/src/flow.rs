@@ -54,7 +54,7 @@ impl Flow {
             .as_str()
             .ok_or(err!("version", "missing version"))?;
 
-        if v != "0.0.1"{
+        if v != "0.0.1" {
             rerr!("version", "unsupported version")
         } else {
             Ok(v)
@@ -95,7 +95,13 @@ impl Flow {
     pub fn step_timeout(&self, step_id: &str) -> Duration {
         self.step(step_id)["timeout"]
             .as_u64()
-            .map_or(Duration::from_secs(5), |sec| Duration::from_secs(sec))
+            .map_or(Duration::from_secs(5), |sec| {
+                if sec > 0 {
+                    Duration::from_secs(sec)
+                } else {
+                    Duration::from_secs(5)
+                }
+            })
     }
 
     pub fn step_kind(&self, step_id: &str) -> &str {
@@ -107,11 +113,27 @@ impl Flow {
     }
 
     pub fn ctrl_concurrency(&self) -> usize {
-        let num = match self.flow["ctrl"]["concurrency"].as_u64() {
-            Some(n) => n as usize,
-            None => 100,
-        };
+        self.flow["ctrl"]["concurrency"]
+            .as_u64()
+            .map_or(20, |c| c as usize)
+    }
 
-        return num;
+    pub fn ctrl_benchmark_round(&self) -> usize {
+        self.flow["ctrl"]["benchmark"]["round"]
+            .as_u64()
+            .map_or(1, |r| r as usize)
+    }
+
+    pub fn ctrl_benchmark_duration(&self) -> Duration {
+        self.flow["ctrl"]["benchmark"]["duration"].as_u64().map_or(
+            Duration::from_secs(1800),
+            |sec| {
+                if sec > 0 {
+                    Duration::from_secs(sec)
+                } else {
+                    Duration::from_secs(1800)
+                }
+            },
+        )
     }
 }

@@ -105,7 +105,7 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r>{
         if let Some(_) = text.find("{{step.") {
             return false;
         }
-        if let Some(_) = text.find("{{res.") {
+        if let Some(_) = text.find("{{curr.") {
             return false;
         }
         return true;

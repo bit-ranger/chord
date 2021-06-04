@@ -31,7 +31,7 @@ pub struct Runner {
     flow: Arc<Flow>,
     step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
     id: Arc<TaskIdStruct>,
-    pre_ctx: Arc<Vec<(String, Json)>>,
+    pre_ctx: Arc<Json>,
     case_id_offset: usize,
     assess_report: Box<dyn AssessReport>,
     data_load: Box<dyn DataLoad>,
@@ -185,7 +185,7 @@ async fn pre_arg(
         let step_runner_vec = step_runner_vec_create(
             flow_ctx.clone(),
             flow.clone(),
-            Arc::new(Vec::new()),
+            Arc::new(Json::Null),
             flow.pre_step_id_vec().unwrap(),
             task_id.clone(),
         )
@@ -195,7 +195,7 @@ async fn pre_arg(
             flow.clone(),
             Arc::new(step_runner_vec),
             Json::Null,
-            Arc::new(Vec::new()),
+            Arc::new(Json::Null),
             task_id.clone(),
             0,
         )))
@@ -206,11 +206,10 @@ async fn pre_ctx_create(
     flow_ctx: Arc<dyn FlowContext>,
     flow: Arc<Flow>,
     task_id: Arc<TaskIdStruct>,
-) -> Result<Vec<(String, Json)>, Error> {
-    let mut case_ctx = vec![];
+) -> Result<Json, Error> {
     let pre_arg = pre_arg(flow_ctx.clone(), flow, task_id.clone()).await?;
     if pre_arg.is_none() {
-        return Ok(case_ctx);
+        return Ok(Json::Null);
     }
     let pre_arg = pre_arg.unwrap();
 
@@ -218,18 +217,17 @@ async fn pre_ctx_create(
     match pre_assess.state() {
         CaseState::Ok(pa_vec) => {
             let mut pre_ctx = Map::new();
+            pre_ctx.insert("step".to_owned(),Json::Object(Map::new()));
             for pa in pa_vec {
                 match pa.state() {
                     StepState::Ok(pv) => {
-                        pre_ctx.insert(String::from(pa.id().step_id()), pv.clone());
+                        pre_ctx["step"][pa.id().step_id()]["value"] = pv.clone();
                     }
                     _ => return rerr!("012", "pre step run failure"),
                 }
             }
-            let pre = Json::Object(pre_ctx);
-            debug!("task pre {} - {}", task_id, pre);
-            case_ctx.push((String::from("pre"), pre));
-            Ok(case_ctx)
+            // debug!("task pre {} - {}", task_id, pre_ctx);
+            Ok(Json::Object(pre_ctx))
         }
         CaseState::Fail(pa_vec) => {
             let pa_last = pa_vec.last().unwrap();
@@ -244,12 +242,12 @@ async fn pre_ctx_create(
 async fn step_runner_vec_create(
     flow_ctx: Arc<dyn FlowContext>,
     flow: Arc<Flow>,
-    render_ctx_ext: Arc<Vec<(String, Json)>>,
+    pre_ctx: Arc<Json>,
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdStruct>,
 ) -> Result<Vec<(String, Box<dyn StepRunner>)>, Error> {
     let render_context =
-        render_context_create(flow_ctx.clone(), flow.clone(), render_ctx_ext.clone());
+        render_context_create(flow_ctx.clone(), flow.clone(), pre_ctx.clone());
     let mut step_runner_vec = vec![];
     for sid in step_id_vec {
         let pr = step_runner_create(
@@ -268,7 +266,7 @@ async fn step_runner_vec_create(
 fn render_context_create(
     _: Arc<dyn FlowContext>,
     flow: Arc<Flow>,
-    render_ctx_ext: Arc<Vec<(String, Json)>>,
+    pre_ctx: Arc<Json>,
 ) -> Context {
     let mut render_data: Map = Map::new();
     let config_def = flow.def();
@@ -279,10 +277,7 @@ fn render_context_create(
         None => {}
     }
 
-    for (k, v) in render_ctx_ext.iter() {
-        render_data.insert(k.clone(), v.clone());
-    }
-
+    render_data.insert("pre".to_owned(), pre_ctx.as_ref().clone());
     return Context::wraps(render_data).unwrap();
 }
 

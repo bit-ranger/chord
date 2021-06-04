@@ -47,7 +47,7 @@ pub struct CaseArgStruct {
     flow: Arc<Flow>,
     step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
     data: Json,
-    render_ctx_ext: Arc<Vec<(String, Json)>>,
+    pre_ctx: Arc<Json>,
     id: Rc<CaseIdStruct>,
 }
 unsafe impl Send for CaseArgStruct {}
@@ -58,7 +58,7 @@ impl CaseArgStruct {
         flow: Arc<Flow>,
         step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
         data: Json,
-        render_ctx_ext: Arc<Vec<(String, Json)>>,
+        pre_ctx: Arc<Json>,
         task_id: Arc<dyn TaskId>,
         case_id: usize,
     ) -> CaseArgStruct {
@@ -68,7 +68,7 @@ impl CaseArgStruct {
             flow,
             step_runner_vec,
             data,
-            render_ctx_ext,
+            pre_ctx,
             id,
         };
 
@@ -87,10 +87,7 @@ impl CaseArgStruct {
         render_data.insert(String::from("data"), self.data.clone());
         render_data.insert(String::from("step"), Json::Object(Map::new()));
         render_data.insert(String::from("curr"), Json::Null);
-
-        for (k, v) in self.render_ctx_ext.iter() {
-            render_data.insert(k.clone(), v.clone());
-        }
+        render_data.insert(String::from("pre"), self.pre_ctx.as_ref().clone());
 
         return Context::wraps(render_data).unwrap();
     }

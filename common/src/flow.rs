@@ -15,7 +15,7 @@ impl Flow {
     pub fn new(flow: Json) -> Result<Flow, Error> {
         let flow = Flow { flow };
         let case_sid_vec = flow.case_step_id_vec()?;
-        for case_sid in case_sid_vec {
+        for case_sid in case_sid_vec.iter() {
             if !POINT_ID_PATTERN.is_match(case_sid.as_str()) {
                 return rerr!("step", format!("invalid step_id {}", case_sid));
             }
@@ -33,7 +33,7 @@ impl Flow {
                 return rerr!("step", format!("invalid step_id {}", pre_sid));
             }
 
-            if pre_sid_vec.contains(pre_sid) {
+            if case_sid_vec.contains(pre_sid) {
                 return rerr!("step", format!("duplicate step_id {}", pre_sid));
             }
 

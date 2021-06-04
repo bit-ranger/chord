@@ -107,7 +107,7 @@ async fn run_task0<P: AsRef<Path>>(
     let flow = Flow::new(flow)?;
 
     //read
-    let data_file_path = task_path.clone().join("data.csv");
+    let data_file_path = task_path.clone().join("case.csv");
     let data_loader = Box::new(chord_input::load::data::csv::Loader::new(data_file_path).await?);
 
     //write

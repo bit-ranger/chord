@@ -99,20 +99,7 @@ impl Runner {
 
         let load_len = self.flow.ctrl_concurrency();
 
-        loop {
-            let data_vec = self.data_load.load(load_len).await?;
-            let data_len = data_vec.len();
-            trace!("task load data {}, {}", self.id, data_len);
-            let case_assess_vec = self.data_vec_run(data_vec).await?;
-            let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
-            if any_fail {
-                self.state = TaskState::Fail;
-            }
-            self.assess_report.report(&case_assess_vec).await?;
-            if data_len < load_len {
-                break;
-            }
-        }
+        self.data_vec_run_remaining(load_len).await?;
 
         let task_assess = match &self.state {
             TaskState::Ok => {
@@ -130,6 +117,24 @@ impl Runner {
             TaskState::Err(e) => Err(e.clone()),
         };
         task_assess
+    }
+
+    async fn data_vec_run_remaining(&mut self, load_len: usize) -> Result<(), Error>{
+        loop {
+            let data_vec = self.data_load.load(load_len).await?;
+            let data_len = data_vec.len();
+            trace!("task load data {}, {}", self.id, data_len);
+            let case_assess_vec = self.data_vec_run(data_vec).await?;
+            let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
+            if any_fail {
+                self.state = TaskState::Fail;
+            }
+            self.assess_report.report(&case_assess_vec).await?;
+            if data_len < load_len {
+                break;
+            }
+        }
+        Ok(())
     }
 
     async fn data_vec_run(&mut self, data: Vec<Json>) -> Result<Vec<Box<dyn CaseAssess>>, Error> {

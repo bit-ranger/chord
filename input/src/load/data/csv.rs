@@ -7,15 +7,18 @@ use chord_common::value::{Json, Map};
 use csv::{Reader, ReaderBuilder};
 use std::fs::File;
 use std::path::Path;
+use std::path::PathBuf;
 
 pub struct Loader {
+    path: PathBuf,
     reader: Reader<File>,
 }
 
 impl Loader {
     pub async fn new<P: AsRef<Path>>(path: P) -> Result<Loader, Error> {
         let loader = Loader {
-            reader: from_path(path).await?,
+            path: path.as_ref().to_path_buf(),
+            reader: from_path(path.as_ref()).await?,
         };
         Ok(loader)
     }
@@ -29,6 +32,11 @@ impl Loader {
 impl DataLoad for Loader {
     async fn load(&mut self, size: usize) -> Result<Vec<Json>, Error> {
         load(&mut self.reader, size).await
+    }
+
+    async fn reset(&mut self) -> Result<(), Error> {
+        self.reader = from_path(&self.path).await?;
+        Ok(())
     }
 }
 

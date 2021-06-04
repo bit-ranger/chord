@@ -95,11 +95,11 @@ impl Flow {
     pub fn step_timeout(&self, step_id: &str) -> Duration {
         self.step(step_id)["timeout"]
             .as_u64()
-            .map_or(Duration::from_secs(5), |sec| {
+            .map_or(Duration::from_secs(10), |sec| {
                 if sec > 0 {
                     Duration::from_secs(sec)
                 } else {
-                    Duration::from_secs(5)
+                    Duration::from_secs(10)
                 }
             })
     }
@@ -115,7 +115,7 @@ impl Flow {
     pub fn ctrl_concurrency(&self) -> usize {
         self.flow["ctrl"]["concurrency"]
             .as_u64()
-            .map_or(20, |c| c as usize)
+            .map_or(10, |c| c as usize)
     }
 
     pub fn ctrl_benchmark_round(&self) -> usize {
@@ -126,12 +126,12 @@ impl Flow {
 
     pub fn ctrl_benchmark_duration(&self) -> Duration {
         self.flow["ctrl"]["benchmark"]["duration"].as_u64().map_or(
-            Duration::from_secs(1800),
+            Duration::from_secs(600),
             |sec| {
                 if sec > 0 {
                     Duration::from_secs(sec)
                 } else {
-                    Duration::from_secs(1800)
+                    Duration::from_secs(600)
                 }
             },
         )

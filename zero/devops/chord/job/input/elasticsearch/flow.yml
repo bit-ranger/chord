@@ -79,7 +79,6 @@ case:
         
         wait_data:
             kind: sleep
-            timeout: 10
             config:
                 duration: 9
         

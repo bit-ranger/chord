@@ -81,7 +81,7 @@ case:
             kind: sleep
             timeout: 10
             config:
-                seconds: 9
+                duration: 10
         
         search_data:
             kind: jsonapi

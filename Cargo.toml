@@ -2,7 +2,8 @@
 members = [
     'common',
     'flow',
-    'port',
+    'input',
+    'output',
     'step',
     'cmd',
     'web',

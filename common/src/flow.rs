@@ -14,6 +14,8 @@ pub struct Flow {
 impl Flow {
     pub fn new(flow: Json) -> Result<Flow, Error> {
         let flow = Flow { flow };
+
+        flow.version()?;
         let case_sid_vec = flow.case_step_id_vec()?;
         for case_sid in case_sid_vec.iter() {
             if !POINT_ID_PATTERN.is_match(case_sid.as_str()) {
@@ -45,6 +47,18 @@ impl Flow {
         }
 
         return Ok(flow);
+    }
+
+    pub fn version(self: &Flow) -> Result<&str, Error> {
+        let v = self.flow["version"]
+            .as_str()
+            .ok_or(err!("version", "missing version"))?;
+
+        if v != "0.0.1"{
+            rerr!("version", "unsupported version")
+        } else {
+            Ok(v)
+        }
     }
 
     pub fn case_step_id_vec(self: &Flow) -> Result<Vec<String>, Error> {

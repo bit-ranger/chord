@@ -1,9 +1,11 @@
+version: "0.0.1"
+
 def:
     es:
         url: http://elasticsearch:9200
 
-limit:
-    concurrency: 9999
+ctrl:
+    concurrency: 20
     
 
 case:

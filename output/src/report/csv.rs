@@ -29,7 +29,7 @@ impl AssessReport for Reporter {
         Ok(())
     }
 
-    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
+    async fn report(&mut self, _: &str, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
         report(&mut self.writer, ca_vec, &self.step_id_vec).await
     }
 

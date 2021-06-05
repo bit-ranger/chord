@@ -132,7 +132,7 @@ impl Runner {
         let round_ctrl = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
-            self.data_vec_run_remaining(concurrency).await?;
+            self.data_vec_run_remaining(stage_id, concurrency).await?;
             round_count += 1;
             if round_ctrl > 0 && round_count >= round_ctrl {
                 break;
@@ -142,7 +142,11 @@ impl Runner {
         return Ok(());
     }
 
-    async fn data_vec_run_remaining(&mut self, concurrency: usize) -> Result<(), Error> {
+    async fn data_vec_run_remaining(
+        &mut self,
+        stage_id: &str,
+        concurrency: usize,
+    ) -> Result<(), Error> {
         loop {
             let data_vec = self.data_load.load(concurrency).await?;
             let data_len = data_vec.len();
@@ -152,7 +156,9 @@ impl Runner {
             if any_fail {
                 self.state = TaskState::Fail;
             }
-            self.assess_report.report(&case_assess_vec).await?;
+            self.assess_report
+                .report(stage_id, &case_assess_vec)
+                .await?;
             if data_len < concurrency {
                 break;
             }

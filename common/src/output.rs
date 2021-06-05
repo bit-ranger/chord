@@ -8,7 +8,11 @@ pub use chrono::{DateTime, Utc};
 pub trait AssessReport: Sync + Send {
     async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error>;
 
-    async fn report(&mut self, case_assess_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error>;
+    async fn report(
+        &mut self,
+        stage_id: &str,
+        case_assess_vec: &Vec<Box<dyn CaseAssess>>,
+    ) -> Result<(), Error>;
 
     async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error>;
 }

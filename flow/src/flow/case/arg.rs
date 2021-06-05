@@ -1,17 +1,18 @@
-use handlebars::Context;
+use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
+use async_std::sync::Arc;
+
+use chord_common::case::CaseId;
 use chord_common::flow::Flow;
+use chord_common::step::StepRunner;
+use chord_common::task::TaskId;
 use chord_common::value::Json;
 use chord_common::value::{to_json, Map};
 
 use crate::flow::step::arg::RunArgStruct;
-use crate::model::app::FlowContext;
-use async_std::sync::Arc;
-use chord_common::case::CaseId;
-use chord_common::step::StepRunner;
-use chord_common::task::TaskId;
-use std::fmt::{Display, Formatter};
-use std::rc::Rc;
+use crate::model::app::Context;
+use crate::model::app::RenderContext;
 
 #[derive(Clone)]
 pub struct CaseIdStruct {
@@ -89,13 +90,13 @@ impl CaseArgStruct {
         render_data.insert(String::from("curr"), Json::Null);
         render_data.insert(String::from("pre"), self.pre_ctx.as_ref().clone());
 
-        return Context::wraps(render_data).unwrap();
+        return RenderContext::wraps(render_data).unwrap();
     }
 
     pub fn step_arg_create<'app, 'h, 'reg, 'r>(
         self: &CaseArgStruct,
         step_id: &str,
-        flow_ctx: &'app dyn FlowContext,
+        flow_ctx: &'app dyn Context,
         render_ctx: &'r RenderContext,
     ) -> Option<RunArgStruct<'_, 'h, 'reg, 'r>>
     where
@@ -121,5 +122,3 @@ impl CaseArgStruct {
         self.id.clone()
     }
 }
-
-pub type RenderContext = Context;

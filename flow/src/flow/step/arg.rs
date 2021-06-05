@@ -1,27 +1,28 @@
 use std::borrow::Borrow;
+use std::fmt::{Display, Formatter};
+use std::rc::Rc;
+use std::sync::Arc;
+use std::time::Duration;
 
-use chord_common::error::Error;
-use chord_common::flow::Flow;
-use chord_common::step::{RunArg, CreateArg, StepId};
-use chord_common::rerr;
-use chord_common::value::Json;
 use handlebars::{Context, Handlebars};
 use log::info;
 
-use crate::flow::case::arg::{RenderContext, CaseIdStruct};
-use std::time::Duration;
-use std::sync::Arc;
-use chord_common::task::TaskId;
 use chord_common::case::CaseId;
-use std::fmt::{Display, Formatter};
-use std::rc::Rc;
+use chord_common::error::Error;
+use chord_common::flow::Flow;
+use chord_common::rerr;
+use chord_common::step::{CreateArg, RunArg, StepId};
+use chord_common::task::TaskId;
+use chord_common::value::Json;
+
+use crate::flow::case::arg::CaseIdStruct;
+use crate::model::app::RenderContext;
 
 #[derive(Clone)]
 pub struct StepIdStruct {
     step_id: String,
-    case_id: Rc<dyn CaseId>
+    case_id: Rc<dyn CaseId>,
 }
-
 
 impl StepId for StepIdStruct {
     fn step_id(&self) -> &str {
@@ -36,14 +37,12 @@ unsafe impl Send for StepIdStruct {}
 unsafe impl Sync for StepIdStruct {}
 
 impl Display for StepIdStruct {
-
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(format!("{}::{}", self.case_id, self.step_id).as_str())
     }
 }
 
-
-pub struct CreateArgStruct <'f, 'h, 'reg, 'r>{
+pub struct CreateArgStruct<'f, 'h, 'reg, 'r> {
     flow: &'f Flow,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
@@ -53,35 +52,31 @@ pub struct CreateArgStruct <'f, 'h, 'reg, 'r>{
 unsafe impl<'f, 'h, 'reg, 'r> Send for CreateArgStruct<'f, 'h, 'reg, 'r> {}
 unsafe impl<'f, 'h, 'reg, 'r> Sync for CreateArgStruct<'f, 'h, 'reg, 'r> {}
 
-
 impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
-
     pub fn new(
         flow: &'f Flow,
         handlebars: &'h Handlebars<'reg>,
         render_context: &'r RenderContext,
         task_id: Arc<dyn TaskId>,
         kind: String,
-        id: String
+        id: String,
     ) -> CreateArgStruct<'f, 'h, 'reg, 'r> {
         let context = CreateArgStruct {
             flow,
             handlebars,
             render_context,
             kind,
-            id: StepIdStruct{
+            id: StepIdStruct {
                 case_id: Rc::new(CaseIdStruct::new(task_id, 0)),
-                step_id: id
-            }
+                step_id: id,
+            },
         };
 
         return context;
     }
 }
 
-impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r>{
-
-
+impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
     fn id(&self) -> &dyn StepId {
         &self.id
     }
@@ -112,7 +107,6 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r>{
     }
 }
 
-
 pub struct RunArgStruct<'f, 'h, 'reg, 'r> {
     flow: &'f Flow,
     handlebars: &'h Handlebars<'reg>,
@@ -131,22 +125,22 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         case_id: Rc<dyn CaseId>,
         id: String,
     ) -> RunArgStruct<'f, 'h, 'reg, 'r> {
-        let id  = StepIdStruct {
+        let id = StepIdStruct {
             case_id,
-            step_id: id
+            step_id: id,
         };
 
         let context = RunArgStruct {
             flow,
             handlebars,
             render_context,
-            id
+            id,
         };
 
         return context;
     }
 
-    pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r>) -> &StepIdStruct{
+    pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r>) -> &StepIdStruct {
         return &self.id;
     }
 
@@ -187,8 +181,6 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
     }
 }
 
-
-
 pub fn render(
     handlebars: &Handlebars<'_>,
     render_context: &Context,
@@ -200,8 +192,6 @@ pub fn render(
         Err(e) => rerr!("tpl", format!("{}", e)),
     };
 }
-
-
 
 pub async fn assert(
     handlebars: &Handlebars<'_>,

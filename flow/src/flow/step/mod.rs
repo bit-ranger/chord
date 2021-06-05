@@ -5,7 +5,7 @@ use chord_common::step::{StepRunner, StepValue};
 use res::StepAssessStruct;
 
 use crate::flow::step::arg::RunArgStruct;
-use crate::model::app::FlowContext;
+use crate::model::app::Context;
 use async_std::future::timeout;
 use chord_common::step::StepState;
 use log::trace;
@@ -14,7 +14,7 @@ pub mod arg;
 pub mod res;
 
 pub async fn run(
-    _: &dyn FlowContext,
+    _: &dyn Context,
     arg: &RunArgStruct<'_, '_, '_, '_>,
     runner: &dyn StepRunner,
 ) -> StepAssessStruct {

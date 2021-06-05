@@ -2,7 +2,6 @@ use async_std::future::timeout;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
 use futures::future::join_all;
-use handlebars::Context;
 use log::{debug, trace, warn};
 
 use chord_common::case::{CaseAssess, CaseState};
@@ -20,18 +19,18 @@ use res::TaskAssessStruct;
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step::arg::CreateArgStruct;
-use crate::flow::task::arg::TaskIdStruct;
-use crate::model::app::FlowContext;
+use crate::flow::task::arg::TaskIdSimple;
+use crate::model::app::{Context, RenderContext};
 use crate::CTX_ID;
 
 pub mod arg;
 pub mod res;
 
-pub struct Runner {
-    flow_ctx: Arc<dyn FlowContext>,
+pub struct TaskRunner {
+    flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
     step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
-    id: Arc<TaskIdStruct>,
+    id: Arc<TaskIdSimple>,
     pre_ctx: Arc<Json>,
     case_id_offset: usize,
     assess_report: Box<dyn AssessReport>,
@@ -39,14 +38,14 @@ pub struct Runner {
     state: TaskState,
 }
 
-impl Runner {
+impl TaskRunner {
     pub async fn new(
         data_load: Box<dyn DataLoad>,
         assess_report: Box<dyn AssessReport>,
-        flow_ctx: Arc<dyn FlowContext>,
+        flow_ctx: Arc<dyn Context>,
         flow: Arc<Flow>,
-        id: Arc<TaskIdStruct>,
-    ) -> Result<Runner, Error> {
+        id: Arc<TaskIdSimple>,
+    ) -> Result<TaskRunner, Error> {
         let pre_ctx = pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone()).await?;
         let pre_ctx = Arc::new(pre_ctx);
 
@@ -58,7 +57,7 @@ impl Runner {
             id.clone(),
         )
         .await?;
-        let runner = Runner {
+        let runner = TaskRunner {
             assess_report,
             data_load,
             flow_ctx,
@@ -212,9 +211,9 @@ impl Runner {
 }
 
 async fn pre_arg(
-    flow_ctx: Arc<dyn FlowContext>,
+    flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
-    task_id: Arc<TaskIdStruct>,
+    task_id: Arc<TaskIdSimple>,
 ) -> Result<Option<CaseArgStruct>, Error> {
     return if flow.pre_step_id_vec().is_none() {
         Ok(None)
@@ -240,9 +239,9 @@ async fn pre_arg(
 }
 
 async fn pre_ctx_create(
-    flow_ctx: Arc<dyn FlowContext>,
+    flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
-    task_id: Arc<TaskIdStruct>,
+    task_id: Arc<TaskIdSimple>,
 ) -> Result<Json, Error> {
     let pre_arg = pre_arg(flow_ctx.clone(), flow, task_id.clone()).await?;
     if pre_arg.is_none() {
@@ -277,11 +276,11 @@ async fn pre_ctx_create(
 }
 
 async fn step_runner_vec_create(
-    flow_ctx: Arc<dyn FlowContext>,
+    flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
     pre_ctx: Arc<Json>,
     step_id_vec: Vec<String>,
-    task_id: Arc<TaskIdStruct>,
+    task_id: Arc<TaskIdSimple>,
 ) -> Result<Vec<(String, Box<dyn StepRunner>)>, Error> {
     let render_context = render_context_create(flow_ctx.clone(), flow.clone(), pre_ctx.clone());
     let mut step_runner_vec = vec![];
@@ -299,7 +298,11 @@ async fn step_runner_vec_create(
     Ok(step_runner_vec)
 }
 
-fn render_context_create(_: Arc<dyn FlowContext>, flow: Arc<Flow>, pre_ctx: Arc<Json>) -> Context {
+fn render_context_create(
+    _: Arc<dyn Context>,
+    flow: Arc<Flow>,
+    pre_ctx: Arc<Json>,
+) -> RenderContext {
     let mut render_data: Map = Map::new();
     let config_def = flow.def();
     match config_def {
@@ -310,14 +313,14 @@ fn render_context_create(_: Arc<dyn FlowContext>, flow: Arc<Flow>, pre_ctx: Arc<
     }
 
     render_data.insert("pre".to_owned(), pre_ctx.as_ref().clone());
-    return Context::wraps(render_data).unwrap();
+    return RenderContext::wraps(render_data).unwrap();
 }
 
 async fn step_runner_create(
-    flow_ctx: &dyn FlowContext,
+    flow_ctx: &dyn Context,
     flow: &Flow,
-    render_context: &Context,
-    task_id: Arc<TaskIdStruct>,
+    render_context: &RenderContext,
+    task_id: Arc<TaskIdSimple>,
     step_id: String,
 ) -> Result<Box<dyn StepRunner>, Error> {
     let kind = flow.step_kind(step_id.as_ref());
@@ -333,12 +336,12 @@ async fn step_runner_create(
     flow_ctx.get_step_runner_factory().create(&create_arg).await
 }
 
-async fn case_run(flow_ctx: &dyn FlowContext, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run(flow_ctx: &dyn Context, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     Box::new(case::run(flow_ctx, case_arg).await)
 }
 
 fn case_spawn(
-    flow_ctx: Arc<dyn FlowContext>,
+    flow_ctx: Arc<dyn Context>,
     case_arg: CaseArgStruct,
 ) -> JoinHandle<Box<dyn CaseAssess>> {
     let builder = Builder::new()
@@ -347,10 +350,7 @@ fn case_spawn(
     return builder.unwrap();
 }
 
-async fn case_run_arc(
-    flow_ctx: Arc<dyn FlowContext>,
-    case_arg: CaseArgStruct,
-) -> Box<dyn CaseAssess> {
+async fn case_run_arc(flow_ctx: Arc<dyn Context>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     CTX_ID.with(|cid| cid.replace(case_arg.id().to_string()));
     case_run(flow_ctx.as_ref(), case_arg).await
 }

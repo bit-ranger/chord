@@ -11,13 +11,13 @@ use log::info;
 use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::task::TaskState;
-use chord_flow::{FlowContext, TaskIdStruct};
+use chord_flow::{Context, TaskIdSimple};
 
 pub async fn run<P: AsRef<Path>>(
     input_dir: P,
     output_dir: P,
     exec_id: String,
-    app_ctx: Arc<dyn FlowContext>,
+    app_ctx: Arc<dyn Context>,
 ) -> Vec<TaskState> {
     let job_path_str = input_dir.as_ref().to_str().unwrap();
 
@@ -63,7 +63,7 @@ async fn run_task<P: AsRef<Path>>(
     input_dir: P,
     output_dir: P,
     exec_id: String,
-    app_ctx: Arc<dyn FlowContext>,
+    app_ctx: Arc<dyn Context>,
 ) -> TaskState {
     let input_dir = Path::new(input_dir.as_ref());
     let rt = run_task0(input_dir, output_dir, exec_id, app_ctx).await;
@@ -80,12 +80,12 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     input_dir: I,
     output_dir: O,
     exec_id: String,
-    app_ctx: Arc<dyn FlowContext>,
+    app_ctx: Arc<dyn Context>,
 ) -> Result<TaskState, Error> {
     let input_dir = Path::new(input_dir.as_ref());
     let task_id = input_dir.file_name().unwrap().to_str().unwrap();
 
-    let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned())?);
+    let task_id = Arc::new(TaskIdSimple::new(exec_id, task_id.to_owned())?);
     chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
 
     debug!("task start {}", input_dir.to_str().unwrap());
@@ -99,11 +99,12 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     let data_loader = Box::new(chord_input::load::data::csv::Loader::new(data_file_path).await?);
 
     //write
-    let assess_reporter =
-        Box::new(chord_output::report::csv::Reporter::new(output_dir, &flow, task_id.clone()).await?);
+    let assess_reporter = Box::new(
+        chord_output::report::csv::Reporter::new(output_dir, &flow, task_id.clone()).await?,
+    );
 
     //runner
-    let mut runner = chord_flow::Runner::new(
+    let mut runner = chord_flow::TaskRunner::new(
         data_loader,
         assess_reporter,
         app_ctx,

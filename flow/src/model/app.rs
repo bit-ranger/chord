@@ -6,7 +6,7 @@ use chord_common::step::StepRunnerFactory;
 
 use crate::model::helper::{ALL_HELPER, ANY_HELPER, BOOL_HELPER, NUM_HELPER};
 
-pub trait FlowContext: Sync + Send {
+pub trait Context: Sync + Send {
     fn get_handlebars(&self) -> &Handlebars;
 
     fn get_step_runner_factory(&self) -> &dyn StepRunnerFactory;
@@ -32,7 +32,7 @@ impl<'reg> FlowContextStruct<'reg> {
     }
 }
 
-impl<'reg> FlowContext for FlowContextStruct<'reg> {
+impl<'reg> Context for FlowContextStruct<'reg> {
     fn get_handlebars(self: &FlowContextStruct<'reg>) -> &Handlebars<'reg> {
         self.handlebars.borrow()
     }
@@ -45,3 +45,5 @@ impl<'reg> FlowContext for FlowContextStruct<'reg> {
 unsafe impl<'reg> Send for FlowContextStruct<'reg> {}
 
 unsafe impl<'reg> Sync for FlowContextStruct<'reg> {}
+
+pub type RenderContext = handlebars::Context;

@@ -14,7 +14,7 @@ use validator::Validate;
 use crate::app::conf::Config;
 pub use async_trait::async_trait;
 use chord_common::error::Error;
-use chord_flow::FlowContext;
+use chord_flow::Context;
 use chord_step::StepRunnerFactoryDefault;
 
 use crate::biz;
@@ -53,7 +53,7 @@ pub trait Ctl {
 pub struct CtlImpl {
     input_dir: PathBuf,
     ssh_key_private: PathBuf,
-    flow_ctx: Arc<dyn FlowContext>,
+    flow_ctx: Arc<dyn Context>,
     config: Arc<dyn Config>,
 }
 
@@ -66,7 +66,7 @@ impl CtlImpl {
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
-            flow_ctx: chord_flow::create_context(Box::new(
+            flow_ctx: chord_flow::context_create(Box::new(
                 StepRunnerFactoryDefault::new(config.step_config().clone()).await?,
             ))
             .await,
@@ -101,7 +101,7 @@ impl Ctl for CtlImpl {
 }
 
 async fn checkout_run(
-    app_ctx: Arc<dyn FlowContext>,
+    app_ctx: Arc<dyn Context>,
     input: PathBuf,
     ssh_key_pri: PathBuf,
     req: Req,
@@ -221,7 +221,7 @@ async fn checkout(
 }
 
 async fn run(
-    app_ctx: Arc<dyn FlowContext>,
+    app_ctx: Arc<dyn Context>,
     job_path: PathBuf,
     job_name: String,
     exec_id: String,

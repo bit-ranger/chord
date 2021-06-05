@@ -1,20 +1,22 @@
-use chord_common::value::Json;
 use chrono::Utc;
-use res::CaseAssessStruct;
-
-use crate::flow::case::arg::{CaseArgStruct, RenderContext};
-use crate::flow::step;
-use crate::model::app::FlowContext;
-use chord_common::case::CaseState;
-use chord_common::step::{RunArg, StepAssess, StepState};
-pub mod arg;
-pub mod res;
-use crate::flow::step::arg::{assert, render};
-use crate::flow::step::res::StepAssessStruct;
-use chord_common::err;
 use log::{debug, info, trace, warn};
 
-pub async fn run(flow_ctx: &dyn FlowContext, arg: CaseArgStruct) -> CaseAssessStruct {
+use chord_common::case::CaseState;
+use chord_common::err;
+use chord_common::step::{RunArg, StepAssess, StepState};
+use chord_common::value::Json;
+use res::CaseAssessStruct;
+
+use crate::flow::case::arg::CaseArgStruct;
+use crate::flow::step;
+use crate::flow::step::arg::{assert, render};
+use crate::flow::step::res::StepAssessStruct;
+use crate::model::app::{Context, RenderContext};
+
+pub mod arg;
+pub mod res;
+
+pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
     let start = Utc::now();
     let mut render_context = arg.create_render_context();

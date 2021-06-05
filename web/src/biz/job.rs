@@ -12,14 +12,14 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::output::{AssessReport, DateTime, Utc};
 use chord_common::task::{TaskAssess, TaskId, TaskState};
-use chord_flow::{FlowContext, TaskIdStruct};
+use chord_flow::{Context, TaskIdSimple};
 use chord_output::report::elasticsearch::Reporter;
 
 pub async fn run<P: AsRef<Path>>(
     job_path: P,
     job_name: String,
     exec_id: String,
-    app_ctx: Arc<dyn FlowContext>,
+    app_ctx: Arc<dyn Context>,
     es_url: String,
 ) -> Result<Vec<TaskState>, Error> {
     debug!(
@@ -73,7 +73,7 @@ pub async fn run<P: AsRef<Path>>(
 async fn task_run<P: AsRef<Path>>(
     input_dir: P,
     exec_id: String,
-    app_ctx: Arc<dyn FlowContext>,
+    app_ctx: Arc<dyn Context>,
     es_url: String,
     es_index: String,
 ) -> TaskState {
@@ -91,14 +91,14 @@ async fn task_run<P: AsRef<Path>>(
 async fn task_run0<P: AsRef<Path>>(
     task_path: P,
     exec_id: String,
-    app_ctx: Arc<dyn FlowContext>,
+    app_ctx: Arc<dyn Context>,
     es_url: String,
     es_index: String,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
 
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
-    let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned())?);
+    let task_id = Arc::new(TaskIdSimple::new(exec_id, task_id.to_owned())?);
 
     chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
 
@@ -119,8 +119,8 @@ async fn task_run0<P: AsRef<Path>>(
 
 async fn task_run1<P: AsRef<Path>>(
     task_path: P,
-    task_id: Arc<TaskIdStruct>,
-    app_ctx: Arc<dyn FlowContext>,
+    task_id: Arc<TaskIdSimple>,
+    app_ctx: Arc<dyn Context>,
     assess_reporter: Reporter,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
@@ -134,7 +134,7 @@ async fn task_run1<P: AsRef<Path>>(
     let data_loader = chord_input::load::data::csv::Loader::new(data_file_path).await?;
 
     //runner
-    let mut runner = chord_flow::Runner::new(
+    let mut runner = chord_flow::TaskRunner::new(
         Box::new(data_loader),
         Box::new(assess_reporter),
         app_ctx,
@@ -149,7 +149,7 @@ async fn task_run1<P: AsRef<Path>>(
 
 async fn task_end(
     mut reporter: Reporter,
-    task_id: Arc<TaskIdStruct>,
+    task_id: Arc<TaskIdSimple>,
     state: TaskState,
 ) -> Result<(), Error> {
     let now = Utc::now();
@@ -163,7 +163,7 @@ async fn task_end(
 }
 
 struct TaskAssessStruct {
-    id: Arc<TaskIdStruct>,
+    id: Arc<TaskIdSimple>,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: TaskState,

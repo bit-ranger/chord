@@ -4,12 +4,13 @@ def:
     es:
         url: http://elasticsearch:9200
 
-ctrl:
+
+stage:
     benchmark:
-        concurrency: 20
+        concurrency: 1
         round: 200
         duration: 60
-    
+
 
 case:
     step:

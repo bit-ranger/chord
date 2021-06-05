@@ -17,9 +17,13 @@ impl Flow {
         let flow = Flow { flow };
 
         flow._version()?;
-        flow._ctrl_concurrency()?;
-        flow._ctrl_benchmark_duration()?;
-        flow._ctrl_benchmark_round()?;
+
+        let stage_id_vec = flow._stage_id_vec()?;
+        for stage_id in stage_id_vec.iter() {
+            flow._stage_concurrency(stage_id)?;
+            flow._stage_duration(stage_id)?;
+            flow._stage_round(stage_id)?;
+        }
 
         let case_sid_vec = flow._case_step_id_vec()?;
         for case_sid in case_sid_vec.iter() {
@@ -94,16 +98,20 @@ impl Flow {
         self._step_timeout(step_id).unwrap()
     }
 
-    pub fn ctrl_concurrency(&self) -> usize {
-        self._ctrl_concurrency().unwrap()
+    pub fn stage_id_vec(&self) -> Vec<String> {
+        self._stage_id_vec().unwrap()
     }
 
-    pub fn ctrl_benchmark_round(&self) -> usize {
-        self._ctrl_benchmark_round().unwrap()
+    pub fn stage_concurrency(&self, stage_id: &str) -> usize {
+        self._stage_concurrency(stage_id).unwrap()
     }
 
-    pub fn ctrl_benchmark_duration(&self) -> Duration {
-        self._ctrl_benchmark_duration().unwrap()
+    pub fn stage_round(&self, stage_id: &str) -> usize {
+        self._stage_round(stage_id).unwrap()
+    }
+
+    pub fn stage_duration(&self, stage_id: &str) -> Duration {
+        self._stage_duration(stage_id).unwrap()
     }
 
     // -----------------------------------------------
@@ -148,41 +156,49 @@ impl Flow {
         Ok(Duration::from_secs(10))
     }
 
-    fn _ctrl_concurrency(&self) -> Result<usize, Error> {
-        let s = self.flow["ctrl"]["benchmark"]["concurrency"].as_u64();
+    fn _stage_id_vec(&self) -> Result<Vec<String>, Error> {
+        let sid_vec = self.flow["stage"]
+            .as_object()
+            .map(|p| p.keys().map(|k| k.to_string()).collect())
+            .ok_or(Error::new("stage", "missing stage"))?;
+        return Ok(sid_vec);
+    }
+
+    fn _stage_concurrency(&self, stage_id: &str) -> Result<usize, Error> {
+        let s = self.flow["stage"][stage_id]["concurrency"].as_u64();
         if s.is_none() {
             return Ok(10);
         }
 
         let s = s.unwrap();
         if s < 1 {
-            return rerr!("ctrl", "ctrl.benchmark.concurrency must > 0");
+            return rerr!("stage", "concurrency must > 0");
         }
         Ok(s as usize)
     }
 
-    fn _ctrl_benchmark_round(&self) -> Result<usize, Error> {
-        let s = self.flow["ctrl"]["benchmark"]["round"].as_u64();
+    fn _stage_round(&self, stage_id: &str) -> Result<usize, Error> {
+        let s = self.flow["stage"][stage_id]["round"].as_u64();
         if s.is_none() {
             return Ok(1);
         }
 
         let s = s.unwrap();
         if s < 1 {
-            return rerr!("ctrl", "ctrl.benchmark.round must > 0");
+            return rerr!("stage", "round must > 0");
         }
         Ok(s as usize)
     }
 
-    fn _ctrl_benchmark_duration(&self) -> Result<Duration, Error> {
-        let s = self.flow["ctrl"]["benchmark"]["duration"].as_u64();
+    fn _stage_duration(&self, stage_id: &str) -> Result<Duration, Error> {
+        let s = self.flow["stage"][stage_id]["duration"].as_u64();
         if s.is_none() {
             return Ok(Duration::from_secs(600));
         }
 
         let s = s.unwrap();
         if s < 1 {
-            return rerr!("ctrl", "ctrl.benchmark.duration must > 0");
+            return rerr!("stage", "duration must > 0");
         }
         Ok(Duration::from_secs(s))
     }

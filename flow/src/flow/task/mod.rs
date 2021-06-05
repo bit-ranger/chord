@@ -1,7 +1,6 @@
 use async_std::future::timeout;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
-use chrono::Utc;
 use futures::future::join_all;
 use handlebars::Context;
 use log::{debug, trace, warn};
@@ -11,6 +10,7 @@ use chord_common::error::Error;
 use chord_common::flow::Flow;
 use chord_common::input::DataLoad;
 use chord_common::output::AssessReport;
+use chord_common::output::{DateTime, Utc};
 use chord_common::rerr;
 use chord_common::step::{StepRunner, StepState};
 use chord_common::task::{TaskAssess, TaskId, TaskState};
@@ -79,7 +79,8 @@ impl Runner {
     pub async fn run(&mut self) -> Result<Box<dyn TaskAssess>, Error> {
         trace!("task start {}", self.id);
         let start = Utc::now();
-        let assess = self.run0().await;
+        self.assess_report.start(start).await?;
+        let assess = self.run0(start).await;
         let assess = if let Err(e) = assess {
             warn!("task Err {}", self.id);
             let assess =
@@ -93,14 +94,10 @@ impl Runner {
         Ok(assess)
     }
 
-    async fn run0(&mut self) -> Result<TaskAssessStruct, Error> {
-        let start = Utc::now();
-
-        self.assess_report.start(start).await?;
-
-        let concurrency = self.flow.ctrl_concurrency();
-
-        self.benchmark_run(concurrency).await?;
+    async fn run0(&mut self, start: DateTime<Utc>) -> Result<TaskAssessStruct, Error> {
+        for state_id in self.flow.stage_id_vec().iter() {
+            self.stage_run(state_id).await?;
+        }
 
         let task_assess = match &self.state {
             TaskState::Ok => {
@@ -120,18 +117,19 @@ impl Runner {
         task_assess
     }
 
-    async fn benchmark_run(&mut self, concurrency: usize) -> Result<(), Error> {
-        let duration = self.flow.ctrl_benchmark_duration();
-        let brr = self.benchmark_run_round(concurrency);
-        match timeout(duration, brr).await {
+    async fn stage_run(&mut self, stage_id: &str) -> Result<(), Error> {
+        let duration = self.flow.stage_duration(stage_id);
+        let srr = self.stage_round_run(stage_id);
+        match timeout(duration, srr).await {
             Ok(r) => r?,
             Err(_) => (),
         }
         return Ok(());
     }
 
-    async fn benchmark_run_round(&mut self, concurrency: usize) -> Result<(), Error> {
-        let round_ctrl = self.flow.ctrl_benchmark_round();
+    async fn stage_round_run(&mut self, stage_id: &str) -> Result<(), Error> {
+        let concurrency = self.flow.stage_concurrency(stage_id);
+        let round_ctrl = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
             self.data_vec_run_remaining(concurrency).await?;
@@ -149,7 +147,7 @@ impl Runner {
             let data_vec = self.data_load.load(concurrency).await?;
             let data_len = data_vec.len();
             trace!("task load data {}, {}", self.id, data_len);
-            let case_assess_vec = self.data_vec_run(data_vec).await?;
+            let case_assess_vec = self.data_vec_run(data_vec, concurrency).await?;
             let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
             if any_fail {
                 self.state = TaskState::Fail;
@@ -162,14 +160,17 @@ impl Runner {
         Ok(())
     }
 
-    async fn data_vec_run(&mut self, data: Vec<Json>) -> Result<Vec<Box<dyn CaseAssess>>, Error> {
-        let data_size = data.len();
+    async fn data_vec_run(
+        &mut self,
+        data: Vec<Json>,
+        concurrency: usize,
+    ) -> Result<Vec<Box<dyn CaseAssess>>, Error> {
+        let data_len = data.len();
         let ca_vec = self.case_arg_vec(data)?;
-        self.case_id_offset = self.case_id_offset + data_size;
+        self.case_id_offset = self.case_id_offset + data_len;
 
         let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
         let mut futures = vec![];
-        let concurrency = self.flow.ctrl_concurrency();
         for ca in ca_vec {
             let f = case_spawn(self.flow_ctx.clone(), ca);
             futures.push(f);

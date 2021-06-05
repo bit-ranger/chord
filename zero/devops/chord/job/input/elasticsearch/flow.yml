@@ -6,10 +6,15 @@ def:
 
 
 stage:
-    benchmark:
+    benchmark1:
         concurrency: 1
         round: 200
-        duration: 60
+        duration: 30
+        
+    benchmark2:
+        concurrency: 1
+        round: 200
+        duration: 20
 
 
 case:

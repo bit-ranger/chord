@@ -8,6 +8,7 @@ ctrl:
     benchmark:
         concurrency: 20
         round: 200
+        duration: 60
     
 
 case:

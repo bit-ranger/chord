@@ -10,7 +10,8 @@ use log::info;
 
 use chord_common::error::Error;
 use chord_common::flow::Flow;
-use chord_common::task::TaskState;
+use chord_common::output::{AssessReport, DateTime, Utc};
+use chord_common::task::{TaskAssess, TaskId, TaskState};
 use chord_flow::{FlowContext, TaskIdStruct};
 use chord_output::report::elasticsearch::Reporter;
 
@@ -49,7 +50,7 @@ pub async fn run<P: AsRef<Path>>(
 
         let task_input_dir = job_path.as_ref().join(task_dir.path());
         let jh = builder
-            .spawn(run_task(
+            .spawn(task_run(
                 task_input_dir,
                 exec_id.clone(),
                 app_ctx.clone(),
@@ -69,25 +70,25 @@ pub async fn run<P: AsRef<Path>>(
     return Ok(task_state_vec);
 }
 
-async fn run_task<P: AsRef<Path>>(
+async fn task_run<P: AsRef<Path>>(
     input_dir: P,
     exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
     es_url: String,
     es_index: String,
 ) -> TaskState {
-    let input_dir = Path::new(input_dir.as_ref());
-    let rt = run_task0(input_dir, exec_id, app_ctx, es_url, es_index).await;
-    match rt {
-        Ok(ts) => ts,
-        Err(e) => {
-            info!("task error {}, {}", input_dir.to_str().unwrap(), e);
-            TaskState::Err(e)
-        }
-    }
+    let task_path = Path::new(input_dir.as_ref());
+    debug!("task start {}", task_path.to_str().unwrap());
+    let task_state = task_run0(task_path, exec_id, app_ctx, es_url, es_index).await;
+    return if let Err(e) = task_state {
+        info!("task error {}, {}", task_path.to_str().unwrap(), e);
+        TaskState::Err(e.clone())
+    } else {
+        task_state.unwrap()
+    };
 }
 
-async fn run_task0<P: AsRef<Path>>(
+async fn task_run0<P: AsRef<Path>>(
     task_path: P,
     exec_id: String,
     app_ctx: Arc<dyn FlowContext>,
@@ -95,12 +96,34 @@ async fn run_task0<P: AsRef<Path>>(
     es_index: String,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
+
     let task_id = task_path.file_name().unwrap().to_str().unwrap();
-
     let task_id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned())?);
-    chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
-    debug!("task start {}", task_path.to_str().unwrap());
 
+    chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
+
+    //reporter
+    let assess_reporter = Reporter::new(es_url.clone(), es_index.clone(), task_id.clone()).await?;
+
+    let rt = task_run1(task_path, task_id.clone(), app_ctx.clone(), assess_reporter).await;
+    return if let Err(e) = rt {
+        info!("task error {}, {}", task_path.to_str().unwrap(), e);
+        let assess_reporter = Reporter::new(es_url, es_index, task_id.clone()).await?;
+        task_end(assess_reporter, task_id.clone(), TaskState::Err(e.clone())).await?;
+        Ok(TaskState::Err(e))
+    } else {
+        debug!("task end {}", task_path.to_str().unwrap());
+        Ok(rt.unwrap())
+    };
+}
+
+async fn task_run1<P: AsRef<Path>>(
+    task_path: P,
+    task_id: Arc<TaskIdStruct>,
+    app_ctx: Arc<dyn FlowContext>,
+    assess_reporter: Reporter,
+) -> Result<TaskState, Error> {
+    let task_path = Path::new(task_path.as_ref());
     let flow_path = task_path.clone().join("flow.yml");
 
     let flow = chord_input::load::flow::yml::load(&flow_path)?;
@@ -108,15 +131,12 @@ async fn run_task0<P: AsRef<Path>>(
 
     //read
     let data_file_path = task_path.clone().join("case.csv");
-    let data_loader = Box::new(chord_input::load::data::csv::Loader::new(data_file_path).await?);
-
-    //write
-    let assess_reporter = Box::new(Reporter::new(es_url, es_index, task_id.clone()).await?);
+    let data_loader = chord_input::load::data::csv::Loader::new(data_file_path).await?;
 
     //runner
     let mut runner = chord_flow::Runner::new(
-        data_loader,
-        assess_reporter,
+        Box::new(data_loader),
+        Box::new(assess_reporter),
         app_ctx,
         Arc::new(flow),
         task_id.clone(),
@@ -124,7 +144,45 @@ async fn run_task0<P: AsRef<Path>>(
     .await?;
 
     let task_assess = runner.run().await?;
-
-    debug!("task end {}", task_path.to_str().unwrap());
     return Ok(task_assess.state().clone());
+}
+
+async fn task_end(
+    mut reporter: Reporter,
+    task_id: Arc<TaskIdStruct>,
+    state: TaskState,
+) -> Result<(), Error> {
+    let now = Utc::now();
+    let assess_struct = TaskAssessStruct {
+        id: task_id,
+        start: now,
+        end: now,
+        state,
+    };
+    reporter.end(&assess_struct).await
+}
+
+struct TaskAssessStruct {
+    id: Arc<TaskIdStruct>,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    state: TaskState,
+}
+
+impl TaskAssess for TaskAssessStruct {
+    fn id(&self) -> &dyn TaskId {
+        self.id.as_ref()
+    }
+
+    fn start(&self) -> DateTime<Utc> {
+        self.start
+    }
+
+    fn end(&self) -> DateTime<Utc> {
+        self.end
+    }
+
+    fn state(&self) -> &TaskState {
+        &self.state
+    }
 }

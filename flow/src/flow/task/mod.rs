@@ -2,7 +2,7 @@ use async_std::future::timeout;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
 use futures::future::join_all;
-use log::{debug, trace, warn};
+use log::{debug, info, trace, warn};
 
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
@@ -95,6 +95,7 @@ impl TaskRunner {
 
     async fn run0(&mut self, start: DateTime<Utc>) -> Result<TaskAssessStruct, Error> {
         for state_id in self.flow.stage_id_vec().iter() {
+            trace!("task stage {}, {}", self.id, state_id);
             self.stage_run(state_id).await?;
         }
 
@@ -106,7 +107,7 @@ impl TaskRunner {
                 Ok(assess)
             }
             TaskState::Fail => {
-                debug!("task Fail {}", self.id);
+                info!("task Fail {}", self.id);
                 let assess =
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Fail);
                 Ok(assess)
@@ -128,15 +129,15 @@ impl TaskRunner {
 
     async fn stage_round_run(&mut self, stage_id: &str) -> Result<(), Error> {
         let concurrency = self.flow.stage_concurrency(stage_id);
-        let round_ctrl = self.flow.stage_round(stage_id);
+        let round_max = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
             self.data_vec_run_remaining(stage_id, concurrency).await?;
+            self.data_load.reset().await?;
             round_count += 1;
-            if round_ctrl > 0 && round_count >= round_ctrl {
+            if round_max > 0 && round_count >= round_max {
                 break;
             }
-            self.data_load.reset().await?;
         }
         return Ok(());
     }

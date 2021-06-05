@@ -5,9 +5,9 @@ def:
         url: http://elasticsearch:9200
 
 ctrl:
-    concurrency: 20
     benchmark:
-        round: 0
+        concurrency: 20
+        round: 200
     
 
 case:

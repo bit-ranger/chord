@@ -3,6 +3,7 @@ use crate::step::POINT_ID_PATTERN;
 use crate::value::{Json, Map};
 use crate::{err, rerr};
 
+use itertools::concat;
 use std::borrow::Borrow;
 use std::time::Duration;
 
@@ -15,18 +16,16 @@ impl Flow {
     pub fn new(flow: Json) -> Result<Flow, Error> {
         let flow = Flow { flow };
 
-        flow.version()?;
-        let case_sid_vec = flow.case_step_id_vec()?;
+        flow._version()?;
+        flow._ctrl_concurrency()?;
+        flow._ctrl_benchmark_duration()?;
+        flow._ctrl_benchmark_round()?;
+
+        let case_sid_vec = flow._case_step_id_vec()?;
         for case_sid in case_sid_vec.iter() {
             if !POINT_ID_PATTERN.is_match(case_sid.as_str()) {
                 return rerr!("step", format!("invalid step_id {}", case_sid));
             }
-
-            flow.step(case_sid.as_str())
-                .as_object()
-                .ok_or_else(|| err!("step", format!("invalid step_id {}", case_sid)))?;
-
-            let _ = flow.step_kind(case_sid.as_str());
         }
 
         let pre_sid_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
@@ -38,35 +37,26 @@ impl Flow {
             if case_sid_vec.contains(pre_sid) {
                 return rerr!("step", format!("duplicate step_id {}", pre_sid));
             }
+        }
 
-            flow.step(pre_sid.as_str())
+        for sid in concat(vec![case_sid_vec, pre_sid_vec]).iter() {
+            flow.step(sid)
                 .as_object()
-                .ok_or_else(|| err!("step", format!("invalid step_id {}", pre_sid)))?;
+                .ok_or_else(|| err!("step", format!("invalid step {}", sid)))?;
 
-            let _ = flow.step_kind(pre_sid.as_str());
+            let _ = flow._step_kind(sid)?;
+            let _ = flow._step_timeout(sid)?;
         }
 
         return Ok(flow);
     }
 
-    pub fn version(self: &Flow) -> Result<&str, Error> {
-        let v = self.flow["version"]
-            .as_str()
-            .ok_or(err!("version", "missing version"))?;
-
-        if v != "0.0.1" {
-            rerr!("version", "unsupported version")
-        } else {
-            Ok(v)
-        }
+    pub fn version(&self) -> &str {
+        self._version().unwrap()
     }
 
-    pub fn case_step_id_vec(self: &Flow) -> Result<Vec<String>, Error> {
-        let sid_vec = self.flow["case"]["step"]
-            .as_object()
-            .map(|p| p.keys().map(|k| k.to_string()).collect())
-            .ok_or(Error::new("case", "missing case.step"))?;
-        return Ok(sid_vec);
+    pub fn case_step_id_vec(&self) -> Vec<String> {
+        self._case_step_id_vec().unwrap()
     }
 
     pub fn pre_step_id_vec(&self) -> Option<Vec<String>> {
@@ -92,48 +82,108 @@ impl Flow {
         self.step(step_id)["config"].borrow()
     }
 
-    pub fn step_timeout(&self, step_id: &str) -> Duration {
-        self.step(step_id)["timeout"]
-            .as_u64()
-            .map_or(Duration::from_secs(10), |sec| {
-                if sec > 0 {
-                    Duration::from_secs(sec)
-                } else {
-                    Duration::from_secs(10)
-                }
-            })
-    }
-
-    pub fn step_kind(&self, step_id: &str) -> &str {
-        self.step(step_id)["kind"].as_str().unwrap()
-    }
-
     pub fn def(&self) -> Option<&Map> {
         self.flow["def"].as_object()
     }
 
+    pub fn step_kind(&self, step_id: &str) -> &str {
+        self._step_kind(step_id).unwrap()
+    }
+
+    pub fn step_timeout(&self, step_id: &str) -> Duration {
+        self._step_timeout(step_id).unwrap()
+    }
+
     pub fn ctrl_concurrency(&self) -> usize {
-        self.flow["ctrl"]["concurrency"]
-            .as_u64()
-            .map_or(10, |c| c as usize)
+        self._ctrl_concurrency().unwrap()
     }
 
     pub fn ctrl_benchmark_round(&self) -> usize {
-        self.flow["ctrl"]["benchmark"]["round"]
-            .as_u64()
-            .map_or(1, |r| r as usize)
+        self._ctrl_benchmark_round().unwrap()
     }
 
     pub fn ctrl_benchmark_duration(&self) -> Duration {
-        self.flow["ctrl"]["benchmark"]["duration"].as_u64().map_or(
-            Duration::from_secs(600),
-            |sec| {
-                if sec > 0 {
-                    Duration::from_secs(sec)
-                } else {
-                    Duration::from_secs(600)
-                }
-            },
-        )
+        self._ctrl_benchmark_duration().unwrap()
+    }
+
+    // -----------------------------------------------
+    // private
+
+    fn _version(&self) -> Result<&str, Error> {
+        let v = self.flow["version"]
+            .as_str()
+            .ok_or(err!("version", "missing version"))?;
+
+        if v != "0.0.1" {
+            return rerr!("version", "version only supports 0.0.1");
+        } else {
+            Ok(v)
+        }
+    }
+
+    fn _case_step_id_vec(&self) -> Result<Vec<String>, Error> {
+        let sid_vec = self.flow["case"]["step"]
+            .as_object()
+            .map(|p| p.keys().map(|k| k.to_string()).collect())
+            .ok_or(Error::new("case", "missing case.step"))?;
+        return Ok(sid_vec);
+    }
+
+    fn _step_kind(&self, step_id: &str) -> Result<&str, Error> {
+        self.step(step_id)["kind"]
+            .as_str()
+            .ok_or(err!("step", "missing kind"))
+    }
+
+    fn _step_timeout(&self, step_id: &str) -> Result<Duration, Error> {
+        let s = self.step(step_id)["timeout"].as_u64();
+        if s.is_none() {
+            return Ok(Duration::from_secs(10));
+        }
+
+        let s = s.unwrap();
+        if s < 1 {
+            return rerr!("step", "timeout must > 0");
+        }
+        Ok(Duration::from_secs(10))
+    }
+
+    fn _ctrl_concurrency(&self) -> Result<usize, Error> {
+        let s = self.flow["ctrl"]["benchmark"]["concurrency"].as_u64();
+        if s.is_none() {
+            return Ok(10);
+        }
+
+        let s = s.unwrap();
+        if s < 1 {
+            return rerr!("ctrl", "ctrl.benchmark.concurrency must > 0");
+        }
+        Ok(s as usize)
+    }
+
+    fn _ctrl_benchmark_round(&self) -> Result<usize, Error> {
+        let s = self.flow["ctrl"]["benchmark"]["round"].as_u64();
+        if s.is_none() {
+            return Ok(1);
+        }
+
+        let s = s.unwrap();
+        if s < 1 {
+            return rerr!("ctrl", "ctrl.benchmark.round must > 0");
+        }
+        Ok(s as usize)
+    }
+
+    fn _ctrl_benchmark_duration(&self) -> Result<Duration, Error> {
+        let s = self.flow["ctrl"]["benchmark"]["duration"].as_u64();
+        if s.is_none() {
+            return Ok(Duration::from_secs(600));
+        }
+
+        let s = s.unwrap();
+        if s < 1 {
+            return rerr!("ctrl", "ctrl.benchmark.duration must > 0");
+        }
+        Ok(Duration::from_secs(s))
     }
 }

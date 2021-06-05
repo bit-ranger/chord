@@ -54,7 +54,7 @@ impl Runner {
             flow_ctx.clone(),
             flow.clone(),
             pre_ctx.clone(),
-            flow.case_step_id_vec()?,
+            flow.case_step_id_vec(),
             id.clone(),
         )
         .await?;

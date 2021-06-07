@@ -6,7 +6,7 @@ use async_std::task::{spawn, spawn_blocking};
 use git2::build::RepoBuilder;
 use git2::Repository;
 use lazy_static::lazy_static;
-use log::{debug, error, warn};
+use log::{error, warn, trace};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
@@ -39,6 +39,7 @@ pub struct Req {
     #[validate(length(min = 1))]
     job_path: Option<String>,
 }
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Rep {
@@ -78,6 +79,12 @@ impl CtlImpl {
 #[async_trait]
 impl Ctl for CtlImpl {
     async fn exec(&self, req: Req) -> Result<Rep, Error> {
+        let req = Req {
+            git_url: req.git_url,
+            branch: Some(req.branch.unwrap_or("master".to_owned())),
+            job_path: Some(req.job_path.unwrap_or("/".to_owned()))
+        };
+
         let exec_id = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
@@ -107,6 +114,8 @@ async fn checkout_run(
     exec_id: String,
     es_url: String,
 ) {
+    trace!("checkout_run {:?}", req);
+
     let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
 
@@ -116,6 +125,7 @@ async fn checkout_run(
     let last_step_idx = repo_name.len() - 4;
     let repo_name = &repo_name.to_owned()[..last_step_idx];
     let checkout_path = input.clone().join(host).join(group_name).join(repo_name);
+
     if checkout_path.exists() {
         error!("checkout exist {}", checkout_path.to_str().unwrap());
         return;
@@ -134,7 +144,7 @@ async fn checkout_run(
         ssh_key_pri.as_path(),
         req.git_url.as_str(),
         checkout_path.as_path(),
-        req.branch.unwrap_or_else(|| "master".to_owned()).as_str(),
+        req.branch.as_ref().unwrap().as_str(),
     )
     .await
     {
@@ -169,8 +179,8 @@ async fn clear(dir: &Path) {
     let result = spawn_blocking(move || rm_rf::ensure_removed(path)).await;
 
     match result {
-        Ok(()) => debug!("remove dir {}", dir.to_str().unwrap()),
-        Err(e) => warn!("remove dir {}, {}", dir.to_str().unwrap(), e),
+        Ok(()) => trace!("remove dir {}", dir.to_str().unwrap()),
+        Err(e) => error!("remove dir {}, {}", dir.to_str().unwrap(), e),
     }
 }
 
@@ -228,6 +238,9 @@ async fn job_run(
 ) {
     let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, es_url).await;
     if let Err(e) = job_result {
-        error!("run job error {}", e);
+        warn!(
+            "job run error {}",
+            e
+        );
     }
 }

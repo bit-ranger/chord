@@ -7,6 +7,7 @@ use futures::future::join_all;
 use futures::StreamExt;
 use log::debug;
 use log::info;
+use log::trace;
 
 use chord_common::error::Error;
 use chord_common::flow::Flow;
@@ -22,13 +23,13 @@ pub async fn run<P: AsRef<Path>>(
     app_ctx: Arc<dyn Context>,
     es_url: String,
 ) -> Result<Vec<TaskState>, Error> {
-    debug!(
+    trace!(
         "job start {}, {}",
         job_path.as_ref().to_str().unwrap(),
         job_name.as_str()
     );
 
-    let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
+    let mut job_dir = read_dir(job_path.as_ref()).await?;
     let es_index = job_name.clone();
     index_create(es_url.as_str(), es_index.as_str()).await?;
 
@@ -79,7 +80,7 @@ async fn task_run<P: AsRef<Path>>(
     es_index: String,
 ) -> TaskState {
     let task_path = Path::new(input_dir.as_ref());
-    debug!("task start {}", task_path.to_str().unwrap());
+    trace!("task start {}", task_path.to_str().unwrap());
     let task_state = task_run0(task_path, exec_id, app_ctx, es_url, es_index).await;
     return if let Err(e) = task_state {
         info!("task error {}, {}", task_path.to_str().unwrap(), e);

@@ -7,6 +7,7 @@ use futures::future::join_all;
 use futures::StreamExt;
 use log::debug;
 use log::info;
+use log::trace;
 
 use chord_common::error::Error;
 use chord_common::flow::Flow;
@@ -21,7 +22,7 @@ pub async fn run<P: AsRef<Path>>(
 ) -> Vec<TaskState> {
     let job_path_str = input_dir.as_ref().to_str().unwrap();
 
-    debug!("job start {}", job_path_str);
+    trace!("job start {}", job_path_str);
     let mut job_dir = read_dir(input_dir.as_ref()).await.unwrap();
 
     let mut futures = Vec::new();
@@ -55,7 +56,7 @@ pub async fn run<P: AsRef<Path>>(
     }
 
     let task_state_vec = join_all(futures).await;
-    debug!("job end {}", job_path_str);
+    trace!("job end {}", job_path_str);
     return task_state_vec;
 }
 
@@ -68,7 +69,10 @@ async fn run_task<P: AsRef<Path>>(
     let input_dir = Path::new(input_dir.as_ref());
     let rt = run_task0(input_dir, output_dir, exec_id, app_ctx).await;
     match rt {
-        Ok(ts) => ts,
+        Ok(ts) => {
+            debug!("task OK {}", input_dir.to_str().unwrap());
+            ts
+        },
         Err(e) => {
             info!("task error {}, {}", input_dir.to_str().unwrap(), e);
             TaskState::Err(e)
@@ -88,7 +92,7 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     let task_id = Arc::new(TaskIdSimple::new(exec_id, task_id.to_owned())?);
     chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
 
-    debug!("task start {}", input_dir.to_str().unwrap());
+    trace!("task start {}", input_dir.to_str().unwrap());
 
     let flow_file = input_dir.clone().join("flow.yml");
     let flow = chord_input::load::flow::yml::load(&flow_file)?;
@@ -114,8 +118,6 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     .await?;
 
     let task_assess = runner.run().await?;
-
-    debug!("task end {}", input_dir.to_str().unwrap());
 
     return Ok(task_assess.state().clone());
 }

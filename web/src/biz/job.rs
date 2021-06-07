@@ -13,7 +13,7 @@ use chord_common::flow::Flow;
 use chord_common::output::{AssessReport, DateTime, Utc};
 use chord_common::task::{TaskAssess, TaskId, TaskState};
 use chord_flow::{Context, TaskIdSimple};
-use chord_output::report::elasticsearch::Reporter;
+use chord_output::report::elasticsearch::{Reporter, index_create};
 
 pub async fn run<P: AsRef<Path>>(
     job_path: P,
@@ -30,6 +30,7 @@ pub async fn run<P: AsRef<Path>>(
 
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
     let es_index = job_name.clone();
+    index_create(es_url.as_str(), es_index.as_str()).await?;
 
     let mut futures = Vec::new();
     loop {

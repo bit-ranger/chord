@@ -87,7 +87,6 @@ impl Ctl for CtlImpl {
         let ssh_key_pri = self.ssh_key_private.clone();
         let app_ctx_0 = self.flow_ctx.clone();
         let exec_id_0 = exec_id.clone();
-        // self.pool.spawn(|| block_on(checkout_run(app_ctx_0, input, output, ssh_key_pri, req, exec_id_0)));
         spawn(checkout_run(
             app_ctx_0,
             input,
@@ -161,7 +160,7 @@ async fn checkout_run(
     };
 
     let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
-    run(app_ctx, job_path, job_name, exec_id, es_url).await;
+    job_run(app_ctx, job_path, job_name, exec_id, es_url).await;
     clear(checkout_path.as_path()).await;
 }
 
@@ -220,7 +219,7 @@ async fn checkout(
         .clone(git_url, into)
 }
 
-async fn run(
+async fn job_run(
     app_ctx: Arc<dyn Context>,
     job_path: PathBuf,
     job_name: String,

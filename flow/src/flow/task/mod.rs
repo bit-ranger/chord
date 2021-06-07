@@ -7,7 +7,7 @@ use log::{debug, info, trace, warn};
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
 use chord_common::flow::Flow;
-use chord_common::input::DataLoad;
+use chord_common::input::CaseLoad;
 use chord_common::output::AssessReport;
 use chord_common::output::{DateTime, Utc};
 use chord_common::rerr;
@@ -34,13 +34,13 @@ pub struct TaskRunner {
     pre_ctx: Arc<Json>,
     case_id_offset: usize,
     assess_report: Box<dyn AssessReport>,
-    data_load: Box<dyn DataLoad>,
+    case_load: Box<dyn CaseLoad>,
     state: TaskState,
 }
 
 impl TaskRunner {
     pub async fn new(
-        data_load: Box<dyn DataLoad>,
+        case_load: Box<dyn CaseLoad>,
         assess_report: Box<dyn AssessReport>,
         flow_ctx: Arc<dyn Context>,
         flow: Arc<Flow>,
@@ -59,7 +59,7 @@ impl TaskRunner {
         .await?;
         let runner = TaskRunner {
             assess_report,
-            data_load,
+            case_load: case_load,
             flow_ctx,
             flow,
             step_runner_vec: Arc::new(step_runner_vec),
@@ -79,7 +79,7 @@ impl TaskRunner {
         trace!("task start {}", self.id);
         let start = Utc::now();
         self.assess_report.start(start).await?;
-        let assess = self.run0(start).await;
+        let assess = self.start_run(start).await;
         let assess = if let Err(e) = assess {
             warn!("task Err {}", self.id);
             let assess =
@@ -93,7 +93,7 @@ impl TaskRunner {
         Ok(assess)
     }
 
-    async fn run0(&mut self, start: DateTime<Utc>) -> Result<TaskAssessStruct, Error> {
+    async fn start_run(&mut self, start: DateTime<Utc>) -> Result<TaskAssessStruct, Error> {
         for state_id in self.flow.stage_id_vec().iter() {
             trace!("task stage {}, {}", self.id, state_id);
             self.stage_run(state_id).await?;
@@ -132,8 +132,8 @@ impl TaskRunner {
         let round_max = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
-            self.data_vec_run_remaining(stage_id, concurrency).await?;
-            self.data_load.reset().await?;
+            self.case_data_vec_run_remaining(stage_id, concurrency).await?;
+            self.case_load.reset().await?;
             round_count += 1;
             if round_max > 0 && round_count >= round_max {
                 break;
@@ -142,16 +142,16 @@ impl TaskRunner {
         return Ok(());
     }
 
-    async fn data_vec_run_remaining(
+    async fn case_data_vec_run_remaining(
         &mut self,
         stage_id: &str,
         concurrency: usize,
     ) -> Result<(), Error> {
         loop {
-            let data_vec = self.data_load.load(concurrency).await?;
+            let data_vec = self.case_load.load(concurrency).await?;
             let data_len = data_vec.len();
             trace!("task load data {}, {}", self.id, data_len);
-            let case_assess_vec = self.data_vec_run(data_vec, concurrency).await?;
+            let case_assess_vec = self.case_data_vec_run(data_vec, concurrency).await?;
             let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
             if any_fail {
                 self.state = TaskState::Fail;
@@ -166,14 +166,14 @@ impl TaskRunner {
         Ok(())
     }
 
-    async fn data_vec_run(
+    async fn case_data_vec_run(
         &mut self,
-        data: Vec<Json>,
+        case_vec: Vec<Json>,
         concurrency: usize,
     ) -> Result<Vec<Box<dyn CaseAssess>>, Error> {
-        let data_len = data.len();
-        let ca_vec = self.case_arg_vec(data)?;
-        self.case_id_offset = self.case_id_offset + data_len;
+        let case_len = case_vec.len();
+        let ca_vec = self.case_arg_vec(case_vec)?;
+        self.case_id_offset = self.case_id_offset + case_len;
 
         let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
         let mut futures = vec![];

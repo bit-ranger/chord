@@ -165,12 +165,9 @@ impl Flow {
     }
 
     fn _stage_concurrency(&self, stage_id: &str) -> Result<usize, Error> {
-        let s = self.flow["stage"][stage_id]["concurrency"].as_u64();
-        if s.is_none() {
-            return Ok(10);
-        }
+        let s = self.flow["stage"][stage_id]["concurrency"].as_u64()
+            .ok_or(err!("stage", "missing concurrency"))?;
 
-        let s = s.unwrap();
         if s < 1 {
             return rerr!("stage", "concurrency must > 0");
         }

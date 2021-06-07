@@ -88,7 +88,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 end,
             } => {
                 let assert_present = step_arg.meta_str(vec!["assert"]).await;
-                register_dynamic(&mut render_context, step_id, &json).await;
+                step_register(&mut render_context, step_id, &json).await;
                 if let Some(con) = assert_present {
                     if assert(flow_ctx.get_handlebars(), &mut render_context, &con).await {
                         debug!("step Ok   {}", id);
@@ -132,7 +132,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     );
 }
 
-pub async fn register_dynamic(render_context: &mut RenderContext, sid: &str, value: &Json) {
+pub async fn step_register(render_context: &mut RenderContext, sid: &str, value: &Json) {
     if let Json::Object(data) = render_context.data_mut() {
         data["step"][sid]["value"] = value.clone();
         data["curr"]["value"] = value.clone();

@@ -1,7 +1,7 @@
 use chord_common::err;
 use chord_common::error::Error;
 use chord_common::input::async_trait;
-use chord_common::input::DataLoad;
+use chord_common::input::CaseLoad;
 use chord_common::rerr;
 use chord_common::value::{Json, Map};
 use csv::{Reader, ReaderBuilder};
@@ -29,7 +29,7 @@ impl Loader {
 }
 
 #[async_trait]
-impl DataLoad for Loader {
+impl CaseLoad for Loader {
     async fn load(&mut self, size: usize) -> Result<Vec<Json>, Error> {
         load(&mut self.reader, size).await
     }

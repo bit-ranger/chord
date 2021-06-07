@@ -59,7 +59,7 @@ impl TaskRunner {
         .await?;
         let runner = TaskRunner {
             assess_report,
-            case_load: case_load,
+            case_load,
             flow_ctx,
             flow,
             step_runner_vec: Arc::new(step_runner_vec),

@@ -30,8 +30,6 @@ case:
             config:
                 url: "{{def.es.url}}/article"
                 method: PUT
-                header:
-                    Content-Type: application/json
                 body:
                   {
                       "settings": {
@@ -71,8 +69,6 @@ case:
             config:
                 url: "{{def.es.url}}/article/_doc/1"
                 method: PUT
-                header:
-                    Content-Type: application/json
                 body:
                   {
                       "author": "{{data.author}}",
@@ -97,8 +93,6 @@ case:
             config:
                 url: "{{def.es.url}}/article/_search"
                 method: GET
-                header:
-                    Content-Type: application/json
                 body:
                   {
                       "size": 10,

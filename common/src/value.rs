@@ -9,3 +9,5 @@ pub use serde_json::from_value;
 pub use serde_json::json;
 pub use serde_json::to_value as to_json;
 pub use serde_json::ser::to_string_pretty as to_string;
+pub use serde::Serialize;
+pub use serde::Deserialize;

@@ -12,5 +12,5 @@ case:
         size: 1
 
 report:
-    mongodb:
-        url: mongodb://root:example@mongodb:27017/admin?retryWrites=true&w=majority
+    elasticsearch:
+        url: http://elasticsearch:9200

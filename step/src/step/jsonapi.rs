@@ -5,22 +5,35 @@ use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
 use chord_common::error::Error;
-use chord_common::step::{async_trait, RunArg, StepRunner, StepValue, CreateArg};
+use chord_common::step::{
+    async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
+};
 use chord_common::value::{to_string, Json, Map, Number};
 use chord_common::{err, rerr};
 use std::borrow::Borrow;
 
-struct Jsonapi {}
+pub struct Factory {}
 
-#[async_trait]
-impl StepRunner for Jsonapi {
-    async fn run(&self, arg: &dyn RunArg) -> StepValue {
-        run(arg).await
+impl Factory {
+    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
-pub async fn create(_: Option<&Json>, _: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
-    Ok(Box::new(Jsonapi {}))
+#[async_trait]
+impl StepRunnerFactory for Factory {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
+        Ok(Box::new(Runner {}))
+    }
+}
+
+struct Runner {}
+
+#[async_trait]
+impl StepRunner for Runner {
+    async fn run(&self, arg: &dyn RunArg) -> StepValue {
+        run(arg).await
+    }
 }
 
 async fn run(arg: &dyn RunArg) -> StepValue {

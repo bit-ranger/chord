@@ -7,10 +7,11 @@ log:
         root: debug
         handlebars: info
 
-case:
-    batch:
-        size: 1
-
 report:
     elasticsearch:
         url: http://elasticsearch:9200
+
+
+step:
+    dubbo:
+        enable: false

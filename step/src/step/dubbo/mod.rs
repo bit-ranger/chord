@@ -1,3 +1,3 @@
 mod java;
 
-pub use java::create;
+pub use java::Factory;

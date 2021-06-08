@@ -1,15 +1,38 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::step::{async_trait, RunArg, StepRunner, StepValue, CreateArg};
+use chord_common::step::{
+    async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
+};
 use chord_common::value::Json;
 use libloading::Library;
 
-struct Dynlib {
+pub struct Factory {}
+
+impl Factory {
+    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+        Ok(Factory {})
+    }
+}
+
+#[async_trait]
+impl StepRunnerFactory for Factory {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
+        let path = arg.config()["path"]
+            .as_str()
+            .ok_or(err!("010", "missing path"))?;
+
+        let lib = unsafe { libloading::Library::new(path)? };
+
+        Ok(Box::new(Runner { lib }))
+    }
+}
+
+struct Runner {
     lib: Library,
 }
 
 #[async_trait]
-impl StepRunner for Dynlib {
+impl StepRunner for Runner {
     async fn run(&self, arg: &dyn RunArg) -> StepValue {
         let args_raw = arg.config()["args"]
             .as_array()
@@ -28,14 +51,4 @@ impl StepRunner for Dynlib {
             unsafe { self.lib.get(b"run")? };
         dynlib_run(args_dynlib)
     }
-}
-
-pub async fn create(_: Option<&Json>, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
-    let path = arg.config()["path"]
-        .as_str()
-        .ok_or(err!("010", "missing path"))?;
-
-    let lib = unsafe { libloading::Library::new(path)? };
-
-    Ok(Box::new(Dynlib { lib }))
 }

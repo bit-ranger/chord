@@ -1,34 +1,47 @@
 use chord_common::err;
 use chord_common::error::Error;
-use chord_common::step::{async_trait, RunArg, StepRunner, StepValue, CreateArg};
+use chord_common::step::{
+    async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
+};
 use chord_common::value::{Json, Map, Number};
 use log::debug;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 
-struct Mysql {
+pub struct Factory {}
+
+impl Factory {
+    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+        Ok(Factory {})
+    }
+}
+
+#[async_trait]
+impl StepRunnerFactory for Factory {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
+        let url = arg.config()["url"]
+            .as_str()
+            .ok_or(err!("010", "missing url"))?;
+
+        if !arg.is_task_shared(url) {
+            return Ok(Box::new(Runner { rb: None }));
+        }
+
+        let url = arg.render(url)?;
+        let rb = create_rb(url.as_str()).await?;
+        return Ok(Box::new(Runner { rb: Some(rb) }));
+    }
+}
+
+struct Runner {
     rb: Option<Rbatis>,
 }
 
 #[async_trait]
-impl StepRunner for Mysql {
+impl StepRunner for Runner {
     async fn run(&self, arg: &dyn RunArg) -> StepValue {
         run(&self, arg).await
     }
-}
-
-pub async fn create(_: Option<&Json>, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
-    let url = arg.config()["url"]
-        .as_str()
-        .ok_or(err!("010", "missing url"))?;
-
-    if !arg.is_task_shared(url) {
-        return Ok(Box::new(Mysql { rb: None }));
-    }
-
-    let url = arg.render(url)?;
-    let rb = create_rb(url.as_str()).await?;
-    return Ok(Box::new(Mysql { rb: Some(rb) }));
 }
 
 async fn create_rb(url: &str) -> Result<Rbatis, Error> {
@@ -37,7 +50,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
     Ok(rb)
 }
 
-async fn run(obj: &Mysql, arg: &dyn RunArg) -> StepValue {
+async fn run(obj: &Runner, arg: &dyn RunArg) -> StepValue {
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {

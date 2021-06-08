@@ -67,10 +67,13 @@ impl CtlImpl {
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
-            flow_ctx: chord_flow::context_create(Box::new(
-                StepRunnerFactoryDefault::new(config.step_config().clone()).await?,
-            ))
-            .await,
+            flow_ctx: chord_flow::context_create(
+                Box::new(
+                    StepRunnerFactoryDefault::new(
+                        config.step_config().map(|c| c.clone())
+                    ).await?
+                )
+            ).await,
             config,
         })
     }
@@ -82,7 +85,7 @@ impl Ctl for CtlImpl {
         let req = Req {
             git_url: req.git_url,
             branch: Some(req.branch.unwrap_or("master".to_owned())),
-            job_path: Some(req.job_path.unwrap_or("/".to_owned()))
+            job_path: Some(req.job_path.unwrap_or("/".to_owned())),
         };
 
         let exec_id = SystemTime::now()
@@ -146,7 +149,7 @@ async fn checkout_run(
         checkout_path.as_path(),
         req.branch.as_ref().unwrap().as_str(),
     )
-    .await
+        .await
     {
         error!(
             "checkout error {}, {}, {}",

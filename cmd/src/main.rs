@@ -1,15 +1,18 @@
 use std::path::Path;
+use std::path::PathBuf;
 use std::time::SystemTime;
 
+use structopt::StructOpt;
+
+use crate::conf::Config;
 use chord_common::error::Error;
 use chord_common::rerr;
 use chord_common::task::TaskState;
-use chord_common::value::Map;
+use chord_common::value::Json;
 use chord_step::StepRunnerFactoryDefault;
-use itertools::Itertools;
-use std::path::PathBuf;
-use structopt::StructOpt;
+use std::fs::File;
 
+mod conf;
 mod job;
 mod logger;
 
@@ -33,11 +36,15 @@ async fn main() -> Result<(), Error> {
     async_std::fs::create_dir_all(output_dir).await?;
 
     let log_file_path = output_dir.join("log.log");
-    let log_handler = logger::init(target_level(&opt.level), &log_file_path).await?;
 
-    let flow_ctx =
-        chord_flow::context_create(Box::new(StepRunnerFactoryDefault::new(Map::new()).await?))
-            .await;
+    let conf_data = load_conf(&opt.config)?;
+    let config = Config::new(conf_data);
+    let log_handler = logger::init(config.log_level(), &log_file_path).await?;
+
+    let flow_ctx = chord_flow::context_create(Box::new(
+        StepRunnerFactoryDefault::new(config.step_config().map(|c| c.clone())).await?,
+    ))
+    .await;
     let task_state_vec = job::run(input_dir, output_dir, exec_id, flow_ctx).await;
 
     logger::terminal(log_handler).await?;
@@ -53,17 +60,18 @@ async fn main() -> Result<(), Error> {
     };
 }
 
-fn target_level(level: &Vec<String>) -> Vec<(String, String)> {
-    let target_level = level
-        .iter()
-        .map(|a| {
-            a.splitn(2, "=")
-                .collect_tuple()
-                .map(|(a, b)| (a.into(), b.into()))
-                .unwrap()
-        })
-        .collect_vec();
-    return target_level;
+pub fn load_conf<P: AsRef<Path>>(path: P) -> Result<Json, Error> {
+    let file = File::open(path);
+    let file = match file {
+        Err(_) => return Ok(Json::Null),
+        Ok(r) => r,
+    };
+
+    let deserialized: Result<Json, serde_yaml::Error> = serde_yaml::from_reader(file);
+    return match deserialized {
+        Err(e) => return rerr!("yaml", format!("{:?}", e)),
+        Ok(r) => Ok(r),
+    };
 }
 
 #[derive(StructOpt, Debug)]
@@ -77,7 +85,12 @@ struct Opt {
     #[structopt(short, long, parse(from_os_str))]
     output: PathBuf,
 
-    /// log level
-    #[structopt(short, long)]
-    level: Vec<String>,
+    /// config file path
+    #[structopt(
+        short,
+        long,
+        parse(from_os_str),
+        default_value = "/data/chord/conf/application.yml"
+    )]
+    config: PathBuf,
 }

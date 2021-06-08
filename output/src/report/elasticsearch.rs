@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
-use log::{warn, trace};
+use log::{trace, warn};
 use serde::{Deserialize, Serialize};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
@@ -119,7 +119,7 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
             TaskState::Fail => "F",
             TaskState::Err(_) => "E",
         }
-            .to_owned(),
+        .to_owned(),
         result: match ts {
             TaskState::Ok => Json::Null,
             TaskState::Fail => Json::Null,
@@ -141,7 +141,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
             CaseState::Fail(_) => "F",
             CaseState::Err(_) => "E",
         }
-            .to_owned(),
+        .to_owned(),
         result: match ca.state() {
             CaseState::Ok(_) => Json::Null,
             CaseState::Fail(_) => Json::Null,
@@ -163,7 +163,7 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
             StepState::Fail(_) => "F",
             StepState::Err(_) => "E",
         }
-            .to_owned(),
+        .to_owned(),
         result: match sa.state() {
             StepState::Ok(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
             StepState::Fail(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
@@ -209,7 +209,11 @@ async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), Rae> {
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
         let body: Json = res.body_json().await?;
-        warn!("data_send_0 failure: {}, {}", to_string(&data)?, to_string(&body)?)
+        warn!(
+            "data_send_0 failure: {}, {}",
+            to_string(&data)?,
+            to_string(&body)?
+        )
     }
     Ok(())
 }
@@ -269,7 +273,8 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
     }
   }
 }
-"#.into();
+"#
+    .into();
 
     rb = rb.body(Body::from_json(&index)?);
 
@@ -285,7 +290,7 @@ struct Rae(chord_common::error::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
-        Rae(err!("http", format!("{}", err.status())))
+        Rae(err!("elasticsearch", format!("{}", err.status())))
     }
 }
 
@@ -303,5 +308,3 @@ impl From<chord_common::error::Error> for Rae {
         Rae(err)
     }
 }
-
-

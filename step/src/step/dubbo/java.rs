@@ -57,7 +57,7 @@ impl Factory {
         let mut child = Command::new("java")
             .arg("-jar")
             .arg(jar_path)
-            .arg(port.to_string().as_str())
+            .arg(format!("--server.port={}", port))
             .stdout(Stdio::piped())
             .spawn()?;
 

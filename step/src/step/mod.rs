@@ -40,7 +40,7 @@ impl StepRunnerFactoryDefault {
         );
 
         #[cfg(feature = "step_jsonapi")]
-        if enable(config_ref, "jsonapi") {
+        if enable(config_ref, "jsonapi", true) {
             table.insert(
                 "jsonapi".into(),
                 Box::new(jsonapi::Factory::new(config_ref.map(|c| c["jsonapi"].clone())).await?),
@@ -48,7 +48,7 @@ impl StepRunnerFactoryDefault {
         }
 
         #[cfg(feature = "step_md5")]
-        if enable(config_ref, "md5") {
+        if enable(config_ref, "md5", true) {
             table.insert(
                 "md5".into(),
                 Box::new(md5::Factory::new(config_ref.map(|c| c["md5"].clone())).await?),
@@ -56,7 +56,7 @@ impl StepRunnerFactoryDefault {
         }
 
         #[cfg(feature = "step_url_encode")]
-        if enable(config_ref, "url_encode") {
+        if enable(config_ref, "url_encode", true) {
             table.insert(
                 "url_encode".into(),
                 Box::new(
@@ -66,7 +66,7 @@ impl StepRunnerFactoryDefault {
         }
 
         #[cfg(feature = "step_url_decode")]
-        if enable(config_ref, "url_decode") {
+        if enable(config_ref, "url_decode", true) {
             table.insert(
                 "url_decode".into(),
                 Box::new(
@@ -76,7 +76,7 @@ impl StepRunnerFactoryDefault {
         }
 
         #[cfg(feature = "step_dubbo")]
-        if enable(config_ref, "dubbo") {
+        if enable(config_ref, "dubbo", false) {
             table.insert(
                 "dubbo".into(),
                 Box::new(dubbo::Factory::new(config_ref.map(|c| c["dubbo"].clone())).await?),
@@ -84,7 +84,7 @@ impl StepRunnerFactoryDefault {
         }
 
         #[cfg(feature = "step_mysql")]
-        if enable(config_ref, "mysql") {
+        if enable(config_ref, "mysql", true) {
             table.insert(
                 "mysql".into(),
                 Box::new(mysql::Factory::new(config_ref.map(|c| c["mysql"].clone())).await?),
@@ -92,7 +92,7 @@ impl StepRunnerFactoryDefault {
         }
 
         #[cfg(feature = "step_redis")]
-        if enable(config_ref, "redis") {
+        if enable(config_ref, "redis", true) {
             table.insert(
                 "redis".into(),
                 Box::new(redis::Factory::new(config_ref.map(|c| c["redis"].clone())).await?),
@@ -100,7 +100,7 @@ impl StepRunnerFactoryDefault {
         }
 
         #[cfg(feature = "step_mongodb")]
-        if enable(config_ref, "mongodb") {
+        if enable(config_ref, "mongodb", true) {
             table.insert(
                 "mongodb".into(),
                 Box::new(mongodb::Factory::new(config_ref.map(|c| c["mongodb"].clone())).await?),
@@ -108,7 +108,7 @@ impl StepRunnerFactoryDefault {
         }
 
         #[cfg(feature = "step_dynlib")]
-        if enable(config_ref, "dynlib") {
+        if enable(config_ref, "dynlib", false) {
             table.insert(
                 "dynlib".into(),
                 Box::new(dynlib::Factory::new(config_ref.map(|c| c["dynlib"].clone())).await?),
@@ -134,14 +134,16 @@ impl StepRunnerFactory for StepRunnerFactoryDefault {
     }
 }
 
-fn enable(config: Option<&Json>, step_name: &str) -> bool {
+fn enable(config: Option<&Json>, step_name: &str, default_enable: bool) -> bool {
     if config.is_none() {
-        return true;
+        return default_enable;
     }
     let config_ref = config.unwrap();
     if config_ref.is_null() {
-        return true;
+        return default_enable;
     }
 
-    return config_ref[step_name]["enable"].as_bool().unwrap_or(true);
+    return config_ref[step_name]["enable"]
+        .as_bool()
+        .unwrap_or(default_enable);
 }

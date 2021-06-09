@@ -90,7 +90,7 @@ fn ta_doc_init(task_id: &dyn TaskId, time: DateTime<Utc>) -> Data {
         end: time,
         elapse: 0,
         state: "R".to_owned(),
-        result: Json::Null,
+        value: Json::Null,
     }
 }
 
@@ -108,7 +108,7 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
             TaskState::Err(_) => "E",
         }
         .to_owned(),
-        result: match ts {
+        value: match ts {
             TaskState::Ok => Json::Null,
             TaskState::Fail => Json::Null,
             TaskState::Err(e) => Json::String(e.to_string()),
@@ -130,7 +130,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
             CaseState::Err(_) => "E",
         }
         .to_owned(),
-        result: match ca.state() {
+        value: match ca.state() {
             CaseState::Ok(_) => Json::Null,
             CaseState::Fail(_) => Json::Null,
             CaseState::Err(e) => Json::String(e.to_string()),
@@ -152,7 +152,7 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
             StepState::Err(_) => "E",
         }
         .to_owned(),
-        result: match sa.state() {
+        value: match sa.state() {
             StepState::Ok(result) => {
                 Json::String(to_string_pretty(result).unwrap_or("".to_owned()))
             }
@@ -227,6 +227,7 @@ async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), Rae>
         body.push_str("\n");
     }
 
+    trace!("data_send_all_0:\n{}", body);
     rb = rb.body(Body::from_string(body));
 
     let mut res: Response = rb.send().await?;
@@ -284,7 +285,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
       "state": {
         "type": "keyword"
       },
-      "result": {
+      "value": {
         "type": "text",
         "analyzer": "ik_max_word",
         "search_analyzer": "ik_max_word"
@@ -336,7 +337,7 @@ struct Data {
     end: DateTime<Utc>,
     elapse: usize,
     state: String,
-    result: Json,
+    value: Json,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

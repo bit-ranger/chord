@@ -235,7 +235,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
         HeaderValue::from_str("application/json")?,
     );
 
-    let index: Json = r#"
+    let index = r#"
 {
   "settings": {
     "index": {
@@ -273,10 +273,9 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
     }
   }
 }
-"#
-    .into();
+"#;
 
-    rb = rb.body(Body::from_json(&index)?);
+    rb = rb.body(Body::from_string(index.into()));
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {

@@ -29,91 +29,63 @@ pub struct StepRunnerFactoryDefault {
     table: HashMap<String, Box<dyn StepRunnerFactory>>,
 }
 
+macro_rules! register {
+    ($table:ident, $config_ref:ident, $name:expr, $module:path, $enable:expr) => {
+        if enable($config_ref, $name, $enable) {
+            $table.insert(
+                $name.into(),
+                Box::new($module($config_ref.map(|c| c[$name].clone())).await?),
+            );
+        }
+    };
+}
+
 impl StepRunnerFactoryDefault {
     pub async fn new(config: Option<Json>) -> Result<StepRunnerFactoryDefault, Error> {
         let mut table: HashMap<String, Box<dyn StepRunnerFactory>> = HashMap::new();
 
         let config_ref = config.as_ref();
-        table.insert(
-            "sleep".into(),
-            Box::new(sleep::Factory::new(config_ref.map(|c| c["sleep"].clone())).await?),
-        );
+
+        register!(table, config_ref, "sleep", sleep::Factory::new, true);
 
         #[cfg(feature = "step_jsonapi")]
-        if enable(config_ref, "jsonapi", true) {
-            table.insert(
-                "jsonapi".into(),
-                Box::new(jsonapi::Factory::new(config_ref.map(|c| c["jsonapi"].clone())).await?),
-            );
-        }
+        register!(table, config_ref, "jsonapi", jsonapi::Factory::new, true);
 
         #[cfg(feature = "step_md5")]
-        if enable(config_ref, "md5", true) {
-            table.insert(
-                "md5".into(),
-                Box::new(md5::Factory::new(config_ref.map(|c| c["md5"].clone())).await?),
-            );
-        }
+        register!(table, config_ref, "md5", md5::Factory::new, true);
 
         #[cfg(feature = "step_url_encode")]
-        if enable(config_ref, "url_encode", true) {
-            table.insert(
-                "url_encode".into(),
-                Box::new(
-                    url_encode::Factory::new(config_ref.map(|c| c["url_encode"].clone())).await?,
-                ),
-            );
-        }
+        register!(
+            table,
+            config_ref,
+            "url_encode",
+            url_encode::Factory::new,
+            true
+        );
 
         #[cfg(feature = "step_url_decode")]
-        if enable(config_ref, "url_decode", true) {
-            table.insert(
-                "url_decode".into(),
-                Box::new(
-                    url_decode::Factory::new(config_ref.map(|c| c["url_decode"].clone())).await?,
-                ),
-            );
-        }
+        register!(
+            table,
+            config_ref,
+            "url_decode",
+            url_decode::Factory::new,
+            true
+        );
 
         #[cfg(feature = "step_dubbo")]
-        if enable(config_ref, "dubbo", false) {
-            table.insert(
-                "dubbo".into(),
-                Box::new(dubbo::Factory::new(config_ref.map(|c| c["dubbo"].clone())).await?),
-            );
-        }
+        register!(table, config_ref, "dubbo", dubbo::Factory::new, false);
 
         #[cfg(feature = "step_mysql")]
-        if enable(config_ref, "mysql", true) {
-            table.insert(
-                "mysql".into(),
-                Box::new(mysql::Factory::new(config_ref.map(|c| c["mysql"].clone())).await?),
-            );
-        }
+        register!(table, config_ref, "mysql", mysql::Factory::new, true);
 
         #[cfg(feature = "step_redis")]
-        if enable(config_ref, "redis", true) {
-            table.insert(
-                "redis".into(),
-                Box::new(redis::Factory::new(config_ref.map(|c| c["redis"].clone())).await?),
-            );
-        }
+        register!(table, config_ref, "redis", redis::Factory::new, true);
 
         #[cfg(feature = "step_mongodb")]
-        if enable(config_ref, "mongodb", true) {
-            table.insert(
-                "mongodb".into(),
-                Box::new(mongodb::Factory::new(config_ref.map(|c| c["mongodb"].clone())).await?),
-            );
-        }
+        register!(table, config_ref, "mongodb", mongodb::Factory::new, true);
 
         #[cfg(feature = "step_dynlib")]
-        if enable(config_ref, "dynlib", false) {
-            table.insert(
-                "dynlib".into(),
-                Box::new(dynlib::Factory::new(config_ref.map(|c| c["dynlib"].clone())).await?),
-            );
-        }
+        register!(table, config_ref, "dynlib", dynlib::Factory::new, false);
 
         Ok(StepRunnerFactoryDefault { table })
     }

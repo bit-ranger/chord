@@ -1,9 +1,9 @@
-use chord_common::err;
 use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
 use chord_common::value::Json;
+use chord_common::{err, rerr};
 
 pub struct Factory {}
 
@@ -25,11 +25,27 @@ struct Runner {}
 #[async_trait]
 impl StepRunner for Runner {
     async fn run(&self, arg: &dyn RunArg) -> StepValue {
-        let raw = arg.config()["raw"]
+        let from = arg.config()["from"]
             .as_str()
             .map(|s| arg.render(s))
-            .ok_or(err!("010", "missing raw"))??;
-        let digest = urlencoding::decode(raw.as_str())?;
-        return Ok(Json::String(digest));
+            .ok_or(err!("010", "missing from"))??;
+
+        let by = arg.config()["by"]
+            .as_str()
+            .ok_or(err!("010", "missing by"))?;
+
+        return match by {
+            "encode" => {
+                let to = urlencoding::encode(from.as_str());
+                Ok(Json::String(to))
+            }
+            "decode" => {
+                let to = urlencoding::decode(from.as_str())?;
+                Ok(Json::String(to))
+            }
+            _ => {
+                rerr!("url", format!("unsupported {}", by))
+            }
+        };
     }
 }

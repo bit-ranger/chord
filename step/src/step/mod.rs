@@ -20,10 +20,8 @@ mod mysql;
 mod redis;
 #[cfg(feature = "step_restapi")]
 mod restapi;
-#[cfg(feature = "step_url_encode")]
-mod url_decode;
-#[cfg(feature = "step_url_encode")]
-mod url_encode;
+#[cfg(feature = "step_url")]
+mod url;
 
 pub struct StepRunnerFactoryDefault {
     table: HashMap<String, Box<dyn StepRunnerFactory>>,
@@ -54,23 +52,8 @@ impl StepRunnerFactoryDefault {
         #[cfg(feature = "step_md5")]
         register!(table, config_ref, "md5", md5::Factory::new, true);
 
-        #[cfg(feature = "step_url_encode")]
-        register!(
-            table,
-            config_ref,
-            "url_encode",
-            url_encode::Factory::new,
-            true
-        );
-
-        #[cfg(feature = "step_url_decode")]
-        register!(
-            table,
-            config_ref,
-            "url_decode",
-            url_decode::Factory::new,
-            true
-        );
+        #[cfg(feature = "step_url")]
+        register!(table, config_ref, "url", url::Factory::new, true);
 
         #[cfg(feature = "step_dubbo")]
         register!(table, config_ref, "dubbo", dubbo::Factory::new, false);

@@ -19,7 +19,7 @@ chord-flow = {path = "../flow"}
 chord-common = {path = "../common"}
 chord-input = {path = "../input"}
 chord-output = {path = "../output", features = ["report_csv"]}
-chord-step = {path = "../step", features = ["step_restapi", "step_md5", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url_encode", "step_url_decode", "step_dynlib"]}
+chord-step = {path = "../step", features = ["step_restapi", "step_md5", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url", "step_dynlib"]}
 log = { version = "0.4.14", features = ["std"]}
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 time = "0.1.42"

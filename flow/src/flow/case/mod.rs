@@ -41,7 +41,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 state: StepState::Err(e),
                 id,
                 start,
-                end: _,
+                end,
             } => {
                 let config_rendered = render(
                     flow_ctx.get_handlebars(),
@@ -50,6 +50,8 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 )
                 .unwrap_or("".to_owned());
                 info!("step Err  {} - {} <<< {}", id, e, config_rendered);
+                let step_assess = StepAssessStruct::new(id, start, end, StepState::Err(e));
+                step_assess_vec.push(Box::new(step_assess));
                 info!("case  Fail {}", arg.id());
                 return CaseAssessStruct::new(
                     arg.id().clone(),

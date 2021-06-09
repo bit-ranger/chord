@@ -5,7 +5,6 @@ use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
 use futures::StreamExt;
-use log::debug;
 use log::info;
 use log::trace;
 
@@ -70,7 +69,7 @@ async fn run_task<P: AsRef<Path>>(
     let rt = run_task0(input_dir, output_dir, exec_id, app_ctx).await;
     match rt {
         Ok(ts) => {
-            debug!("task Finish {}", input_dir.to_str().unwrap());
+            trace!("task end {}", input_dir.to_str().unwrap());
             ts
         }
         Err(e) => {

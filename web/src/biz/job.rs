@@ -5,7 +5,6 @@ use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
 use futures::StreamExt;
-use log::debug;
 use log::info;
 use log::trace;
 
@@ -64,7 +63,7 @@ pub async fn run<P: AsRef<Path>>(
     }
 
     let task_state_vec = join_all(futures).await;
-    debug!(
+    trace!(
         "job end {}, {}",
         job_path.as_ref().to_str().unwrap(),
         job_name.as_str()
@@ -114,7 +113,7 @@ async fn task_run0<P: AsRef<Path>>(
         task_end(assess_reporter, task_id.clone(), TaskState::Err(e.clone())).await?;
         Ok(TaskState::Err(e))
     } else {
-        debug!("task end {}", task_path.to_str().unwrap());
+        trace!("task end {}", task_path.to_str().unwrap());
         Ok(rt.unwrap())
     };
 }

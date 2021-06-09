@@ -16,7 +16,7 @@ repository = "https://github.com/bit-ranger/chord"
 
 [dependencies]
 chord-common = {path = "../common"}
-chord-step = {path = "../step", features = ["step_jsonapi", "step_md5", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url_encode", "step_url_decode"]}
+chord-step = {path = "../step", features = ["step_restapi", "step_md5", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url_encode", "step_url_decode"]}
 chord-flow = {path = "../flow"}
 chord-input = {path = "../input"}
 chord-output = {path = "../output", features = ["report_elasticsearch"]}

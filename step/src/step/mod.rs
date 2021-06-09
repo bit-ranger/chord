@@ -10,8 +10,6 @@ mod sleep;
 mod dubbo;
 #[cfg(feature = "step_dynlib")]
 mod dynlib;
-#[cfg(feature = "step_jsonapi")]
-mod jsonapi;
 #[cfg(feature = "step_md5")]
 mod md5;
 #[cfg(feature = "step_mongodb")]
@@ -20,6 +18,8 @@ mod mongodb;
 mod mysql;
 #[cfg(feature = "step_redis")]
 mod redis;
+#[cfg(feature = "step_restapi")]
+mod restapi;
 #[cfg(feature = "step_url_encode")]
 mod url_decode;
 #[cfg(feature = "step_url_encode")]
@@ -48,8 +48,8 @@ impl StepRunnerFactoryDefault {
 
         register!(table, config_ref, "sleep", sleep::Factory::new, true);
 
-        #[cfg(feature = "step_jsonapi")]
-        register!(table, config_ref, "jsonapi", jsonapi::Factory::new, true);
+        #[cfg(feature = "step_restapi")]
+        register!(table, config_ref, "restapi", restapi::Factory::new, true);
 
         #[cfg(feature = "step_md5")]
         register!(table, config_ref, "md5", md5::Factory::new, true);

@@ -110,7 +110,7 @@ struct Rae(chord_common::error::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
-        Rae(err!("jsonapi", format!("{}", err.status())))
+        Rae(err!("restapi", format!("{}", err.status())))
     }
 }
 

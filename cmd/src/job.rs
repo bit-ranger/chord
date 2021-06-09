@@ -70,7 +70,7 @@ async fn run_task<P: AsRef<Path>>(
     let rt = run_task0(input_dir, output_dir, exec_id, app_ctx).await;
     match rt {
         Ok(ts) => {
-            debug!("task OK {}", input_dir.to_str().unwrap());
+            debug!("task Finish {}", input_dir.to_str().unwrap());
             ts
         }
         Err(e) => {

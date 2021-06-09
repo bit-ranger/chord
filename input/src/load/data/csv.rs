@@ -1,13 +1,15 @@
+use std::fs::File;
+use std::path::Path;
+use std::path::PathBuf;
+
+use csv::{Reader, ReaderBuilder};
+
 use chord_common::err;
 use chord_common::error::Error;
 use chord_common::input::async_trait;
 use chord_common::input::CaseLoad;
 use chord_common::rerr;
-use chord_common::value::{Json, Map};
-use csv::{Reader, ReaderBuilder};
-use std::fs::File;
-use std::path::Path;
-use std::path::PathBuf;
+use chord_common::value::{to_string, Json, Map};
 
 pub struct Loader {
     path: PathBuf,
@@ -44,12 +46,20 @@ async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<V
     let mut hashmap_vec = Vec::new();
     let mut curr_size = 0;
     for result in reader.deserialize() {
-        let result = match result {
+        let result: Map = match result {
             Err(e) => return rerr!("csv", format!("{:?}", e)),
             Ok(r) => r,
         };
 
-        let record: Map = result;
+        let mut record: Map = Map::new();
+        //data fields must all be string
+        for (k, v) in result {
+            if v.is_string() {
+                record.insert(k, v);
+            } else {
+                record.insert(k, Json::String(to_string(&v)?));
+            }
+        }
 
         hashmap_vec.push(Json::Object(record));
 

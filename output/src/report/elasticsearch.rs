@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
-use log::{trace, warn};
+use log::{error, trace, warn};
 use serde::{Deserialize, Serialize};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
@@ -280,7 +280,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
         let body: Json = res.body_json().await?;
-        warn!("index_create_0 failure: {}", to_string(&body)?)
+        error!("index_create_0 failure: {}", to_string(&body)?)
     }
     Ok(())
 }

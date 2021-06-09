@@ -121,7 +121,7 @@ async fn loop_write(
 
         let data = recv.unwrap();
 
-        println!("{}", String::from_utf8_lossy(&data));
+        // println!("{}", String::from_utf8_lossy(&data));
 
         let _ = default_log_writer.write_all(&data).await;
     }

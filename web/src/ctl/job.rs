@@ -6,7 +6,7 @@ use async_std::task::{spawn, spawn_blocking};
 use git2::build::RepoBuilder;
 use git2::Repository;
 use lazy_static::lazy_static;
-use log::{error, warn, trace};
+use log::{error, trace, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
@@ -40,7 +40,6 @@ pub struct Req {
     job_path: Option<String>,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Rep {
     exec_id: String,
@@ -67,13 +66,10 @@ impl CtlImpl {
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
-            flow_ctx: chord_flow::context_create(
-                Box::new(
-                    StepRunnerFactoryDefault::new(
-                        config.step_config().map(|c| c.clone())
-                    ).await?
-                )
-            ).await,
+            flow_ctx: chord_flow::context_create(Box::new(
+                StepRunnerFactoryDefault::new(config.step_config().map(|c| c.clone())).await?,
+            ))
+            .await,
             config,
         })
     }
@@ -149,7 +145,7 @@ async fn checkout_run(
         checkout_path.as_path(),
         req.branch.as_ref().unwrap().as_str(),
     )
-        .await
+    .await
     {
         error!(
             "checkout error {}, {}, {}",
@@ -241,9 +237,6 @@ async fn job_run(
 ) {
     let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, es_url).await;
     if let Err(e) = job_result {
-        warn!(
-            "job run error {}",
-            e
-        );
+        warn!("job run error {}", e);
     }
 }

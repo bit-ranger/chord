@@ -132,7 +132,8 @@ impl TaskRunner {
         let round_max = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
-            self.case_data_vec_run_remaining(stage_id, concurrency).await?;
+            self.case_data_vec_run_remaining(stage_id, concurrency)
+                .await?;
             self.case_load.reset().await?;
             round_count += 1;
             if round_max > 0 && round_count >= round_max {

@@ -72,7 +72,7 @@ async fn run_task<P: AsRef<Path>>(
         Ok(ts) => {
             debug!("task OK {}", input_dir.to_str().unwrap());
             ts
-        },
+        }
         Err(e) => {
             info!("task error {}, {}", input_dir.to_str().unwrap(), e);
             TaskState::Err(e)

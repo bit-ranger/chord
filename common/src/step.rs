@@ -1,12 +1,12 @@
 pub use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
+use crate::case::CaseId;
 use crate::error::Error;
 use crate::value::Json;
-use crate::case::CaseId;
-use std::fmt::Display;
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::fmt::Display;
 
 pub type StepValue = std::result::Result<Json, Error>;
 
@@ -14,15 +14,13 @@ lazy_static! {
     pub static ref POINT_ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
 }
 
-pub trait StepId: Sync + Send + Display{
+pub trait StepId: Sync + Send + Display {
     fn step_id(&self) -> &str;
 
     fn case_id(&self) -> &dyn CaseId;
 }
 
-
 pub trait RunArg: Sync + Send {
-
     fn id(&self) -> &dyn StepId;
 
     fn config(&self) -> &Json;
@@ -30,9 +28,7 @@ pub trait RunArg: Sync + Send {
     fn render(&self, text: &str) -> Result<String, Error>;
 }
 
-
 pub trait CreateArg: Sync + Send {
-
     fn id(&self) -> &dyn StepId;
 
     fn kind(&self) -> &str;
@@ -44,7 +40,6 @@ pub trait CreateArg: Sync + Send {
     fn is_task_shared(&self, text: &str) -> bool;
 }
 
-
 #[derive(Debug, Clone)]
 pub enum StepState {
     Ok(Json),
@@ -54,9 +49,7 @@ pub enum StepState {
 unsafe impl Send for StepState {}
 unsafe impl Sync for StepState {}
 
-
 pub trait StepAssess: Sync + Send {
-
     fn id(&self) -> &dyn StepId;
 
     fn start(&self) -> DateTime<Utc>;
@@ -65,7 +58,6 @@ pub trait StepAssess: Sync + Send {
 
     fn state(&self) -> &StepState;
 }
-
 
 #[async_trait]
 pub trait StepRunner: Sync + Send {

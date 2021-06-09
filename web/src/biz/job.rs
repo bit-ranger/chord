@@ -14,7 +14,7 @@ use chord_common::flow::Flow;
 use chord_common::output::{AssessReport, DateTime, Utc};
 use chord_common::task::{TaskAssess, TaskId, TaskState};
 use chord_flow::{Context, TaskIdSimple};
-use chord_output::report::elasticsearch::{Reporter, index_create};
+use chord_output::report::elasticsearch::{index_create, Reporter};
 
 pub async fn run<P: AsRef<Path>>(
     job_path: P,

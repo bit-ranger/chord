@@ -1,4 +1,4 @@
-use chord_common::step::{StepValue};
+use chord_common::step::StepValue;
 use chord_common::value::Json;
 
 #[no_mangle]

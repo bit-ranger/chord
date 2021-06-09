@@ -1,20 +1,19 @@
-use chrono::Utc;
 use async_std::sync::Arc;
+use chrono::Utc;
 use itertools::Itertools;
 pub use mongodb::bson::doc;
 pub use mongodb::bson::Document;
+pub use mongodb::options::ClientOptions;
 pub use mongodb::Client;
 pub use mongodb::Collection;
 pub use mongodb::Database;
-pub use mongodb::options::ClientOptions;
 
 use chord_common::case::{CaseAssess, CaseState};
 use chord_common::error::Error;
-use chord_common::step::{StepAssess, StepState};
 use chord_common::rerr;
-use chord_common::task::{TaskAssess, TaskState, TaskId};
+use chord_common::step::{StepAssess, StepState};
+use chord_common::task::{TaskAssess, TaskId, TaskState};
 use mongodb::options::UpdateOptions;
-
 
 pub struct Reporter {
     collection: Arc<Collection>,
@@ -23,21 +22,25 @@ pub struct Reporter {
 }
 
 impl Reporter {
-    pub async fn new<T, E>(collection: Arc<Collection>,
-                           task_id: Arc<dyn TaskId>) -> Result<Reporter, Error>{
-        collection.update_one(
-            doc! {
-                "exec_id": task_id.exec_id()
-            },
-            doc! {
-                "$set": {
-                    "exec_id": task_id.exec_id(),
-                    "exec_time": Utc::now(),
-                    "task_assess": []
-                    }
-            },
-            Some(UpdateOptions::builder().upsert(true).build())
-        ).await?;
+    pub async fn new<T, E>(
+        collection: Arc<Collection>,
+        task_id: Arc<dyn TaskId>,
+    ) -> Result<Reporter, Error> {
+        collection
+            .update_one(
+                doc! {
+                    "exec_id": task_id.exec_id()
+                },
+                doc! {
+                    "$set": {
+                        "exec_id": task_id.exec_id(),
+                        "exec_time": Utc::now(),
+                        "task_assess": []
+                        }
+                },
+                Some(UpdateOptions::builder().upsert(true).build()),
+            )
+            .await?;
 
         Ok(Reporter {
             collection,
@@ -46,13 +49,12 @@ impl Reporter {
         })
     }
 
-    pub async fn state(&mut self, state: TaskState)-> Result<(), Error> {
+    pub async fn state(&mut self, state: TaskState) -> Result<(), Error> {
         self.total_task_state = state;
         Ok(())
     }
 
     pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
-
         if let TaskState::Err(_) = self.total_task_state {
             return rerr!("500", "task is error");
         }
@@ -67,17 +69,25 @@ impl Reporter {
             }
         }
 
-        let task_doc = self.collection.find_one(doc! { "exec_id": self.task_id.exec_id(), "task_assess.id": task_assess.id()}, None).await?;
-        if let None = task_doc {
-            self.collection.update_one(
-                doc! { "exec_id": self.task_id.exec_id()},
-                doc! { "$push": {
-                                    "task_assess":
-                                    ta_doc_init(task_assess)
-                                }
-                            },
+        let task_doc = self
+            .collection
+            .find_one(
+                doc! { "exec_id": self.task_id.exec_id(), "task_assess.id": task_assess.id()},
                 None,
-            ).await?;
+            )
+            .await?;
+        if let None = task_doc {
+            self.collection
+                .update_one(
+                    doc! { "exec_id": self.task_id.exec_id()},
+                    doc! { "$push": {
+                            "task_assess":
+                            ta_doc_init(task_assess)
+                        }
+                    },
+                    None,
+                )
+                .await?;
             return Ok(());
         }
 
@@ -120,14 +130,16 @@ impl Reporter {
         let state = match self.total_task_state {
             TaskState::Ok(_) => "O",
             TaskState::Fail(_) => "F",
-            TaskState::Err(_) => "E"
+            TaskState::Err(_) => "E",
         };
 
-        self.collection.update_one(
-            doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": self.task_id},
-            doc! {"$set": {"task_assess.$.state": state}},
-            None,
-        ).await?;
+        self.collection
+            .update_one(
+                doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": self.task_id},
+                doc! {"$set": {"task_assess.$.state": state}},
+                None,
+            )
+            .await?;
         Ok(())
     }
 }
@@ -142,7 +154,7 @@ fn ta_doc_init(ta: &dyn TaskAssess) -> Document {
                 "state": "R",
                 "case_assess": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
             }
-        },
+        }
         TaskState::Err(e) => {
             doc! {
                 "id": ta.id().task_id(),
@@ -189,15 +201,13 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
 
 fn sa_doc(sa: &dyn StepAssess) -> Document {
     doc! {
-            "id": sa.id().step_id(),
-            "start": sa.start(),
-            "end": sa.end(),
-            "state": match sa.state(){
-               StepState::Ok(_) => "O",
-               StepState::Fail(_) => "F",
-               StepState::Err(_) => "E",
-            }
+        "id": sa.id().step_id(),
+        "start": sa.start(),
+        "end": sa.end(),
+        "state": match sa.state(){
+           StepState::Ok(_) => "O",
+           StepState::Fail(_) => "F",
+           StepState::Err(_) => "E",
         }
+    }
 }
-
-

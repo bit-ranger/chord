@@ -122,25 +122,35 @@ impl StepRunner for Runner {
 
         let invoke = GenericInvoke {
             reference: Reference {
-                application: "chord".to_owned(),
-                registry_protocol: self.registry_protocol.clone(),
-                registry_address: self.registry_address.clone(),
+                application: Application {
+                    name: "chord".to_owned(),
+                },
+                registry: Registry {
+                    protocol: self.registry_protocol.clone(),
+                    address: self.registry_address.clone(),
+                },
+                interface: parts[0].to_owned(),
             },
-            interface: parts[0].to_owned(),
+
             method: parts[1].to_owned(),
-            parameter_types: parts[2..].iter().map(|p| p.to_owned().to_owned()).collect(),
+            arg_types: parts[2..].iter().map(|p| p.to_owned().to_owned()).collect(),
             args: args.clone(),
         };
 
         let value = remote_invoke(self.port, invoke).await.map_err(|e| e.0)?;
-        Ok(value)
+        let value = &value;
+        if value["success"].as_bool().unwrap_or(false) {
+            return Ok(value["data"].clone());
+        }
+
+        return rerr!("dubbo", format!("{}-{}", value["code"], value["message"]));
     }
 }
 
 async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Json, Rae> {
     let rb = RequestBuilder::new(
         Method::Post,
-        Url::from_str(format!("http://127.0.0.1:{}/invoke", port).as_str())
+        Url::from_str(format!("http://127.0.0.1:{}/api/dubbo/generic/invoke", port).as_str())
             .or(rerr!("021", "invalid url"))?,
     );
     let mut rb = rb.header(
@@ -166,19 +176,29 @@ impl Drop for Factory {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Reference {
-    application: String,
-    registry_protocol: String,
-    registry_address: String,
+struct GenericInvoke {
+    reference: Reference,
+    method: String,
+    arg_types: Vec<String>,
+    args: Vec<Json>,
 }
 
 #[derive(Serialize, Deserialize)]
-struct GenericInvoke {
-    reference: Reference,
+struct Reference {
     interface: String,
-    method: String,
-    parameter_types: Vec<String>,
-    args: Vec<Json>,
+    application: Application,
+    registry: Registry,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Application {
+    name: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Registry {
+    protocol: String,
+    address: String,
 }
 
 struct Rae(chord_common::error::Error);

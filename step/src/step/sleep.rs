@@ -1,5 +1,6 @@
 use async_std::task::sleep;
 use chord_common::error::Error;
+use chord_common::rerr;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
@@ -26,8 +27,18 @@ struct Runner {}
 #[async_trait]
 impl StepRunner for Runner {
     async fn run(&self, arg: &dyn RunArg) -> StepValue {
-        let seconds = arg.config()["duration"].as_u64().unwrap_or(0) as u64;
-        sleep(Duration::from_secs(seconds)).await;
+        let sec = arg.config()["duration"].as_u64();
+
+        if sec.is_none() {
+            return rerr!("sleep", "duration must > 0");
+        }
+
+        let sec = sec.unwrap();
+        if sec < 1 {
+            return rerr!("sleep", "duration must > 0");
+        }
+
+        sleep(Duration::from_secs(sec)).await;
         return Ok(Json::Null);
     }
 }

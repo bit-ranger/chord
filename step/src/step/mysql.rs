@@ -4,7 +4,7 @@ use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
 use chord_common::value::{Json, Map, Number};
-use log::debug;
+use log::trace;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 
@@ -94,7 +94,7 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> StepValue {
         );
         map.insert(String::from("records"), Json::Array(page.records));
         let page = Json::Object(map);
-        debug!("mysql select:\n{}", page);
+        trace!("select: {} >>> {}", arg.id(), page);
         return Ok(page);
     } else {
         let exec = rb.exec("", sql.as_str()).await?;
@@ -113,7 +113,7 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> StepValue {
             None => {}
         }
         let exec = Json::Object(map);
-        debug!("mysql exec:\n{}", exec);
+        trace!("exec: {} >>> {}", arg.id(), exec);
         return Ok(exec);
     }
 }

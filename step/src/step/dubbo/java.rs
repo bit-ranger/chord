@@ -111,6 +111,8 @@ impl StepRunner for Runner {
             .ok_or(err!("010", "missing method"))?;
         let parts = method_long
             .split(&['#', '(', ',', ')'][..])
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
             .collect::<Vec<&str>>();
         if parts.len() < 2 {
             return rerr!("010", "invalid method");
@@ -211,10 +213,7 @@ impl From<surf::Error> for Rae {
 
 impl From<serde_json::error::Error> for Rae {
     fn from(err: serde_json::error::Error) -> Rae {
-        Rae(err!(
-            "serde_json",
-            format!("{}:{}", err.line(), err.column())
-        ))
+        Rae(err!("dubbo", format!("{}:{}", err.line(), err.column())))
     }
 }
 

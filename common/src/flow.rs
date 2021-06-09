@@ -153,7 +153,7 @@ impl Flow {
         if s < 1 {
             return rerr!("step", "timeout must > 0");
         }
-        Ok(Duration::from_secs(10))
+        Ok(Duration::from_secs(s))
     }
 
     fn _stage_id_vec(&self) -> Result<Vec<String>, Error> {
@@ -165,7 +165,8 @@ impl Flow {
     }
 
     fn _stage_concurrency(&self, stage_id: &str) -> Result<usize, Error> {
-        let s = self.flow["stage"][stage_id]["concurrency"].as_u64()
+        let s = self.flow["stage"][stage_id]["concurrency"]
+            .as_u64()
             .ok_or(err!("stage", "missing concurrency"))?;
 
         if s < 1 {

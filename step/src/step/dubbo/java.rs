@@ -4,6 +4,7 @@ use async_std::io::BufReader;
 use async_std::prelude::*;
 use async_std::process::{Child, Command, Stdio};
 use log::trace;
+use serde::{Deserialize, Serialize};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
@@ -12,10 +13,8 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::Json;
+use chord_common::value::{from_str, to_string, Json};
 use chord_common::{err, rerr};
-
-use serde::{Deserialize, Serialize};
 
 pub struct Factory {
     registry_protocol: String,
@@ -105,8 +104,8 @@ struct Runner {
 
 #[async_trait]
 impl StepRunner for Runner {
-    async fn run(&self, arg: &dyn RunArg) -> StepValue {
-        let method_long = arg.config()["method"]
+    async fn run(&self, run_arg: &dyn RunArg) -> StepValue {
+        let method_long = run_arg.config()["method"]
             .as_str()
             .ok_or(err!("010", "missing method"))?;
         let parts = method_long
@@ -118,9 +117,21 @@ impl StepRunner for Runner {
             return rerr!("010", "invalid method");
         }
 
-        let args = arg.config()["args"]
-            .as_array()
-            .ok_or(err!("010", "missing args"))?;
+        let args_raw = &run_arg.config()["args"];
+        let args: Vec<Json> = match args_raw {
+            Json::Array(aw_vec) => {
+                let mut ar_vec: Vec<Json> = vec![];
+                for aw in aw_vec {
+                    let ar = render(run_arg, aw)?;
+                    ar_vec.push(ar);
+                }
+                ar_vec
+            }
+            _ => render(run_arg, args_raw)?
+                .as_array()
+                .ok_or(err!("010", "missing args"))?
+                .clone(),
+        };
 
         let invoke = GenericInvoke {
             reference: Reference {
@@ -136,7 +147,7 @@ impl StepRunner for Runner {
 
             method: parts[1].to_owned(),
             arg_types: parts[2..].iter().map(|p| p.to_owned().to_owned()).collect(),
-            args: args.clone(),
+            args,
         };
 
         let value = remote_invoke(self.port, invoke).await.map_err(|e| e.0)?;
@@ -145,7 +156,7 @@ impl StepRunner for Runner {
             return Ok(value["data"].clone());
         }
 
-        return rerr!("dubbo", format!("{}-{}", value["code"], value["message"]));
+        return rerr!("dubbo", format!("{}::{}", value["code"], value["message"]));
     }
 }
 
@@ -221,4 +232,21 @@ impl From<chord_common::error::Error> for Rae {
     fn from(err: Error) -> Self {
         Rae(err)
     }
+}
+
+fn render(arg: &dyn RunArg, content: &Json) -> Result<Json, Error> {
+    if content.is_null() {
+        return Ok(Json::Null);
+    }
+
+    let body_str: String = if content.is_string() {
+        content
+            .as_str()
+            .ok_or(err!("032", "invalid content"))?
+            .to_owned()
+    } else {
+        to_string(content).or(rerr!("032", "invalid content"))?
+    };
+    let content_str = arg.render(body_str.as_str())?;
+    return Ok(from_str(content_str.as_str())?);
 }

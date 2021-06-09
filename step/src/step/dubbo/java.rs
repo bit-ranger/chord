@@ -13,7 +13,7 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::{from_str, to_string, Json};
+use chord_common::value::{from_str, to_string_pretty, Json};
 use chord_common::{err, rerr};
 
 pub struct Factory {
@@ -245,7 +245,7 @@ fn render(arg: &dyn RunArg, content: &Json) -> Result<Json, Error> {
             .ok_or(err!("032", "invalid content"))?
             .to_owned()
     } else {
-        to_string(content).or(rerr!("032", "invalid content"))?
+        to_string_pretty(content).or(rerr!("032", "invalid content"))?
     };
     let content_str = arg.render(body_str.as_str())?;
     return Ok(from_str(content_str.as_str())?);

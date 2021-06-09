@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
-use log::{error, trace, warn};
+use log::{error, info, trace, warn};
 use serde::{Deserialize, Serialize};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
@@ -15,24 +15,12 @@ use chord_common::output::async_trait;
 use chord_common::output::AssessReport;
 use chord_common::step::{StepAssess, StepState};
 use chord_common::task::{TaskAssess, TaskId, TaskState};
-use chord_common::value::{to_string, Json};
+use chord_common::value::{to_string, to_string_pretty, Json};
 
 pub struct Reporter {
     es_url: String,
     es_index: String,
     task_id: Arc<dyn TaskId>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct Data {
-    id: String,
-    id_in_layer: String,
-    layer: String,
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
-    elapse: usize,
-    state: String,
-    result: Json,
 }
 
 #[async_trait]
@@ -165,18 +153,21 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         }
         .to_owned(),
         result: match sa.state() {
-            StepState::Ok(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
-            StepState::Fail(result) => Json::String(to_string(result).unwrap_or("".to_owned())),
+            StepState::Ok(result) => {
+                Json::String(to_string_pretty(result).unwrap_or("".to_owned()))
+            }
+            StepState::Fail(result) => {
+                Json::String(to_string_pretty(result).unwrap_or("".to_owned()))
+            }
             StepState::Err(e) => Json::String(e.to_string()),
         },
     }
 }
 
 async fn data_send_all(es_url: &str, es_index: &str, data: Vec<Data>) -> Result<(), Error> {
-    for d in data {
-        data_send(es_url, es_index, d).await?
-    }
-    Ok(())
+    let path = format!("{}/{}/_doc/_bulk", es_url, es_index);
+    let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
+    data_send_all_0(rb, data).await.map_err(|e| e.0)
 }
 
 async fn data_send(es_url: &str, es_index: &str, data: Data) -> Result<(), Error> {
@@ -194,6 +185,7 @@ pub async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
         return Ok(());
     }
 
+    info!("index creating [{}]", index_name);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
     index_create_0(rb).await.map_err(|e| e.0)
 }
@@ -214,6 +206,33 @@ async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), Rae> {
             to_string(&data)?,
             to_string(&body)?
         )
+    }
+    Ok(())
+}
+
+async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), Rae> {
+    let mut rb = rb.header(
+        HeaderName::from_str("Content-Type").unwrap(),
+        HeaderValue::from_str("application/json")?,
+    );
+
+    let mut body = String::new();
+    for d in data {
+        let act = ActionIndex {
+            index: ActionMeta { _id: d.id.clone() },
+        };
+        body.push_str(to_string(&act)?.as_str());
+        body.push_str("\n");
+        body.push_str(to_string(&d)?.as_str());
+        body.push_str("\n");
+    }
+
+    rb = rb.body(Body::from_string(body));
+
+    let mut res: Response = rb.send().await?;
+    if !res.status().is_success() {
+        let body: Json = res.body_json().await?;
+        warn!("data_send_all_0 failure: {}", to_string(&body)?)
     }
     Ok(())
 }
@@ -306,4 +325,26 @@ impl From<chord_common::error::Error> for Rae {
     fn from(err: Error) -> Self {
         Rae(err)
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Data {
+    id: String,
+    id_in_layer: String,
+    layer: String,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    elapse: usize,
+    state: String,
+    result: Json,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ActionIndex {
+    index: ActionMeta,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ActionMeta {
+    _id: String,
 }

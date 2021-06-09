@@ -8,7 +8,7 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::{to_string, Json, Map, Number};
+use chord_common::value::{to_string_pretty, Json, Map, Number};
 use chord_common::{err, rerr};
 use std::borrow::Borrow;
 
@@ -78,7 +78,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Json, Rae> {
                 .ok_or(err!("032", "invalid body"))?
                 .to_owned()
         } else {
-            to_string(body_content).or(rerr!("032", "invalid body"))?
+            to_string_pretty(body_content).or(rerr!("032", "invalid body"))?
         };
         let body_str = arg.render(body_str.as_str())?;
         rb = rb.body(Body::from_string(body_str));

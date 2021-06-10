@@ -8,8 +8,8 @@ mod sleep;
 
 #[cfg(feature = "step_dubbo")]
 mod dubbo;
-#[cfg(feature = "step_dynlib")]
-mod dynlib;
+#[cfg(feature = "step_dylib")]
+mod dylib;
 #[cfg(feature = "step_md5")]
 mod md5;
 #[cfg(feature = "step_mongodb")]
@@ -67,8 +67,8 @@ impl StepRunnerFactoryDefault {
         #[cfg(feature = "step_mongodb")]
         register!(table, config_ref, "mongodb", mongodb::Factory::new, true);
 
-        #[cfg(feature = "step_dynlib")]
-        register!(table, config_ref, "dynlib", dynlib::Factory::new, false);
+        #[cfg(feature = "step_dylib")]
+        register!(table, config_ref, "dylib", dylib::Factory::new, false);
 
         Ok(StepRunnerFactoryDefault { table })
     }

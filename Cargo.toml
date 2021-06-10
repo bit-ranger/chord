@@ -7,7 +7,7 @@ members = [
     'step',
     'cmd',
     'web',
-    "zero/step-dyn"
+    "zero/step-dylib"
 ]
 
 

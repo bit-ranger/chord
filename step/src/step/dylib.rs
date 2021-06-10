@@ -3,10 +3,8 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::{Json, Map};
-use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol, UpdateState};
-use std::cell::RefCell;
-use std::ops::DerefMut;
+use chord_common::value::{to_string, Json};
+use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 use std::sync::Arc;
 
 pub struct Factory {}
@@ -28,10 +26,12 @@ impl StepRunnerFactory for Factory {
 
         let lib = reload_handler.add_library("step_dylib", PlatformName::Yes)?;
 
-        let step_runner_create: Symbol<fn(&dyn CreateArg) -> Result<(), Error>> =
-            unsafe { lib.lib.get(b"create")? };
+        let step_runner_create: Symbol<fn(&str, &str) -> Result<(), Error>> =
+            unsafe { lib.lib.get(b"init")? };
 
-        step_runner_create(arg)?;
+        let config_str = to_string(arg.config())?;
+        let config_str = arg.render(config_str.as_str())?;
+        step_runner_create(arg.id().to_string().as_str(), config_str.as_str())?;
 
         Ok(Box::new(Runner { lib }))
     }
@@ -48,8 +48,11 @@ unsafe impl Sync for Runner {}
 #[async_trait]
 impl StepRunner for Runner {
     async fn run(&self, arg: &dyn RunArg) -> StepValue {
-        let step_runner_run: Symbol<fn(&dyn RunArg) -> StepValue> =
+        let step_runner_run: Symbol<fn(&str, &str) -> StepValue> =
             unsafe { self.lib.lib.get(b"run")? };
-        step_runner_run(arg)
+
+        let config_str = to_string(arg.config())?;
+        let config_str = arg.render(config_str.as_str())?;
+        step_runner_run(arg.id().to_string().as_str(), config_str.as_str())
     }
 }

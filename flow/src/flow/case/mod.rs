@@ -89,10 +89,10 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 start,
                 end,
             } => {
-                let assert_present = step_arg.meta_str(vec!["assert"]).await;
+                let assert_present = step_arg.assert();
                 step_register(&mut render_context, step_id, &json).await;
                 if let Some(con) = assert_present {
-                    if assert(flow_ctx.get_handlebars(), &mut render_context, &con).await {
+                    if assert(flow_ctx.get_handlebars(), &mut render_context, con.as_str()).await {
                         debug!("step Ok   {}", id);
                         let step_assess =
                             StepAssessStruct::new(id, start, end, StepState::Ok(json));

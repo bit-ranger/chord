@@ -331,7 +331,7 @@ async fn step_runner_create(
         flow_ctx.get_handlebars(),
         render_context,
         task_id,
-        kind.to_owned(),
+        kind,
         step_id,
     );
 

@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -144,21 +143,8 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         return &self.id;
     }
 
-    pub async fn meta_str(
-        self: &RunArgStruct<'f, 'h, 'reg, 'r>,
-        path: Vec<&str>,
-    ) -> Option<String> {
-        let config = self.flow.step(self.id().step_id());
-
-        let raw_config = path.iter().fold(config, |acc, k| acc[k].borrow());
-
-        match raw_config.as_str() {
-            Some(s) => match render(self.handlebars, self.render_context, s) {
-                Ok(s) => Some(s),
-                Err(_) => None,
-            },
-            None => None,
-        }
+    pub fn assert(&self) -> Option<String> {
+        self.flow.step_assert(self.id().step_id())
     }
 
     pub fn timeout(&self) -> Duration {

@@ -1,11 +1,12 @@
+use std::borrow::Borrow;
+use std::time::Duration;
+
+use itertools::concat;
+
 use crate::error::Error;
 use crate::step::POINT_ID_PATTERN;
 use crate::value::{Map, Value};
 use crate::{err, rerr};
-
-use itertools::concat;
-use std::borrow::Borrow;
-use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct Flow {
@@ -55,7 +56,7 @@ impl Flow {
         return Ok(flow);
     }
 
-    pub fn version(&self) -> &str {
+    pub fn version(&self) -> String {
         self._version().unwrap()
     }
 
@@ -90,8 +91,12 @@ impl Flow {
         self.flow["def"].as_object()
     }
 
-    pub fn step_kind(&self, step_id: &str) -> &str {
+    pub fn step_kind(&self, step_id: &str) -> String {
         self._step_kind(step_id).unwrap()
+    }
+
+    pub fn step_assert(&self, step_id: &str) -> Option<String> {
+        self.step(step_id)["assert"].as_str().map(ToOwned::to_owned)
     }
 
     pub fn step_timeout(&self, step_id: &str) -> Duration {
@@ -117,9 +122,10 @@ impl Flow {
     // -----------------------------------------------
     // private
 
-    fn _version(&self) -> Result<&str, Error> {
+    fn _version(&self) -> Result<String, Error> {
         let v = self.flow["version"]
             .as_str()
+            .map(ToOwned::to_owned)
             .ok_or(err!("version", "missing version"))?;
 
         if v != "0.0.1" {
@@ -137,9 +143,10 @@ impl Flow {
         return Ok(sid_vec);
     }
 
-    fn _step_kind(&self, step_id: &str) -> Result<&str, Error> {
+    fn _step_kind(&self, step_id: &str) -> Result<String, Error> {
         self.step(step_id)["kind"]
             .as_str()
+            .map(ToOwned::to_owned)
             .ok_or(err!("step", "missing kind"))
     }
 

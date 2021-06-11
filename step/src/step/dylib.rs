@@ -41,10 +41,6 @@ struct Runner {
     lib: Arc<Lib>,
 }
 
-unsafe impl Send for Runner {}
-
-unsafe impl Sync for Runner {}
-
 #[async_trait]
 impl StepRunner for Runner {
     async fn run(&self, arg: &dyn RunArg) -> StepValue {

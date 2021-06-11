@@ -1,12 +1,12 @@
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::Json;
+use chord::value::Value;
+use chord::Error;
 use chord::{err, rerr};
 
 pub struct Factory {}
 
 impl Factory {
-    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
         Ok(Factory {})
     }
 }
@@ -35,11 +35,11 @@ impl StepRunner for Runner {
         return match by {
             "encode" => {
                 let to = urlencoding::encode(from.as_str());
-                Ok(Json::String(to))
+                Ok(Value::String(to))
             }
             "decode" => {
                 let to = urlencoding::decode(from.as_str())?;
-                Ok(Json::String(to))
+                Ok(Value::String(to))
             }
             _ => {
                 rerr!("url", format!("unsupported {}", by))

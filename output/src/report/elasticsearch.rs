@@ -9,13 +9,13 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
-use chord::error::Error;
 use chord::output::async_trait;
 use chord::output::AssessReport;
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::json::{to_string, to_string_pretty, Json};
+use chord::value::{to_string, to_string_pretty, Value};
 use chord::value::{Deserialize, Serialize};
+use chord::Error;
 
 pub struct Reporter {
     es_url: String,
@@ -90,7 +90,7 @@ fn ta_doc_init(task_id: &dyn TaskId, time: DateTime<Utc>) -> Data {
         end: time,
         elapse: 0,
         state: "R".to_owned(),
-        value: Json::Null,
+        value: Value::Null,
     }
 }
 
@@ -109,9 +109,9 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
         }
         .to_owned(),
         value: match ts {
-            TaskState::Ok => Json::Null,
-            TaskState::Fail => Json::Null,
-            TaskState::Err(e) => Json::String(e.to_string()),
+            TaskState::Ok => Value::Null,
+            TaskState::Fail => Value::Null,
+            TaskState::Err(e) => Value::String(e.to_string()),
         },
     }
 }
@@ -131,9 +131,9 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
         }
         .to_owned(),
         value: match ca.state() {
-            CaseState::Ok(_) => Json::Null,
-            CaseState::Fail(_) => Json::Null,
-            CaseState::Err(e) => Json::String(e.to_string()),
+            CaseState::Ok(_) => Value::Null,
+            CaseState::Fail(_) => Value::Null,
+            CaseState::Err(e) => Value::String(e.to_string()),
         },
     }
 }
@@ -154,12 +154,12 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         .to_owned(),
         value: match sa.state() {
             StepState::Ok(result) => {
-                Json::String(to_string_pretty(result).unwrap_or("".to_owned()))
+                Value::String(to_string_pretty(result).unwrap_or("".to_owned()))
             }
             StepState::Fail(result) => {
-                Json::String(to_string_pretty(result).unwrap_or("".to_owned()))
+                Value::String(to_string_pretty(result).unwrap_or("".to_owned()))
             }
-            StepState::Err(e) => Json::String(e.to_string()),
+            StepState::Err(e) => Value::String(e.to_string()),
         },
     }
 }
@@ -200,7 +200,7 @@ async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), Rae> {
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
-        let body: Json = res.body_json().await?;
+        let body: Value = res.body_json().await?;
         warn!(
             "data_send_0 failure: {}, {}",
             to_string(&data)?,
@@ -232,7 +232,7 @@ async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), Rae>
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
-        let body: Json = res.body_json().await?;
+        let body: Value = res.body_json().await?;
         warn!("data_send_all_0 failure: {}", to_string(&body)?)
     }
     Ok(())
@@ -299,13 +299,13 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
-        let body: Json = res.body_json().await?;
+        let body: Value = res.body_json().await?;
         error!("index_create_0 failure: {}", to_string(&body)?)
     }
     Ok(())
 }
 
-struct Rae(chord::error::Error);
+struct Rae(chord::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
@@ -313,8 +313,8 @@ impl From<surf::Error> for Rae {
     }
 }
 
-impl From<chord::value::json::Error> for Rae {
-    fn from(err: chord::value::json::Error) -> Rae {
+impl From<chord::value::Error> for Rae {
+    fn from(err: chord::value::Error) -> Rae {
         Rae(err!(
             "serde_json",
             format!("{}:{}", err.line(), err.column())
@@ -322,7 +322,7 @@ impl From<chord::value::json::Error> for Rae {
     }
 }
 
-impl From<chord::error::Error> for Rae {
+impl From<chord::Error> for Rae {
     fn from(err: Error) -> Self {
         Rae(err)
     }
@@ -337,7 +337,7 @@ struct Data {
     end: DateTime<Utc>,
     elapse: usize,
     state: String,
-    value: Json,
+    value: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

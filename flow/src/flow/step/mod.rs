@@ -1,7 +1,7 @@
 use chrono::Utc;
 
-use chord::error::Error;
 use chord::step::{StepRunner, StepValue};
+use chord::Error;
 use res::StepAssessStruct;
 
 use crate::flow::step::arg::RunArgStruct;

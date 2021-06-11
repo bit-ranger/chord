@@ -16,7 +16,7 @@ use log;
 use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
 
-use chord::error::Error;
+use chord::Error;
 use flume::{bounded, Receiver, Sender};
 use itertools::Itertools;
 

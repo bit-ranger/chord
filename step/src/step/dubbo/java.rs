@@ -8,10 +8,10 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::{from_str, to_string_pretty, Json};
+use chord::value::{from_str, to_string_pretty, Value};
 use chord::value::{Deserialize, Serialize};
+use chord::Error;
 use chord::{err, rerr};
 
 pub struct Factory {
@@ -22,7 +22,7 @@ pub struct Factory {
 }
 
 impl Factory {
-    pub async fn new(config: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(config: Option<Value>) -> Result<Factory, Error> {
         if config.is_none() {
             return rerr!("010", "missing config");
         }
@@ -116,9 +116,9 @@ impl StepRunner for Runner {
         }
 
         let args_raw = &run_arg.config()["args"];
-        let args: Vec<Json> = match args_raw {
-            Json::Array(aw_vec) => {
-                let mut ar_vec: Vec<Json> = vec![];
+        let args: Vec<Value> = match args_raw {
+            Value::Array(aw_vec) => {
+                let mut ar_vec: Vec<Value> = vec![];
                 for aw in aw_vec {
                     let ar = render(run_arg, aw)?;
                     ar_vec.push(ar);
@@ -158,7 +158,7 @@ impl StepRunner for Runner {
     }
 }
 
-async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Json, Rae> {
+async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, Rae> {
     let rb = RequestBuilder::new(
         Method::Post,
         Url::from_str(format!("http://127.0.0.1:{}/api/dubbo/generic/invoke", port).as_str())
@@ -175,7 +175,7 @@ async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Json, R
     if !res.status().is_success() {
         return rerr!("dubbo", res.status().to_string())?;
     } else {
-        let body: Json = res.body_json().await?;
+        let body: Value = res.body_json().await?;
         Ok(body)
     }
 }
@@ -191,7 +191,7 @@ struct GenericInvoke {
     reference: Reference,
     method: String,
     arg_types: Vec<String>,
-    args: Vec<Json>,
+    args: Vec<Value>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -212,7 +212,7 @@ struct Registry {
     address: String,
 }
 
-struct Rae(chord::error::Error);
+struct Rae(chord::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
@@ -220,21 +220,21 @@ impl From<surf::Error> for Rae {
     }
 }
 
-impl From<chord::value::json::Error> for Rae {
-    fn from(err: chord::value::json::Error) -> Rae {
+impl From<chord::value::Error> for Rae {
+    fn from(err: chord::value::Error) -> Rae {
         Rae(err!("dubbo", format!("{}:{}", err.line(), err.column())))
     }
 }
 
-impl From<chord::error::Error> for Rae {
+impl From<chord::Error> for Rae {
     fn from(err: Error) -> Self {
         Rae(err)
     }
 }
 
-fn render(arg: &dyn RunArg, content: &Json) -> Result<Json, Error> {
+fn render(arg: &dyn RunArg, content: &Value) -> Result<Value, Error> {
     if content.is_null() {
-        return Ok(Json::Null);
+        return Ok(Value::Null);
     }
 
     let body_str: String = if content.is_string() {

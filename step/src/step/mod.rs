@@ -1,7 +1,7 @@
 use chord::err;
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, StepRunner, StepRunnerFactory};
-use chord::value::json::Json;
+use chord::value::Value;
+use chord::Error;
 use std::collections::HashMap;
 
 mod sleep;
@@ -39,7 +39,7 @@ macro_rules! register {
 }
 
 impl StepRunnerFactoryDefault {
-    pub async fn new(config: Option<Json>) -> Result<StepRunnerFactoryDefault, Error> {
+    pub async fn new(config: Option<Value>) -> Result<StepRunnerFactoryDefault, Error> {
         let mut table: HashMap<String, Box<dyn StepRunnerFactory>> = HashMap::new();
 
         let config_ref = config.as_ref();
@@ -89,7 +89,7 @@ impl StepRunnerFactory for StepRunnerFactoryDefault {
     }
 }
 
-fn enable(config: Option<&Json>, step_name: &str, default_enable: bool) -> bool {
+fn enable(config: Option<&Value>, step_name: &str, default_enable: bool) -> bool {
     if config.is_none() {
         return default_enable;
     }

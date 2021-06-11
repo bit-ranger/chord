@@ -1,7 +1,7 @@
 use chord::err;
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::{Json, Map, Number};
+use chord::value::{Map, Number, Value};
+use chord::Error;
 use log::trace;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
@@ -9,7 +9,7 @@ use rbatis::rbatis::Rbatis;
 pub struct Factory {}
 
 impl Factory {
-    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
         Ok(Factory {})
     }
 }
@@ -72,26 +72,26 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> StepValue {
     if sql.trim_start().to_uppercase().starts_with("SELECT ") {
         let pr = PageRequest::new(1, 20);
         let args = vec![];
-        let page: Page<Json> = rb.fetch_page("", sql.as_str(), &args, &pr).await?;
+        let page: Page<Value> = rb.fetch_page("", sql.as_str(), &args, &pr).await?;
         let mut map = Map::new();
         map.insert(
             String::from("total"),
-            Json::Number(Number::from(page.total)),
+            Value::Number(Number::from(page.total)),
         );
         map.insert(
             String::from("pages"),
-            Json::Number(Number::from(page.pages)),
+            Value::Number(Number::from(page.pages)),
         );
         map.insert(
             String::from("page_no"),
-            Json::Number(Number::from(page.page_no)),
+            Value::Number(Number::from(page.page_no)),
         );
         map.insert(
             String::from("page_size"),
-            Json::Number(Number::from(page.page_size)),
+            Value::Number(Number::from(page.page_size)),
         );
-        map.insert(String::from("records"), Json::Array(page.records));
-        let page = Json::Object(map);
+        map.insert(String::from("records"), Value::Array(page.records));
+        let page = Value::Object(map);
         trace!("select: {} >>> {}", arg.id(), page);
         return Ok(page);
     } else {
@@ -99,18 +99,18 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> StepValue {
         let mut map = Map::new();
         map.insert(
             String::from("rows_affected"),
-            Json::Number(Number::from(exec.rows_affected)),
+            Value::Number(Number::from(exec.rows_affected)),
         );
         match exec.last_insert_id {
             Some(id) => {
                 map.insert(
                     String::from("last_insert_id"),
-                    Json::Number(Number::from(id)),
+                    Value::Number(Number::from(id)),
                 );
             }
             None => {}
         }
-        let exec = Json::Object(map);
+        let exec = Value::Object(map);
         trace!("exec: {} >>> {}", arg.id(), exec);
         return Ok(exec);
     }

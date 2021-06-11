@@ -1,12 +1,12 @@
 use chord::err;
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::Json;
+use chord::value::Value;
+use chord::Error;
 
 pub struct Factory {}
 
 impl Factory {
-    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
         Ok(Factory {})
     }
 }
@@ -34,5 +34,5 @@ async fn run(arg: &dyn RunArg) -> StepValue {
         .ok_or(err!("010", "missing raw"))??;
     let digest = md5::compute(raw);
     let digest = format!("{:x}", digest);
-    return Ok(Json::String(digest));
+    return Ok(Value::String(digest));
 }

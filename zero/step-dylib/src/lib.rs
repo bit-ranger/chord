@@ -1,6 +1,6 @@
-use chord::error::Error;
 use chord::step::{CreateArg, RunArg, StepValue};
-use chord::value::json::{from_str, Json, Map};
+use chord::value::{from_str, Map, Value};
+use chord::Error;
 use lazy_static::lazy_static;
 use std::ops::DerefMut;
 use std::sync::Mutex;
@@ -27,5 +27,5 @@ pub fn run(id: &str, config: &str) -> StepValue {
     let mut ctx = CONTEXT.lock().unwrap();
     let ctx = ctx.deref_mut();
     ctx.insert("run".into(), "1".into());
-    Ok(Json::String(format!("step_dylib run {}", id)))
+    Ok(Value::String(format!("step_dylib run {}", id)))
 }

@@ -4,16 +4,16 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::{to_string_pretty, Json, Map, Number};
+use chord::value::{to_string_pretty, Map, Number, Value};
+use chord::Error;
 use chord::{err, rerr};
 use std::borrow::Borrow;
 
 pub struct Factory {}
 
 impl Factory {
-    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
         Ok(Factory {})
     }
 }
@@ -38,7 +38,7 @@ async fn run(arg: &dyn RunArg) -> StepValue {
     return run0(arg).await.map_err(|e| e.0);
 }
 
-async fn run0(arg: &dyn RunArg) -> std::result::Result<Json, Rae> {
+async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
     let url = arg.config()["url"]
         .as_str()
         .map(|s| arg.render(s))
@@ -86,25 +86,25 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Json, Rae> {
     let mut res_data = Map::new();
     res_data.insert(
         String::from("status"),
-        Json::Number(Number::from_str(res.status().to_string().as_str()).unwrap()),
+        Value::Number(Number::from_str(res.status().to_string().as_str()).unwrap()),
     );
 
     let mut header_data = Map::new();
     for header_name in res.header_names() {
         header_data.insert(
             header_name.to_string(),
-            Json::String(res.header(header_name).unwrap().to_string()),
+            Value::String(res.header(header_name).unwrap().to_string()),
         );
     }
 
-    res_data.insert(String::from("header"), Json::Object(header_data));
+    res_data.insert(String::from("header"), Value::Object(header_data));
 
-    let body: Json = res.body_json().await?;
+    let body: Value = res.body_json().await?;
     res_data.insert(String::from("body"), body);
-    return Ok(Json::Object(res_data));
+    return Ok(Value::Object(res_data));
 }
 
-struct Rae(chord::error::Error);
+struct Rae(chord::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
@@ -112,7 +112,7 @@ impl From<surf::Error> for Rae {
     }
 }
 
-impl From<chord::error::Error> for Rae {
+impl From<chord::Error> for Rae {
     fn from(err: Error) -> Self {
         Rae(err)
     }

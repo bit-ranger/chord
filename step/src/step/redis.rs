@@ -1,13 +1,13 @@
 use chord::err;
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::{from_str, Json, Number};
+use chord::value::{from_str, Number, Value};
+use chord::Error;
 use redis::Value as RedisValue;
 
 pub struct Factory {}
 
 impl Factory {
-    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
         Ok(Factory {})
     }
 }
@@ -51,19 +51,19 @@ async fn run(arg: &dyn RunArg) -> StepValue {
 
     let redis_value: RedisValue = command.query_async(&mut con).await?;
     let result = match &redis_value {
-        RedisValue::Nil => Json::Null,
-        RedisValue::Int(i) => Json::Number(Number::from(i.clone())),
+        RedisValue::Nil => Value::Null,
+        RedisValue::Int(i) => Value::Number(Number::from(i.clone())),
         RedisValue::Data(data) => {
             let data = String::from_utf8_lossy(data);
             let dv = from_str(data.as_ref());
             match dv {
                 Ok(v) => v,
-                Err(_) => Json::String(data.to_string()),
+                Err(_) => Value::String(data.to_string()),
             }
         }
-        RedisValue::Status(status) => Json::String(status.clone()),
-        RedisValue::Okay => Json::String("OK".to_string()),
-        _ => Json::Array(vec![]),
+        RedisValue::Status(status) => Value::String(status.clone()),
+        RedisValue::Okay => Value::String("OK".to_string()),
+        _ => Value::Array(vec![]),
     };
     return Ok(result);
 }

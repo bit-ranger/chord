@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
-use chord::value::json::{Json, Number};
+use chord::value::{Number, Value};
 
 pub static NUM_HELPER: NumHelper = NumHelper {};
 pub static BOOL_HELPER: BoolHelper = BoolHelper {};
@@ -27,11 +27,11 @@ impl HelperDef for NumHelper {
         let param = param.value();
 
         match param {
-            Json::String(x) => {
+            Value::String(x) => {
                 let n = Number::from_str(x.trim()).unwrap();
-                Ok(Some(ScopedJson::Derived(Json::Number(n))))
+                Ok(Some(ScopedJson::Derived(Value::Number(n))))
             }
-            Json::Number(n) => Ok(Some(ScopedJson::Derived(Json::Number(n.clone())))),
+            Value::Number(n) => Ok(Some(ScopedJson::Derived(Value::Number(n.clone())))),
             _ => Err(RenderError::new("\"num\" can not convert ")),
         }
     }
@@ -55,11 +55,11 @@ impl HelperDef for BoolHelper {
         let param = param.value();
 
         match param {
-            Json::String(x) => {
+            Value::String(x) => {
                 let n = bool::from_str(x.trim()).unwrap();
-                Ok(Some(ScopedJson::Derived(Json::Bool(n))))
+                Ok(Some(ScopedJson::Derived(Value::Bool(n))))
             }
-            Json::Bool(n) => Ok(Some(ScopedJson::Derived(Json::Bool(n.clone())))),
+            Value::Bool(n) => Ok(Some(ScopedJson::Derived(Value::Bool(n.clone())))),
             _ => Err(RenderError::new("\"bool\" can not convert ")),
         }
     }
@@ -89,9 +89,9 @@ impl HelperDef for AllHelper {
             let param = param.unwrap().value();
 
             match param {
-                Json::Bool(b) => {
+                Value::Bool(b) => {
                     if !b {
-                        return Ok(Some(ScopedJson::Derived(Json::Bool(false))));
+                        return Ok(Some(ScopedJson::Derived(Value::Bool(false))));
                     }
                 }
                 _ => return Err(RenderError::new("\"all\" only accept bool")),
@@ -100,7 +100,7 @@ impl HelperDef for AllHelper {
             idx = idx + 1;
         }
 
-        return Ok(Some(ScopedJson::Derived(Json::Bool(true))));
+        return Ok(Some(ScopedJson::Derived(Value::Bool(true))));
     }
 }
 
@@ -128,9 +128,9 @@ impl HelperDef for AnyHelper {
             let param = param.unwrap().value();
 
             match param {
-                Json::Bool(b) => {
+                Value::Bool(b) => {
                     if *b {
-                        return Ok(Some(ScopedJson::Derived(Json::Bool(true))));
+                        return Ok(Some(ScopedJson::Derived(Value::Bool(true))));
                     }
                 }
                 _ => return Err(RenderError::new("\"any\" only accept bool")),
@@ -139,6 +139,6 @@ impl HelperDef for AnyHelper {
             idx = idx + 1;
         }
 
-        return Ok(Some(ScopedJson::Derived(Json::Bool(false))));
+        return Ok(Some(ScopedJson::Derived(Value::Bool(false))));
     }
 }

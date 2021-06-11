@@ -7,12 +7,12 @@ use csv::Writer;
 use async_std::sync::Arc;
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
-use chord::error::Error;
 use chord::flow::Flow;
 use chord::output::async_trait;
 use chord::output::AssessReport;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
+use chord::Error;
 use chrono::{DateTime, Utc};
 
 pub struct Reporter {

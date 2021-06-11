@@ -5,8 +5,8 @@ use tide::prelude::*;
 use tide::{Request, Response};
 use validator::{ValidationErrors, ValidationErrorsKind};
 
-use chord::error::Error;
-use chord::value::json::Json;
+use chord::value::Value;
+use chord::Error;
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;
@@ -24,7 +24,7 @@ struct ErrorBody {
     message: String,
 }
 
-fn common_error_json(e: &Error) -> Json {
+fn common_error_json(e: &Error) -> Value {
     json!(ErrorBody {
         code: e.code().into(),
         message: e.message().into()
@@ -55,7 +55,7 @@ fn validator_error_json_nested(e: &ValidationErrors) -> Vec<String> {
         });
 }
 
-fn validator_error_json(e: &ValidationErrors) -> Json {
+fn validator_error_json(e: &ValidationErrors) -> Value {
     json!(ErrorBody {
         code: "400".into(),
         message: validator_error_json_nested(e).into_iter().last().unwrap()
@@ -84,7 +84,7 @@ macro_rules! json_handler {
 
 container!(Web {ConfigImpl, job::CtlImpl});
 
-pub async fn init(data: Json) -> Result<(), Error> {
+pub async fn init(data: Value) -> Result<(), Error> {
     let config = Arc::new(ConfigImpl::new(data));
     let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
 

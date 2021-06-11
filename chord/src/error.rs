@@ -5,7 +5,7 @@ use std::sync::Arc;
 #[macro_export]
 macro_rules! rerr {
     ($code:expr, $message:expr) => {{
-        let res = $crate::error::Error::new($code, $message);
+        let res = $crate::Error::new($code, $message);
         std::result::Result::Err(res)
     }};
 }
@@ -13,14 +13,14 @@ macro_rules! rerr {
 #[macro_export]
 macro_rules! err {
     ($code:expr, $message:expr) => {{
-        $crate::error::Error::new($code, $message)
+        $crate::Error::new($code, $message)
     }};
 }
 
 #[macro_export]
 macro_rules! rcause {
     ($code:expr, $message:expr, $cause:expr) => {{
-        let res = $crate::error::Error::cause($code, $message, $cause);
+        let res = $crate::Error::cause($code, $message, $cause);
         std::result::Result::Err(res)
     }};
 }
@@ -28,7 +28,7 @@ macro_rules! rcause {
 #[macro_export]
 macro_rules! cause {
     ($code:expr, $message:expr, $cause:expr) => {{
-        $crate::error::Error::cause($code, $message, $cause)
+        $crate::Error::cause($code, $message, $cause)
     }};
 }
 

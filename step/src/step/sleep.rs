@@ -1,14 +1,14 @@
 use async_std::task::sleep;
-use chord::error::Error;
 use chord::rerr;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::Json;
+use chord::value::Value;
+use chord::Error;
 use std::time::Duration;
 
 pub struct Factory {}
 
 impl Factory {
-    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
         Ok(Factory {})
     }
 }
@@ -37,6 +37,6 @@ impl StepRunner for Runner {
         }
 
         sleep(Duration::from_secs(sec)).await;
-        return Ok(Json::Null);
+        return Ok(Value::Null);
     }
 }

@@ -7,8 +7,8 @@ use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::step::StepRunner;
 use chord::task::TaskId;
-use chord::value::json::Json;
-use chord::value::json::{to_json, Map};
+use chord::value::Value;
+use chord::value::{to_value, Map};
 
 use crate::flow::step::arg::RunArgStruct;
 use crate::model::app::Context;
@@ -47,8 +47,8 @@ impl Display for CaseIdStruct {
 pub struct CaseArgStruct {
     flow: Arc<Flow>,
     step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
-    data: Json,
-    pre_ctx: Arc<Json>,
+    data: Value,
+    pre_ctx: Arc<Value>,
     id: Rc<CaseIdStruct>,
 }
 unsafe impl Send for CaseArgStruct {}
@@ -58,8 +58,8 @@ impl CaseArgStruct {
     pub fn new(
         flow: Arc<Flow>,
         step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
-        data: Json,
-        pre_ctx: Arc<Json>,
+        data: Value,
+        pre_ctx: Arc<Value>,
         task_id: Arc<dyn TaskId>,
         case_id: usize,
     ) -> CaseArgStruct {
@@ -81,13 +81,13 @@ impl CaseArgStruct {
         let config_def = self.flow.def();
         match config_def {
             Some(def) => {
-                render_data.insert(String::from("def"), to_json(def).unwrap());
+                render_data.insert(String::from("def"), to_value(def).unwrap());
             }
             None => {}
         }
         render_data.insert(String::from("data"), self.data.clone());
-        render_data.insert(String::from("step"), Json::Object(Map::new()));
-        render_data.insert(String::from("curr"), Json::Null);
+        render_data.insert(String::from("step"), Value::Object(Map::new()));
+        render_data.insert(String::from("curr"), Value::Null);
         render_data.insert(String::from("pre"), self.pre_ctx.as_ref().clone());
 
         return RenderContext::wraps(render_data).unwrap();

@@ -1,6 +1,6 @@
 use crate::error::Error;
 use crate::step::POINT_ID_PATTERN;
-use crate::value::json::{Json, Map};
+use crate::value::{Map, Value};
 use crate::{err, rerr};
 
 use itertools::concat;
@@ -9,11 +9,11 @@ use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct Flow {
-    flow: Json,
+    flow: Value,
 }
 
 impl Flow {
-    pub fn new(flow: Json) -> Result<Flow, Error> {
+    pub fn new(flow: Value) -> Result<Flow, Error> {
         let flow = Flow { flow };
 
         flow._version()?;
@@ -73,7 +73,7 @@ impl Flow {
         return Some(task_step_chain_arr.unwrap());
     }
 
-    pub fn step(&self, step_id: &str) -> &Json {
+    pub fn step(&self, step_id: &str) -> &Value {
         let case_step = self.flow["case"]["step"][step_id].borrow();
         if !case_step.is_null() {
             case_step
@@ -82,7 +82,7 @@ impl Flow {
         }
     }
 
-    pub fn step_config(&self, step_id: &str) -> &Json {
+    pub fn step_config(&self, step_id: &str) -> &Value {
         self.step(step_id)["config"].borrow()
     }
 

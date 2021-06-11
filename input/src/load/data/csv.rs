@@ -5,11 +5,11 @@ use std::path::PathBuf;
 use csv::{Reader, ReaderBuilder};
 
 use chord::err;
-use chord::error::Error;
 use chord::input::async_trait;
 use chord::input::CaseLoad;
 use chord::rerr;
-use chord::value::json::{to_string, Json, Map};
+use chord::value::{to_string, Map, Value};
+use chord::Error;
 
 pub struct Loader {
     path: PathBuf,
@@ -32,7 +32,7 @@ impl Loader {
 
 #[async_trait]
 impl CaseLoad for Loader {
-    async fn load(&mut self, size: usize) -> Result<Vec<Json>, Error> {
+    async fn load(&mut self, size: usize) -> Result<Vec<Value>, Error> {
         load(&mut self.reader, size).await
     }
 
@@ -42,7 +42,7 @@ impl CaseLoad for Loader {
     }
 }
 
-async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<Vec<Json>, Error> {
+async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<Vec<Value>, Error> {
     let mut hashmap_vec = Vec::new();
     let mut curr_size = 0;
     for result in reader.deserialize() {
@@ -57,11 +57,11 @@ async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<V
             if v.is_string() {
                 record.insert(k, v);
             } else {
-                record.insert(k, Json::String(to_string(&v)?));
+                record.insert(k, Value::String(to_string(&v)?));
             }
         }
 
-        hashmap_vec.push(Json::Object(record));
+        hashmap_vec.push(Value::Object(record));
 
         curr_size += 1;
         if curr_size == size {

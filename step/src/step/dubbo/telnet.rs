@@ -1,8 +1,8 @@
 use async_std::net::TcpStream;
 use async_std::prelude::*;
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepValue};
-use chord::value::json::Json;
+use chord::value::Json;
+use chord::Error;
 use chord::{err, rerr};
 use log::debug;
 use std::str::FromStr;

@@ -8,9 +8,9 @@ use futures::StreamExt;
 use log::info;
 use log::trace;
 
-use chord::error::Error;
 use chord::flow::Flow;
 use chord::task::TaskState;
+use chord::Error;
 use chord_flow::{Context, TaskIdSimple};
 
 pub async fn run<P: AsRef<Path>>(

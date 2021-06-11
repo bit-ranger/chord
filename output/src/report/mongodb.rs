@@ -9,10 +9,10 @@ pub use mongodb::Collection;
 pub use mongodb::Database;
 
 use chord::case::{CaseAssess, CaseState};
-use chord::error::Error;
 use chord::rerr;
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
+use chord::Error;
 use mongodb::options::UpdateOptions;
 
 pub struct Reporter {

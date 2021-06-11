@@ -4,7 +4,7 @@ use log::{debug, info, trace, warn};
 use chord::case::CaseState;
 use chord::err;
 use chord::step::{RunArg, StepAssess, StepState};
-use chord::value::json::Json;
+use chord::value::Value;
 use res::CaseAssessStruct;
 
 use crate::flow::case::arg::CaseArgStruct;
@@ -134,8 +134,8 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     );
 }
 
-pub async fn step_register(render_context: &mut RenderContext, sid: &str, value: &Json) {
-    if let Json::Object(data) = render_context.data_mut() {
+pub async fn step_register(render_context: &mut RenderContext, sid: &str, value: &Value) {
+    if let Value::Object(data) = render_context.data_mut() {
         data["step"][sid]["value"] = value.clone();
         data["curr"]["value"] = value.clone();
     }

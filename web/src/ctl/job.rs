@@ -13,7 +13,7 @@ use validator::Validate;
 
 use crate::app::conf::Config;
 use async_trait::async_trait;
-use chord::error::Error;
+use chord::Error;
 use chord_flow::Context;
 use chord_step::StepRunnerFactoryDefault;
 

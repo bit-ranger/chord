@@ -1,12 +1,12 @@
-use chord::value::json::Json;
+use chord::value::Value;
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    conf: Json,
+    conf: Value,
 }
 
 impl Config {
-    pub fn new(conf: Json) -> Config {
+    pub fn new(conf: Value) -> Config {
         Config { conf }
     }
 }
@@ -25,7 +25,7 @@ impl Config {
         return target_level;
     }
 
-    pub fn step_config(&self) -> Option<&Json> {
+    pub fn step_config(&self) -> Option<&Value> {
         self.conf.get("step")
     }
 }

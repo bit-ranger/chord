@@ -5,10 +5,10 @@ use std::time::SystemTime;
 use structopt::StructOpt;
 
 use crate::conf::Config;
-use chord::error::Error;
 use chord::rerr;
 use chord::task::TaskState;
-use chord::value::json::Json;
+use chord::value::Value;
+use chord::Error;
 use chord_step::StepRunnerFactoryDefault;
 use std::fs::File;
 
@@ -60,14 +60,14 @@ async fn main() -> Result<(), Error> {
     };
 }
 
-pub fn load_conf<P: AsRef<Path>>(path: P) -> Result<Json, Error> {
+pub fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
     let file = File::open(path);
     let file = match file {
-        Err(_) => return Ok(Json::Null),
+        Err(_) => return Ok(Value::Null),
         Ok(r) => r,
     };
 
-    let deserialized: Result<Json, serde_yaml::Error> = serde_yaml::from_reader(file);
+    let deserialized: Result<Value, serde_yaml::Error> = serde_yaml::from_reader(file);
     return match deserialized {
         Err(e) => return rerr!("yaml", format!("{:?}", e)),
         Ok(r) => Ok(r),

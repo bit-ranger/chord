@@ -3,12 +3,12 @@ use chrono::{DateTime, Utc};
 
 use crate::case::CaseId;
 use crate::error::Error;
-use crate::value::json::Json;
+use crate::value::Value;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::fmt::Display;
 
-pub type StepValue = std::result::Result<Json, Error>;
+pub type StepValue = std::result::Result<Value, Error>;
 
 lazy_static! {
     pub static ref POINT_ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
@@ -23,7 +23,7 @@ pub trait StepId: Sync + Send + Display {
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &dyn StepId;
 
-    fn config(&self) -> &Json;
+    fn config(&self) -> &Value;
 
     fn render(&self, text: &str) -> Result<String, Error>;
 }
@@ -33,7 +33,7 @@ pub trait CreateArg: Sync + Send {
 
     fn kind(&self) -> &str;
 
-    fn config(&self) -> &Json;
+    fn config(&self) -> &Value;
 
     fn render(&self, text: &str) -> Result<String, Error>;
 
@@ -42,8 +42,8 @@ pub trait CreateArg: Sync + Send {
 
 #[derive(Debug, Clone)]
 pub enum StepState {
-    Ok(Json),
-    Fail(Json),
+    Ok(Value),
+    Fail(Value),
     Err(Error),
 }
 unsafe impl Send for StepState {}

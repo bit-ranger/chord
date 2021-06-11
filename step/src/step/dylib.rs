@@ -1,14 +1,14 @@
 use chord::err;
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::{to_string, Json};
+use chord::value::{to_string, Value};
+use chord::Error;
 use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 use std::sync::Arc;
 
 pub struct Factory {}
 
 impl Factory {
-    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
         Ok(Factory {})
     }
 }

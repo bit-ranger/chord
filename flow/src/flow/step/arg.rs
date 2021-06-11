@@ -8,12 +8,12 @@ use handlebars::{Context, Handlebars};
 use log::info;
 
 use chord::case::CaseId;
-use chord::error::Error;
 use chord::flow::Flow;
 use chord::rerr;
 use chord::step::{CreateArg, RunArg, StepId};
 use chord::task::TaskId;
-use chord::value::json::Json;
+use chord::value::Value;
+use chord::Error;
 
 use crate::flow::case::arg::CaseIdStruct;
 use crate::model::app::RenderContext;
@@ -85,7 +85,7 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
         self.kind.as_str()
     }
 
-    fn config(&self) -> &Json {
+    fn config(&self) -> &Value {
         self.flow.step_config(self.id.step_id())
     }
 
@@ -171,7 +171,7 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
         self.id()
     }
 
-    fn config(&self) -> &Json {
+    fn config(&self) -> &Value {
         let config = self.flow.step_config(self.id().step_id());
         return config;
     }

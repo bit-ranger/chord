@@ -1,15 +1,15 @@
 use mongodb::bson::{to_document, Document};
 use mongodb::{options::ClientOptions, Client};
 
-use chord::error::Error;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::json::{from_str, Json};
+use chord::value::{from_str, Value};
+use chord::Error;
 use chord::{err, rerr};
 
 pub struct Factory {}
 
 impl Factory {
-    pub async fn new(_: Option<Json>) -> Result<Factory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
         Ok(Factory {})
     }
 }
@@ -61,13 +61,13 @@ async fn run(arg: &dyn RunArg) -> StepValue {
 
     match op.as_str() {
         "insert_many" => {
-            let arg_json: Json = from_str(op_arg.as_str())?;
+            let arg_json: Value = from_str(op_arg.as_str())?;
             match arg_json {
-                Json::Array(arr) => {
+                Value::Array(arr) => {
                     let doc_vec: Vec<Document> =
                         arr.iter().map(|v| to_document(v).unwrap()).collect();
                     collection.insert_many(doc_vec, None).await?;
-                    return Ok(Json::Null);
+                    return Ok(Value::Null);
                 }
                 _ => rerr!("010", "illegal arg"),
             }

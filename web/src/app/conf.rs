@@ -1,6 +1,6 @@
 use chord::err;
-use chord::error::Error;
-use chord::value::json::{Json, Map};
+use chord::value::{Map, Value};
+use chord::Error;
 use lazy_static::lazy_static;
 
 pub trait Config {
@@ -20,16 +20,16 @@ pub trait Config {
 
     fn report_elasticsearch_url(&self) -> Result<&str, Error>;
 
-    fn step_config(&self) -> Option<&Json>;
+    fn step_config(&self) -> Option<&Value>;
 }
 
 #[derive(Debug, Clone)]
 pub struct ConfigImpl {
-    conf: Json,
+    conf: Value,
 }
 
 impl ConfigImpl {
-    pub fn new(conf: Json) -> ConfigImpl {
+    pub fn new(conf: Value) -> ConfigImpl {
         ConfigImpl { conf }
     }
 }
@@ -90,7 +90,7 @@ impl Config for ConfigImpl {
             .ok_or(err!("config", "missing report.mongodb.url"))
     }
 
-    fn step_config(&self) -> Option<&Json> {
+    fn step_config(&self) -> Option<&Value> {
         self.conf.get("step")
     }
 }

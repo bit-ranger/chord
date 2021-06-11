@@ -36,6 +36,3 @@ impl CaseState {
         }
     }
 }
-unsafe impl Send for CaseState {}
-
-unsafe impl Sync for CaseState {}

@@ -46,8 +46,6 @@ pub enum StepState {
     Fail(Value),
     Err(Error),
 }
-unsafe impl Send for StepState {}
-unsafe impl Sync for StepState {}
 
 pub trait StepAssess: Sync + Send {
     fn id(&self) -> &dyn StepId;

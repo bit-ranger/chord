@@ -78,10 +78,6 @@ impl Error {
     }
 }
 
-unsafe impl Send for Error {}
-
-unsafe impl Sync for Error {}
-
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_str(

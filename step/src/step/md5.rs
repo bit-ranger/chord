@@ -3,7 +3,7 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::Json;
+use chord_common::value::json::Json;
 
 pub struct Factory {}
 

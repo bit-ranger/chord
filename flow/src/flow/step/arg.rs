@@ -13,7 +13,7 @@ use chord_common::flow::Flow;
 use chord_common::rerr;
 use chord_common::step::{CreateArg, RunArg, StepId};
 use chord_common::task::TaskId;
-use chord_common::value::Json;
+use chord_common::value::json::Json;
 
 use crate::flow::case::arg::CaseIdStruct;
 use crate::model::app::RenderContext;

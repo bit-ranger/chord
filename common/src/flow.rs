@@ -1,6 +1,6 @@
 use crate::error::Error;
 use crate::step::POINT_ID_PATTERN;
-use crate::value::{Json, Map};
+use crate::value::json::{Json, Map};
 use crate::{err, rerr};
 
 use itertools::concat;

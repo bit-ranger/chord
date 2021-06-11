@@ -1,7 +1,7 @@
 use chord_common::err;
 use chord_common::error::Error;
 use chord_common::step::{async_trait, CreateArg, StepRunner, StepRunnerFactory};
-use chord_common::value::Json;
+use chord_common::value::json::Json;
 use std::collections::HashMap;
 
 mod sleep;

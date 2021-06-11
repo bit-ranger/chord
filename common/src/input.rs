@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::value::Json;
+use crate::value::json::Json;
 pub use async_trait::async_trait;
 
 #[async_trait]

@@ -3,7 +3,7 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::{to_string, Json};
+use chord_common::value::json::{to_string, Json};
 use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 use std::sync::Arc;
 

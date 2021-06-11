@@ -9,7 +9,7 @@ use chord_common::error::Error;
 use chord_common::input::async_trait;
 use chord_common::input::CaseLoad;
 use chord_common::rerr;
-use chord_common::value::{to_string, Json, Map};
+use chord_common::value::json::{to_string, Json, Map};
 
 pub struct Loader {
     path: PathBuf,

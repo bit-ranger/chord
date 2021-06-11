@@ -8,7 +8,7 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::{to_string_pretty, Json, Map, Number};
+use chord_common::value::json::{to_string_pretty, Json, Map, Number};
 use chord_common::{err, rerr};
 use std::borrow::Borrow;
 

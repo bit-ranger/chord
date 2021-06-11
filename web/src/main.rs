@@ -6,7 +6,7 @@ use structopt::StructOpt;
 
 use chord_common::error::Error;
 use chord_common::rerr;
-use chord_common::value::Json;
+use chord_common::value::json::Json;
 
 mod ctl;
 

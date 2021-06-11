@@ -3,7 +3,6 @@ use std::str::FromStr;
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use log::{error, info, trace, warn};
-use serde::{Deserialize, Serialize};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
@@ -15,7 +14,8 @@ use chord_common::output::async_trait;
 use chord_common::output::AssessReport;
 use chord_common::step::{StepAssess, StepState};
 use chord_common::task::{TaskAssess, TaskId, TaskState};
-use chord_common::value::{to_string, to_string_pretty, Json};
+use chord_common::value::json::{to_string, to_string_pretty, Json};
+use chord_common::value::{Deserialize, Serialize};
 
 pub struct Reporter {
     es_url: String,
@@ -313,8 +313,8 @@ impl From<surf::Error> for Rae {
     }
 }
 
-impl From<serde_json::error::Error> for Rae {
-    fn from(err: serde_json::error::Error) -> Rae {
+impl From<chord_common::value::json::Error> for Rae {
+    fn from(err: chord_common::value::json::Error) -> Rae {
         Rae(err!(
             "serde_json",
             format!("{}:{}", err.line(), err.column())

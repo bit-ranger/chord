@@ -3,7 +3,7 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::{from_str, Json, Number};
+use chord_common::value::json::{from_str, Json, Number};
 use redis::Value as RedisValue;
 
 pub struct Factory {}

@@ -4,7 +4,6 @@ use async_std::io::BufReader;
 use async_std::prelude::*;
 use async_std::process::{Child, Command, Stdio};
 use log::trace;
-use serde::{Deserialize, Serialize};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
@@ -13,7 +12,8 @@ use chord_common::error::Error;
 use chord_common::step::{
     async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
 };
-use chord_common::value::{from_str, to_string_pretty, Json};
+use chord_common::value::json::{from_str, to_string_pretty, Json};
+use chord_common::value::{Deserialize, Serialize};
 use chord_common::{err, rerr};
 
 pub struct Factory {
@@ -222,8 +222,8 @@ impl From<surf::Error> for Rae {
     }
 }
 
-impl From<serde_json::error::Error> for Rae {
-    fn from(err: serde_json::error::Error) -> Rae {
+impl From<chord_common::value::json::Error> for Rae {
+    fn from(err: chord_common::value::json::Error) -> Rae {
         Rae(err!("dubbo", format!("{}:{}", err.line(), err.column())))
     }
 }

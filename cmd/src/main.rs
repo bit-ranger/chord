@@ -8,7 +8,7 @@ use crate::conf::Config;
 use chord_common::error::Error;
 use chord_common::rerr;
 use chord_common::task::TaskState;
-use chord_common::value::Json;
+use chord_common::value::json::Json;
 use chord_step::StepRunnerFactoryDefault;
 use std::fs::File;
 

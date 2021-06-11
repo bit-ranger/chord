@@ -6,7 +6,7 @@ use tide::{Request, Response};
 use validator::{ValidationErrors, ValidationErrorsKind};
 
 use chord_common::error::Error;
-use chord_common::value::Json;
+use chord_common::value::json::Json;
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;

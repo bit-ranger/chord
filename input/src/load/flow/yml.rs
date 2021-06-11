@@ -3,7 +3,7 @@ use std::path::Path;
 
 use chord_common::error::Error;
 use chord_common::rerr;
-use chord_common::value::Json;
+use chord_common::value::json::Json;
 
 pub fn load<P: AsRef<Path>>(path: P) -> Result<Json, Error> {
     let file = File::open(path);

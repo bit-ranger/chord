@@ -51,8 +51,4 @@ impl<'reg> Context for FlowContextStruct<'reg> {
     }
 }
 
-unsafe impl<'reg> Send for FlowContextStruct<'reg> {}
-
-unsafe impl<'reg> Sync for FlowContextStruct<'reg> {}
-
 pub type RenderContext = handlebars::Context;

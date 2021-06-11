@@ -1,5 +1,4 @@
 use std::fmt::{Display, Formatter};
-use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -20,7 +19,7 @@ use crate::model::app::RenderContext;
 #[derive(Clone)]
 pub struct StepIdStruct {
     step_id: String,
-    case_id: Rc<dyn CaseId>,
+    case_id: Arc<dyn CaseId>,
 }
 
 impl StepId for StepIdStruct {
@@ -32,8 +31,6 @@ impl StepId for StepIdStruct {
         self.case_id.as_ref()
     }
 }
-unsafe impl Send for StepIdStruct {}
-unsafe impl Sync for StepIdStruct {}
 
 impl Display for StepIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -48,8 +45,6 @@ pub struct CreateArgStruct<'f, 'h, 'reg, 'r> {
     kind: String,
     id: StepIdStruct,
 }
-unsafe impl<'f, 'h, 'reg, 'r> Send for CreateArgStruct<'f, 'h, 'reg, 'r> {}
-unsafe impl<'f, 'h, 'reg, 'r> Sync for CreateArgStruct<'f, 'h, 'reg, 'r> {}
 
 impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
     pub fn new(
@@ -66,7 +61,7 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
             render_context,
             kind,
             id: StepIdStruct {
-                case_id: Rc::new(CaseIdStruct::new(task_id, 0)),
+                case_id: Arc::new(CaseIdStruct::new(task_id, 0)),
                 step_id: id,
             },
         };
@@ -113,15 +108,12 @@ pub struct RunArgStruct<'f, 'h, 'reg, 'r> {
     id: StepIdStruct,
 }
 
-unsafe impl<'f, 'h, 'reg, 'r> Send for RunArgStruct<'f, 'h, 'reg, 'r> {}
-unsafe impl<'f, 'h, 'reg, 'r> Sync for RunArgStruct<'f, 'h, 'reg, 'r> {}
-
 impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
     pub fn new(
         flow: &'f Flow,
         handlebars: &'h Handlebars<'reg>,
         render_context: &'r RenderContext,
-        case_id: Rc<dyn CaseId>,
+        case_id: Arc<dyn CaseId>,
         id: String,
     ) -> RunArgStruct<'f, 'h, 'reg, 'r> {
         let id = StepIdStruct {

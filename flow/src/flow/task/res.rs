@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use chrono::{DateTime, Utc};
 
-use crate::flow::task::arg::TaskIdSimple;
 use chord::task::{TaskAssess, TaskId, TaskState};
-use std::sync::Arc;
+
+use crate::flow::task::arg::TaskIdSimple;
 
 pub struct TaskAssessStruct {
     id: Arc<TaskIdSimple>,
@@ -44,7 +46,3 @@ impl TaskAssess for TaskAssessStruct {
         &self.state
     }
 }
-
-unsafe impl Send for TaskAssessStruct {}
-
-unsafe impl Sync for TaskAssessStruct {}

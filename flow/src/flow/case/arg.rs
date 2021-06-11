@@ -1,5 +1,4 @@
 use std::fmt::{Display, Formatter};
-use std::rc::Rc;
 
 use async_std::sync::Arc;
 
@@ -35,8 +34,6 @@ impl CaseId for CaseIdStruct {
         self.task_id.as_ref()
     }
 }
-unsafe impl Send for CaseIdStruct {}
-unsafe impl Sync for CaseIdStruct {}
 
 impl Display for CaseIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -49,10 +46,8 @@ pub struct CaseArgStruct {
     step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
     data: Value,
     pre_ctx: Arc<Value>,
-    id: Rc<CaseIdStruct>,
+    id: Arc<CaseIdStruct>,
 }
-unsafe impl Send for CaseArgStruct {}
-unsafe impl Sync for CaseArgStruct {}
 
 impl CaseArgStruct {
     pub fn new(
@@ -63,7 +58,7 @@ impl CaseArgStruct {
         task_id: Arc<dyn TaskId>,
         case_id: usize,
     ) -> CaseArgStruct {
-        let id = Rc::new(CaseIdStruct::new(task_id, case_id));
+        let id = Arc::new(CaseIdStruct::new(task_id, case_id));
 
         let context = CaseArgStruct {
             flow,
@@ -118,7 +113,7 @@ impl CaseArgStruct {
         self.step_runner_vec.as_ref()
     }
 
-    pub fn id(&self) -> Rc<CaseIdStruct> {
+    pub fn id(&self) -> Arc<CaseIdStruct> {
         self.id.clone()
     }
 }

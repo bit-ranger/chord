@@ -1,8 +1,9 @@
+use std::fmt::{Display, Formatter};
+
 use chord::rerr;
 use chord::task::TaskId;
 use chord::task::TASK_ID_PATTERN;
 use chord::Error;
-use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct TaskIdSimple {
@@ -29,8 +30,6 @@ impl TaskId for TaskIdSimple {
         self.exec_id.as_str()
     }
 }
-unsafe impl Send for TaskIdSimple {}
-unsafe impl Sync for TaskIdSimple {}
 
 impl Display for TaskIdSimple {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {

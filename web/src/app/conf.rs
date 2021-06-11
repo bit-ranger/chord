@@ -1,9 +1,10 @@
+use lazy_static::lazy_static;
+
 use chord::err;
 use chord::value::{Map, Value};
 use chord::Error;
-use lazy_static::lazy_static;
 
-pub trait Config {
+pub trait Config: Sync + Send {
     fn server_ip(&self) -> &str;
 
     fn server_port(&self) -> usize;

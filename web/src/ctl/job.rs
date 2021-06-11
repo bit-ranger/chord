@@ -3,6 +3,7 @@ use std::time::SystemTime;
 
 use async_std::sync::Arc;
 use async_std::task::{spawn, spawn_blocking};
+use async_trait::async_trait;
 use git2::build::RepoBuilder;
 use git2::Repository;
 use lazy_static::lazy_static;
@@ -11,12 +12,11 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::app::conf::Config;
-use async_trait::async_trait;
 use chord::Error;
 use chord_flow::Context;
 use chord_step::StepRunnerFactoryDefault;
 
+use crate::app::conf::Config;
 use crate::biz;
 
 lazy_static! {
@@ -56,10 +56,6 @@ pub struct CtlImpl {
     flow_ctx: Arc<dyn Context>,
     config: Arc<dyn Config>,
 }
-
-unsafe impl Send for CtlImpl {}
-
-unsafe impl Sync for CtlImpl {}
 
 impl CtlImpl {
     pub async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {

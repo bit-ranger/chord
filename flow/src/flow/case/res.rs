@@ -1,11 +1,13 @@
+use std::sync::Arc;
+
 use chrono::{DateTime, Utc};
 
-use crate::flow::case::arg::CaseIdStruct;
 use chord::case::{CaseAssess, CaseId, CaseState};
-use std::rc::Rc;
+
+use crate::flow::case::arg::CaseIdStruct;
 
 pub struct CaseAssessStruct {
-    id: Rc<CaseIdStruct>,
+    id: Arc<CaseIdStruct>,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: CaseState,
@@ -13,7 +15,7 @@ pub struct CaseAssessStruct {
 
 impl CaseAssessStruct {
     pub fn new(
-        id: Rc<CaseIdStruct>,
+        id: Arc<CaseIdStruct>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         state: CaseState,
@@ -41,7 +43,3 @@ impl CaseAssess for CaseAssessStruct {
         &self.state
     }
 }
-
-unsafe impl Send for CaseAssessStruct {}
-
-unsafe impl Sync for CaseAssessStruct {}

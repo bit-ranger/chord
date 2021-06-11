@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 use crate::app::conf::Config;
-pub use async_trait::async_trait;
+use async_trait::async_trait;
 use chord::error::Error;
 use chord_flow::Context;
 use chord_step::StepRunnerFactoryDefault;

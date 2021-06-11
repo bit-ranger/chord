@@ -1,10 +1,8 @@
 use async_std::task::sleep;
-use chord_common::error::Error;
-use chord_common::rerr;
-use chord_common::step::{
-    async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
-};
-use chord_common::value::json::Json;
+use chord::error::Error;
+use chord::rerr;
+use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
+use chord::value::json::Json;
 use std::time::Duration;
 
 pub struct Factory {}

@@ -15,8 +15,8 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+chord = {path = "../chord" }
 chord-flow = {path = "../flow"}
-chord-common = {path = "../common"}
 chord-input = {path = "../input"}
 chord-output = {path = "../output", features = ["report_csv"]}
 chord-step = {path = "../step", features = ["step_restapi", "step_md5", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url", "step_dylib"]}

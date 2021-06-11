@@ -4,9 +4,9 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use chord_common::error::Error;
-use chord_common::rerr;
-use chord_common::value::json::Json;
+use chord::error::Error;
+use chord::rerr;
+use chord::value::json::Json;
 
 mod ctl;
 

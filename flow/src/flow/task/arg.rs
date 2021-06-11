@@ -1,7 +1,7 @@
-use chord_common::error::Error;
-use chord_common::rerr;
-use chord_common::task::TaskId;
-use chord_common::task::TASK_ID_PATTERN;
+use chord::error::Error;
+use chord::rerr;
+use chord::task::TaskId;
+use chord::task::TASK_ID_PATTERN;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]

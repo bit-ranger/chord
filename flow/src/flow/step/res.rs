@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::flow::step::arg::StepIdStruct;
-use chord_common::step::{StepAssess, StepId, StepState};
+use chord::step::{StepAssess, StepId, StepState};
 
 pub struct StepAssessStruct {
     pub id: StepIdStruct,

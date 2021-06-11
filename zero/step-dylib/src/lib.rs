@@ -1,6 +1,6 @@
-use chord_common::error::Error;
-use chord_common::step::{CreateArg, RunArg, StepValue};
-use chord_common::value::json::{from_str, Json, Map};
+use chord::error::Error;
+use chord::step::{CreateArg, RunArg, StepValue};
+use chord::value::json::{from_str, Json, Map};
 use lazy_static::lazy_static;
 use std::ops::DerefMut;
 use std::sync::Mutex;

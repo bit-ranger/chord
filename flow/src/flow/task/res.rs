@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::flow::task::arg::TaskIdSimple;
-use chord_common::task::{TaskAssess, TaskId, TaskState};
+use chord::task::{TaskAssess, TaskId, TaskState};
 use std::sync::Arc;
 
 pub struct TaskAssessStruct {

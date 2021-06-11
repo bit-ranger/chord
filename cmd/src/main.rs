@@ -5,10 +5,10 @@ use std::time::SystemTime;
 use structopt::StructOpt;
 
 use crate::conf::Config;
-use chord_common::error::Error;
-use chord_common::rerr;
-use chord_common::task::TaskState;
-use chord_common::value::json::Json;
+use chord::error::Error;
+use chord::rerr;
+use chord::task::TaskState;
+use chord::value::json::Json;
 use chord_step::StepRunnerFactoryDefault;
 use std::fs::File;
 

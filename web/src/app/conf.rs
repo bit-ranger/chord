@@ -1,6 +1,6 @@
-use chord_common::err;
-use chord_common::error::Error;
-use chord_common::value::json::{Json, Map};
+use chord::err;
+use chord::error::Error;
+use chord::value::json::{Json, Map};
 use lazy_static::lazy_static;
 
 pub trait Config {

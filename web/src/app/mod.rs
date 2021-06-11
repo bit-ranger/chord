@@ -5,8 +5,8 @@ use tide::prelude::*;
 use tide::{Request, Response};
 use validator::{ValidationErrors, ValidationErrorsKind};
 
-use chord_common::error::Error;
-use chord_common::value::json::Json;
+use chord::error::Error;
+use chord::value::json::Json;
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;

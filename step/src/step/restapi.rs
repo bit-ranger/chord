@@ -4,12 +4,10 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord_common::error::Error;
-use chord_common::step::{
-    async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
-};
-use chord_common::value::json::{to_string_pretty, Json, Map, Number};
-use chord_common::{err, rerr};
+use chord::error::Error;
+use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
+use chord::value::json::{to_string_pretty, Json, Map, Number};
+use chord::{err, rerr};
 use std::borrow::Borrow;
 
 pub struct Factory {}
@@ -106,7 +104,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Json, Rae> {
     return Ok(Json::Object(res_data));
 }
 
-struct Rae(chord_common::error::Error);
+struct Rae(chord::error::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
@@ -114,7 +112,7 @@ impl From<surf::Error> for Rae {
     }
 }
 
-impl From<chord_common::error::Error> for Rae {
+impl From<chord::error::Error> for Rae {
     fn from(err: Error) -> Self {
         Rae(err)
     }

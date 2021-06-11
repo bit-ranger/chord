@@ -8,13 +8,11 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord_common::error::Error;
-use chord_common::step::{
-    async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue,
-};
-use chord_common::value::json::{from_str, to_string_pretty, Json};
-use chord_common::value::{Deserialize, Serialize};
-use chord_common::{err, rerr};
+use chord::error::Error;
+use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
+use chord::value::json::{from_str, to_string_pretty, Json};
+use chord::value::{Deserialize, Serialize};
+use chord::{err, rerr};
 
 pub struct Factory {
     registry_protocol: String,
@@ -214,7 +212,7 @@ struct Registry {
     address: String,
 }
 
-struct Rae(chord_common::error::Error);
+struct Rae(chord::error::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
@@ -222,13 +220,13 @@ impl From<surf::Error> for Rae {
     }
 }
 
-impl From<chord_common::value::json::Error> for Rae {
-    fn from(err: chord_common::value::json::Error) -> Rae {
+impl From<chord::value::json::Error> for Rae {
+    fn from(err: chord::value::json::Error) -> Rae {
         Rae(err!("dubbo", format!("{}:{}", err.line(), err.column())))
     }
 }
 
-impl From<chord_common::error::Error> for Rae {
+impl From<chord::error::Error> for Rae {
     fn from(err: Error) -> Self {
         Rae(err)
     }

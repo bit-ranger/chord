@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::flow::case::arg::CaseIdStruct;
-use chord_common::case::{CaseAssess, CaseId, CaseState};
+use chord::case::{CaseAssess, CaseId, CaseState};
 use std::rc::Rc;
 
 pub struct CaseAssessStruct {

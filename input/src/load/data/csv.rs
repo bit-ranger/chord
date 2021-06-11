@@ -4,12 +4,12 @@ use std::path::PathBuf;
 
 use csv::{Reader, ReaderBuilder};
 
-use chord_common::err;
-use chord_common::error::Error;
-use chord_common::input::async_trait;
-use chord_common::input::CaseLoad;
-use chord_common::rerr;
-use chord_common::value::json::{to_string, Json, Map};
+use chord::err;
+use chord::error::Error;
+use chord::input::async_trait;
+use chord::input::CaseLoad;
+use chord::rerr;
+use chord::value::json::{to_string, Json, Map};
 
 pub struct Loader {
     path: PathBuf,

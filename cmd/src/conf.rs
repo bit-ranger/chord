@@ -1,4 +1,4 @@
-use chord_common::value::json::Json;
+use chord::value::json::Json;
 
 #[derive(Debug, Clone)]
 pub struct Config {

@@ -8,10 +8,10 @@ use futures::StreamExt;
 use log::info;
 use log::trace;
 
-use chord_common::error::Error;
-use chord_common::flow::Flow;
-use chord_common::output::{AssessReport, DateTime, Utc};
-use chord_common::task::{TaskAssess, TaskId, TaskState};
+use chord::error::Error;
+use chord::flow::Flow;
+use chord::output::{AssessReport, DateTime, Utc};
+use chord::task::{TaskAssess, TaskId, TaskState};
 use chord_flow::{Context, TaskIdSimple};
 use chord_output::report::elasticsearch::{index_create, Reporter};
 

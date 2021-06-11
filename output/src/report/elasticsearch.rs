@@ -7,15 +7,15 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord_common::case::{CaseAssess, CaseState};
-use chord_common::err;
-use chord_common::error::Error;
-use chord_common::output::async_trait;
-use chord_common::output::AssessReport;
-use chord_common::step::{StepAssess, StepState};
-use chord_common::task::{TaskAssess, TaskId, TaskState};
-use chord_common::value::json::{to_string, to_string_pretty, Json};
-use chord_common::value::{Deserialize, Serialize};
+use chord::case::{CaseAssess, CaseState};
+use chord::err;
+use chord::error::Error;
+use chord::output::async_trait;
+use chord::output::AssessReport;
+use chord::step::{StepAssess, StepState};
+use chord::task::{TaskAssess, TaskId, TaskState};
+use chord::value::json::{to_string, to_string_pretty, Json};
+use chord::value::{Deserialize, Serialize};
 
 pub struct Reporter {
     es_url: String,
@@ -305,7 +305,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
     Ok(())
 }
 
-struct Rae(chord_common::error::Error);
+struct Rae(chord::error::Error);
 
 impl From<surf::Error> for Rae {
     fn from(err: surf::Error) -> Rae {
@@ -313,8 +313,8 @@ impl From<surf::Error> for Rae {
     }
 }
 
-impl From<chord_common::value::json::Error> for Rae {
-    fn from(err: chord_common::value::json::Error) -> Rae {
+impl From<chord::value::json::Error> for Rae {
+    fn from(err: chord::value::json::Error) -> Rae {
         Rae(err!(
             "serde_json",
             format!("{}:{}", err.line(), err.column())
@@ -322,7 +322,7 @@ impl From<chord_common::value::json::Error> for Rae {
     }
 }
 
-impl From<chord_common::error::Error> for Rae {
+impl From<chord::error::Error> for Rae {
     fn from(err: Error) -> Self {
         Rae(err)
     }

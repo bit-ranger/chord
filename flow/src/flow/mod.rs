@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use async_std::sync::Arc;
 use async_std::task_local;
 
-use chord_common::step::StepRunnerFactory;
+use chord::step::StepRunnerFactory;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 

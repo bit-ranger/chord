@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 
 use handlebars::Handlebars;
 
-use chord_common::step::StepRunnerFactory;
+use chord::step::StepRunnerFactory;
 
 use crate::model::helper::{ALL_HELPER, ANY_HELPER, BOOL_HELPER, NUM_HELPER};
 

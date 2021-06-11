@@ -6,6 +6,7 @@ use chord::step::StepRunnerFactory;
 
 use crate::model::helper::boolean::{ALL_HELPER, ANY_HELPER, BOOL_HELPER};
 use crate::model::helper::number::NUM_HELPER;
+use crate::model::helper::string::JOIN_HELPER;
 
 pub trait Context: Sync + Send {
     fn get_handlebars(&self) -> &Handlebars;
@@ -27,6 +28,7 @@ impl<'reg> FlowContextStruct<'reg> {
         handlebars.register_helper("bool", Box::new(BOOL_HELPER));
         handlebars.register_helper("all", Box::new(ALL_HELPER));
         handlebars.register_helper("any", Box::new(ANY_HELPER));
+        handlebars.register_helper("join", Box::new(JOIN_HELPER));
 
         FlowContextStruct {
             handlebars,

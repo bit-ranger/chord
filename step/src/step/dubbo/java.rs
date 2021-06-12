@@ -59,8 +59,8 @@ impl Factory {
             .spawn()?;
 
         let std_out = child.stdout.ok_or(err!("020", "missing stdout"))?;
-        let std_out = BufReader::new(std_out);
-        let mut lines = std_out.lines();
+        let mut std_out = BufReader::new(std_out);
+        let mut lines = std_out.by_ref().lines();
         loop {
             let line = lines.next().await;
             if line.is_none() {
@@ -73,7 +73,7 @@ impl Factory {
             }
         }
 
-        child.stdout = None;
+        child.stdout = Some(std_out.into_inner());
         Ok(Factory {
             registry_protocol,
             registry_address,

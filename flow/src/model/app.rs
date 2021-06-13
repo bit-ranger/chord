@@ -23,7 +23,7 @@ impl<'reg> FlowContextStruct<'reg> {
     pub fn new(step_runner_factory: Box<dyn StepRunnerFactory>) -> FlowContextStruct<'reg> {
         let mut handlebars = Handlebars::new();
 
-        //C:/Users/bitranger/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/handlebars-3.5.4/src/registry.rs:118
+        //handlebars-3.5.4/src/registry.rs:118
         handlebars.register_helper("all", Box::new(ALL_HELPER));
         handlebars.register_helper("any", Box::new(ANY_HELPER));
         handlebars.register_helper("num", Box::new(NUM_HELPER));

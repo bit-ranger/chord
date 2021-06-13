@@ -6,6 +6,7 @@ use chord::value::Value;
 use chord::Error;
 
 mod echo;
+mod log;
 mod sleep;
 
 #[cfg(feature = "step_crypto")]
@@ -48,6 +49,7 @@ impl StepRunnerFactoryDefault {
 
         register!(table, config_ref, "echo", echo::Factory::new, true);
         register!(table, config_ref, "sleep", sleep::Factory::new, true);
+        register!(table, config_ref, "log", log::Factory::new, true);
 
         #[cfg(feature = "step_restapi")]
         register!(table, config_ref, "restapi", restapi::Factory::new, true);

@@ -6,7 +6,7 @@ use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
-use chord::value::{to_string_pretty, Map, Number, Value};
+use chord::value::{Map, Number, Value};
 use chord::Error;
 use chord::{err, rerr};
 

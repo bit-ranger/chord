@@ -5,7 +5,7 @@ use chord::step::{async_trait, CreateArg, StepRunner, StepRunnerFactory};
 use chord::value::Value;
 use chord::Error;
 
-mod nop;
+mod echo;
 mod sleep;
 
 #[cfg(feature = "step_dubbo")]
@@ -46,7 +46,7 @@ impl StepRunnerFactoryDefault {
 
         let config_ref = config.as_ref();
 
-        register!(table, config_ref, "nop", nop::Factory::new, true);
+        register!(table, config_ref, "echo", echo::Factory::new, true);
         register!(table, config_ref, "sleep", sleep::Factory::new, true);
 
         #[cfg(feature = "step_restapi")]

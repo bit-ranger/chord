@@ -1,18 +1,25 @@
-use chord::value::Value;
 use handlebars::handlebars_helper;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
+use chord::value::Value;
+
 handlebars_helper!(start_with: |x: Json, y: Json|
-                x.is_string() && y.is_string() && x.as_str().unwrap().starts_with(y.as_str().unwrap())
+    x.is_string() && y.is_string() && x.as_str().unwrap().starts_with(y.as_str().unwrap())
 );
 
 handlebars_helper!(end_with: |x: Json, y: Json|
-                x.is_string() && y.is_string() && x.as_str().unwrap().ends_with(y.as_str().unwrap())
+    x.is_string() && y.is_string() && x.as_str().unwrap().ends_with(y.as_str().unwrap())
 );
 
-handlebars_helper!(contains: |x: Json, y: Json|
-                x.is_string() && y.is_string() && x.as_str().unwrap().contains(y.as_str().unwrap())
-);
+handlebars_helper!(contains: |x: Json, y: Json|{
+    if x.is_string() && y.is_string(){
+        x.as_str().unwrap().contains(y.as_str().unwrap())
+    } else if x.is_array(){
+        x.as_array().unwrap().contains(&y)
+    } else {
+        false
+    }
+});
 
 pub static STR_HELPER: StrHelper = StrHelper {};
 

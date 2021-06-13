@@ -29,7 +29,7 @@ impl StepRunner for Runner {
 
         let from = arg.config()["from"]
             .as_str()
-            .map(|s| arg.render(s))
+            .map(|s| arg.render_str(s))
             .ok_or(err!("010", "missing from"))??;
 
         return match by {

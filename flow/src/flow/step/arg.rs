@@ -10,7 +10,7 @@ use chord::flow::Flow;
 use chord::rerr;
 use chord::step::{CreateArg, RunArg, StepId};
 use chord::task::TaskId;
-use chord::value::Value;
+use chord::value::{from_str, to_string, Value};
 use chord::Error;
 
 use crate::flow::case::arg::CaseIdStruct;
@@ -154,8 +154,15 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
         return config;
     }
 
-    fn render(&self, text: &str) -> Result<String, Error> {
-        return render(self.handlebars, self.render_context, text);
+    fn render_str(&self, txt: &str) -> Result<String, Error> {
+        return render(self.handlebars, self.render_context, txt);
+    }
+
+    fn render_value(&self, value: &Value) -> Result<Value, Error> {
+        let value_str = to_string(&value)?;
+        let value_str = self.render_str(value_str.as_str())?;
+        let value: Value = from_str(value_str.as_str())?;
+        return Ok(value);
     }
 }
 

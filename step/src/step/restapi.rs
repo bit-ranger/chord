@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::str::FromStr;
 
 use surf::http::headers::{HeaderName, HeaderValue};
@@ -8,7 +9,6 @@ use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory,
 use chord::value::{to_string_pretty, Map, Number, Value};
 use chord::Error;
 use chord::{err, rerr};
-use std::borrow::Borrow;
 
 pub struct Factory {}
 
@@ -41,13 +41,13 @@ async fn run(arg: &dyn RunArg) -> StepValue {
 async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
     let url = arg.config()["url"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing url"))??;
     let url = Url::from_str(url.as_str()).or(rerr!("011", format!("invalid url: {}", url)))?;
 
     let method = arg.config()["method"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("020", "missing method"))??;
     let method = Method::from_str(method.as_str()).or(rerr!("021", "invalid method"))?;
 
@@ -59,9 +59,9 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
 
     if let Some(header) = arg.config()["header"].as_object() {
         for (k, v) in header.iter() {
-            let hn =
-                HeaderName::from_string(arg.render(k)?).or(rerr!("030", "invalid header name"))?;
-            let hvt = arg.render(v.as_str().ok_or(err!("031", "invalid header value"))?)?;
+            let hn = HeaderName::from_string(arg.render_str(k)?)
+                .or(rerr!("030", "invalid header name"))?;
+            let hvt = arg.render_str(v.as_str().ok_or(err!("031", "invalid header value"))?)?;
             let hv =
                 HeaderValue::from_str(hvt.as_str()).or(rerr!("031", "invalid header value"))?;
             rb = rb.header(hn, hv);
@@ -78,7 +78,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
         } else {
             to_string_pretty(body_content).or(rerr!("032", "invalid body"))?
         };
-        let body_str = arg.render(body_str.as_str())?;
+        let body_str = arg.render_str(body_str.as_str())?;
         rb = rb.body(Body::from_string(body_str));
     }
 

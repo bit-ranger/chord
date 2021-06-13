@@ -1,12 +1,13 @@
+use std::fmt::Display;
+
 pub use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use lazy_static::lazy_static;
+use regex::Regex;
 
 use crate::case::CaseId;
 use crate::error::Error;
 use crate::value::Value;
-use lazy_static::lazy_static;
-use regex::Regex;
-use std::fmt::Display;
 
 pub type StepValue = std::result::Result<Value, Error>;
 
@@ -25,7 +26,9 @@ pub trait RunArg: Sync + Send {
 
     fn config(&self) -> &Value;
 
-    fn render(&self, text: &str) -> Result<String, Error>;
+    fn render_str(&self, text: &str) -> Result<String, Error>;
+
+    fn render_value(&self, text: &Value) -> Result<Value, Error>;
 }
 
 pub trait CreateArg: Sync + Send {

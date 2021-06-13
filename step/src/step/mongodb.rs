@@ -33,23 +33,23 @@ impl StepRunner for Runner {
 async fn run(arg: &dyn RunArg) -> StepValue {
     let url = arg.config()["url"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing url"))??;
     let database = arg.config()["database"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing database"))??;
     let collection = arg.config()["collection"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing collection"))??;
     let op = arg.config()["operation"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing operation"))??;
     let op_arg = arg.config()["arg"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing arg"))??;
 
     // Parse a connection string into an options struct.

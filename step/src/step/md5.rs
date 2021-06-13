@@ -30,7 +30,7 @@ impl StepRunner for Runner {
 async fn run(arg: &dyn RunArg) -> StepValue {
     let raw = arg.config()["raw"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing raw"))??;
     let digest = md5::compute(raw);
     let digest = format!("{:x}", digest);

@@ -1,10 +1,11 @@
+use log::trace;
+use rbatis::plugin::page::{Page, PageRequest};
+use rbatis::rbatis::Rbatis;
+
 use chord::err;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
 use chord::value::{Map, Number, Value};
 use chord::Error;
-use log::trace;
-use rbatis::plugin::page::{Page, PageRequest};
-use rbatis::rbatis::Rbatis;
 
 pub struct Factory {}
 
@@ -54,7 +55,7 @@ async fn run(obj: &Runner, arg: &dyn RunArg) -> StepValue {
         None => {
             let url = arg.config()["url"]
                 .as_str()
-                .map(|s| arg.render(s))
+                .map(|s| arg.render_str(s))
                 .ok_or(err!("010", "missing url"))??;
             let rb = Rbatis::new();
             rb.link(url.as_str()).await?;
@@ -66,7 +67,7 @@ async fn run(obj: &Runner, arg: &dyn RunArg) -> StepValue {
 async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> StepValue {
     let sql = arg.config()["sql"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing sql"))??;
 
     if sql.trim_start().to_uppercase().starts_with("SELECT ") {

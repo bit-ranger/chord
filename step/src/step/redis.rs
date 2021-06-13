@@ -1,8 +1,9 @@
+use redis::Value as RedisValue;
+
 use chord::err;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
 use chord::value::{from_str, Number, Value};
 use chord::Error;
-use redis::Value as RedisValue;
 
 pub struct Factory {}
 
@@ -31,11 +32,11 @@ impl StepRunner for Runner {
 async fn run(arg: &dyn RunArg) -> StepValue {
     let url = arg.config()["url"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing url"))??;
     let cmd = arg.config()["cmd"]
         .as_str()
-        .map(|s| arg.render(s))
+        .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing cmd"))??;
 
     let client = redis::Client::open(url)?;

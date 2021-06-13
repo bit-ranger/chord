@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
+use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
+
 use chord::err;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
 use chord::value::{to_string, Value};
 use chord::Error;
-use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
-use std::sync::Arc;
 
 pub struct Factory {}
 
@@ -46,7 +48,7 @@ impl StepRunner for Runner {
             unsafe { self.lib.lib.get(b"run")? };
 
         let config_str = to_string(arg.config())?;
-        let config_str = arg.render(config_str.as_str())?;
+        let config_str = arg.render_str(config_str.as_str())?;
         step_runner_run(arg.id().to_string().as_str(), config_str.as_str())
     }
 }

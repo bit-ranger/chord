@@ -245,6 +245,6 @@ fn render(arg: &dyn RunArg, content: &Value) -> Result<Value, Error> {
     } else {
         to_string_pretty(content).or(rerr!("032", "invalid content"))?
     };
-    let content_str = arg.render(body_str.as_str())?;
+    let content_str = arg.render_str(body_str.as_str())?;
     return Ok(from_str(content_str.as_str())?);
 }

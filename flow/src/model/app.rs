@@ -30,8 +30,8 @@ impl<'reg> FlowContextStruct<'reg> {
         handlebars.register_helper("bool", Box::new(BOOL_HELPER));
         handlebars.register_helper("str", Box::new(STR_HELPER));
         handlebars.register_helper("contains", Box::new(contains));
-        handlebars.register_helper("start_with", Box::new(start_with));
-        handlebars.register_helper("end_with", Box::new(end_with));
+        handlebars.register_helper("str_start_with", Box::new(start_with));
+        handlebars.register_helper("str_end_with", Box::new(end_with));
         handlebars.register_helper("str_sub", Box::new(STR_SUB_HELPER));
 
         FlowContextStruct {

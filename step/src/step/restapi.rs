@@ -68,18 +68,10 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
         }
     }
 
-    let body_content = arg.config()["body"].borrow();
-    if !body_content.is_null() {
-        let body_str: String = if body_content.is_string() {
-            body_content
-                .as_str()
-                .ok_or(err!("032", "invalid body"))?
-                .to_owned()
-        } else {
-            to_string_pretty(body_content).or(rerr!("032", "invalid body"))?
-        };
-        let body_str = arg.render_str(body_str.as_str())?;
-        rb = rb.body(Body::from_string(body_str));
+    let body = arg.config()["body"].borrow();
+    if !body.is_null() {
+        let body = arg.render_value(body)?;
+        rb = rb.body(Body::from(body));
     }
 
     let mut res: Response = rb.send().await?;

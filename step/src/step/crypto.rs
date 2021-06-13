@@ -1,7 +1,7 @@
-use chord::err;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
 use chord::value::Value;
 use chord::Error;
+use chord::{err, rerr};
 
 pub struct Factory {}
 
@@ -28,11 +28,23 @@ impl StepRunner for Runner {
 }
 
 async fn run(arg: &dyn RunArg) -> StepValue {
-    let raw = arg.config()["raw"]
+    let by = arg.config()["by"]
+        .as_str()
+        .ok_or(err!("010", "missing by"))?;
+
+    let from = arg.config()["from"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing raw"))??;
-    let digest = md5::compute(raw);
-    let digest = format!("{:x}", digest);
-    return Ok(Value::String(digest));
+        .ok_or(err!("010", "missing from"))??;
+
+    return match by {
+        "md5" => {
+            let digest = md5::compute(from);
+            let digest = format!("{:x}", digest);
+            return Ok(Value::String(digest));
+        }
+        _ => {
+            rerr!("crypto", format!("unsupported {}", by))
+        }
+    };
 }

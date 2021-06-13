@@ -18,9 +18,9 @@ repository = "https://github.com/bit-ranger/chord"
 chord = {path = "../chord" }
 chord-flow = {path = "../flow"}
 chord-input = {path = "../input"}
-chord-output = {path = "../output", features = ["report_csv"]}
-chord-step = {path = "../step", features = ["step_restapi", "step_md5", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url", "step_dylib"]}
-log = { version = "0.4.14", features = ["std"]}
+chord-output = { path = "../output", features = ["report_csv"] }
+chord-step = { path = "../step", features = ["step_restapi", "step_crypto", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url", "step_dylib"] }
+log = { version = "0.4.14", features = ["std"] }
 async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
 time = "0.1.42"
 futures = "0.3.13"

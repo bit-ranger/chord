@@ -8,12 +8,12 @@ use chord::Error;
 mod echo;
 mod sleep;
 
+#[cfg(feature = "step_crypto")]
+mod crypto;
 #[cfg(feature = "step_dubbo")]
 mod dubbo;
 #[cfg(feature = "step_dylib")]
 mod dylib;
-#[cfg(feature = "step_md5")]
-mod md5;
 #[cfg(feature = "step_mongodb")]
 mod mongodb;
 #[cfg(feature = "step_mysql")]
@@ -52,8 +52,8 @@ impl StepRunnerFactoryDefault {
         #[cfg(feature = "step_restapi")]
         register!(table, config_ref, "restapi", restapi::Factory::new, true);
 
-        #[cfg(feature = "step_md5")]
-        register!(table, config_ref, "md5", md5::Factory::new, true);
+        #[cfg(feature = "step_crypto")]
+        register!(table, config_ref, "crypto", crypto::Factory::new, true);
 
         #[cfg(feature = "step_url")]
         register!(table, config_ref, "url", url::Factory::new, true);

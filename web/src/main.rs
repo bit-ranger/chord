@@ -1,38 +1,22 @@
-use std::fs::File;
-use std::path::Path;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use chord::rerr;
-use chord::value::Value;
+use crate::util::yaml::load;
 use chord::Error;
 
 mod ctl;
 
 mod app;
 mod biz;
+mod util;
 
 #[async_std::main]
 async fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
-    let conf = load_conf(&opt.config)?;
+    let conf = load(&opt.config).await?;
     app::init(conf).await?;
     Ok(())
-}
-
-pub fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
-    let file = File::open(path);
-    let file = match file {
-        Err(_) => return Ok(Value::Null),
-        Ok(r) => r,
-    };
-
-    let deserialized: Result<Value, serde_yaml::Error> = serde_yaml::from_reader(file);
-    return match deserialized {
-        Err(e) => return rerr!("yaml", format!("{:?}", e)),
-        Ok(r) => Ok(r),
-    };
 }
 
 #[derive(StructOpt, Debug)]

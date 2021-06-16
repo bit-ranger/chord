@@ -18,6 +18,8 @@ use chord_step::StepRunnerFactoryDefault;
 
 use crate::app::conf::Config;
 use crate::biz;
+use crate::util::yaml::load;
+use chord::err;
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
@@ -35,9 +37,6 @@ pub struct Req {
 
     #[validate(length(min = 1))]
     branch: Option<String>,
-
-    #[validate(length(min = 1))]
-    job_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -77,7 +76,6 @@ impl Ctl for CtlImpl {
         let req = Req {
             git_url: req.git_url,
             branch: Some(req.branch.unwrap_or("master".to_owned())),
-            job_path: Some(req.job_path.unwrap_or("/".to_owned())),
         };
 
         let exec_id = SystemTime::now()
@@ -109,64 +107,75 @@ async fn checkout_run(
     exec_id: String,
     es_url: String,
 ) {
-    trace!("checkout_run {:?}", req);
-
+    let req_text = format!("{:?}", req);
+    trace!("checkout_run start {}", req_text);
     let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
-
     let host = git_url_splits[1];
     let group_name = git_url_splits[2];
     let repo_name = git_url_splits[3];
-    let last_step_idx = repo_name.len() - 4;
-    let repo_name = &repo_name.to_owned()[..last_step_idx];
+    let last_point_idx = repo_name.len() - 4;
+    let repo_name = &repo_name.to_owned()[..last_point_idx];
     let checkout_path = input.clone().join(host).join(group_name).join(repo_name);
+    let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
+    if let Err(e) = checkout_run_0(
+        app_ctx,
+        ssh_key_pri,
+        req,
+        exec_id,
+        es_url,
+        checkout_path.clone(),
+        job_name,
+    )
+    .await
+    {
+        warn!("checkout_run err {}, {}", req_text, e.to_string())
+    };
+    clear(checkout_path.as_path()).await;
+}
 
+async fn checkout_run_0(
+    app_ctx: Arc<dyn Context>,
+    ssh_key_pri: PathBuf,
+    req: Req,
+    exec_id: String,
+    es_url: String,
+    checkout_path: PathBuf,
+    job_name: String,
+) -> Result<Repository, Error> {
     if checkout_path.exists() {
-        error!("checkout exist {}", checkout_path.to_str().unwrap());
-        return;
+        clear(checkout_path.as_path()).await;
     } else {
-        if let Err(e) = async_std::fs::create_dir_all(checkout_path.clone()).await {
-            error!(
-                "checkout create_dir error {}, {}",
-                checkout_path.to_str().unwrap(),
-                e
-            );
-            return;
-        }
+        async_std::fs::create_dir_all(checkout_path.clone()).await?
     }
 
-    if let Err(e) = checkout(
+    let repo = checkout(
         ssh_key_pri.as_path(),
         req.git_url.as_str(),
         checkout_path.as_path(),
         req.branch.as_ref().unwrap().as_str(),
     )
-    .await
-    {
-        error!(
-            "checkout error {}, {}, {}",
-            req.git_url,
-            checkout_path.to_str().unwrap(),
-            e
-        );
-        clear(checkout_path.as_path()).await;
-        return;
-    }
+    .await?;
 
-    let job_path = match req.job_path {
-        Some(p) => {
-            let mut r = checkout_path.clone();
-            for seg in p.split("/") {
-                r = r.join(seg);
-            }
-            r
-        }
-        None => checkout_path.clone(),
+    let repo_root = repo
+        .path()
+        .parent()
+        .ok_or(err!("012", "invalid repo root"))?;
+
+    let repo_yml = repo_root.join("chord.yml");
+
+    let repo_conf = load(repo_yml).await?;
+    let job_path = repo_conf["task"]["group"]["path"]
+        .as_str()
+        .ok_or(err!("020", "missing task.group.path"))?;
+    let job_path = if job_path.starts_with("/") {
+        &job_path[1..]
+    } else {
+        job_path
     };
-
-    let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
+    let job_path = repo_root.join(job_path);
     job_run(app_ctx, job_path, job_name, exec_id, es_url).await;
-    clear(checkout_path.as_path()).await;
+    return Ok(repo);
 }
 
 async fn clear(dir: &Path) {

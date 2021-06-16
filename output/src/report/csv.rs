@@ -12,6 +12,7 @@ use chord::output::async_trait;
 use chord::output::AssessReport;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
+use chord::value::to_string;
 use chord::Error;
 use chrono::{DateTime, Utc};
 
@@ -195,14 +196,15 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
         vec.push(String::from(""));
     } else {
         match pa_vec.last().unwrap().state() {
-            StepState::Fail(json) => {
-                vec.push(json.to_string());
+            StepState::Fail(json) | StepState::Ok(json) => {
+                if json.is_string() {
+                    vec.push(json.as_str().map_or(json.to_string(), |j| j.to_owned()));
+                } else {
+                    vec.push(to_string(json).unwrap_or_else(|j| j.to_string()));
+                }
             }
             StepState::Err(e) => {
                 vec.push(e.to_string());
-            }
-            _ => {
-                vec.push(String::from(""));
             }
         }
     }

@@ -281,9 +281,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
         "type": "keyword"
       },
       "value": {
-        "type": "text",
-        "analyzer": "ik_max_word",
-        "search_analyzer": "ik_max_word"
+        "type": "object"
       }
     }
   }

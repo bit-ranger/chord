@@ -13,7 +13,7 @@ use chord::output::async_trait;
 use chord::output::AssessReport;
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::{to_string, to_string_pretty, Value};
+use chord::value::{to_string, Value};
 use chord::value::{Deserialize, Serialize};
 use chord::Error;
 

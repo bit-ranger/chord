@@ -153,12 +153,7 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         }
         .to_owned(),
         value: match sa.state() {
-            StepState::Ok(result) => {
-                Value::String(to_string_pretty(result).unwrap_or("".to_owned()))
-            }
-            StepState::Fail(result) => {
-                Value::String(to_string_pretty(result).unwrap_or("".to_owned()))
-            }
+            StepState::Ok(result) | StepState::Fail(result) => result.clone(),
             StepState::Err(e) => Value::String(e.to_string()),
         },
     }

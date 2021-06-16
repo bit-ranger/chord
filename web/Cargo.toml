@@ -17,7 +17,7 @@ repository = "https://github.com/bit-ranger/chord"
 [dependencies]
 chord = {path = "../chord" }
 serde = { version = "1.0" }
-chord-step = { path = "../step", features = ["step_restapi", "step_crypto", "step_dubbo", "step_redis", "step_mysql", "step_mongodb", "step_url"] }
+chord-step = { path = "../step", features = ["step_restapi", "step_crypto", "step_dubbo", "step_redis", "step_database", "step_mongodb", "step_url"] }
 chord-flow = { path = "../flow" }
 chord-input = {path = "../input"}
 chord-output = {path = "../output", features = ["report_elasticsearch"]}

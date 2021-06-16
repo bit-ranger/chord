@@ -35,7 +35,7 @@ openssl = {version = "0.10", features = ["vendored"]}
 
 [features]
 default = []
-step_mysql = ["rbatis"]
+step_database = ["rbatis"]
 step_dubbo = []
 step_redis = ["redis"]
 step_crypto = ["md5"]

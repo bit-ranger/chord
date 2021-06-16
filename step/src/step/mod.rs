@@ -11,14 +11,14 @@ mod sleep;
 
 #[cfg(feature = "step_crypto")]
 mod crypto;
+#[cfg(feature = "step_database")]
+mod database;
 #[cfg(feature = "step_dubbo")]
 mod dubbo;
 #[cfg(feature = "step_dylib")]
 mod dylib;
 #[cfg(feature = "step_mongodb")]
 mod mongodb;
-#[cfg(feature = "step_mysql")]
-mod mysql;
 #[cfg(feature = "step_redis")]
 mod redis;
 #[cfg(feature = "step_restapi")]
@@ -63,8 +63,8 @@ impl StepRunnerFactoryDefault {
         #[cfg(feature = "step_dubbo")]
         register!(table, config_ref, "dubbo", dubbo::Factory::new, false);
 
-        #[cfg(feature = "step_mysql")]
-        register!(table, config_ref, "mysql", mysql::Factory::new, true);
+        #[cfg(feature = "step_database")]
+        register!(table, config_ref, "database", database::Factory::new, true);
 
         #[cfg(feature = "step_redis")]
         register!(table, config_ref, "redis", redis::Factory::new, true);

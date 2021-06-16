@@ -12,16 +12,11 @@ handlebars_helper!(end_with: |x: Json, y: Json|
 );
 
 handlebars_helper!(contains: |x: Json, y: Json|{
-    if x.is_string() && y.is_string(){
-        x.as_str().unwrap().contains(y.as_str().unwrap())
-    } else if x.is_array(){
-        x.as_array().unwrap().contains(&y)
-    } else {
-        false
-    }
+    x.is_string() && y.is_string() && x.as_str().unwrap().contains(y.as_str().unwrap())
 });
 
 pub static STR_HELPER: StrHelper = StrHelper {};
+pub static SUBSTRING_HELPER: SubStringHelper = SubStringHelper {};
 
 #[derive(Clone, Copy)]
 pub struct StrHelper;
@@ -44,12 +39,10 @@ impl HelperDef for StrHelper {
     }
 }
 
-pub static STR_SUB_HELPER: StrSubHelper = StrSubHelper {};
-
 #[derive(Clone, Copy)]
-pub struct StrSubHelper;
+pub struct SubStringHelper;
 
-impl HelperDef for StrSubHelper {
+impl HelperDef for SubStringHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
@@ -58,36 +51,31 @@ impl HelperDef for StrSubHelper {
         _: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         let param = h.params();
-        let str = param[0]
-            .value()
-            .as_str()
-            .ok_or(RenderError::new("Param invalid for helper \"str_sub\""))?;
+        let str = param[0].value().as_str().ok_or(RenderError::new(
+            "Param invalid for helper \"str_substring\"",
+        ))?;
 
         if param.len() == 2 {
-            let start = param[1]
-                .value()
-                .as_f64()
-                .ok_or(RenderError::new("Param invalid for helper \"str_sub\""))?
-                as usize;
+            let start = param[1].value().as_f64().ok_or(RenderError::new(
+                "Param invalid for helper \"str_substring\"",
+            ))? as usize;
             return Ok(Some(ScopedJson::Derived(Value::String(
                 str[start..].to_owned(),
             ))));
         } else if param.len() == 3 {
-            let start = param[1]
-                .value()
-                .as_f64()
-                .ok_or(RenderError::new("Param invalid for helper \"str_sub\""))?
-                as usize;
-            let end = param[2]
-                .value()
-                .as_f64()
-                .ok_or(RenderError::new("Param invalid for helper \"str_sub\""))?
-                as usize;
+            let start = param[1].value().as_f64().ok_or(RenderError::new(
+                "Param invalid for helper \"str_substring\"",
+            ))? as usize;
+            let end = param[2].value().as_f64().ok_or(RenderError::new(
+                "Param invalid for helper \"str_substring\"",
+            ))? as usize;
             return Ok(Some(ScopedJson::Derived(Value::String(
                 str[start..end].to_owned(),
             ))));
         } else {
-            return Err(RenderError::new("Param invalid for helper \"str_sub\""));
+            return Err(RenderError::new(
+                "Param invalid for helper \"str_substring\"",
+            ));
         }
     }
 }

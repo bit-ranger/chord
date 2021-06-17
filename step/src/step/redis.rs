@@ -1,4 +1,4 @@
-use redis::Value as RedisValue;
+use redis::{Client, Value as RedisValue};
 
 use chord::err;
 use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
@@ -15,31 +15,52 @@ impl Factory {
 
 #[async_trait]
 impl StepRunnerFactory for Factory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
-        Ok(Box::new(Runner {}))
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
+        let url = arg.config()["url"]
+            .as_str()
+            .map(|s| arg.render_str(s))
+            .ok_or(err!("010", "missing url"))??;
+
+        if !arg.is_task_shared(url.as_str()) {
+            return Ok(Box::new(Runner { client: None }));
+        }
+
+        let client = redis::Client::open(url)?;
+
+        Ok(Box::new(Runner {
+            client: Some(client),
+        }))
     }
 }
 
-struct Runner {}
+struct Runner {
+    client: Option<Client>,
+}
 
 #[async_trait]
 impl StepRunner for Runner {
     async fn run(&self, arg: &dyn RunArg) -> StepValue {
-        run(arg).await
+        return match self.client.as_ref() {
+            Some(r) => run0(arg, r).await,
+            None => {
+                let url = arg.config()["url"]
+                    .as_str()
+                    .map(|s| arg.render_str(s))
+                    .ok_or(err!("010", "missing url"))??;
+
+                let client = redis::Client::open(url)?;
+                run0(arg, &client).await
+            }
+        };
     }
 }
 
-async fn run(arg: &dyn RunArg) -> StepValue {
-    let url = arg.config()["url"]
-        .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing url"))??;
+async fn run0(arg: &dyn RunArg, client: &Client) -> StepValue {
     let cmd = arg.config()["cmd"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing cmd"))??;
 
-    let client = redis::Client::open(url)?;
     let mut con = client.get_async_connection().await?;
 
     let mut command = redis::cmd(cmd.as_str());

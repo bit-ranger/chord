@@ -4,8 +4,8 @@ server:
 
 log:
     level:
-        root: debug
-        handlebars: info
+        root: warn
+        chord: trace
 
 report:
     elasticsearch:

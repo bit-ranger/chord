@@ -30,7 +30,7 @@ impl StepRunnerFactory for Factory {
             unsafe { lib.lib.get(b"init")? };
 
         let config_str = to_string(arg.config())?;
-        let config_str = arg.render(config_str.as_str())?;
+        let config_str = arg.render_str(config_str.as_str())?;
         step_runner_create(arg.id().to_string().as_str(), config_str.as_str())?;
 
         Ok(Box::new(Runner { lib }))

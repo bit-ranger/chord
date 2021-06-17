@@ -26,7 +26,7 @@ impl StepRunnerFactory for Factory {
             return Ok(Box::new(Runner { rb: None }));
         }
 
-        let url = arg.render(url)?;
+        let url = arg.render_str(url)?;
         let rb = create_rb(url.as_str()).await?;
         return Ok(Box::new(Runner { rb: Some(rb) }));
     }

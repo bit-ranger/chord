@@ -83,7 +83,7 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
         self.flow.step_config(self.id.step_id())
     }
 
-    fn render(&self, text: &str) -> Result<String, Error> {
+    fn render_str(&self, text: &str) -> Result<String, Error> {
         render(self.handlebars, self.render_context, text)
     }
 

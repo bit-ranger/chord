@@ -38,7 +38,7 @@ pub trait CreateArg: Sync + Send {
 
     fn config(&self) -> &Value;
 
-    fn render(&self, text: &str) -> Result<String, Error>;
+    fn render_str(&self, text: &str) -> Result<String, Error>;
 
     fn is_task_shared(&self, text: &str) -> bool;
 }

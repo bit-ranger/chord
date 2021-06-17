@@ -14,3 +14,4 @@ Cargo.lock
 **/*.rs.bk
 
 .idea/
+zero/devops/chord/job/output/

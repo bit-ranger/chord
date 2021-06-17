@@ -8,9 +8,9 @@ WORKDIR /data
 
 EXPOSE 9999
 
-ENV CARGO_HTTP_MULTIPLEXING false
-COPY zero/devops/apt /etc/apt
-COPY zero/devops/cargo /usr/local/cargo
+#ENV CARGO_HTTP_MULTIPLEXING false
+#COPY zero/devops/apt /etc/apt
+#COPY zero/devops/cargo /usr/local/cargo
 
 COPY chord chord
 COPY cmd cmd

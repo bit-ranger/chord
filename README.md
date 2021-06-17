@@ -8,23 +8,14 @@ chord - async 并行任务处理框架
 
 
 
-## 使用
+## usage
 
-#### cmd
+### cmd
 
-    ./chord-cmd --help
-
-    USAGE:
-        chord-cmd [OPTIONS] --input <input> --output <output>
-
-    FLAGS:
-        -h, --help       Prints help information
-        -V, --version    Prints version information
-
-    OPTIONS:
-        -i, --input <input>       input dir
-        -o, --output <output>     output dir
-        -l, --level <level>...    log level
+    cargo run --package  chord-cmd --bin chord-cmd  -- \ 
+        -c$(readlink -f .)/zero/devops/chord/conf/application.yml \ 
+        -i$(readlink -f .)/zero/devops/chord/job/input \ 
+        -o$(readlink -f .)/zero/devops/chord/job/output
     
-
-
+### example
+[example](https://github.com/bit-ranger/chord/tree/master/zero/devops/chord/job/input)

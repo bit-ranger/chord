@@ -19,7 +19,7 @@ jobs:
                 uses: actions/checkout@v2
                 
             -   name: Boot services
-                run: docker-compose -f .github/docker-compose.yml up -d
+                run: docker-compose -f zero/devops/docker-compose.yml up -d
                 
             -   name: Show services
                 run: docker container ls -a

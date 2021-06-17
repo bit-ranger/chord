@@ -8,13 +8,13 @@ def:
 stage:
     benchmark1:
         concurrency: 1
-        round: 200
+        round: 1
         duration: 30
         
     benchmark2:
         concurrency: 1
-        round: 200
-        duration: 20
+        round: 1
+        duration: 30
 
 
 case:

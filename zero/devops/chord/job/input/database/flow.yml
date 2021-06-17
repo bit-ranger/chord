@@ -1,0 +1,24 @@
+version: "0.0.1"
+
+
+def:
+    database:
+        url: mysql://root:example@mysql:3306/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+
+stage:
+    benchmark1:
+        concurrency: 10
+
+case:
+    step:
+        mysql_select:
+            kind: database
+            config:
+                url: "{{def.database.url}}"
+                sql: |+
+                    select * from  user where user = '{{data.user}}'
+            assert:
+                (eq curr.value.records.0.User data.user)
+
+      
+

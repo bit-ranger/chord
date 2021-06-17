@@ -1,0 +1,30 @@
+version: "0.0.1"
+
+def:
+    redis:
+        url: redis://:@redis:6379/0
+
+stage:
+    benchmark1:
+        concurrency: 10
+
+case:
+    step:
+        set_redis:
+            kind: redis
+            config:
+                url: "{{def.redis.url}}"
+                cmd: SET
+                args: [ "CHORD:TEST:0123456789", "{{data.arg0}}" ]
+        
+        get_redis:
+            kind: redis
+            config:
+                url: "{{def.redis.url}}"
+                cmd: GET
+                args: [ "CHORD:TEST:0123456789" ]
+            assert: |+
+                (eq curr.value data.arg0)
+
+      
+

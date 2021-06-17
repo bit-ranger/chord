@@ -43,10 +43,11 @@ async fn run(arg: &dyn RunArg) -> StepValue {
     let mut con = client.get_async_connection().await?;
 
     let mut command = redis::cmd(cmd.as_str());
-    let args_opt = arg.config()["args"].as_array();
-    if args_opt.is_some() {
-        for arg in args_opt.unwrap() {
-            command.arg(arg.to_string().as_str());
+    let args_opt = arg.render_value(&arg.config()["args"])?;
+
+    if let Some(arg_vec) = args_opt.as_array() {
+        for a in arg_vec {
+            command.arg(a.to_string());
         }
     }
 

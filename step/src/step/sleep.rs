@@ -25,13 +25,18 @@ struct Runner {}
 #[async_trait]
 impl StepRunner for Runner {
     async fn run(&self, arg: &dyn RunArg) -> StepValue {
-        let sec = arg.config()["duration"].as_u64();
-
-        if sec.is_none() {
+        let sec = arg.render_value(&arg.config()["duration"])?;
+        if sec.is_null() {
             return rerr!("sleep", "duration must > 0");
         }
+        let sec = if sec.is_number() && sec.as_u64().is_some() {
+            sec.as_u64().unwrap()
+        } else if sec.is_string() {
+            sec.as_str().unwrap().parse()?
+        } else {
+            0
+        };
 
-        let sec = sec.unwrap();
         if sec < 1 {
             return rerr!("sleep", "duration must > 0");
         }

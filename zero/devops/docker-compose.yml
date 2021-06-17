@@ -38,7 +38,7 @@ services:
         image: chord:1
         build:
             context: ../..
-            dockerfile: ../../Dockerfile
+            dockerfile: Dockerfile
         ports:
             - "9999:9999"
         depends_on:

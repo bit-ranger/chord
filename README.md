@@ -16,6 +16,26 @@ chord - async 并行任务处理框架
         -c$(readlink -f .)/zero/devops/chord/conf/application.yml \ 
         -i$(readlink -f .)/zero/devops/chord/job/input \ 
         -o$(readlink -f .)/zero/devops/chord/job/output
+
+
+#### help
+    cargo run --package  chord-cmd --bin chord-cmd -- --help
+
+##### 
+
+    chord 0.1.0
+
+    USAGE:
+    chord-cmd [OPTIONS] --input <input> --output <output>
+
+    FLAGS:
+        -h, --help       Prints help information
+        -V, --version    Prints version information
+
+    OPTIONS:
+        -c, --config <config>    config file path [default: /data/chord/conf/application.yml]
+        -i, --input <input>      input dir
+        -o, --output <output>    output dir
     
 ### example
 [example](https://github.com/bit-ranger/chord/tree/master/zero/devops/chord/job/input)

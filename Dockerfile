@@ -2,7 +2,7 @@
 FROM rust:1.52.1
 
 # 作者及联系方式   
-MAINTAINER bitranger sincerebravefight@gmail.com
+MAINTAINER bit-ranger sincerebravefight@gmail.com
 
 WORKDIR /data
 

@@ -168,9 +168,10 @@ async fn checkout_run_0(
     let job_path = repo_conf["task"]["group"]["path"]
         .as_str()
         .ok_or(err!("020", "missing task.group.path"))?;
-    if job_path.starts_with("/") {
+    if !job_path.starts_with("./") {
         return rerr!("020", "invalid task.group.path");
     }
+    let job_path = &job_path[2..];
     let job_path = repo_root.join(job_path);
     job_run(app_ctx, job_path, job_name, exec_id, es_url).await;
     return Ok(repo);

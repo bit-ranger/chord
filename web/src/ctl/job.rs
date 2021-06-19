@@ -13,13 +13,13 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 use chord::Error;
+use chord::{err, rerr};
 use chord_flow::Context;
 use chord_step::StepRunnerFactoryDefault;
 
 use crate::app::conf::Config;
 use crate::biz;
 use crate::util::yaml::load;
-use chord::err;
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
@@ -168,11 +168,9 @@ async fn checkout_run_0(
     let job_path = repo_conf["task"]["group"]["path"]
         .as_str()
         .ok_or(err!("020", "missing task.group.path"))?;
-    let job_path = if job_path.starts_with("/") {
-        &job_path[1..]
-    } else {
-        job_path
-    };
+    if job_path.starts_with("/") {
+        return rerr!("020", "invalid task.group.path");
+    }
     let job_path = repo_root.join(job_path);
     job_run(app_ctx, job_path, job_name, exec_id, es_url).await;
     return Ok(repo);

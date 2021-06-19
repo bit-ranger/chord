@@ -35,7 +35,7 @@ services:
 
     chord:
         container_name: chord
-        image: chord:1
+        image: chord
         build:
             context: ../..
             dockerfile: Dockerfile

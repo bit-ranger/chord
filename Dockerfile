@@ -6,8 +6,6 @@ MAINTAINER bit-ranger sincerebravefight@gmail.com
 
 WORKDIR /workdir
 
-CMD ["bash"]
-
 EXPOSE 9999
 
 #ENV CARGO_HTTP_MULTIPLEXING false

@@ -52,7 +52,7 @@ jobs:
                 run: |
                     sleep 30
 
-            -   name: chord-web-result
+            -   name: chord-web-report
                 uses: actions/upload-artifact@v2
                 with:
                     name: chord-web-result

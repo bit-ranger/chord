@@ -29,6 +29,3 @@ RUN cargo test --release --verbose \
 && mv ./target/release/chord-cmd ./chord-cmd \
 && cargo clean \
 && rm -rf /usr/local/cargo/registry
-
-
-COPY zero/devops/chord /data/chord

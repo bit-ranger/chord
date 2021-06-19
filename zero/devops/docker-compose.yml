@@ -40,7 +40,7 @@ services:
             context: ../..
             dockerfile: Dockerfile
         volumes:
-            - chord:/data/chord
+            - ./chord:/data/chord
         ports:
             - "9999:9999"
         depends_on:

@@ -1,4 +1,4 @@
-name: docker-cargo
+name: docker
 
 on:
     push:

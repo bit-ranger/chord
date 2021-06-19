@@ -53,7 +53,7 @@ jobs:
             
             -   name: Build
                 run: cargo build --target x86_64-unknown-linux-musl --verbose --release
-            
+
             -   name: Upload
                 uses: actions/upload-artifact@v2
                 with:
@@ -64,8 +64,29 @@ jobs:
                         target/release/chord-cmd
                         target/release/chord-web
     
+    windows:
+        needs: docker
+        runs-on: windows-latest
+        
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+            
+            -   name: Build
+                run: cargo build --verbose --release
+            
+            -   name: Upload
+                uses: actions/upload-artifact@v2
+                with:
+                    name: windows-release
+                    retention-days: 1
+                    if-no-files-found: error
+                    path: |
+                        target/release/chord-cmd.exe
+                        target/release/chord-web.exe
+    
     macos:
-        needs: linux
+        needs: docker
         runs-on: macos-latest
         
         steps:

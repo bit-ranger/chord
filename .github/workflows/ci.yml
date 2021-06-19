@@ -36,7 +36,7 @@ jobs:
                 run: curl http://127.0.0.1:9200/
 
             -   name: chord-cmd
-                run: docker run -v "$(pwd)"/zero/devops/chord:/data/chord chord chord-cmd -i/data/chord/job/input -o/data/chord/job/output
+                run: docker run -v $PWD/zero/devops/chord:/data/chord chord chord-cmd -i/data/chord/job/input -o/data/chord/job/output
 
             -   name: chord-web
                 run: |

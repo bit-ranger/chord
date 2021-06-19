@@ -12,7 +12,7 @@ services:
             - "9200:9200"
             - "9300:9300"
         healthcheck:
-            test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+            test: [ "CMD", "curl", "http://localhost:9200" ]
             interval: 1m30s
             timeout: 10s
             retries: 3
@@ -47,7 +47,7 @@ services:
             - redis
         command: ./chord-web
         healthcheck:
-            test: [ "CMD", "curl", "-f", "http://localhost:9999" ]
+            test: [ "CMD", "curl", "http://localhost:9999" ]
             interval: 1m30s
             timeout: 10s
             retries: 3

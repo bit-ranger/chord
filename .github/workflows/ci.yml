@@ -18,27 +18,25 @@ jobs:
                 run: |
                     sudo apt-get update
                     sudo apt-get install curl
-    
+
             -   name: Checkout
                 uses: actions/checkout@v2
-    
+
             -   name: Docker build
                 run: docker-compose -f zero/devops/docker-compose.yml build
-    
+
             -   name: Boot services
                 run: docker-compose -f zero/devops/docker-compose.yml up -d
-    
-            -   name: Show services
-                run: docker container ls -a
-    
-            -   name: Inspect elasticsearch
-                run: docker inspect elasticsearch
+
+            -   name: Wait services
+                run: |
+                    sleep 30
 
             -   name: Curl elasticsearch
-                run: curl -s --retry 10 --retry-connrefused http://127.0.0.1:9200/
+                run: curl http://127.0.0.1:9200/
 
             -   name: Curl chord-web
-                run: curl -s --retry 10 --retry-connrefused http://127.0.0.1:9999/
+                run: curl http://127.0.0.1:9999/
 
             -   name: Run chord-cmd
                 run: docker run -v zero/devops/chord:/data/chord chord chord-cmd -i/data/chord/job/input -o/data/chord/job/output

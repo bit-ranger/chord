@@ -11,7 +11,6 @@ env:
 
 jobs:
     docker:
-    
         runs-on: ubuntu-latest
         
         steps:
@@ -45,7 +44,7 @@ jobs:
                 run: docker run -v zero/devops/chord:/data/chord chord chord-cmd -i/data/chord/job/input -o/data/chord/job/output
     
     macos:
-        
+        needs: docker
         runs-on: macos-latest
         
         steps:

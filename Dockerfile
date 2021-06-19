@@ -32,3 +32,4 @@ RUN cargo test --release --verbose \
 && rm -rf /usr/local/cargo/registry
 
 
+COPY zero/devops/chord /data/chord

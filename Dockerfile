@@ -21,7 +21,6 @@ COPY input input
 COPY output output
 COPY step step
 COPY web web
-COPY zero/step-dylib zero/step-dylib
 COPY Cargo.toml Cargo.toml
 
 RUN cargo test --release --verbose \

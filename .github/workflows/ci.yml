@@ -40,12 +40,7 @@ jobs:
 
             -   name: chord-web
                 run: |
-                    curl -X POST --location "http://127.0.0.1:9999/job/exec/" \
-                       -H "Content-Type: application/json" \
-                       -d "{
-                               \"git_url\": \"git@github.com:bit-ranger/chord.git\",
-                               \"branch\": \"master\"
-                           }"
+                    curl -X POST --location "http://127.0.0.1:9999/job/exec/"  -H "Content-Type: application/json" -d "{ \"git_url\": \"git@github.com:bit-ranger/chord.git\", \"branch\": \"master\"  }"
 
 
             -   name: chord-web-wait

@@ -21,7 +21,7 @@ pub trait Config: Sync + Send {
 
     fn report_elasticsearch_url(&self) -> Result<&str, Error>;
 
-    fn step_config(&self) -> Option<&Value>;
+    fn action_config(&self) -> Option<&Value>;
 }
 
 #[derive(Debug, Clone)]
@@ -91,7 +91,7 @@ impl Config for ConfigImpl {
             .ok_or(err!("config", "missing report.mongodb.url"))
     }
 
-    fn step_config(&self) -> Option<&Value> {
-        self.conf.get("step")
+    fn action_config(&self) -> Option<&Value> {
+        self.conf.get("action")
     }
 }

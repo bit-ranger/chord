@@ -62,7 +62,7 @@ impl CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
             flow_ctx: chord_flow::context_create(Box::new(
-                ActionFactoryDefault::new(config.step_config().map(|c| c.clone())).await?,
+                ActionFactoryDefault::new(config.action_config().map(|c| c.clone())).await?,
             ))
             .await,
             config,

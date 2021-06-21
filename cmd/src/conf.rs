@@ -25,7 +25,7 @@ impl Config {
         return target_level;
     }
 
-    pub fn step_config(&self) -> Option<&Value> {
-        self.conf.get("step")
+    pub fn action_config(&self) -> Option<&Value> {
+        self.conf.get("action")
     }
 }

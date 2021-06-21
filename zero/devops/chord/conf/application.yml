@@ -12,6 +12,6 @@ report:
         url: http://elasticsearch:9200
 
 
-step:
+action:
     dubbo:
         enable: false

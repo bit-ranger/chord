@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use chord::err;
-use chord::step::{async_trait, CreateArg, StepRunner, StepRunnerFactory};
+use chord::step::{async_trait, Action, ActionFactory, CreateArg};
 use chord::value::Value;
 use chord::Error;
 
@@ -9,25 +9,25 @@ mod echo;
 mod log;
 mod sleep;
 
-#[cfg(feature = "step_crypto")]
+#[cfg(feature = "act_crypto")]
 mod crypto;
-#[cfg(feature = "step_database")]
+#[cfg(feature = "act_database")]
 mod database;
-#[cfg(feature = "step_dubbo")]
+#[cfg(feature = "act_dubbo")]
 mod dubbo;
-#[cfg(feature = "step_dylib")]
+#[cfg(feature = "act_dylib")]
 mod dylib;
-#[cfg(feature = "step_mongodb")]
+#[cfg(feature = "act_mongodb")]
 mod mongodb;
-#[cfg(feature = "step_redis")]
+#[cfg(feature = "act_redis")]
 mod redis;
-#[cfg(feature = "step_restapi")]
+#[cfg(feature = "act_restapi")]
 mod restapi;
-#[cfg(feature = "step_url")]
+#[cfg(feature = "act_url")]
 mod url;
 
-pub struct StepRunnerFactoryDefault {
-    table: HashMap<String, Box<dyn StepRunnerFactory>>,
+pub struct ActionFactoryDefault {
+    table: HashMap<String, Box<dyn ActionFactory>>,
 }
 
 macro_rules! register {
@@ -41,9 +41,9 @@ macro_rules! register {
     };
 }
 
-impl StepRunnerFactoryDefault {
-    pub async fn new(config: Option<Value>) -> Result<StepRunnerFactoryDefault, Error> {
-        let mut table: HashMap<String, Box<dyn StepRunnerFactory>> = HashMap::new();
+impl ActionFactoryDefault {
+    pub async fn new(config: Option<Value>) -> Result<ActionFactoryDefault, Error> {
+        let mut table: HashMap<String, Box<dyn ActionFactory>> = HashMap::new();
 
         let config_ref = config.as_ref();
 
@@ -51,43 +51,43 @@ impl StepRunnerFactoryDefault {
         register!(table, config_ref, "sleep", sleep::Factory::new, true);
         register!(table, config_ref, "log", log::Factory::new, true);
 
-        #[cfg(feature = "step_restapi")]
+        #[cfg(feature = "act_restapi")]
         register!(table, config_ref, "restapi", restapi::Factory::new, true);
 
-        #[cfg(feature = "step_crypto")]
+        #[cfg(feature = "act_crypto")]
         register!(table, config_ref, "crypto", crypto::Factory::new, true);
 
-        #[cfg(feature = "step_url")]
+        #[cfg(feature = "act_url")]
         register!(table, config_ref, "url", url::Factory::new, true);
 
-        #[cfg(feature = "step_dubbo")]
+        #[cfg(feature = "act_dubbo")]
         register!(table, config_ref, "dubbo", dubbo::Factory::new, false);
 
-        #[cfg(feature = "step_database")]
+        #[cfg(feature = "act_database")]
         register!(table, config_ref, "database", database::Factory::new, true);
 
-        #[cfg(feature = "step_redis")]
+        #[cfg(feature = "act_redis")]
         register!(table, config_ref, "redis", redis::Factory::new, true);
 
-        #[cfg(feature = "step_mongodb")]
+        #[cfg(feature = "act_mongodb")]
         register!(table, config_ref, "mongodb", mongodb::Factory::new, true);
 
-        #[cfg(feature = "step_dylib")]
+        #[cfg(feature = "act_dylib")]
         register!(table, config_ref, "dylib", dylib::Factory::new, false);
 
-        Ok(StepRunnerFactoryDefault { table })
+        Ok(ActionFactoryDefault { table })
     }
 }
 
 #[async_trait]
-impl StepRunnerFactory for StepRunnerFactoryDefault {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
-        let kind = arg.kind();
+impl ActionFactory for ActionFactoryDefault {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+        let action = arg.action();
         self.table
-            .get(kind)
+            .get(action)
             .ok_or(err!(
                 "002",
-                format!("unsupported step kind {}", kind).as_str()
+                format!("unsupported step action {}", action).as_str()
             ))?
             .create(arg)
             .await

@@ -1,7 +1,7 @@
 use redis::{Client, Value as RedisValue};
 
 use chord::err;
-use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
+use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
 use chord::value::{from_str, Number, Value};
 use chord::Error;
 
@@ -14,8 +14,8 @@ impl Factory {
 }
 
 #[async_trait]
-impl StepRunnerFactory for Factory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
+impl ActionFactory for Factory {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.config()["url"]
             .as_str()
             .map(|s| arg.render_str(s))
@@ -38,8 +38,8 @@ struct Runner {
 }
 
 #[async_trait]
-impl StepRunner for Runner {
-    async fn run(&self, arg: &dyn RunArg) -> StepValue {
+impl Action for Runner {
+    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
@@ -55,7 +55,7 @@ impl StepRunner for Runner {
     }
 }
 
-async fn run0(arg: &dyn RunArg, client: &Client) -> StepValue {
+async fn run0(arg: &dyn RunArg, client: &Client) -> ActionValue {
     let cmd = arg.config()["cmd"]
         .as_str()
         .map(|s| arg.render_str(s))

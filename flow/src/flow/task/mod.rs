@@ -10,7 +10,7 @@ use chord::input::CaseLoad;
 use chord::output::AssessReport;
 use chord::output::{DateTime, Utc};
 use chord::rerr;
-use chord::step::{StepRunner, StepState};
+use chord::step::{Action, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::{to_value, Map, Value};
 use chord::Error;
@@ -29,7 +29,7 @@ pub mod res;
 pub struct TaskRunner {
     flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
-    step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
+    step_runner_vec: Arc<Vec<(String, Box<dyn Action>)>>,
     id: Arc<TaskIdSimple>,
     pre_ctx: Arc<Value>,
     case_id_offset: usize,
@@ -283,7 +283,7 @@ async fn step_runner_vec_create(
     pre_ctx: Arc<Value>,
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdSimple>,
-) -> Result<Vec<(String, Box<dyn StepRunner>)>, Error> {
+) -> Result<Vec<(String, Box<dyn Action>)>, Error> {
     let render_context = render_context_create(flow_ctx.clone(), flow.clone(), pre_ctx.clone());
     let mut step_runner_vec = vec![];
     for sid in step_id_vec {
@@ -324,18 +324,18 @@ async fn step_runner_create(
     render_context: &RenderContext,
     task_id: Arc<TaskIdSimple>,
     step_id: String,
-) -> Result<Box<dyn StepRunner>, Error> {
-    let kind = flow.step_kind(step_id.as_ref());
+) -> Result<Box<dyn Action>, Error> {
+    let action = flow.step_action(step_id.as_ref());
     let create_arg = CreateArgStruct::new(
         flow,
         flow_ctx.get_handlebars(),
         render_context,
         task_id,
-        kind,
+        action,
         step_id,
     );
 
-    flow_ctx.get_step_runner_factory().create(&create_arg).await
+    flow_ctx.get_action_factory().create(&create_arg).await
 }
 
 async fn case_run(flow_ctx: &dyn Context, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {

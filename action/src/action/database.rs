@@ -3,7 +3,7 @@ use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 
 use chord::err;
-use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
+use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
 use chord::value::{Map, Number, Value};
 use chord::Error;
 
@@ -16,8 +16,8 @@ impl Factory {
 }
 
 #[async_trait]
-impl StepRunnerFactory for Factory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
+impl ActionFactory for Factory {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.config()["url"]
             .as_str()
             .ok_or(err!("010", "missing url"))?;
@@ -37,8 +37,8 @@ struct Runner {
 }
 
 #[async_trait]
-impl StepRunner for Runner {
-    async fn run(&self, arg: &dyn RunArg) -> StepValue {
+impl Action for Runner {
+    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         run(&self, arg).await
     }
 }
@@ -49,7 +49,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
     Ok(rb)
 }
 
-async fn run(obj: &Runner, arg: &dyn RunArg) -> StepValue {
+async fn run(obj: &Runner, arg: &dyn RunArg) -> ActionValue {
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {
@@ -64,7 +64,7 @@ async fn run(obj: &Runner, arg: &dyn RunArg) -> StepValue {
     };
 }
 
-async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> StepValue {
+async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> ActionValue {
     let sql = arg.config()["sql"]
         .as_str()
         .map(|s| arg.render_str(s))

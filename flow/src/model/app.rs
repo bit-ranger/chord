@@ -3,26 +3,26 @@ use std::borrow::Borrow;
 use handlebars::Handlebars;
 
 use crate::model::helper::register;
-use chord::step::StepRunnerFactory;
+use chord::step::ActionFactory;
 
 pub trait Context: Sync + Send {
     fn get_handlebars(&self) -> &Handlebars;
 
-    fn get_step_runner_factory(&self) -> &dyn StepRunnerFactory;
+    fn get_action_factory(&self) -> &dyn ActionFactory;
 }
 
 pub struct FlowContextStruct<'reg> {
     handlebars: Handlebars<'reg>,
-    step_runner_factory: Box<dyn StepRunnerFactory>,
+    action_factory: Box<dyn ActionFactory>,
 }
 
 impl<'reg> FlowContextStruct<'reg> {
-    pub fn new(step_runner_factory: Box<dyn StepRunnerFactory>) -> FlowContextStruct<'reg> {
+    pub fn new(action_factory: Box<dyn ActionFactory>) -> FlowContextStruct<'reg> {
         let mut handlebars = Handlebars::new();
         register(&mut handlebars);
         FlowContextStruct {
             handlebars,
-            step_runner_factory,
+            action_factory,
         }
     }
 }
@@ -32,8 +32,8 @@ impl<'reg> Context for FlowContextStruct<'reg> {
         self.handlebars.borrow()
     }
 
-    fn get_step_runner_factory(self: &FlowContextStruct<'reg>) -> &dyn StepRunnerFactory {
-        self.step_runner_factory.as_ref()
+    fn get_action_factory(self: &FlowContextStruct<'reg>) -> &dyn ActionFactory {
+        self.action_factory.as_ref()
     }
 }
 

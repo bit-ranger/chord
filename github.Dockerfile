@@ -13,7 +13,7 @@ COPY cmd cmd
 COPY flow flow
 COPY input input
 COPY output output
-COPY step step
+COPY action step
 COPY web web
 COPY Cargo.toml Cargo.toml
 

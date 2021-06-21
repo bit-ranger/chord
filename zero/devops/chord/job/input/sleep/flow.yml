@@ -7,7 +7,7 @@ stage:
 case:
     step:
         sleep_example:
-            kind: sleep
+            action: sleep
             config:
                 duration: "{{data.seconds}}"
             assert: |+

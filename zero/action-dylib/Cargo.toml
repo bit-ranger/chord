@@ -1,5 +1,5 @@
 [package]
-name = "chord-step-dylib"
+name = "chord-action-dylib"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2018"
@@ -11,5 +11,5 @@ chord = {path = "../../chord" }
 lazy_static = "1.4.0"
 
 [lib]
-name = "step_dylib"
+name = "fdylib"
 crate-type = ["dylib"]

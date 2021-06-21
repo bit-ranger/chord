@@ -12,7 +12,7 @@ lazy_static! {
 #[no_mangle]
 pub fn init(id: &str, config: &str) -> Result<(), Error> {
     let config: Map = from_str(config)?;
-    println!("step_dylib create {}, {:?}", id, config);
+    println!("fdylib create {}, {:?}", id, config);
     let mut ctx = CONTEXT.lock().unwrap();
     let ctx = ctx.deref_mut();
     ctx.insert("create".into(), "1".into());
@@ -23,9 +23,9 @@ pub fn init(id: &str, config: &str) -> Result<(), Error> {
 #[no_mangle]
 pub fn run(id: &str, config: &str) -> StepValue {
     let config: Map = from_str(config)?;
-    println!("step_dylib run {}, {:?}", id, config);
+    println!("fdylib run {}, {:?}", id, config);
     let mut ctx = CONTEXT.lock().unwrap();
     let ctx = ctx.deref_mut();
     ctx.insert("run".into(), "1".into());
-    Ok(Value::String(format!("step_dylib run {}", id)))
+    Ok(Value::String(format!("fdylib run {}", id)))
 }

@@ -9,7 +9,7 @@ use crate::case::CaseId;
 use crate::error::Error;
 use crate::value::Value;
 
-pub type StepValue = std::result::Result<Value, Error>;
+pub type ActionValue = std::result::Result<Value, Error>;
 
 lazy_static! {
     pub static ref POINT_ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
@@ -34,7 +34,7 @@ pub trait RunArg: Sync + Send {
 pub trait CreateArg: Sync + Send {
     fn id(&self) -> &dyn StepId;
 
-    fn kind(&self) -> &str;
+    fn action(&self) -> &str;
 
     fn config(&self) -> &Value;
 
@@ -61,11 +61,11 @@ pub trait StepAssess: Sync + Send {
 }
 
 #[async_trait]
-pub trait StepRunner: Sync + Send {
-    async fn run(&self, arg: &dyn RunArg) -> StepValue;
+pub trait Action: Sync + Send {
+    async fn run(&self, arg: &dyn RunArg) -> ActionValue;
 }
 
 #[async_trait]
-pub trait StepRunnerFactory: Sync + Send {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error>;
+pub trait ActionFactory: Sync + Send {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error>;
 }

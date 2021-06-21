@@ -12,7 +12,7 @@ stage:
 case:
     step:
         echo_example:
-            kind: echo
+            action: echo
             config: |
                 update bas set a = '{{data.origin_lon}}' where b = "{{data.origin_lon}}"
             assert: |

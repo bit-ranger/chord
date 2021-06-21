@@ -8,7 +8,7 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
+use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
 use chord::value::{from_str, to_string_pretty, Value};
 use chord::value::{Deserialize, Serialize};
 use chord::Error;
@@ -84,8 +84,8 @@ impl Factory {
 }
 
 #[async_trait]
-impl StepRunnerFactory for Factory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
+impl ActionFactory for Factory {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Runner {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
@@ -101,8 +101,8 @@ struct Runner {
 }
 
 #[async_trait]
-impl StepRunner for Runner {
-    async fn run(&self, run_arg: &dyn RunArg) -> StepValue {
+impl Action for Runner {
+    async fn run(&self, run_arg: &dyn RunArg) -> ActionValue {
         let method_long = run_arg.config()["method"]
             .as_str()
             .ok_or(err!("010", "missing method"))?;

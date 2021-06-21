@@ -42,7 +42,7 @@ pub struct CreateArgStruct<'f, 'h, 'reg, 'r> {
     flow: &'f Flow,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
-    kind: String,
+    action: String,
     id: StepIdStruct,
 }
 
@@ -52,14 +52,14 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
         handlebars: &'h Handlebars<'reg>,
         render_context: &'r RenderContext,
         task_id: Arc<dyn TaskId>,
-        kind: String,
+        action: String,
         id: String,
     ) -> CreateArgStruct<'f, 'h, 'reg, 'r> {
         let context = CreateArgStruct {
             flow,
             handlebars,
             render_context,
-            kind,
+            action,
             id: StepIdStruct {
                 case_id: Arc::new(CaseIdStruct::new(task_id, 0)),
                 step_id: id,
@@ -75,8 +75,8 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
         &self.id
     }
 
-    fn kind(&self) -> &str {
-        self.kind.as_str()
+    fn action(&self) -> &str {
+        self.action.as_str()
     }
 
     fn config(&self) -> &Value {

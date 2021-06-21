@@ -1,6 +1,6 @@
 use chrono::Utc;
 
-use chord::step::{StepRunner, StepValue};
+use chord::step::{Action, ActionValue};
 use chord::Error;
 use res::StepAssessStruct;
 
@@ -18,11 +18,11 @@ pub mod res;
 pub async fn run(
     _: &dyn Context,
     arg: &RunArgStruct<'_, '_, '_, '_>,
-    runner: &dyn StepRunner,
+    action: &dyn Action,
 ) -> StepAssessStruct {
     trace!("step start {}", arg.id());
     let start = Utc::now();
-    let future = AssertUnwindSafe(runner.run(arg)).catch_unwind();
+    let future = AssertUnwindSafe(action.run(arg)).catch_unwind();
     let timeout_value = timeout(arg.timeout(), future).await;
     let value = match timeout_value {
         Ok(cu) => match cu {
@@ -47,10 +47,10 @@ pub async fn run(
     };
 
     return match value {
-        StepValue::Ok(json) => {
+        ActionValue::Ok(json) => {
             StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Ok(json))
         }
-        StepValue::Err(e) => {
+        ActionValue::Err(e) => {
             StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e))
         }
     };

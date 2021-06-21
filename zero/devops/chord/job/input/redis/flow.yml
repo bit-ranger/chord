@@ -11,14 +11,14 @@ stage:
 case:
     step:
         set_redis:
-            kind: redis
+            action: redis
             config:
                 url: "{{def.redis.url}}"
                 cmd: SET
                 args: [ "CHORD:TEST:0123456789", "{{data.arg0}}" ]
         
         get_redis:
-            kind: redis
+            action: redis
             config:
                 url: "{{def.redis.url}}"
                 cmd: GET

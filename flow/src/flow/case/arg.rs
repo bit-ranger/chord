@@ -4,7 +4,7 @@ use async_std::sync::Arc;
 
 use chord::case::CaseId;
 use chord::flow::Flow;
-use chord::step::StepRunner;
+use chord::step::Action;
 use chord::task::TaskId;
 use chord::value::Value;
 use chord::value::{to_value, Map};
@@ -43,7 +43,7 @@ impl Display for CaseIdStruct {
 
 pub struct CaseArgStruct {
     flow: Arc<Flow>,
-    step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
+    step_runner_vec: Arc<Vec<(String, Box<dyn Action>)>>,
     data: Value,
     pre_ctx: Arc<Value>,
     id: Arc<CaseIdStruct>,
@@ -52,7 +52,7 @@ pub struct CaseArgStruct {
 impl CaseArgStruct {
     pub fn new(
         flow: Arc<Flow>,
-        step_runner_vec: Arc<Vec<(String, Box<dyn StepRunner>)>>,
+        step_runner_vec: Arc<Vec<(String, Box<dyn Action>)>>,
         data: Value,
         pre_ctx: Arc<Value>,
         task_id: Arc<dyn TaskId>,
@@ -109,7 +109,7 @@ impl CaseArgStruct {
         ))
     }
 
-    pub fn step_runner_vec(self: &CaseArgStruct) -> &Vec<(String, Box<dyn StepRunner>)> {
+    pub fn step_runner_vec(self: &CaseArgStruct) -> &Vec<(String, Box<dyn Action>)> {
         self.step_runner_vec.as_ref()
     }
 

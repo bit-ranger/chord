@@ -1,6 +1,6 @@
 use async_std::task::sleep;
 use chord::rerr;
-use chord::step::{async_trait, CreateArg, RunArg, StepRunner, StepRunnerFactory, StepValue};
+use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
 use chord::value::Value;
 use chord::Error;
 use std::time::Duration;
@@ -14,8 +14,8 @@ impl Factory {
 }
 
 #[async_trait]
-impl StepRunnerFactory for Factory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn StepRunner>, Error> {
+impl ActionFactory for Factory {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Runner {}))
     }
 }
@@ -23,8 +23,8 @@ impl StepRunnerFactory for Factory {
 struct Runner {}
 
 #[async_trait]
-impl StepRunner for Runner {
-    async fn run(&self, arg: &dyn RunArg) -> StepValue {
+impl Action for Runner {
+    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let sec = arg.render_value(&arg.config()["duration"])?;
         if sec.is_null() {
             return rerr!("sleep", "duration must > 0");

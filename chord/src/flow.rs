@@ -49,7 +49,7 @@ impl Flow {
                 .as_object()
                 .ok_or_else(|| err!("step", format!("invalid step {}", sid)))?;
 
-            let _ = flow._step_kind(sid)?;
+            let _ = flow._step_action(sid)?;
             let _ = flow._step_timeout(sid)?;
         }
 
@@ -91,8 +91,8 @@ impl Flow {
         self.flow["def"].as_object()
     }
 
-    pub fn step_kind(&self, step_id: &str) -> String {
-        self._step_kind(step_id).unwrap()
+    pub fn step_action(&self, step_id: &str) -> String {
+        self._step_action(step_id).unwrap()
     }
 
     pub fn step_assert(&self, step_id: &str) -> Option<String> {
@@ -143,11 +143,11 @@ impl Flow {
         return Ok(sid_vec);
     }
 
-    fn _step_kind(&self, step_id: &str) -> Result<String, Error> {
-        self.step(step_id)["kind"]
+    fn _step_action(&self, step_id: &str) -> Result<String, Error> {
+        self.step(step_id)["action"]
             .as_str()
             .map(ToOwned::to_owned)
-            .ok_or(err!("step", "missing kind"))
+            .ok_or(err!("step", "missing action"))
     }
 
     fn _step_timeout(&self, step_id: &str) -> Result<Duration, Error> {

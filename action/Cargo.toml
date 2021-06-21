@@ -1,5 +1,5 @@
 [package]
-name = "chord-step"
+name = "chord-action"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2018"
@@ -35,13 +35,12 @@ openssl = {version = "0.10", features = ["vendored"]}
 
 [features]
 default = []
-step_database = ["rbatis"]
-step_dubbo = []
-step_redis = ["redis"]
-step_crypto = ["md5"]
-step_restapi = ["surf"]
-step_mongodb = ["mongodb"]
-step_url = ["urlencoding"]
-step_url_decode = ["urlencoding"]
-step_dylib = ["dynamic_reload"]
+act_database = ["rbatis"]
+act_dubbo = []
+act_redis = ["redis"]
+act_crypto = ["md5"]
+act_restapi = ["surf"]
+act_mongodb = ["mongodb"]
+act_url = ["urlencoding"]
+act_dylib = ["dynamic_reload"]
 

@@ -4,7 +4,7 @@ members = [
     'flow',
     'input',
     'output',
-    'step',
+    'action',
     'cmd',
     'web'
 ]

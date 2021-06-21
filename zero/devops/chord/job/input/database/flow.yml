@@ -12,7 +12,7 @@ stage:
 case:
     step:
         mysql_select:
-            kind: database
+            action: database
             config:
                 url: "{{def.database.url}}"
                 sql: |+

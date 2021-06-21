@@ -29,7 +29,7 @@ pub mod res;
 pub struct TaskRunner {
     flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
-    step_runner_vec: Arc<Vec<(String, Box<dyn Action>)>>,
+    action_vec: Arc<Vec<(String, Box<dyn Action>)>>,
     id: Arc<TaskIdSimple>,
     pre_ctx: Arc<Value>,
     case_id_offset: usize,
@@ -49,7 +49,7 @@ impl TaskRunner {
         let pre_ctx = pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone()).await?;
         let pre_ctx = Arc::new(pre_ctx);
 
-        let step_runner_vec = step_runner_vec_create(
+        let action_vec = action_vec_create(
             flow_ctx.clone(),
             flow.clone(),
             pre_ctx.clone(),
@@ -62,7 +62,7 @@ impl TaskRunner {
             case_load,
             flow_ctx,
             flow,
-            step_runner_vec: Arc::new(step_runner_vec),
+            action_vec: Arc::new(action_vec),
             id,
             pre_ctx,
             case_id_offset: 1,
@@ -200,7 +200,7 @@ impl TaskRunner {
             .map(|(i, d)| {
                 CaseArgStruct::new(
                     self.flow.clone(),
-                    self.step_runner_vec.clone(),
+                    self.action_vec.clone(),
                     d,
                     self.pre_ctx.clone(),
                     self.id.clone(),
@@ -220,7 +220,7 @@ async fn pre_arg(
     return if flow.pre_step_id_vec().is_none() {
         Ok(None)
     } else {
-        let step_runner_vec = step_runner_vec_create(
+        let action_vec = action_vec_create(
             flow_ctx.clone(),
             flow.clone(),
             Arc::new(Value::Null),
@@ -231,7 +231,7 @@ async fn pre_arg(
 
         Ok(Some(CaseArgStruct::new(
             flow.clone(),
-            Arc::new(step_runner_vec),
+            Arc::new(action_vec),
             Value::Null,
             Arc::new(Value::Null),
             task_id.clone(),
@@ -277,7 +277,7 @@ async fn pre_ctx_create(
     }
 }
 
-async fn step_runner_vec_create(
+async fn action_vec_create(
     flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
     pre_ctx: Arc<Value>,
@@ -285,9 +285,9 @@ async fn step_runner_vec_create(
     task_id: Arc<TaskIdSimple>,
 ) -> Result<Vec<(String, Box<dyn Action>)>, Error> {
     let render_context = render_context_create(flow_ctx.clone(), flow.clone(), pre_ctx.clone());
-    let mut step_runner_vec = vec![];
+    let mut action_vec = vec![];
     for sid in step_id_vec {
-        let pr = step_runner_create(
+        let pr = action_create(
             flow_ctx.as_ref(),
             flow.as_ref(),
             &render_context,
@@ -295,9 +295,9 @@ async fn step_runner_vec_create(
             sid.clone(),
         )
         .await?;
-        step_runner_vec.push((sid, pr));
+        action_vec.push((sid, pr));
     }
-    Ok(step_runner_vec)
+    Ok(action_vec)
 }
 
 fn render_context_create(
@@ -318,7 +318,7 @@ fn render_context_create(
     return RenderContext::wraps(render_data).unwrap();
 }
 
-async fn step_runner_create(
+async fn action_create(
     flow_ctx: &dyn Context,
     flow: &Flow,
     render_context: &RenderContext,

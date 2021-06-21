@@ -43,7 +43,7 @@ impl Display for CaseIdStruct {
 
 pub struct CaseArgStruct {
     flow: Arc<Flow>,
-    step_runner_vec: Arc<Vec<(String, Box<dyn Action>)>>,
+    action_vec: Arc<Vec<(String, Box<dyn Action>)>>,
     data: Value,
     pre_ctx: Arc<Value>,
     id: Arc<CaseIdStruct>,
@@ -52,7 +52,7 @@ pub struct CaseArgStruct {
 impl CaseArgStruct {
     pub fn new(
         flow: Arc<Flow>,
-        step_runner_vec: Arc<Vec<(String, Box<dyn Action>)>>,
+        action_vec: Arc<Vec<(String, Box<dyn Action>)>>,
         data: Value,
         pre_ctx: Arc<Value>,
         task_id: Arc<dyn TaskId>,
@@ -62,7 +62,7 @@ impl CaseArgStruct {
 
         let context = CaseArgStruct {
             flow,
-            step_runner_vec,
+            action_vec,
             data,
             pre_ctx,
             id,
@@ -109,8 +109,8 @@ impl CaseArgStruct {
         ))
     }
 
-    pub fn step_runner_vec(self: &CaseArgStruct) -> &Vec<(String, Box<dyn Action>)> {
-        self.step_runner_vec.as_ref()
+    pub fn action_vec(self: &CaseArgStruct) -> &Vec<(String, Box<dyn Action>)> {
+        self.action_vec.as_ref()
     }
 
     pub fn id(&self) -> Arc<CaseIdStruct> {

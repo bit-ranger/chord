@@ -26,12 +26,12 @@ impl ActionFactory for Factory {
 
         let lib = reload_handler.add_library("fdylib", PlatformName::Yes)?;
 
-        let step_runner_create: Symbol<fn(&str, &str) -> Result<(), Error>> =
+        let action_create: Symbol<fn(&str, &str) -> Result<(), Error>> =
             unsafe { lib.lib.get(b"init")? };
 
         let config_str = to_string(arg.config())?;
         let config_str = arg.render_str(config_str.as_str())?;
-        step_runner_create(arg.id().to_string().as_str(), config_str.as_str())?;
+        action_create(arg.id().to_string().as_str(), config_str.as_str())?;
 
         Ok(Box::new(Runner { lib }))
     }
@@ -44,11 +44,11 @@ struct Runner {
 #[async_trait]
 impl Action for Runner {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
-        let step_runner_run: Symbol<fn(&str, &str) -> ActionValue> =
+        let action_run: Symbol<fn(&str, &str) -> ActionValue> =
             unsafe { self.lib.lib.get(b"run")? };
 
         let config_str = to_string(arg.config())?;
         let config_str = arg.render_str(config_str.as_str())?;
-        step_runner_run(arg.id().to_string().as_str(), config_str.as_str())
+        action_run(arg.id().to_string().as_str(), config_str.as_str())
     }
 }

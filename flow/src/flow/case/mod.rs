@@ -21,7 +21,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     let start = Utc::now();
     let mut render_context = arg.create_render_context();
     let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
-    for (step_id, step_runner) in arg.step_runner_vec() {
+    for (step_id, action) in arg.action_vec() {
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if step_arg.is_none() {
             warn!("case  Err {}", arg.id());
@@ -33,7 +33,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
             );
         }
         let step_arg = step_arg.unwrap();
-        let step_assess = step::run(flow_ctx, &step_arg, step_runner.as_ref()).await;
+        let step_assess = step::run(flow_ctx, &step_arg, action.as_ref()).await;
 
         let config_raw = step_arg.config().to_string();
         match step_assess {

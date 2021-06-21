@@ -2,7 +2,7 @@ version: "0.0.1"
 
 def:
     es:
-        url: http://127.0.0.1:9200
+        url: http://elasticsearch:9200
 
 
 stage:

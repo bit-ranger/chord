@@ -13,9 +13,9 @@ chord - async 并行任务处理框架
 ### cmd
 
     cargo run --package  chord-cmd --bin chord-cmd  -- \ 
-        -c$(readlink -f .)/zero/devops/chord/conf/application.yml \ 
-        -i$(readlink -f .)/zero/devops/chord/job/input \ 
-        -o$(readlink -f .)/zero/devops/chord/job/output
+        -c$(pwd)/zero/devops/chord/conf/application.yml \ 
+        -i$(pwd)/zero/devops/chord/job/input \ 
+        -o$(pwd)/zero/devops/chord/job/output
 
 
 #### help

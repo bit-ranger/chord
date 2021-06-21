@@ -1,4 +1,8 @@
+
+workspace:
+    ./zero/devops/chord/job/input
+
 task:
-    group:
-        path:
-            ./zero/devops/chord/job/input
+    database:
+        depends_on: redis
+    

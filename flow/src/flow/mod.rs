@@ -28,8 +28,30 @@ pub async fn context_create(action_factory: Box<dyn ActionFactory>) -> Arc<dyn C
     Arc::new(FlowContextStruct::<'_>::new(action_factory))
 }
 
-pub fn task_compose(task_setting: Map) -> Result<Vec<Vec<String>>, Error> {
-    let mut register: HashMap<String, TaskNode> = task_setting
+pub async fn compose(setting: &Map) -> Result<Vec<Node>, Error> {
+    let mut reg = register(setting);
+    let layer = task_compose_layer(&mut reg, setting)?;
+    if layer.is_empty() {
+        return rerr!("compose", "noting no compose");
+    }
+
+    let layer1 = layer[0].clone();
+    let reg = Arc::new(reg);
+    let layer_node_1 = layer1
+        .into_iter()
+        .map(|n| reg.get(n.as_str()).unwrap())
+        .map(|n| Node {
+            reg: reg.clone(),
+            name: n.name.clone(),
+            next: n.next.clone(),
+        })
+        .collect();
+
+    return Ok(layer_node_1);
+}
+
+fn register(compose_setting: &Map) -> HashMap<String, TaskNode> {
+    let r: HashMap<String, TaskNode> = compose_setting
         .iter()
         .map(|(n, _)| TaskNode {
             name: n.clone(),
@@ -41,8 +63,14 @@ pub fn task_compose(task_setting: Map) -> Result<Vec<Vec<String>>, Error> {
             m.insert(n.name.clone(), n);
             m
         });
+    r
+}
 
-    for (name, node) in task_setting.iter() {
+fn task_compose_layer(
+    register: &mut HashMap<String, TaskNode>,
+    compose_setting: &Map,
+) -> Result<Vec<Vec<String>>, Error> {
+    for (name, node) in compose_setting.iter() {
         let curr_node = register.get(name);
         if curr_node.is_none() {
             return rerr!("compose", format!("un recognized task {}", name));
@@ -164,34 +192,59 @@ fn next_deep_collect(
     }
 }
 
+pub struct Node {
+    reg: Arc<HashMap<String, TaskNode>>,
+    name: String,
+    next: HashSet<String>,
+}
+
+impl Node {
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+
+    pub fn next(&self) -> Vec<Node> {
+        self.next
+            .iter()
+            .map(|n| self.reg.get(n).unwrap())
+            .map(|n| Node {
+                reg: self.reg.clone(),
+                name: n.name.clone(),
+                next: n.next.clone(),
+            })
+            .collect()
+    }
+}
+
 #[test]
-fn task_compose_test() {
-    let compose = task_compose(
-        json!({
-            "a": {
-                "depends_on": ["b", "c"]
-            },
-            "b": {
-                "depends_on": ["d"]
-            },
-            "c": {
-                "depends_on": []
-            },
-            "d": {
-                "depends_on": []
-            },
-            "e": {
-                "depends_on": ["a"]
-            }
-        })
-        .as_object()
-        .unwrap()
-        .clone(),
-    )
-    .unwrap();
+fn task_compose_layer_test() {
+    let setting = json!({
+        "a": {
+            "depends_on": ["b", "c"]
+        },
+        "b": {
+            "depends_on": ["d"]
+        },
+        "c": {
+            "depends_on": []
+        },
+        "d": {
+            "depends_on": []
+        },
+        "e": {
+            "depends_on": ["a"]
+        }
+    })
+    .as_object()
+    .unwrap()
+    .clone();
+
+    let mut reg = register(&setting);
+
+    let compose_layer = task_compose_layer(&mut reg, &setting).unwrap();
 
     assert_eq!(
         vec![vec!["c", "d"], vec!["b"], vec!["a"], vec!["e"]],
-        compose
+        compose_layer
     );
 }

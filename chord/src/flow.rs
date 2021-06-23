@@ -1,11 +1,11 @@
 use std::borrow::Borrow;
+use std::collections::HashSet;
 use std::time::Duration;
 
 use crate::error::Error;
 use crate::step::POINT_ID_PATTERN;
 use crate::value::{Map, Value};
 use crate::{err, rerr};
-use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct Flow {
@@ -37,6 +37,7 @@ impl Flow {
             flow._stage_concurrency(stage_id)?;
             flow._stage_duration(stage_id)?;
             flow._stage_round(stage_id)?;
+            flow._stage_go_on(stage_id)?;
 
             let stage_sid_vec = flow._stage_step_id_vec(stage_id)?;
             for stage_sid in stage_sid_vec {
@@ -133,6 +134,10 @@ impl Flow {
         self.flow["stage"][stage_id]["case"]["filter"].as_str()
     }
 
+    pub fn stage_go_on(&self, stage_id: &str) -> &str {
+        self._stage_go_on(stage_id).unwrap()
+    }
+
     // -----------------------------------------------
     // private
 
@@ -218,5 +223,16 @@ impl Flow {
             return rerr!("stage", "duration must > 0");
         }
         Ok(Duration::from_secs(s))
+    }
+
+    fn _stage_go_on(&self, stage_id: &str) -> Result<&str, Error> {
+        let go_on = self.flow["stage"][stage_id]["go_on"]
+            .as_str()
+            .unwrap_or("always");
+        match go_on {
+            "always" => Ok(go_on),
+            "stage_ok" => Ok(go_on),
+            _ => rerr!("stage", "go_on unsupported value"),
+        }
     }
 }

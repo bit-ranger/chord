@@ -1,26 +1,27 @@
 use async_std::future::timeout;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
+use futures::future::join_all;
+use log::{debug, info, trace, warn};
+
 use chord::case::{CaseAssess, CaseState};
-use chord::Error;
 use chord::flow::Flow;
 use chord::input::CaseLoad;
-use chord::output::{DateTime, Utc};
 use chord::output::AssessReport;
+use chord::output::Utc;
 use chord::rerr;
 use chord::step::{Action, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::{Map, to_value, Value};
-use futures::future::join_all;
-use log::{debug, info, trace, warn};
+use chord::value::{to_value, Map, Value};
+use chord::Error;
 use res::TaskAssessStruct;
 
-use crate::CTX_ID;
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step::arg::CreateArgStruct;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::model::app::{Context, RenderContext};
+use crate::CTX_ID;
 
 pub mod arg;
 pub mod res;
@@ -34,7 +35,8 @@ pub struct TaskRunner {
     case_id_offset: usize,
     assess_report: Box<dyn AssessReport>,
     case_load: Box<dyn CaseLoad>,
-    state: TaskState,
+    task_state: TaskState,
+    stage_state: TaskState,
 }
 
 impl TaskRunner {
@@ -57,7 +59,8 @@ impl TaskRunner {
             id,
             pre_ctx,
             case_id_offset: 1,
-            state: TaskState::Ok,
+            task_state: TaskState::Ok,
+            stage_state: TaskState::Ok,
         };
         Ok(runner)
     }
@@ -70,21 +73,43 @@ impl TaskRunner {
         trace!("task start {}", self.id);
         let start = Utc::now();
         self.assess_report.start(start).await?;
-        let assess = self.start_run(start).await;
-        let assess = if let Err(e) = assess {
+        let result = self.start_run().await;
+
+        let task_assess = if let Err(e) = result {
             warn!("task Err {}", self.id);
-            let assess =
-                TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Err(e));
-            Box::new(assess)
+            TaskAssessStruct::new(
+                self.id.clone(),
+                start,
+                Utc::now(),
+                TaskState::Err(e.clone()),
+            )
         } else {
-            Box::new(assess.unwrap())
+            match &self.task_state {
+                TaskState::Ok => {
+                    debug!("task Ok {}", self.id);
+                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok)
+                }
+                TaskState::Fail => {
+                    info!("task Fail {}", self.id);
+                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Fail)
+                }
+                TaskState::Err(e) => {
+                    warn!("task Err {}", self.id);
+                    TaskAssessStruct::new(
+                        self.id.clone(),
+                        start,
+                        Utc::now(),
+                        TaskState::Err(e.clone()),
+                    )
+                }
+            }
         };
 
-        self.assess_report.end(assess.as_ref()).await?;
-        Ok(assess)
+        self.assess_report.end(&task_assess).await?;
+        Ok(Box::new(task_assess))
     }
 
-    async fn start_run(&mut self, start: DateTime<Utc>) -> Result<TaskAssessStruct, Error> {
+    async fn start_run(&mut self) -> Result<(), Error> {
         let stage_id_vec: Vec<String> = self
             .flow
             .stage_id_vec()
@@ -94,27 +119,17 @@ impl TaskRunner {
         for state_id in stage_id_vec {
             trace!("task stage {}, {}", self.id, state_id);
             self.stage_run(state_id.as_str()).await?;
+            if let TaskState::Fail = self.stage_state {
+                if "stage_ok" == self.flow.stage_go_on(state_id.as_str()) {
+                    break;
+                }
+            }
         }
-
-        let task_assess = match &self.state {
-            TaskState::Ok => {
-                debug!("task Ok {}", self.id);
-                let assess =
-                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok);
-                Ok(assess)
-            }
-            TaskState::Fail => {
-                info!("task Fail {}", self.id);
-                let assess =
-                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Fail);
-                Ok(assess)
-            }
-            TaskState::Err(e) => Err(e.clone()),
-        };
-        task_assess
+        Ok(())
     }
 
     async fn stage_run(&mut self, stage_id: &str) -> Result<(), Error> {
+        self.stage_state = TaskState::Ok;
         let step_id_vec: Vec<String> = self
             .flow
             .stage_step_id_vec(stage_id)
@@ -173,7 +188,8 @@ impl TaskRunner {
             let case_assess_vec = self.case_data_vec_run(case_data_vec, concurrency).await?;
             let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
             if any_fail {
-                self.state = TaskState::Fail;
+                self.stage_state = TaskState::Fail;
+                self.task_state = TaskState::Fail;
             }
             self.assess_report
                 .report(stage_id, &case_assess_vec)

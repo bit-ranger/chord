@@ -1,27 +1,26 @@
 use async_std::future::timeout;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
-use futures::future::join_all;
-use log::{debug, info, trace, warn};
-
 use chord::case::{CaseAssess, CaseState};
+use chord::Error;
 use chord::flow::Flow;
 use chord::input::CaseLoad;
-use chord::output::AssessReport;
 use chord::output::{DateTime, Utc};
+use chord::output::AssessReport;
 use chord::rerr;
 use chord::step::{Action, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::{to_value, Map, Value};
-use chord::Error;
+use chord::value::{Map, to_value, Value};
+use futures::future::join_all;
+use log::{debug, info, trace, warn};
 use res::TaskAssessStruct;
 
+use crate::CTX_ID;
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step::arg::CreateArgStruct;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::model::app::{Context, RenderContext};
-use crate::CTX_ID;
 
 pub mod arg;
 pub mod res;
@@ -201,7 +200,7 @@ impl TaskRunner {
                             render_context_create(self.flow.clone(), self.pre_ctx.clone());
 
                         if let Value::Object(d) = ctx.data_mut() {
-                            d.insert("data".into(), cd.clone());
+                            d.insert("case".into(), cd.clone());
                             let filter_ok =
                                 crate::flow::assert(self.flow_ctx.get_handlebars(), &ctx, filter)
                                     .await;

@@ -63,9 +63,9 @@ stage:
                     method: PUT
                     body:
                       {
-                          "author": "{{data.author}}",
-                          "title": "{{data.title}}",
-                          "desc": "{{data.desc}}"
+                          "author": "{{case.author}}",
+                          "title": "{{case.title}}",
+                          "desc": "{{case.desc}}"
                       }
         
                 assert: |+
@@ -94,12 +94,12 @@ stage:
                                   "must": [
                                       {
                                           "match": {
-                                              "desc": "{{data.match}}"
+                                              "desc": "{{case.match}}"
                                           }
                                       },
                                       {
                                           "term": {
-                                              "author": "{{data.term}}"
+                                              "author": "{{case.term}}"
                                           }
                                       }
                                   ]

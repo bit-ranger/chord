@@ -10,12 +10,12 @@ stage:
         concurrency: 10
         case:
             filter: |
-                (eq data.tag "tag1")
+                (eq case.tag "tag1")
         step:
             echo_example:
                 action: echo
                 config: |
-                    update bas set a = '{{data.origin_lon}}' where b = "{{data.origin_lon}}"
+                    update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
                 assert: |
                     (all
                       (str_start_with def.arg.arg1 "12")
@@ -34,12 +34,12 @@ stage:
         concurrency: 10
         case:
             filter: |
-                (eq data.tag "tag2")
+                (eq case.tag "tag2")
         step:
             echo_example2:
                 action: echo
                 config: |
-                    update bas set a = '{{data.origin_lon}}' where b = "{{data.origin_lon}}"
+                    update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
                 assert: |
                     (all
                       (str_start_with def.arg.arg1 "12")

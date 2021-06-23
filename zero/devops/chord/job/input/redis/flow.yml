@@ -13,7 +13,7 @@ stage:
                 config:
                     url: "{{def.redis.url}}"
                     cmd: SET
-                    args: [ "CHORD:TEST:0123456789", "{{data.arg0}}" ]
+                    args: [ "CHORD:TEST:0123456789", "{{case.arg0}}" ]
     
             get_redis:
                 action: redis
@@ -22,7 +22,7 @@ stage:
                     cmd: GET
                     args: [ "CHORD:TEST:0123456789" ]
                 assert: |+
-                    (eq curr.value data.arg0)
+                    (eq curr.value case.arg0)
 
       
 

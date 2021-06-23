@@ -1,13 +1,11 @@
-use std::fmt::{Display, Formatter};
-
 use async_std::sync::Arc;
-
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::step::Action;
 use chord::task::TaskId;
 use chord::value::Value;
 use chord::value::{to_value, Map};
+use std::fmt::{Display, Formatter};
 
 use crate::flow::step::arg::RunArgStruct;
 use crate::model::app::Context;
@@ -74,13 +72,10 @@ impl CaseArgStruct {
     pub fn create_render_context(self: &CaseArgStruct) -> RenderContext {
         let mut render_data: Map = Map::new();
         let config_def = self.flow.def();
-        match config_def {
-            Some(def) => {
-                render_data.insert(String::from("def"), to_value(def).unwrap());
-            }
-            None => {}
+        if let Some(def) = config_def {
+            render_data.insert(String::from("def"), to_value(def).unwrap());
         }
-        render_data.insert(String::from("data"), self.data.clone());
+        render_data.insert(String::from("case"), self.data.clone());
         render_data.insert(String::from("step"), Value::Object(Map::new()));
         render_data.insert(String::from("curr"), Value::Null);
         render_data.insert(String::from("pre"), self.pre_ctx.as_ref().clone());

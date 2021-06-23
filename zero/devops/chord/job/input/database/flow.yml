@@ -14,9 +14,9 @@ stage:
                 config:
                     url: "{{def.database.url}}"
                     sql: |+
-                        select * from  user where user = '{{data.user}}'
+                        select * from  user where user = '{{case.user}}'
                 assert:
-                    (eq curr.value.records.0.User data.user)
+                    (eq curr.value.records.0.User case.user)
     
 
       

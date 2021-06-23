@@ -8,6 +8,9 @@ def:
 stage:
     benchmark1:
         concurrency: 10
+        case:
+            filter: |
+                (eq data.tag "tag1")
         step:
             echo_example:
                 action: echo
@@ -29,6 +32,9 @@ stage:
         
     benchmark2:
         concurrency: 10
+        case:
+            filter: |
+                (eq data.tag "tag2")
         step:
             echo_example2:
                 action: echo

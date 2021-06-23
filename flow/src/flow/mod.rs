@@ -3,11 +3,15 @@ use std::cell::RefCell;
 use async_std::sync::Arc;
 use async_std::task_local;
 
+use chord::rerr;
 use chord::step::ActionFactory;
+use chord::Error;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
-use crate::model::app::{Context, FlowContextStruct};
+use crate::model::app::{Context, FlowContextStruct, RenderContext};
+use handlebars::Handlebars;
+use log::info;
 
 mod case;
 mod step;
@@ -19,4 +23,42 @@ task_local! {
 
 pub async fn context_create(action_factory: Box<dyn ActionFactory>) -> Arc<dyn Context> {
     Arc::new(FlowContextStruct::<'_>::new(action_factory))
+}
+
+pub fn render(
+    handlebars: &Handlebars<'_>,
+    render_context: &RenderContext,
+    text: &str,
+) -> Result<String, Error> {
+    let render = handlebars.render_template_with_context(text, render_context);
+    return match render {
+        Ok(r) => Ok(r),
+        Err(e) => rerr!("tpl", format!("{}", e)),
+    };
+}
+
+pub async fn assert(
+    handlebars: &Handlebars<'_>,
+    render_context: &RenderContext,
+    condition: &str,
+) -> bool {
+    let template = format!(
+        "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
+        condition = condition
+    );
+
+    let result = render(handlebars, render_context, &template);
+    match result {
+        Ok(result) => {
+            if result.eq("true") {
+                true
+            } else {
+                false
+            }
+        }
+        Err(e) => {
+            info!("assert failure: {} >>> {}", condition, e);
+            false
+        }
+    }
 }

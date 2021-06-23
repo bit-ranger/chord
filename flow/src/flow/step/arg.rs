@@ -2,17 +2,16 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
 
-use handlebars::{Context, Handlebars};
-use log::info;
+use handlebars::Handlebars;
 
 use chord::case::CaseId;
 use chord::flow::Flow;
-use chord::rerr;
 use chord::step::{CreateArg, RunArg, StepId};
 use chord::task::TaskId;
 use chord::value::{from_str, to_string, Value};
 use chord::Error;
 
+use crate::flow;
 use crate::flow::case::arg::CaseIdStruct;
 use crate::model::app::RenderContext;
 
@@ -84,7 +83,7 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
     }
 
     fn render_str(&self, text: &str) -> Result<String, Error> {
-        render(self.handlebars, self.render_context, text)
+        flow::render(self.handlebars, self.render_context, text)
     }
 
     fn is_task_shared(&self, text: &str) -> bool {
@@ -155,7 +154,7 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
     }
 
     fn render_str(&self, txt: &str) -> Result<String, Error> {
-        return render(self.handlebars, self.render_context, txt);
+        return flow::render(self.handlebars, self.render_context, txt);
     }
 
     fn render_value(&self, value: &Value) -> Result<Value, Error> {
@@ -163,43 +162,5 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
         let value_str = self.render_str(value_str.as_str())?;
         let value: Value = from_str(value_str.as_str())?;
         return Ok(value);
-    }
-}
-
-pub fn render(
-    handlebars: &Handlebars<'_>,
-    render_context: &Context,
-    text: &str,
-) -> Result<String, Error> {
-    let render = handlebars.render_template_with_context(text, render_context);
-    return match render {
-        Ok(r) => Ok(r),
-        Err(e) => rerr!("tpl", format!("{}", e)),
-    };
-}
-
-pub async fn assert(
-    handlebars: &Handlebars<'_>,
-    render_context: &Context,
-    condition: &str,
-) -> bool {
-    let template = format!(
-        "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
-        condition = condition
-    );
-
-    let result = render(handlebars, render_context, &template);
-    match result {
-        Ok(result) => {
-            if result.eq("true") {
-                true
-            } else {
-                false
-            }
-        }
-        Err(e) => {
-            info!("assert failure: {} >>> {}", condition, e);
-            false
-        }
     }
 }

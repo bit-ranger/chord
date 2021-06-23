@@ -146,7 +146,7 @@ impl TaskRunner {
         let round_max = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
-            self.case_data_vec_run_remaining(stage_id, concurrency)
+            self.stage_data_vec_run_remaining(stage_id, concurrency)
                 .await?;
             self.case_load.reset().await?;
             round_count += 1;
@@ -157,16 +157,21 @@ impl TaskRunner {
         return Ok(());
     }
 
-    async fn case_data_vec_run_remaining(
+    async fn stage_data_vec_run_remaining(
         &mut self,
         stage_id: &str,
         concurrency: usize,
     ) -> Result<(), Error> {
         loop {
-            let data_vec = self.case_load.load(concurrency).await?;
-            let data_len = data_vec.len();
-            trace!("task load data {}, {}", self.id, data_len);
-            let case_assess_vec = self.case_data_vec_run(data_vec, concurrency).await?;
+            let case_data_vec: Vec<Value> = self.stage_data_vec_load(stage_id, concurrency).await?;
+
+            if case_data_vec.len() == 0 {
+                return Ok(());
+            }
+
+            trace!("task load data {}, {}", self.id, case_data_vec.len());
+
+            let case_assess_vec = self.case_data_vec_run(case_data_vec, concurrency).await?;
             let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
             if any_fail {
                 self.state = TaskState::Fail;
@@ -174,11 +179,48 @@ impl TaskRunner {
             self.assess_report
                 .report(stage_id, &case_assess_vec)
                 .await?;
-            if data_len < concurrency {
-                break;
-            }
         }
-        Ok(())
+    }
+
+    async fn stage_data_vec_load(
+        &mut self,
+        stage_id: &str,
+        size: usize,
+    ) -> Result<Vec<Value>, Error> {
+        let case_data_vec: Vec<Value> = match self.flow.stage_case_filter(stage_id) {
+            Some(filter) => {
+                let mut ccdv: Vec<Value> = vec![];
+                loop {
+                    let cdv = self.case_load.load(size - ccdv.len()).await?;
+                    if cdv.len() == 0 {
+                        break;
+                    }
+
+                    for cd in cdv {
+                        let mut ctx =
+                            render_context_create(self.flow.clone(), self.pre_ctx.clone());
+
+                        if let Value::Object(d) = ctx.data_mut() {
+                            d.insert("data".into(), cd.clone());
+                            let filter_ok =
+                                crate::flow::assert(self.flow_ctx.get_handlebars(), &ctx, filter)
+                                    .await;
+                            if filter_ok {
+                                ccdv.push(cd);
+                            }
+                        }
+                    }
+
+                    if ccdv.len() >= size {
+                        break;
+                    }
+                }
+                ccdv
+            }
+            None => self.case_load.load(size).await?,
+        };
+
+        return Ok(case_data_vec);
     }
 
     async fn case_data_vec_run(
@@ -302,7 +344,7 @@ async fn action_vec_create(
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdSimple>,
 ) -> Result<Vec<(String, Box<dyn Action>)>, Error> {
-    let render_context = render_context_create(flow_ctx.clone(), flow.clone(), pre_ctx.clone());
+    let render_context = render_context_create(flow.clone(), pre_ctx.clone());
     let mut action_vec = vec![];
     for sid in step_id_vec {
         let pr = action_create(
@@ -318,11 +360,7 @@ async fn action_vec_create(
     Ok(action_vec)
 }
 
-fn render_context_create(
-    _: Arc<dyn Context>,
-    flow: Arc<Flow>,
-    pre_ctx: Arc<Value>,
-) -> RenderContext {
+fn render_context_create(flow: Arc<Flow>, pre_ctx: Arc<Value>) -> RenderContext {
     let mut render_data: Map = Map::new();
     let config_def = flow.def();
     match config_def {

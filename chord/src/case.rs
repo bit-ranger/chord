@@ -1,10 +1,11 @@
+use std::fmt::Display;
+
 use chrono::{DateTime, Utc};
 
 use crate::error::Error;
-
 use crate::step::StepAssess;
 use crate::task::TaskId;
-use std::fmt::Display;
+use crate::value::Value;
 
 pub trait CaseId: Sync + Send + Display {
     fn case_id(&self) -> usize;
@@ -18,6 +19,8 @@ pub trait CaseAssess: Sync + Send {
     fn start(&self) -> DateTime<Utc>;
 
     fn end(&self) -> DateTime<Utc>;
+
+    fn data(&self) -> &Value;
 
     fn state(&self) -> &CaseState;
 }

@@ -20,7 +20,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     let start = Utc::now();
     let mut render_context = arg.create_render_context();
     let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
-    for (step_id, action) in arg.action_vec() {
+    for (step_id, action) in arg.action_vec().clone().iter() {
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if step_arg.is_none() {
             warn!("case  Err {}", arg.id());
@@ -28,6 +28,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 arg.id().clone(),
                 start,
                 Utc::now(),
+                arg.take_data(),
                 CaseState::Err(err!("010", format!("invalid step {}", step_id))),
             );
         }
@@ -56,6 +57,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                     arg.id().clone(),
                     start,
                     Utc::now(),
+                    arg.take_data(),
                     CaseState::Fail(step_assess_vec),
                 );
             }
@@ -79,6 +81,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                     arg.id().clone(),
                     start,
                     Utc::now(),
+                    arg.take_data(),
                     CaseState::Fail(step_assess_vec),
                 );
             }
@@ -112,6 +115,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                             arg.id().clone(),
                             start,
                             Utc::now(),
+                            arg.take_data(),
                             CaseState::Fail(step_assess_vec),
                         );
                     }
@@ -129,6 +133,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
         arg.id().clone(),
         start,
         Utc::now(),
+        arg.take_data(),
         CaseState::Ok(step_assess_vec),
     );
 }

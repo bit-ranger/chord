@@ -1,11 +1,13 @@
+use std::fmt::{Display, Formatter};
+
 use async_std::sync::Arc;
+
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::step::Action;
 use chord::task::TaskId;
 use chord::value::Value;
 use chord::value::{to_value, Map};
-use std::fmt::{Display, Formatter};
 
 use crate::flow::step::arg::RunArgStruct;
 use crate::model::app::Context;
@@ -104,11 +106,15 @@ impl CaseArgStruct {
         ))
     }
 
-    pub fn action_vec(self: &CaseArgStruct) -> &Vec<(String, Box<dyn Action>)> {
-        self.action_vec.as_ref()
+    pub fn action_vec(self: &CaseArgStruct) -> Arc<Vec<(String, Box<dyn Action>)>> {
+        self.action_vec.clone()
     }
 
     pub fn id(&self) -> Arc<CaseIdStruct> {
         self.id.clone()
+    }
+
+    pub fn take_data(self) -> Value {
+        self.data
     }
 }

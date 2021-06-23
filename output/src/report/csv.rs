@@ -126,36 +126,34 @@ async fn report<W: std::io::Write>(
         return Ok(());
     }
 
-    let head = create_head(sid_vec);
-    for sv in ca_vec
-        .iter()
-        .map(|ca| to_value_vec(ca.as_ref(), head.len()))
-    {
+    for sv in ca_vec.iter().map(|ca| to_value_vec(ca.as_ref(), sid_vec)) {
         writer.write_record(&sv)?
     }
     writer.flush()?;
     return Ok(());
 }
 
-fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
-    let mut vec = vec![];
+fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
+    let head_len = 4 + sid_vec.len() * 3 + 1;
+    let value_vec: Vec<&str> = vec![""; head_len];
+    let mut value_vec: Vec<String> = value_vec.into_iter().map(|v| v.to_owned()).collect();
 
     match ca.state() {
         CaseState::Ok(_) => {
-            vec.push(String::from("O"));
-            vec.push(String::from(""));
+            value_vec[0] = String::from("O");
+            value_vec[1] = String::from("");
         }
         CaseState::Err(e) => {
-            vec.push(String::from("E"));
-            vec.push(String::from(format!("{}", e)));
+            value_vec[0] = String::from("E");
+            value_vec[1] = String::from(format!("{}", e));
         }
         CaseState::Fail(_) => {
-            vec.push(String::from("F"));
-            vec.push(String::from(""));
+            value_vec[0] = String::from("F");
+            value_vec[1] = String::from("");
         }
     }
-    vec.push(ca.start().format("%T").to_string());
-    vec.push(ca.end().format("%T").to_string());
+    value_vec[2] = ca.start().format("%T").to_string();
+    value_vec[3] = ca.end().format("%T").to_string();
 
     let empty = &vec![];
     let pa_vec = match ca.state() {
@@ -165,9 +163,8 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
     };
 
     if !pa_vec.is_empty() {
-        let p_vec: Vec<String> = pa_vec
-            .iter()
-            .flat_map(|pa| match pa.state() {
+        for pa in pa_vec.iter() {
+            let pv: Vec<String> = match pa.state() {
                 StepState::Ok(_) => {
                     vec![
                         String::from("O"),
@@ -189,33 +186,31 @@ fn to_value_vec(ca: &dyn CaseAssess, head_len: usize) -> Vec<String> {
                         pa.end().format("%T").to_string(),
                     ]
                 }
-            })
-            .collect();
-        vec.extend(p_vec);
-    }
+            };
 
-    if vec.len() < head_len - 1 {
-        for _i in 0..head_len - 1 - vec.len() {
-            vec.push(String::from(""));
-        }
-    }
+            let pai = sid_vec
+                .binary_search(&pa.id().step_id().to_string())
+                .unwrap();
+            let pos = 4 + pai * 3;
 
-    if pa_vec.is_empty() {
-        vec.push(String::from(""));
-    } else {
-        match pa_vec.last().unwrap().state() {
-            StepState::Fail(json) | StepState::Ok(json) => {
-                if json.is_string() {
-                    vec.push(json.as_str().map_or(json.to_string(), |j| j.to_owned()));
-                } else {
-                    vec.push(to_string(json).unwrap_or_else(|j| j.to_string()));
-                }
-            }
-            StepState::Err(e) => {
-                vec.push(e.to_string());
+            for (pvi, pve) in pv.into_iter().enumerate() {
+                value_vec[pos + pvi] = pve;
             }
         }
     }
 
-    vec
+    match pa_vec.last().unwrap().state() {
+        StepState::Fail(json) | StepState::Ok(json) => {
+            if json.is_string() {
+                value_vec[head_len - 1] = json.as_str().map_or(json.to_string(), |j| j.to_owned());
+            } else {
+                value_vec[head_len - 1] = to_string(json).unwrap_or_else(|j| j.to_string());
+            }
+        }
+        StepState::Err(e) => {
+            value_vec[head_len - 1] = e.to_string();
+        }
+    }
+
+    value_vec
 }

@@ -45,7 +45,7 @@ async fn main() -> Result<(), Error> {
         ActionFactoryDefault::new(config.action_config().map(|c| c.clone())).await?,
     ))
     .await;
-    let task_state_vec = job::run(input_dir, output_dir, exec_id, flow_ctx).await?;
+    let task_state_vec = job::run(input_dir, output_dir, exec_id, flow_ctx).await;
 
     logger::terminal(log_handler).await?;
 
@@ -60,7 +60,7 @@ async fn main() -> Result<(), Error> {
     };
 }
 
-fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
+pub fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
     let file = File::open(path);
     let file = match file {
         Err(_) => return Ok(Value::Null),

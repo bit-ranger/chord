@@ -189,7 +189,8 @@ fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
             };
 
             let pai = sid_vec
-                .binary_search(&pa.id().step_id().to_string())
+                .iter()
+                .position(|sid| sid == pa.id().step_id())
                 .unwrap();
             let pos = 4 + pai * 3;
 

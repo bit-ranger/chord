@@ -16,18 +16,27 @@ use crate::model::app::RenderContext;
 #[derive(Clone)]
 pub struct CaseIdStruct {
     task_id: Arc<dyn TaskId>,
-    case_id: usize,
+    case_id: String,
+    exec_id: usize,
 }
 
 impl CaseIdStruct {
-    pub fn new(task_id: Arc<dyn TaskId>, case_id: usize) -> CaseIdStruct {
-        CaseIdStruct { task_id, case_id }
+    pub fn new(task_id: Arc<dyn TaskId>, case_id: String, exec_id: usize) -> CaseIdStruct {
+        CaseIdStruct {
+            task_id,
+            case_id,
+            exec_id,
+        }
     }
 }
 
 impl CaseId for CaseIdStruct {
-    fn case_id(&self) -> usize {
-        self.case_id
+    fn case_id(&self) -> &str {
+        self.case_id.as_str()
+    }
+
+    fn exec_id(&self) -> usize {
+        self.exec_id
     }
 
     fn task_id(&self) -> &dyn TaskId {
@@ -37,7 +46,7 @@ impl CaseId for CaseIdStruct {
 
 impl Display for CaseIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}::{}", self.task_id, self.case_id).as_str())
+        f.write_str(format!("{}::{}::{}", self.task_id, self.exec_id, self.case_id).as_str())
     }
 }
 
@@ -56,9 +65,10 @@ impl CaseArgStruct {
         data: Value,
         pre_ctx: Arc<Value>,
         task_id: Arc<dyn TaskId>,
-        case_id: usize,
+        case_id: String,
+        case_exec_id: usize,
     ) -> CaseArgStruct {
-        let id = Arc::new(CaseIdStruct::new(task_id, case_id));
+        let id = Arc::new(CaseIdStruct::new(task_id, case_id, case_exec_id));
 
         let context = CaseArgStruct {
             flow,

@@ -32,7 +32,7 @@ pub struct TaskRunner {
     action_vec: Arc<Vec<(String, Box<dyn Action>)>>,
     id: Arc<TaskIdSimple>,
     pre_ctx: Arc<Value>,
-    case_id_offset: usize,
+    case_exec_id_offset: usize,
     assess_report: Box<dyn AssessReport>,
     case_load: Box<dyn CaseLoad>,
     task_state: TaskState,
@@ -58,7 +58,7 @@ impl TaskRunner {
             action_vec: Arc::new(vec![]),
             id,
             pre_ctx,
-            case_id_offset: 1,
+            case_exec_id_offset: 1,
             task_state: TaskState::Ok,
             stage_state: TaskState::Ok,
         };
@@ -177,7 +177,8 @@ impl TaskRunner {
         concurrency: usize,
     ) -> Result<(), Error> {
         loop {
-            let case_data_vec: Vec<Value> = self.stage_data_vec_load(stage_id, concurrency).await?;
+            let case_data_vec: Vec<(String, Value)> =
+                self.stage_data_vec_load(stage_id, concurrency).await?;
 
             if case_data_vec.len() == 0 {
                 return Ok(());
@@ -201,17 +202,17 @@ impl TaskRunner {
         &mut self,
         stage_id: &str,
         size: usize,
-    ) -> Result<Vec<Value>, Error> {
-        let case_data_vec: Vec<Value> = match self.flow.stage_case_filter(stage_id) {
+    ) -> Result<Vec<(String, Value)>, Error> {
+        let case_data_vec: Vec<(String, Value)> = match self.flow.stage_case_filter(stage_id) {
             Some(filter) => {
-                let mut ccdv: Vec<Value> = vec![];
+                let mut ccdv: Vec<(String, Value)> = vec![];
                 loop {
                     let cdv = self.case_load.load(size - ccdv.len()).await?;
                     if cdv.len() == 0 {
                         break;
                     }
 
-                    for cd in cdv {
+                    for (cid, cd) in cdv {
                         let mut ctx =
                             render_context_create(self.flow.clone(), self.pre_ctx.clone());
 
@@ -221,7 +222,7 @@ impl TaskRunner {
                                 crate::flow::assert(self.flow_ctx.get_handlebars(), &ctx, filter)
                                     .await;
                             if filter_ok {
-                                ccdv.push(cd);
+                                ccdv.push((cid, cd));
                             }
                         }
                     }
@@ -240,12 +241,12 @@ impl TaskRunner {
 
     async fn case_data_vec_run(
         &mut self,
-        case_vec: Vec<Value>,
+        case_vec: Vec<(String, Value)>,
         concurrency: usize,
     ) -> Result<Vec<Box<dyn CaseAssess>>, Error> {
         let case_len = case_vec.len();
         let ca_vec = self.case_arg_vec(case_vec)?;
-        self.case_id_offset = self.case_id_offset + case_len;
+        self.case_exec_id_offset = self.case_exec_id_offset + case_len;
 
         let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
         let mut futures = vec![];
@@ -264,18 +265,19 @@ impl TaskRunner {
         Ok(case_assess_vec)
     }
 
-    fn case_arg_vec<'p>(&self, data: Vec<Value>) -> Result<Vec<CaseArgStruct>, Error> {
+    fn case_arg_vec<'p>(&self, data: Vec<(String, Value)>) -> Result<Vec<CaseArgStruct>, Error> {
         let vec = data
             .into_iter()
             .enumerate()
-            .map(|(i, d)| {
+            .map(|(i, (id, d))| {
                 CaseArgStruct::new(
                     self.flow.clone(),
                     self.action_vec.clone(),
                     d,
                     self.pre_ctx.clone(),
                     self.id.clone(),
-                    self.case_id_offset + i,
+                    id,
+                    self.case_exec_id_offset + i,
                 )
             })
             .collect();
@@ -310,6 +312,7 @@ async fn pre_arg(
             Value::Null,
             Arc::new(Value::Null),
             task_id.clone(),
+            "0".into(),
             0,
         )))
     };

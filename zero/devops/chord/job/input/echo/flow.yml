@@ -8,25 +8,24 @@ def:
 stage:
     benchmark1:
         concurrency: 10
-
-case:
-    step:
-        echo_example:
-            action: echo
-            config: |
-                update bas set a = '{{data.origin_lon}}' where b = "{{data.origin_lon}}"
-            assert: |
-                (all
-                  (str_start_with def.arg.arg1 "12")
-                  (str_end_with def.arg.arg1 "23")
-                  (str_contains def.arg.arg1 "2")
-                  (eq
-                    (str_substring def.arg.arg1 1) "23"
-                  )
-                  (eq
-                    (str_substring def.arg.arg1 1 2)
-                    "2"
-                  )
-                )
+        step:
+            echo_example:
+                action: echo
+                config: |
+                    update bas set a = '{{data.origin_lon}}' where b = "{{data.origin_lon}}"
+                assert: |
+                    (all
+                      (str_start_with def.arg.arg1 "12")
+                      (str_end_with def.arg.arg1 "23")
+                      (str_contains def.arg.arg1 "2")
+                      (eq
+                        (str_substring def.arg.arg1 1) "23"
+                      )
+                      (eq
+                        (str_substring def.arg.arg1 1 2)
+                        "2"
+                      )
+                    )
+        
               
 

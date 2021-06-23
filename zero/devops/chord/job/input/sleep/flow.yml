@@ -3,18 +3,16 @@ version: "0.0.1"
 stage:
     benchmark1:
         concurrency: 10
-
-case:
-    step:
-        sleep_example:
-            action: sleep
-            config:
-                duration: "{{data.seconds}}"
-            assert: |+
-                (all
-                   (eq 1 1)
-                   (eq 2 2)
-                   (eq 3 3)
-                )
+        step:
+            sleep_example:
+                action: sleep
+                config:
+                    duration: "{{data.seconds}}"
+                assert: |+
+                    (all
+                       (eq 1 1)
+                       (eq 2 2)
+                       (eq 3 3)
+                    )
 
 

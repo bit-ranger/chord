@@ -7,24 +7,22 @@ def:
 stage:
     benchmark1:
         concurrency: 10
-
-case:
-    step:
-        set_redis:
-            action: redis
-            config:
-                url: "{{def.redis.url}}"
-                cmd: SET
-                args: [ "CHORD:TEST:0123456789", "{{data.arg0}}" ]
-        
-        get_redis:
-            action: redis
-            config:
-                url: "{{def.redis.url}}"
-                cmd: GET
-                args: [ "CHORD:TEST:0123456789" ]
-            assert: |+
-                (eq curr.value data.arg0)
+        step:
+            set_redis:
+                action: redis
+                config:
+                    url: "{{def.redis.url}}"
+                    cmd: SET
+                    args: [ "CHORD:TEST:0123456789", "{{data.arg0}}" ]
+    
+            get_redis:
+                action: redis
+                config:
+                    url: "{{def.redis.url}}"
+                    cmd: GET
+                    args: [ "CHORD:TEST:0123456789" ]
+                assert: |+
+                    (eq curr.value data.arg0)
 
       
 

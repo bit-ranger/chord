@@ -8,17 +8,16 @@ def:
 stage:
     benchmark1:
         concurrency: 10
-
-case:
-    step:
-        mysql_select:
-            action: database
-            config:
-                url: "{{def.database.url}}"
-                sql: |+
-                    select * from  user where user = '{{data.user}}'
-            assert:
-                (eq curr.value.records.0.User data.user)
+        step:
+            mysql_select:
+                action: database
+                config:
+                    url: "{{def.database.url}}"
+                    sql: |+
+                        select * from  user where user = '{{data.user}}'
+                assert:
+                    (eq curr.value.records.0.User data.user)
+    
 
       
 

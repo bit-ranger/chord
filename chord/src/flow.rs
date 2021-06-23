@@ -1,12 +1,11 @@
 use std::borrow::Borrow;
 use std::time::Duration;
 
-use itertools::concat;
-
 use crate::error::Error;
 use crate::step::POINT_ID_PATTERN;
 use crate::value::{Map, Value};
 use crate::{err, rerr};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct Flow {
@@ -19,32 +18,41 @@ impl Flow {
 
         flow._version()?;
 
+        let mut step_id_checked: HashSet<&str> = HashSet::new();
+        let pre_sid_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
+        for pre_sid in pre_sid_vec {
+            if !POINT_ID_PATTERN.is_match(pre_sid) {
+                return rerr!("step", format!("invalid step_id {}", pre_sid));
+            }
+            if step_id_checked.contains(pre_sid) {
+                return rerr!("step", format!("duplicate step_id {}", pre_sid));
+            } else {
+                step_id_checked.insert(pre_sid.into());
+            }
+        }
+
         let stage_id_vec = flow._stage_id_vec()?;
-        for stage_id in stage_id_vec.iter() {
+
+        for stage_id in stage_id_vec {
             flow._stage_concurrency(stage_id)?;
             flow._stage_duration(stage_id)?;
             flow._stage_round(stage_id)?;
-        }
 
-        let case_sid_vec = flow._case_step_id_vec()?;
-        for case_sid in case_sid_vec.iter() {
-            if !POINT_ID_PATTERN.is_match(case_sid.as_str()) {
-                return rerr!("step", format!("invalid step_id {}", case_sid));
+            let stage_sid_vec = flow._stage_step_id_vec(stage_id)?;
+            for stage_sid in stage_sid_vec {
+                if !POINT_ID_PATTERN.is_match(stage_sid) {
+                    return rerr!("step", format!("invalid step_id {}", stage_sid));
+                }
+
+                if step_id_checked.contains(stage_sid) {
+                    return rerr!("step", format!("duplicate step_id {}", stage_sid));
+                } else {
+                    step_id_checked.insert(stage_sid.into());
+                }
             }
         }
 
-        let pre_sid_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
-        for pre_sid in pre_sid_vec.iter() {
-            if !POINT_ID_PATTERN.is_match(pre_sid.as_str()) {
-                return rerr!("step", format!("invalid step_id {}", pre_sid));
-            }
-
-            if case_sid_vec.contains(pre_sid) {
-                return rerr!("step", format!("duplicate step_id {}", pre_sid));
-            }
-        }
-
-        for sid in concat(vec![case_sid_vec, pre_sid_vec]).iter() {
+        for sid in step_id_checked.iter() {
             flow.step(sid)
                 .as_object()
                 .ok_or_else(|| err!("step", format!("invalid step {}", sid)))?;
@@ -56,18 +64,18 @@ impl Flow {
         return Ok(flow);
     }
 
-    pub fn version(&self) -> String {
+    pub fn version(&self) -> &str {
         self._version().unwrap()
     }
 
-    pub fn case_step_id_vec(&self) -> Vec<String> {
-        self._case_step_id_vec().unwrap()
+    pub fn stage_step_id_vec(&self, stage_id: &str) -> Vec<&str> {
+        self._stage_step_id_vec(stage_id).unwrap()
     }
 
-    pub fn pre_step_id_vec(&self) -> Option<Vec<String>> {
+    pub fn pre_step_id_vec(&self) -> Option<Vec<&str>> {
         let task_step_chain_arr = self.flow["pre"]["step"]
             .as_object()
-            .map(|p| p.keys().map(|k| k.to_string()).collect());
+            .map(|p| p.keys().map(|k| k.as_str()).collect());
         if task_step_chain_arr.is_none() {
             return None;
         }
@@ -75,12 +83,14 @@ impl Flow {
     }
 
     pub fn step(&self, step_id: &str) -> &Value {
-        let case_step = self.flow["case"]["step"][step_id].borrow();
-        if !case_step.is_null() {
-            case_step
-        } else {
-            self.flow["pre"]["step"][step_id].borrow()
+        for stage_id in self.stage_id_vec() {
+            let step = self.flow["stage"][stage_id]["step"][step_id].borrow();
+            if !step.is_null() {
+                return step;
+            }
         }
+
+        return self.flow["pre"]["step"][step_id].borrow();
     }
 
     pub fn step_config(&self, step_id: &str) -> &Value {
@@ -91,19 +101,19 @@ impl Flow {
         self.flow["def"].as_object()
     }
 
-    pub fn step_action(&self, step_id: &str) -> String {
+    pub fn step_action(&self, step_id: &str) -> &str {
         self._step_action(step_id).unwrap()
     }
 
-    pub fn step_assert(&self, step_id: &str) -> Option<String> {
-        self.step(step_id)["assert"].as_str().map(ToOwned::to_owned)
+    pub fn step_assert(&self, step_id: &str) -> Option<&str> {
+        self.step(step_id)["assert"].as_str()
     }
 
     pub fn step_timeout(&self, step_id: &str) -> Duration {
         self._step_timeout(step_id).unwrap()
     }
 
-    pub fn stage_id_vec(&self) -> Vec<String> {
+    pub fn stage_id_vec(&self) -> Vec<&str> {
         self._stage_id_vec().unwrap()
     }
 
@@ -122,10 +132,9 @@ impl Flow {
     // -----------------------------------------------
     // private
 
-    fn _version(&self) -> Result<String, Error> {
+    fn _version(&self) -> Result<&str, Error> {
         let v = self.flow["version"]
             .as_str()
-            .map(ToOwned::to_owned)
             .ok_or(err!("version", "missing version"))?;
 
         if v != "0.0.1" {
@@ -135,18 +144,17 @@ impl Flow {
         }
     }
 
-    fn _case_step_id_vec(&self) -> Result<Vec<String>, Error> {
-        let sid_vec = self.flow["case"]["step"]
+    fn _stage_step_id_vec(&self, stage_id: &str) -> Result<Vec<&str>, Error> {
+        let sid_vec = self.flow["stage"][stage_id]["step"]
             .as_object()
-            .map(|p| p.keys().map(|k| k.to_string()).collect())
-            .ok_or(Error::new("case", "missing case.step"))?;
+            .map(|p| p.keys().map(|k| k.as_str()).collect())
+            .ok_or(Error::new("stage", "missing stage step"))?;
         return Ok(sid_vec);
     }
 
-    fn _step_action(&self, step_id: &str) -> Result<String, Error> {
+    fn _step_action(&self, step_id: &str) -> Result<&str, Error> {
         self.step(step_id)["action"]
             .as_str()
-            .map(ToOwned::to_owned)
             .ok_or(err!("step", "missing action"))
     }
 
@@ -163,10 +171,10 @@ impl Flow {
         Ok(Duration::from_secs(s))
     }
 
-    fn _stage_id_vec(&self) -> Result<Vec<String>, Error> {
+    fn _stage_id_vec(&self) -> Result<Vec<&str>, Error> {
         let sid_vec = self.flow["stage"]
             .as_object()
-            .map(|p| p.keys().map(|k| k.to_string()).collect())
+            .map(|p| p.keys().map(|k| k.as_str()).collect())
             .ok_or(Error::new("stage", "missing stage"))?;
         return Ok(sid_vec);
     }

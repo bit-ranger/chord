@@ -49,20 +49,12 @@ impl TaskRunner {
         let pre_ctx = pre_ctx_create(flow_ctx.clone(), flow.clone(), id.clone()).await?;
         let pre_ctx = Arc::new(pre_ctx);
 
-        let action_vec = action_vec_create(
-            flow_ctx.clone(),
-            flow.clone(),
-            pre_ctx.clone(),
-            flow.case_step_id_vec(),
-            id.clone(),
-        )
-        .await?;
         let runner = TaskRunner {
             assess_report,
             case_load,
             flow_ctx,
             flow,
-            action_vec: Arc::new(action_vec),
+            action_vec: Arc::new(vec![]),
             id,
             pre_ctx,
             case_id_offset: 1,
@@ -94,9 +86,15 @@ impl TaskRunner {
     }
 
     async fn start_run(&mut self, start: DateTime<Utc>) -> Result<TaskAssessStruct, Error> {
-        for state_id in self.flow.stage_id_vec().iter() {
+        let stage_id_vec: Vec<String> = self
+            .flow
+            .stage_id_vec()
+            .into_iter()
+            .map(|s| s.to_owned())
+            .collect();
+        for state_id in stage_id_vec {
             trace!("task stage {}, {}", self.id, state_id);
-            self.stage_run(state_id).await?;
+            self.stage_run(state_id.as_str()).await?;
         }
 
         let task_assess = match &self.state {
@@ -118,6 +116,22 @@ impl TaskRunner {
     }
 
     async fn stage_run(&mut self, stage_id: &str) -> Result<(), Error> {
+        let step_id_vec: Vec<String> = self
+            .flow
+            .stage_step_id_vec(stage_id)
+            .into_iter()
+            .map(|s| s.to_owned())
+            .collect();
+        let action_vec = action_vec_create(
+            self.flow_ctx.clone(),
+            self.flow.clone(),
+            self.pre_ctx.clone(),
+            step_id_vec,
+            self.id.clone(),
+        )
+        .await?;
+        self.action_vec = Arc::new(action_vec);
+
         let duration = self.flow.stage_duration(stage_id);
         let srr = self.stage_round_run(stage_id);
         match timeout(duration, srr).await {
@@ -224,7 +238,11 @@ async fn pre_arg(
             flow_ctx.clone(),
             flow.clone(),
             Arc::new(Value::Null),
-            flow.pre_step_id_vec().unwrap(),
+            flow.pre_step_id_vec()
+                .unwrap()
+                .into_iter()
+                .map(|s| s.to_owned())
+                .collect(),
             task_id.clone(),
         )
         .await?;
@@ -331,7 +349,7 @@ async fn action_create(
         flow_ctx.get_handlebars(),
         render_context,
         task_id,
-        action,
+        action.into(),
         step_id,
     );
 

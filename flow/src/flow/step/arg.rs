@@ -135,7 +135,7 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         return &self.id;
     }
 
-    pub fn assert(&self) -> Option<String> {
+    pub fn assert(&self) -> Option<&str> {
         self.flow.step_assert(self.id().step_id())
     }
 

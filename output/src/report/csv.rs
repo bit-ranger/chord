@@ -62,9 +62,17 @@ impl Reporter {
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task_id()));
+
+        let step_id_vec: Vec<String> = flow
+            .stage_id_vec()
+            .iter()
+            .flat_map(|s| flow.stage_step_id_vec(s))
+            .map(|s| s.to_owned())
+            .collect();
+
         let report = Reporter {
             writer: from_path(report_file).await?,
-            step_id_vec: flow.case_step_id_vec(),
+            step_id_vec,
             report_dir,
             task_id,
         };

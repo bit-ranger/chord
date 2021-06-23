@@ -10,113 +10,105 @@ stage:
         concurrency: 1
         round: 1
         duration: 30
-        
-    benchmark2:
-        concurrency: 1
-        round: 1
-        duration: 30
-
-
-case:
-    step:
-        delete_index:
-            action: restapi
-            config:
-                url: "{{def.es.url}}/article"
-                method: DELETE
-        
-        create_index:
-            action: restapi
-            config:
-                url: "{{def.es.url}}/article"
-                method: PUT
-                body:
-                  {
-                      "settings": {
-                          "index": {
-                              "analysis.analyzer.default.type": "ik_max_word"
-                          }
-                      },
-                      "mappings": {
-                          "properties": {
-                              "user": {
-                                  "type": "text",
-                                  "analyzer": "ik_max_word",
-                                  "search_analyzer": "ik_max_word"
-                              },
-                              "title": {
-                                  "type": "text",
-                                  "analyzer": "ik_max_word",
-                                  "search_analyzer": "ik_max_word"
-                              },
-                              "desc": {
-                                  "type": "text",
-                                  "analyzer": "ik_max_word",
-                                  "search_analyzer": "ik_max_word"
+        step:
+            delete_index:
+                action: restapi
+                config:
+                    url: "{{def.es.url}}/article"
+                    method: DELETE
+    
+            create_index:
+                action: restapi
+                config:
+                    url: "{{def.es.url}}/article"
+                    method: PUT
+                    body:
+                      {
+                          "settings": {
+                              "index": {
+                                  "analysis.analyzer.default.type": "ik_max_word"
+                              }
+                          },
+                          "mappings": {
+                              "properties": {
+                                  "user": {
+                                      "type": "text",
+                                      "analyzer": "ik_max_word",
+                                      "search_analyzer": "ik_max_word"
+                                  },
+                                  "title": {
+                                      "type": "text",
+                                      "analyzer": "ik_max_word",
+                                      "search_analyzer": "ik_max_word"
+                                  },
+                                  "desc": {
+                                      "type": "text",
+                                      "analyzer": "ik_max_word",
+                                      "search_analyzer": "ik_max_word"
+                                  }
                               }
                           }
                       }
-                  }
-            assert: |+
-                (all
-                  (eq curr.value.status 200)
-                  (eq curr.value.body.acknowledged true)
-                )
+                assert: |+
+                    (all
+                      (eq curr.value.status 200)
+                      (eq curr.value.body.acknowledged true)
+                    )
+    
+            insert_data:
+                action: restapi
+                timeout: 5
+                config:
+                    url: "{{def.es.url}}/article/_doc/1"
+                    method: PUT
+                    body:
+                      {
+                          "author": "{{data.author}}",
+                          "title": "{{data.title}}",
+                          "desc": "{{data.desc}}"
+                      }
         
-        insert_data:
-            action: restapi
-            timeout: 5
-            config:
-                url: "{{def.es.url}}/article/_doc/1"
-                method: PUT
-                body:
-                  {
-                      "author": "{{data.author}}",
-                      "title": "{{data.title}}",
-                      "desc": "{{data.desc}}"
-                  }
-            
-            assert: |+
-                (all
-                  (eq curr.value.status 201)
-                  (eq curr.value.body.result "created")
-                )
-        
-        wait_data:
-            action: sleep
-            config:
-                duration: 9
-        
-        search_data:
-            action: restapi
-            timeout: 5
-            config:
-                url: "{{def.es.url}}/article/_search"
-                method: GET
-                body:
-                  {
-                      "size": 10,
-                      "from": 0,
-                      "query": {
-                          "bool": {
-                              "must": [
-                                  {
-                                      "match": {
-                                          "desc": "{{data.match}}"
+                assert: |+
+                    (all
+                      (eq curr.value.status 201)
+                      (eq curr.value.body.result "created")
+                    )
+    
+            wait_data:
+                action: sleep
+                config:
+                    duration: 9
+    
+            search_data:
+                action: restapi
+                timeout: 5
+                config:
+                    url: "{{def.es.url}}/article/_search"
+                    method: GET
+                    body:
+                      {
+                          "size": 10,
+                          "from": 0,
+                          "query": {
+                              "bool": {
+                                  "must": [
+                                      {
+                                          "match": {
+                                              "desc": "{{data.match}}"
+                                          }
+                                      },
+                                      {
+                                          "term": {
+                                              "author": "{{data.term}}"
+                                          }
                                       }
-                                  },
-                                  {
-                                      "term": {
-                                          "author": "{{data.term}}"
-                                      }
-                                  }
-                              ]
+                                  ]
+                              }
                           }
                       }
-                  }
-            
-            assert: |+
-                (all
-                  (eq curr.value.status 200)
-                  (eq curr.value.body.hits.total.value 1)
-                )
+        
+                assert: |+
+                    (all
+                      (eq curr.value.status 200)
+                      (eq curr.value.body.hits.total.value 1)
+                    )

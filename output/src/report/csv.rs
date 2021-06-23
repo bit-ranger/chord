@@ -97,6 +97,7 @@ async fn prepare<W: std::io::Write>(
 
 fn create_head(sid_vec: &Vec<String>) -> Vec<String> {
     let mut vec: Vec<String> = vec![];
+    vec.push(String::from("case_id"));
     vec.push(String::from("case_state"));
     vec.push(String::from("case_info"));
     vec.push(String::from("case_start"));
@@ -134,26 +135,27 @@ async fn report<W: std::io::Write>(
 }
 
 fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
-    let head_len = 4 + sid_vec.len() * 3 + 1;
+    let head_len = 5 + sid_vec.len() * 3 + 1;
     let value_vec: Vec<&str> = vec![""; head_len];
     let mut value_vec: Vec<String> = value_vec.into_iter().map(|v| v.to_owned()).collect();
 
+    value_vec[0] = ca.id().case_id().into();
     match ca.state() {
         CaseState::Ok(_) => {
-            value_vec[0] = String::from("O");
-            value_vec[1] = String::from("");
+            value_vec[1] = String::from("O");
+            value_vec[2] = String::from("");
         }
         CaseState::Err(e) => {
-            value_vec[0] = String::from("E");
-            value_vec[1] = String::from(format!("{}", e));
+            value_vec[1] = String::from("E");
+            value_vec[2] = String::from(format!("{}", e));
         }
         CaseState::Fail(_) => {
-            value_vec[0] = String::from("F");
-            value_vec[1] = String::from("");
+            value_vec[1] = String::from("F");
+            value_vec[2] = String::from("");
         }
     }
-    value_vec[2] = ca.start().format("%T").to_string();
-    value_vec[3] = ca.end().format("%T").to_string();
+    value_vec[3] = ca.start().format("%T").to_string();
+    value_vec[4] = ca.end().format("%T").to_string();
 
     let empty = &vec![];
     let pa_vec = match ca.state() {

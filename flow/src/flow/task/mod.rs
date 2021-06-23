@@ -32,7 +32,7 @@ pub struct TaskRunner {
     action_vec: Arc<Vec<(String, Box<dyn Action>)>>,
     id: Arc<TaskIdSimple>,
     pre_ctx: Arc<Value>,
-    case_exec_id_offset: usize,
+    case_exec_id: Arc<String>,
     assess_report: Box<dyn AssessReport>,
     case_load: Box<dyn CaseLoad>,
     task_state: TaskState,
@@ -58,7 +58,7 @@ impl TaskRunner {
             action_vec: Arc::new(vec![]),
             id,
             pre_ctx,
-            case_exec_id_offset: 1,
+            case_exec_id: Arc::new("".into()),
             task_state: TaskState::Ok,
             stage_state: TaskState::Ok,
         };
@@ -160,11 +160,12 @@ impl TaskRunner {
         let round_max = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
+            self.case_exec_id = Arc::new(format!("{}_{}", stage_id, round_count + 1));
             self.stage_data_vec_run_remaining(stage_id, concurrency)
                 .await?;
             self.case_load.reset().await?;
             round_count += 1;
-            if round_max > 0 && round_count >= round_max {
+            if round_count >= round_max {
                 break;
             }
         }
@@ -244,9 +245,7 @@ impl TaskRunner {
         case_vec: Vec<(String, Value)>,
         concurrency: usize,
     ) -> Result<Vec<Box<dyn CaseAssess>>, Error> {
-        let case_len = case_vec.len();
         let ca_vec = self.case_arg_vec(case_vec)?;
-        self.case_exec_id_offset = self.case_exec_id_offset + case_len;
 
         let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
         let mut futures = vec![];
@@ -268,8 +267,7 @@ impl TaskRunner {
     fn case_arg_vec<'p>(&self, data: Vec<(String, Value)>) -> Result<Vec<CaseArgStruct>, Error> {
         let vec = data
             .into_iter()
-            .enumerate()
-            .map(|(i, (id, d))| {
+            .map(|(id, d)| {
                 CaseArgStruct::new(
                     self.flow.clone(),
                     self.action_vec.clone(),
@@ -277,7 +275,7 @@ impl TaskRunner {
                     self.pre_ctx.clone(),
                     self.id.clone(),
                     id,
-                    self.case_exec_id_offset + i,
+                    self.case_exec_id.clone(),
                 )
             })
             .collect();
@@ -312,8 +310,8 @@ async fn pre_arg(
             Value::Null,
             Arc::new(Value::Null),
             task_id.clone(),
-            "0".into(),
-            0,
+            "pre".into(),
+            Arc::new("pre".into()),
         )))
     };
 }

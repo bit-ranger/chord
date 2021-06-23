@@ -60,7 +60,11 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
             render_context,
             action,
             id: StepIdStruct {
-                case_id: Arc::new(CaseIdStruct::new(task_id, "0".into(), 0)),
+                case_id: Arc::new(CaseIdStruct::new(
+                    task_id,
+                    "create".into(),
+                    Arc::new("create".into()),
+                )),
                 step_id: id,
             },
         };

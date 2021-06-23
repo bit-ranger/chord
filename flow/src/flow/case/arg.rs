@@ -17,11 +17,11 @@ use crate::model::app::RenderContext;
 pub struct CaseIdStruct {
     task_id: Arc<dyn TaskId>,
     case_id: String,
-    exec_id: usize,
+    exec_id: Arc<String>,
 }
 
 impl CaseIdStruct {
-    pub fn new(task_id: Arc<dyn TaskId>, case_id: String, exec_id: usize) -> CaseIdStruct {
+    pub fn new(task_id: Arc<dyn TaskId>, case_id: String, exec_id: Arc<String>) -> CaseIdStruct {
         CaseIdStruct {
             task_id,
             case_id,
@@ -35,8 +35,8 @@ impl CaseId for CaseIdStruct {
         self.case_id.as_str()
     }
 
-    fn exec_id(&self) -> usize {
-        self.exec_id
+    fn exec_id(&self) -> &str {
+        self.exec_id.as_str()
     }
 
     fn task_id(&self) -> &dyn TaskId {
@@ -66,7 +66,7 @@ impl CaseArgStruct {
         pre_ctx: Arc<Value>,
         task_id: Arc<dyn TaskId>,
         case_id: String,
-        case_exec_id: usize,
+        case_exec_id: Arc<String>,
     ) -> CaseArgStruct {
         let id = Arc::new(CaseIdStruct::new(task_id, case_id, case_exec_id));
 

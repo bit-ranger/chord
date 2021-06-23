@@ -10,7 +10,7 @@ use crate::value::Value;
 pub trait CaseId: Sync + Send + Display {
     fn case_id(&self) -> &str;
 
-    fn exec_id(&self) -> usize;
+    fn exec_id(&self) -> &str;
 
     fn task_id(&self) -> &dyn TaskId;
 }

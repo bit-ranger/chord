@@ -40,8 +40,11 @@ jobs:
             -   name: chord-cmd-test
                 run: docker run --rm -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
                 
+            -   name: chord-web-peek
+                run: docker run --rm -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ls /data/chord/job/input/echo
+                
             -   name: chord-web-boot
-                run: docker run --rm -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-web
+                run: docker run --rm -d -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-web
                 
             -   name: chord-web-boot-wait
                 run: |

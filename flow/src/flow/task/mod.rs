@@ -120,7 +120,7 @@ impl TaskRunner {
             trace!("task stage {}, {}", self.id, state_id);
             self.stage_run(state_id.as_str()).await?;
             if let TaskState::Fail = self.stage_state {
-                if "stage_ok" == self.flow.stage_go_on(state_id.as_str()) {
+                if "stage_fail" == self.flow.stage_break_on(state_id.as_str()) {
                     break;
                 }
             }

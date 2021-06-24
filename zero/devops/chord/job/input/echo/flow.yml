@@ -8,7 +8,6 @@ def:
 stage:
     benchmark1:
         concurrency: 10
-        go_on: always
         case:
             filter: |
                 (eq case.tag "tag1")

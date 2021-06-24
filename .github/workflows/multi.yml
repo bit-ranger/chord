@@ -49,6 +49,9 @@ jobs:
             -   name: chord-web-boot-wait
                 run: |
                     sleep 10
+                    
+            -   name: container-list
+                run: docker container ls -a
     
             -   name: chord-web-test
                 run: |

@@ -23,7 +23,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     for (step_id, action) in arg.action_vec().clone().iter() {
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if step_arg.is_none() {
-            warn!("case  Err {}", arg.id());
+            warn!("case Err {}", arg.id());
             return CaseAssessStruct::new(
                 arg.id().clone(),
                 start,
@@ -52,7 +52,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 info!("step Err  {} - {} <<< {}", id, e, config_rendered);
                 let step_assess = StepAssessStruct::new(id, start, end, StepState::Err(e));
                 step_assess_vec.push(Box::new(step_assess));
-                info!("case  Fail {}", arg.id());
+                info!("case Fail {}", arg.id());
                 return CaseAssessStruct::new(
                     arg.id().clone(),
                     start,
@@ -76,7 +76,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 info!("step Fail {} - {} <<< {}", arg.id(), json, config_rendered);
                 let step_assess = StepAssessStruct::new(id, start, end, StepState::Fail(json));
                 step_assess_vec.push(Box::new(step_assess));
-                info!("case  Fail {}", arg.id());
+                info!("case Fail {}", arg.id());
                 return CaseAssessStruct::new(
                     arg.id().clone(),
                     start,
@@ -110,7 +110,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                         let step_assess =
                             StepAssessStruct::new(id, start, end, StepState::Fail(json));
                         step_assess_vec.push(Box::new(step_assess));
-                        info!("case  Fail {}", arg.id());
+                        info!("case Fail {}", arg.id());
                         return CaseAssessStruct::new(
                             arg.id().clone(),
                             start,

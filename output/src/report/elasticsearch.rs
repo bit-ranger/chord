@@ -231,7 +231,7 @@ async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), Rae>
         body.push_str("\n");
     }
 
-    trace!("data_send_all_0:\n{}", body);
+    trace!("data_send_all_0: {}", body.escape_debug());
     rb = rb.body(Body::from_string(body));
 
     let mut res: Response = rb.send().await?;

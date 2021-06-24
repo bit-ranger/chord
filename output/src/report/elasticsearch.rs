@@ -13,7 +13,7 @@ use chord::output::async_trait;
 use chord::output::AssessReport;
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::{to_string, Value};
+use chord::value::{json, to_string, Value};
 use chord::value::{Deserialize, Serialize};
 use chord::Error;
 
@@ -111,7 +111,10 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
         value: match ts {
             TaskState::Ok => Value::Null,
             TaskState::Fail => Value::Null,
-            TaskState::Err(e) => Value::String(e.to_string()),
+            TaskState::Err(e) => json!({
+                "code": e.code(),
+                "message": e.message()
+            }),
         },
     }
 }
@@ -133,7 +136,10 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
         value: match ca.state() {
             CaseState::Ok(_) => Value::Null,
             CaseState::Fail(_) => Value::Null,
-            CaseState::Err(e) => Value::String(e.to_string()),
+            CaseState::Err(e) => json!({
+                "code": e.code(),
+                "message": e.message()
+            }),
         },
     }
 }
@@ -154,7 +160,10 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         .to_owned(),
         value: match sa.state() {
             StepState::Ok(result) | StepState::Fail(result) => result.clone(),
-            StepState::Err(e) => Value::String(e.to_string()),
+            StepState::Err(e) => json!({
+                "code": e.code(),
+                "message": e.message()
+            }),
         },
     }
 }

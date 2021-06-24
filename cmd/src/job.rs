@@ -7,7 +7,7 @@ use log::info;
 use log::trace;
 
 use async_std::path::{Path, PathBuf};
-use chord::flow::Flow;
+use chord::flow::{Flow, ID_PATTERN};
 use chord::task::TaskState;
 use chord::Error;
 use chord_flow::{Context, TaskIdSimple};
@@ -38,7 +38,12 @@ pub async fn run<P: AsRef<Path>>(
             continue;
         }
 
-        let builder = Builder::new().name(task_dir.file_name().to_str().unwrap().into());
+        let task_name: String = task_dir.file_name().to_str().unwrap().into();
+        if !ID_PATTERN.is_match(task_name.as_str()) {
+            continue;
+        }
+
+        let builder = Builder::new().name(task_name);
 
         let task_input_dir = input_dir.as_ref().join(task_dir.path());
         let output_dir = PathBuf::from(output_dir.as_ref());

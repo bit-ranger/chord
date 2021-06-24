@@ -3,9 +3,14 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use crate::error::Error;
-use crate::step::POINT_ID_PATTERN;
 use crate::value::{Map, Value};
 use crate::{err, rerr};
+use lazy_static::lazy_static;
+use regex::Regex;
+
+lazy_static! {
+    pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
+}
 
 #[derive(Debug, Clone)]
 pub struct Flow {
@@ -21,7 +26,7 @@ impl Flow {
         let mut step_id_checked: HashSet<&str> = HashSet::new();
         let pre_sid_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
         for pre_sid in pre_sid_vec {
-            if !POINT_ID_PATTERN.is_match(pre_sid) {
+            if !ID_PATTERN.is_match(pre_sid) {
                 return rerr!("step", format!("invalid step_id {}", pre_sid));
             }
             if step_id_checked.contains(pre_sid) {
@@ -34,6 +39,10 @@ impl Flow {
         let stage_id_vec = flow._stage_id_vec()?;
 
         for stage_id in stage_id_vec {
+            if !ID_PATTERN.is_match(stage_id) {
+                return rerr!("stage", format!("invalid stage_id {}", stage_id));
+            }
+
             flow._stage_concurrency(stage_id)?;
             flow._stage_duration(stage_id)?;
             flow._stage_round(stage_id)?;
@@ -41,7 +50,7 @@ impl Flow {
 
             let stage_sid_vec = flow._stage_step_id_vec(stage_id)?;
             for stage_sid in stage_sid_vec {
-                if !POINT_ID_PATTERN.is_match(stage_sid) {
+                if !ID_PATTERN.is_match(stage_sid) {
                     return rerr!("step", format!("invalid step_id {}", stage_sid));
                 }
 

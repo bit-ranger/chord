@@ -2,18 +2,12 @@ use std::fmt::Display;
 
 pub use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use lazy_static::lazy_static;
-use regex::Regex;
 
 use crate::case::CaseId;
 use crate::error::Error;
 use crate::value::Value;
 
 pub type ActionValue = std::result::Result<Value, Error>;
-
-lazy_static! {
-    pub static ref POINT_ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
-}
 
 pub trait StepId: Sync + Send + Display {
     fn step_id(&self) -> &str;

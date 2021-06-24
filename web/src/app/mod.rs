@@ -1,4 +1,4 @@
-use std::path::Path;
+use async_std::path::Path;
 
 use tide::http::StatusCode;
 use tide::prelude::*;

@@ -24,40 +24,47 @@ jobs:
                     sudo chmod 777 -R zero
 
             -   name: build
-                run: docker-compose -f .github/docker-compose.yml build
+                run: docker build  -f github.Dockerfile -t chord
 
-            -   name: boot
-                run: docker-compose -f .github/docker-compose.yml up -d
+            -   name: compose-boot
+                run: docker-compose -f docker-compose.yml up -d
 
-            -   name: boot-wait
+            -   name: compose-wait
                 run: |
                     sleep 30
 
-            -   name: es-health
+            -   name: es-test
                 run: curl http://127.0.0.1:9200/
-
-            -   name: chord-cmd
-                run: docker run --rm -v $PWD/zero/devops/chord:/data/chord  --network container:elasticsearch chord ./chord-cmd -i/data/chord/job/input -o/data/chord/job/output
+        
+            -   name: chord-cmd-test
+                run: docker run --rm -v $PWD/zero/devops/chord:/data/chord  --network container:elasticsearch chord ./chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+                
+            -   name: chord-web-boot
+                run: docker run --rm -p9999:9999 -v $PWD/zero/devops/chord:/data/chord  --network container:elasticsearch chord ./chord-web
+                
+            -   name: chord-web-boot-wait
+                run: |
+                    sleep 10
     
-#            -   name: chord-web
-#                run: |
-#                    curl -X POST --location "http://127.0.0.1:9999/job/exec/"  -H "Content-Type: application/json" -d "{ \"git_url\": \"git@github.com:bit-ranger/chord.git\", \"branch\": \"master\"  }"
-#
-#            -   name: chord-web-wait
-#                run: |
-#                    sleep 30
-#
-#            -   name: chord-web-report
-#                run: |
-#                    curl -X GET --location "http://127.0.0.1:9200/chord@bit-ranger@github.com/_search" \
-#                        -H "Content-Type: application/json" \
-#                        -d "{
-#                            \"query\": {
-#                                  \"match\": {
-#                                        \"layer\": \"task\"
-#                                  }
-#                            }
-#                            }"
+            -   name: chord-web-test
+                run: |
+                    curl -X POST --location "http://127.0.0.1:9999/job/exec/"  -H "Content-Type: application/json" -d "{ \"git_url\": \"git@github.com:bit-ranger/chord.git\", \"branch\": \"master\"  }"
+
+            -   name: chord-web-test-wait
+                run: |
+                    sleep 30
+
+            -   name: chord-web-test-report
+                run: |
+                    curl -X GET --location "http://127.0.0.1:9200/chord@bit-ranger@github.com/_search" \
+                        -H "Content-Type: application/json" \
+                        -d "{
+                            \"query\": {
+                                  \"match\": {
+                                        \"layer\": \"task\"
+                                  }
+                            }
+                            }"
 
 
 

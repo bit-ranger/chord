@@ -1,7 +1,5 @@
-use std::fs::File;
-use std::path::{Path, PathBuf};
-
 use async_std::fs::rename;
+use async_std::path::{Path, PathBuf};
 use csv::Writer;
 
 use async_std::sync::Arc;
@@ -15,6 +13,7 @@ use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::to_string;
 use chord::Error;
 use chrono::{DateTime, Utc};
+use std::fs::File;
 
 pub struct Reporter {
     writer: Writer<File>,
@@ -82,7 +81,7 @@ impl Reporter {
 
 async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
     csv::WriterBuilder::new()
-        .from_path(path)
+        .from_path(path.as_ref().to_str().ok_or(err!("010", "invalid path"))?)
         .map_err(|e| err!("csv", e.to_string()))
 }
 

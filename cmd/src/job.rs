@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use async_std::fs::read_dir;
 use async_std::sync::Arc;
 use async_std::task::Builder;
@@ -8,6 +6,7 @@ use futures::StreamExt;
 use log::info;
 use log::trace;
 
+use async_std::path::{Path, PathBuf};
 use chord::flow::Flow;
 use chord::task::TaskState;
 use chord::Error;
@@ -42,7 +41,7 @@ pub async fn run<P: AsRef<Path>>(
         let builder = Builder::new().name(task_dir.file_name().to_str().unwrap().into());
 
         let task_input_dir = input_dir.as_ref().join(task_dir.path());
-        let output_dir = std::path::PathBuf::from(output_dir.as_ref());
+        let output_dir = PathBuf::from(output_dir.as_ref());
         let jh = builder
             .spawn(run_task(
                 task_input_dir,

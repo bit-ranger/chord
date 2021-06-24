@@ -1,5 +1,3 @@
-use std::io::Write;
-use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -16,17 +14,18 @@ use log;
 use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
 
+use async_std::path::Path;
 use chord::Error;
 use flume::{bounded, Receiver, Sender};
 use itertools::Itertools;
 
 struct ChannelLogger {
     target_level: Vec<(String, LevelFilter)>,
-    sender: Sender<Vec<u8>>,
+    sender: Sender<String>,
 }
 
 impl ChannelLogger {
-    fn new(target_level: Vec<(String, String)>, sender: Sender<Vec<u8>>) -> ChannelLogger {
+    fn new(target_level: Vec<(String, String)>, sender: Sender<String>) -> ChannelLogger {
         let target_level = target_level
             .into_iter()
             .map(|(t, l)| {
@@ -65,7 +64,6 @@ impl log::Log for ChannelLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let mut data = Vec::new();
             let now = at(get_time());
             let date = strftime("%F %T", &now).unwrap();
             let microseconds = now.tm_nsec / 1000;
@@ -74,8 +72,7 @@ impl log::Log for ChannelLogger {
                 .try_with(|c| c.borrow().clone())
                 .unwrap_or("".to_owned());
 
-            let _ = write!(
-                &mut data,
+            let data = format!(
                 "[{}.{:06}][{}][{}:{}] - [{}], {}\n",
                 date,
                 microseconds,
@@ -94,7 +91,7 @@ impl log::Log for ChannelLogger {
 }
 
 async fn log_thread_func(
-    receiver: Receiver<Vec<u8>>,
+    receiver: Receiver<String>,
     mut default_log_writer: BufWriter<File>,
     enable: Arc<AtomicBool>,
 ) {
@@ -104,7 +101,7 @@ async fn log_thread_func(
 }
 
 async fn loop_write(
-    receiver: Receiver<Vec<u8>>,
+    receiver: Receiver<String>,
     default_log_writer: &mut BufWriter<File>,
     enable: Arc<AtomicBool>,
 ) {
@@ -121,9 +118,9 @@ async fn loop_write(
 
         let data = recv.unwrap();
 
-        println!("{}", String::from_utf8_lossy(&data));
+        println!("{}", data);
 
-        let _ = default_log_writer.write_all(&data).await;
+        let _ = default_log_writer.write_all(data.as_bytes()).await;
     }
 }
 

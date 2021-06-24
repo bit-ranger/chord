@@ -24,7 +24,7 @@ jobs:
                     sudo chmod 777 -R zero
 
             -   name: build
-                run: docker build  -f github.Dockerfile -t chord
+                run: docker build -f github.Dockerfile -t chord .
 
             -   name: compose-boot
                 run: docker-compose -f docker-compose.yml up -d

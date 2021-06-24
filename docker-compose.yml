@@ -12,7 +12,6 @@ services:
         ports:
             - "9200:9200"
             - "9300:9300"
-            - "9999:9999"
         healthcheck:
             test: [ "CMD", "curl", "http://localhost:9200" ]
             interval: 1m30s

@@ -38,24 +38,19 @@ jobs:
                 run: curl http://127.0.0.1:9200/
         
             -   name: chord-cmd-test
-                run: docker run --rm -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+                run: docker run --rm --name chord-cmd -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
                 
-            -   name: chord-web-peek
-                run: docker run --rm -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ls /data/chord/job/input/echo
                 
             -   name: chord-web-boot
-                run: docker run --rm -d -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-web
+                run: docker run -d --rm --name chord-web -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-web
                 
             -   name: chord-web-boot-wait
                 run: |
                     sleep 10
-                    
-            -   name: container-list
-                run: docker container ls -a
     
             -   name: chord-web-test
                 run: |
-                    curl -X POST --location "http://127.0.0.1:9999/job/exec/"  -H "Content-Type: application/json" -d "{ \"git_url\": \"git@github.com:bit-ranger/chord.git\", \"branch\": \"master\"  }"
+                    docker run --rm --network container:chord-web appropriate/curl -X POST --location "http://127.0.0.1:9999/job/exec/"  -H  "Content-Type: application/json" -d "{ \"git_url\": \"git@github.com:bit-ranger/chord.git\", \"branch\": \"master\"  }"
 
             -   name: chord-web-test-wait
                 run: |

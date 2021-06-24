@@ -25,6 +25,9 @@ jobs:
 
             -   name: build
                 run: docker build -f github.Dockerfile -t chord .
+                
+            -   name: network
+                run: docker network create -d bridge chord
 
             -   name: compose-boot
                 run: docker-compose -f docker-compose.yml up -d
@@ -37,10 +40,10 @@ jobs:
                 run: curl http://127.0.0.1:9200/
         
             -   name: chord-cmd-test
-                run: docker run --rm -v $PWD/zero/devops/chord:/data/chord chord ./chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+                run: docker run --rm -v $PWD/zero/devops/chord:/data/chord  --network chord chord ./chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
                 
             -   name: chord-web-boot
-                run: docker run --rm -p9999:9999 -v $PWD/zero/devops/chord:/data/chord  chord ./chord-web
+                run: docker run --rm -p9999:9999 -v $PWD/zero/devops/chord:/data/chord  --network chord chord ./chord-web
                 
             -   name: chord-web-boot-wait
                 run: |

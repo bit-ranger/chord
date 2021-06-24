@@ -7,6 +7,8 @@ services:
         image: bitranger/elasticsearch:ik-7.12.1
         environment:
             - discovery.type=single-node
+        networks:
+            - chord
         ports:
             - "9200:9200"
             - "9300:9300"
@@ -19,8 +21,10 @@ services:
     mysql:
         container_name: mysql
         image: mysql
+        networks:
+            - chord
         ports:
-            - 3306:3306
+            - "3306:3306"
         command: --default-authentication-plugin=mysql_native_password
         restart: always
         environment:
@@ -29,6 +33,12 @@ services:
     redis:
         container_name: redis
         image: redis
+        networks:
+            - chord
         ports:
-            - 6379:6379
+            - "6379:6379"
 
+
+networks:
+    chord:
+        external: true

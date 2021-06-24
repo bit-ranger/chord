@@ -1,4 +1,4 @@
-use std::path::Path;
+use async_std::path::Path;
 
 use async_std::fs::read_dir;
 use async_std::sync::Arc;

@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use async_std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use async_std::sync::Arc;
@@ -143,7 +143,7 @@ async fn checkout_run_0(
     checkout_path: PathBuf,
     job_name: String,
 ) -> Result<Repository, Error> {
-    if checkout_path.exists() {
+    if checkout_path.exists().await {
         clear(checkout_path.as_path()).await;
     } else {
         async_std::fs::create_dir_all(checkout_path.clone()).await?
@@ -161,6 +161,7 @@ async fn checkout_run_0(
         .path()
         .parent()
         .ok_or(err!("012", "invalid repo root"))?;
+    let repo_root = Path::new(repo_root.as_os_str());
 
     let repo_yml = repo_root.join("chord.yml");
 
@@ -205,7 +206,12 @@ fn credentials_callback<P: AsRef<Path>>(
     cred_types_allowed: git2::CredentialType,
 ) -> Result<git2::Cred, git2::Error> {
     if cred_types_allowed.contains(git2::CredentialType::SSH_KEY) {
-        let cred = git2::Cred::ssh_key("git", None, ssh_key_private.as_ref(), None);
+        let cred = git2::Cred::ssh_key(
+            "git",
+            None,
+            std::path::Path::new(ssh_key_private.as_ref().as_os_str()),
+            None,
+        );
         if let Err(e) = &cred {
             error!("ssh_key error {}", e);
         }
@@ -229,7 +235,7 @@ async fn checkout(
     RepoBuilder::new()
         .branch(branch)
         .fetch_options(fetch_opts)
-        .clone(git_url, into)
+        .clone(git_url, std::path::Path::new(into.as_os_str()))
 }
 
 async fn job_run(

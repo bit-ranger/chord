@@ -26,8 +26,9 @@ jobs:
             -   name: build
                 run: |
                     cargo --version
-                    cargo test  --verbose --release
                     cargo build --verbose --release
+                    cargo test  --verbose --release
+                    
             
                     
             -   name: compose-boot
@@ -41,7 +42,7 @@ jobs:
 
 
             -   name: cmd-test
-                run: ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+                run: ./target/release/chord-cmd  -i$PWD/zero/devops/chord/job/input -o$PWD/zero/devops/chord/job/output
             
             
             -   name: web-boot

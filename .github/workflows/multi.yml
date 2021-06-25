@@ -19,7 +19,7 @@ jobs:
             
             -   name: init
                 run: |
-                    cp -r $PWD/zero/devops /data
+                    sudo cp -r $PWD/zero/devops /data
                     sudo apt-get update
                     sudo apt-get install curl
                     sudo chmod 777 -R zero

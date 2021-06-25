@@ -51,7 +51,7 @@ pub trait Ctl {
 
 pub struct CtlImpl {
     input_dir: PathBuf,
-    ssh_key_private: PathBuf,
+    ssh_key_private: Option<PathBuf>,
     flow_ctx: Arc<dyn Context>,
     config: Arc<dyn Config>,
 }
@@ -60,7 +60,9 @@ impl CtlImpl {
     pub async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
-            ssh_key_private: Path::new(config.ssh_key_private_path()).to_path_buf(),
+            ssh_key_private: config
+                .ssh_key_private_path()
+                .map(|c| Path::new(c).to_path_buf()),
             flow_ctx: chord_flow::context_create(Box::new(
                 ActionFactoryDefault::new(config.action_config().map(|c| c.clone())).await?,
             ))
@@ -84,7 +86,7 @@ impl Ctl for CtlImpl {
             .as_millis()
             .to_string();
         let input = self.input_dir.clone();
-        let ssh_key_pri = self.ssh_key_private.clone();
+        let ssh_key_pri = self.ssh_key_private.as_ref().map(|skp| skp.clone());
         let app_ctx_0 = self.flow_ctx.clone();
         let exec_id_0 = exec_id.clone();
         spawn(checkout_run(
@@ -102,7 +104,7 @@ impl Ctl for CtlImpl {
 async fn checkout_run(
     app_ctx: Arc<dyn Context>,
     input: PathBuf,
-    ssh_key_pri: PathBuf,
+    ssh_key_pri: Option<PathBuf>,
     req: Req,
     exec_id: String,
     es_url: String,
@@ -136,7 +138,7 @@ async fn checkout_run(
 
 async fn checkout_run_0(
     app_ctx: Arc<dyn Context>,
-    ssh_key_pri: PathBuf,
+    ssh_key_pri: Option<PathBuf>,
     req: Req,
     exec_id: String,
     es_url: String,
@@ -150,7 +152,7 @@ async fn checkout_run_0(
     }
 
     let repo = checkout(
-        ssh_key_pri.as_path(),
+        ssh_key_pri,
         req.git_url.as_str(),
         checkout_path.as_path(),
         req.branch.as_ref().unwrap().as_str(),
@@ -201,15 +203,15 @@ fn split(is_delimiter: fn(char) -> bool, text: &str) -> Vec<&str> {
     return result;
 }
 
-fn credentials_callback<P: AsRef<Path>>(
-    ssh_key_private: P,
+fn credentials_callback(
+    ssh_key_private: &Path,
     cred_types_allowed: git2::CredentialType,
 ) -> Result<git2::Cred, git2::Error> {
     if cred_types_allowed.contains(git2::CredentialType::SSH_KEY) {
         let cred = git2::Cred::ssh_key(
             "git",
             None,
-            std::path::Path::new(ssh_key_private.as_ref().as_os_str()),
+            std::path::Path::new(ssh_key_private.as_os_str()),
             None,
         );
         if let Err(e) = &cred {
@@ -222,13 +224,17 @@ fn credentials_callback<P: AsRef<Path>>(
 }
 
 async fn checkout(
-    ssh_key_private: &Path,
+    ssh_key_private: Option<PathBuf>,
     git_url: &str,
     into: &Path,
     branch: &str,
 ) -> Result<Repository, git2::Error> {
     let mut callbacks = git2::RemoteCallbacks::new();
-    callbacks.credentials(|_, _, allowed| credentials_callback(ssh_key_private, allowed));
+    if ssh_key_private.is_some() {
+        callbacks.credentials(|_, _, allowed| {
+            credentials_callback(ssh_key_private.as_ref().unwrap().as_path(), allowed)
+        });
+    }
 
     let mut fetch_opts = git2::FetchOptions::new();
     fetch_opts.remote_callbacks(callbacks);

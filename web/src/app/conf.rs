@@ -13,7 +13,7 @@ pub trait Config: Sync + Send {
 
     fn job_input_path(&self) -> &str;
 
-    fn ssh_key_private_path(&self) -> &str;
+    fn ssh_key_private_path(&self) -> Option<&str>;
 
     fn log_level(&self) -> Vec<(String, String)>;
 
@@ -60,10 +60,8 @@ impl Config for ConfigImpl {
             .unwrap_or("/data/chord/job/input")
     }
 
-    fn ssh_key_private_path(&self) -> &str {
-        self.conf["ssh"]["key"]["private"]["path"]
-            .as_str()
-            .unwrap_or("/data/chord/conf/ssh_key.pri")
+    fn ssh_key_private_path(&self) -> Option<&str> {
+        self.conf["ssh"]["key"]["private"]["path"].as_str()
     }
 
     fn log_level(&self) -> Vec<(String, String)> {

@@ -43,4 +43,5 @@ act_restapi = ["surf"]
 act_mongodb = ["mongodb"]
 act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
+act_docker = ["surf"]
 

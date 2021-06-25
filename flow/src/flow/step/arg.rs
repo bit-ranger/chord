@@ -33,7 +33,7 @@ impl StepId for StepIdStruct {
 
 impl Display for StepIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}::{}", self.case_id, self.step_id).as_str())
+        f.write_str(format!("{}-{}", self.case_id, self.step_id).as_str())
     }
 }
 

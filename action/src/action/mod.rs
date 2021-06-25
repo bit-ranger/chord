@@ -13,6 +13,8 @@ mod sleep;
 mod crypto;
 #[cfg(feature = "act_database")]
 mod database;
+#[cfg(feature = "act_docker")]
+mod docker;
 #[cfg(feature = "act_dubbo")]
 mod dubbo;
 #[cfg(feature = "act_dylib")]
@@ -74,6 +76,9 @@ impl ActionFactoryDefault {
 
         #[cfg(feature = "act_dylib")]
         register!(table, config_ref, "dylib", dylib::Factory::new, false);
+
+        #[cfg(feature = "act_docker")]
+        register!(table, config_ref, "docker", docker::Factory::new, true);
 
         Ok(ActionFactoryDefault { table })
     }

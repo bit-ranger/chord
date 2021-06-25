@@ -10,53 +10,53 @@ env:
     CARGO_TERM_COLOR: always
 
 jobs:
-    docker:
+    linux:
         runs-on: ubuntu-latest
         
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-                
+            
             -   name: init
                 run: |
                     sudo apt-get update
                     sudo apt-get install curl
                     sudo chmod 777 -R zero
-
+            
             -   name: build
-                run: docker build -f github.Dockerfile -t chord .
-                
-
+                run: |
+                    cargo --version
+                    cargo test  --verbose --release
+                    cargo build --verbose --release
+            
+                    
             -   name: compose-boot
-                run: docker-compose -f docker-compose.yml up -d
-
-            -   name: compose-wait
                 run: |
+                    docker-compose -f docker-compose.yml up -d
                     sleep 30
-
-            -   name: es-test
+                    
+            
+            -   name: compose-test
                 run: curl http://127.0.0.1:9200/
-        
-            -   name: chord-cmd-test
-                run: docker run --rm --name chord-cmd -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
-                
-                
-            -   name: chord-web-boot
-                run: docker run -d --rm --name chord-web -v $PWD/zero/devops/chord:/data/chord --network container:elasticsearch chord ./chord-web
-                
-            -   name: chord-web-boot-wait
+
+
+            -   name: cmd-test
+                run: ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+            
+            
+            -   name: web-boot
                 run: |
+                    ./target/release/chord-web &
                     sleep 10
-    
-            -   name: chord-web-test
+                    
+            
+            -   name: web-test
                 run: |
-                    docker run --rm --network container:chord-web appropriate/curl -X POST --location "http://127.0.0.1:9999/job/exec/"  -H  "Content-Type: application/json" -d "{ \"git_url\": \"git@github.com:bit-ranger/chord.git\", \"branch\": \"master\"  }"
-
-            -   name: chord-web-test-wait
-                run: |
+                    curl -X POST --location "http://127.0.0.1:9999/job/exec/"  -H  "Content-Type: application/json" -d "{ \"git_url\": \"git@github.com:bit-ranger/chord.git\", \"branch\": \"master\"  }"
                     sleep 30
-
-            -   name: chord-web-test-report
+                    
+            
+            -   name: web-report
                 run: |
                     curl -X GET --location "http://127.0.0.1:9200/chord@bit-ranger@github.com/_search" \
                         -H "Content-Type: application/json" \
@@ -67,21 +67,7 @@ jobs:
                                   }
                             }
                             }"
-
-
-
-    linux:
-        needs: docker
-        runs-on: ubuntu-latest
-    
-        steps:
-            -   name: checkout
-                uses: actions/checkout@v2
-        
-            -   name: build
-                run: |
-                    cargo build --verbose --release
-        
+                    
             -   name: upload
                 uses: actions/upload-artifact@v2
                 with:
@@ -91,18 +77,33 @@ jobs:
                     path: |
                         target/release/chord-cmd
                         target/release/chord-web
-
-    windows:
-        needs: docker
-        runs-on: windows-latest
-
+    
+    
+    
+    docker:
+        needs: linux
+        runs-on: ubuntu-latest
+        
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
 
             -   name: build
-                run: cargo build --verbose --release
+                run: docker build -f github.Dockerfile -t chord .
+            
 
+    
+    windows:
+        needs: linux
+        runs-on: windows-latest
+        
+        steps:
+            -   name: checkout
+                uses: actions/checkout@v2
+            
+            -   name: build
+                run: cargo build --verbose --release
+            
             -   name: upload
                 uses: actions/upload-artifact@v2
                 with:
@@ -112,18 +113,18 @@ jobs:
                     path: |
                         target/release/chord-cmd.exe
                         target/release/chord-web.exe
-
+    
     macos:
-        needs: docker
+        needs: linux
         runs-on: macos-latest
-
+        
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-
+            
             -   name: build
                 run: cargo build --verbose --release
-
+            
             -   name: upload
                 uses: actions/upload-artifact@v2
                 with:

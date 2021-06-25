@@ -19,9 +19,11 @@ jobs:
             
             -   name: init
                 run: |
+                    cp -r $PWD/zero/devops /data
                     sudo apt-get update
                     sudo apt-get install curl
                     sudo chmod 777 -R zero
+                    
             
             -   name: build
                 run: |
@@ -42,7 +44,7 @@ jobs:
 
 
             -   name: cmd-test
-                run: ./target/release/chord-cmd  -i$PWD/zero/devops/chord/job/input -o$PWD/zero/devops/chord/job/output
+                run: ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
             
             
             -   name: web-boot

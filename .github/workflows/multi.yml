@@ -19,35 +19,36 @@ jobs:
             
             -   name: init
                 run: |
-        
+                
                     sudo ls /data
                     echo "--------"
-                    sudo cp -r $PWD/zero/devops/chord /data
+                    sudo cp -r $PWD/zero/devops/chord /data/
                     sudo ls /data
                     echo "--------"
-                    sudo chmod 777 -R /data/chord
+                    sudo chmod 777 /data/
+                    sudo chmod 777 -R /data/chord/
                     sudo apt-get update
                     sudo apt-get install curl
-                    
+            
             
             -   name: build
                 run: |
                     cargo --version
                     cargo build --verbose --release
                     cargo test  --verbose --release
-                    
             
-                    
+            
+            
             -   name: compose-boot
                 run: |
                     docker-compose -f docker-compose.yml up -d
                     sleep 30
-                    
+            
             
             -   name: compose-test
                 run: curl http://127.0.0.1:9200/
-
-
+            
+            
             -   name: cmd-test
                 run: ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
             
@@ -56,17 +57,23 @@ jobs:
                 run: |
                     ./target/release/chord-web &
                     sleep 10
-                    
+            
             
             -   name: web-test
                 run: |
-                    curl -X POST --location "http://127.0.0.1:9999/job/exec/"  -H  "Content-Type: application/json" -d "{ \"git_url\": \"git@github.com:bit-ranger/chord.git\", \"branch\": \"master\"  }"
+                    curl -X POST --location "http://127.0.0.1:9999/job/exec" \
+                        -H "Content-Type: application/json" \
+                        -d "{
+                                \"git_url\": \"git@github.com:bit-ranger/chord.git\",
+                                \"branch\": \"master\"
+                            }"
                     sleep 30
                     tail -2000 /data/chord/job/output/web.log
-                    
+            
             
             -   name: web-report
                 run: |
+                    curl -X GET "http://localhost:9200/_cat/indices?v"
                     curl -X GET --location "http://127.0.0.1:9200/chord@bit-ranger@github.com/_search" \
                         -H "Content-Type: application/json" \
                         -d "{
@@ -76,7 +83,7 @@ jobs:
                                   }
                             }
                             }"
-                    
+            
             -   name: upload
                 uses: actions/upload-artifact@v2
                 with:
@@ -96,11 +103,11 @@ jobs:
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-
+            
             -   name: build
                 run: docker build -f github.Dockerfile -t chord .
-            
-
+    
+    
     
     windows:
         needs: linux

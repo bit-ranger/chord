@@ -9,7 +9,7 @@ log:
 
 report:
     elasticsearch:
-        url: http://elasticsearch:9200
+        url: http://127.0.0.1:9200
 
 
 action:

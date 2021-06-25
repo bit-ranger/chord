@@ -19,12 +19,13 @@ jobs:
             
             -   name: init
                 run: |
-                    sudo chmod 777 -R zero
+        
                     sudo ls /data
                     echo "--------"
                     sudo cp -r $PWD/zero/devops/chord /data
                     sudo ls /data
                     echo "--------"
+                    sudo chmod 777 -R /data/chord
                     sudo apt-get update
                     sudo apt-get install curl
                     

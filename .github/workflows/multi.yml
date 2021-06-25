@@ -19,12 +19,12 @@ jobs:
             
             -   name: init
                 run: |
+                    sudo chmod 777 -R zero
                     sudo ls /data
                     sudo cp -r $PWD/zero/devops /data
                     sudo ls /data
                     sudo apt-get update
                     sudo apt-get install curl
-                    sudo chmod 777 -R zero
                     
             
             -   name: build

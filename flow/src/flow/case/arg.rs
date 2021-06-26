@@ -31,7 +31,7 @@ impl CaseIdStruct {
 }
 
 impl CaseId for CaseIdStruct {
-    fn case_id(&self) -> &str {
+    fn id(&self) -> &str {
         self.case_id.as_str()
     }
 

@@ -22,7 +22,7 @@ pub struct StepIdStruct {
 }
 
 impl StepId for StepIdStruct {
-    fn step_id(&self) -> &str {
+    fn id(&self) -> &str {
         self.step_id.as_str()
     }
 
@@ -83,7 +83,7 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
     }
 
     fn config(&self) -> &Value {
-        self.flow.step_config(self.id.step_id())
+        self.flow.step_config(self.id.id())
     }
 
     fn render_str(&self, text: &str) -> Result<String, Error> {
@@ -139,11 +139,11 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
     }
 
     pub fn assert(&self) -> Option<&str> {
-        self.flow.step_assert(self.id().step_id())
+        self.flow.step_assert(self.id().id())
     }
 
     pub fn timeout(&self) -> Duration {
-        self.flow.step_timeout(self.id().step_id())
+        self.flow.step_timeout(self.id().id())
     }
 }
 
@@ -153,7 +153,7 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
     }
 
     fn config(&self) -> &Value {
-        let config = self.flow.step_config(self.id().step_id());
+        let config = self.flow.step_config(self.id().id());
         return config;
     }
 

@@ -84,7 +84,7 @@ impl Reporter {
 fn ta_doc_init(task_id: &dyn TaskId, time: DateTime<Utc>) -> Data {
     Data {
         id: task_id.to_string(),
-        id_in_layer: task_id.task_id().to_owned(),
+        id_in_layer: task_id.id().to_owned(),
         layer: "task".to_owned(),
         start: time,
         end: time,
@@ -97,7 +97,7 @@ fn ta_doc_init(task_id: &dyn TaskId, time: DateTime<Utc>) -> Data {
 fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &TaskState) -> Data {
     Data {
         id: task_id.to_string(),
-        id_in_layer: task_id.task_id().to_owned(),
+        id_in_layer: task_id.id().to_owned(),
         layer: "task".to_owned(),
         start,
         end,
@@ -122,7 +122,7 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
 fn ca_doc(ca: &dyn CaseAssess) -> Data {
     Data {
         id: ca.id().to_string(),
-        id_in_layer: ca.id().case_id().to_string(),
+        id_in_layer: ca.id().id().to_string(),
         layer: "case".to_owned(),
         start: ca.start(),
         end: ca.end(),
@@ -147,7 +147,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
 fn sa_doc(sa: &dyn StepAssess) -> Data {
     Data {
         id: sa.id().to_string(),
-        id_in_layer: sa.id().step_id().to_owned(),
+        id_in_layer: sa.id().id().to_owned(),
         layer: "step".to_owned(),
         start: sa.start(),
         end: sa.end(),

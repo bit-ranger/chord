@@ -22,7 +22,7 @@ impl TaskIdSimple {
 }
 
 impl TaskId for TaskIdSimple {
-    fn task_id(&self) -> &str {
+    fn id(&self) -> &str {
         self.task_id.as_str()
     }
 

@@ -10,7 +10,7 @@ use crate::value::Value;
 pub type ActionValue = std::result::Result<Value, Error>;
 
 pub trait StepId: Sync + Send + Display {
-    fn step_id(&self) -> &str;
+    fn id(&self) -> &str;
 
     fn case_id(&self) -> &dyn CaseId;
 }

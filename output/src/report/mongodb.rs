@@ -148,7 +148,7 @@ fn ta_doc_init(ta: &dyn TaskAssess) -> Document {
     match ta.state() {
         TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
             doc! {
-                "id": ta.id().task_id(),
+                "id": ta.id().id(),
                 "start": ta.start(),
                 "end": ta.end(),
                 "state": "R",
@@ -157,7 +157,7 @@ fn ta_doc_init(ta: &dyn TaskAssess) -> Document {
         }
         TaskState::Err(e) => {
             doc! {
-                "id": ta.id().task_id(),
+                "id": ta.id().id(),
                 "start": ta.start(),
                 "end": ta.end(),
                 "state": "E",
@@ -171,7 +171,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
     match ca.state() {
         CaseState::Ok(pa_vec) => {
             doc! {
-                "id": ca.id().case_id() as u64,
+                "id": ca.id().id() as u64,
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "O",
@@ -180,7 +180,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
         }
         CaseState::Fail(sa_vec) => {
             doc! {
-                "id": ca.id().case_id() as u64,
+                "id": ca.id().id() as u64,
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "F",
@@ -189,7 +189,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
         }
         CaseState::Err(e) => {
             doc! {
-                "id": ca.id().case_id() as u64,
+                "id": ca.id().id() as u64,
                 "start": ca.start(),
                 "end": ca.end(),
                 "state": "E",
@@ -201,7 +201,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Document {
 
 fn sa_doc(sa: &dyn StepAssess) -> Document {
     doc! {
-        "id": sa.id().step_id(),
+        "id": sa.id().id(),
         "start": sa.start(),
         "end": sa.end(),
         "state": match sa.state(){

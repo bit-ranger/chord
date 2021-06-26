@@ -49,60 +49,36 @@ impl ActionFactoryDefault {
 
         let config_ref = config.as_ref();
 
-        register!(table, config_ref, "echo", echo::EchoFactory::new, true);
-        register!(table, config_ref, "sleep", sleep::SleepFactory::new, true);
-        register!(table, config_ref, "log", log::LogFactory::new, true);
+        register!(table, config_ref, "echo", echo::Factory::new, true);
+        register!(table, config_ref, "sleep", sleep::Factory::new, true);
+        register!(table, config_ref, "log", log::Factory::new, true);
 
         #[cfg(feature = "act_restapi")]
-        register!(
-            table,
-            config_ref,
-            "restapi",
-            restapi::RestapiFactory::new,
-            true
-        );
+        register!(table, config_ref, "restapi", restapi::Factory::new, true);
 
         #[cfg(feature = "act_crypto")]
-        register!(
-            table,
-            config_ref,
-            "crypto",
-            crypto::CryptoFactory::new,
-            true
-        );
+        register!(table, config_ref, "crypto", crypto::Factory::new, true);
 
         #[cfg(feature = "act_url")]
-        register!(table, config_ref, "url", url::UrlFactory::new, true);
+        register!(table, config_ref, "url", url::Factory::new, true);
 
         #[cfg(feature = "act_dubbo")]
-        register!(table, config_ref, "dubbo", dubbo::DubboFactory::new, false);
+        register!(table, config_ref, "dubbo", dubbo::Factory::new, false);
 
         #[cfg(feature = "act_database")]
-        register!(
-            table,
-            config_ref,
-            "database",
-            database::DatabaseFactory::new,
-            true
-        );
+        register!(table, config_ref, "database", database::Factory::new, true);
 
         #[cfg(feature = "act_redis")]
-        register!(table, config_ref, "redis", redis::RedisFactory::new, true);
+        register!(table, config_ref, "redis", redis::Factory::new, true);
 
         #[cfg(feature = "act_mongodb")]
-        register!(
-            table,
-            config_ref,
-            "mongodb",
-            mongodb::MongodbFactory::new,
-            true
-        );
+        register!(table, config_ref, "mongodb", mongodb::Factory::new, true);
 
         #[cfg(feature = "act_dylib")]
-        register!(table, config_ref, "dylib", dylib::DylibFactory::new, false);
+        register!(table, config_ref, "dylib", dylib::Factory::new, false);
 
         #[cfg(feature = "act_docker")]
-        register!(table, config_ref, "docker", docker::Docker::new, true);
+        register!(table, config_ref, "docker", docker::Factory::new, true);
 
         Ok(ActionFactoryDefault { table })
     }

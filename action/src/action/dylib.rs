@@ -7,16 +7,16 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::{to_string, Value};
 use chord::Error;
 
-pub struct DylibFactory {}
+pub struct Factory {}
 
-impl DylibFactory {
-    pub async fn new(_: Option<Value>) -> Result<DylibFactory, Error> {
-        Ok(DylibFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for DylibFactory {
+impl ActionFactory for Factory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let dir = arg.config()["dir"]
             .as_str()

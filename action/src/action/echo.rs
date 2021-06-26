@@ -2,16 +2,16 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::Value;
 use chord::Error;
 
-pub struct EchoFactory {}
+pub struct Factory {}
 
-impl EchoFactory {
-    pub async fn new(_: Option<Value>) -> Result<EchoFactory, Error> {
-        Ok(EchoFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for EchoFactory {
+impl ActionFactory for Factory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Echo {}))
     }

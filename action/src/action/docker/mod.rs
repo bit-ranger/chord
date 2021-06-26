@@ -7,6 +7,8 @@ mod container;
 mod http;
 mod image;
 
+pub type Factory = Docker;
+
 pub struct Docker {
     address: String,
 }

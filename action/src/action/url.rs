@@ -3,16 +3,16 @@ use chord::value::Value;
 use chord::Error;
 use chord::{err, rerr};
 
-pub struct UrlFactory {}
+pub struct Factory {}
 
-impl UrlFactory {
-    pub async fn new(_: Option<Value>) -> Result<UrlFactory, Error> {
-        Ok(UrlFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for UrlFactory {
+impl ActionFactory for Factory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Url {}))
     }

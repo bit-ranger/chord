@@ -10,16 +10,16 @@ use chord::value::{Map, Number, Value};
 use chord::Error;
 use chord::{err, rerr};
 
-pub struct RestapiFactory {}
+pub struct Factory {}
 
-impl RestapiFactory {
-    pub async fn new(_: Option<Value>) -> Result<RestapiFactory, Error> {
-        Ok(RestapiFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for RestapiFactory {
+impl ActionFactory for Factory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Restapi {}))
     }

@@ -6,16 +6,16 @@ use chord::value::{from_str, Value};
 use chord::Error;
 use chord::{err, rerr};
 
-pub struct MongodbFactory {}
+pub struct Factory {}
 
-impl MongodbFactory {
-    pub async fn new(_: Option<Value>) -> Result<MongodbFactory, Error> {
-        Ok(MongodbFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for MongodbFactory {
+impl ActionFactory for Factory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Mongodb {}))
     }

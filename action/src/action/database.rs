@@ -7,16 +7,16 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::{Map, Number, Value};
 use chord::Error;
 
-pub struct DatabaseFactory {}
+pub struct Factory {}
 
-impl DatabaseFactory {
-    pub async fn new(_: Option<Value>) -> Result<DatabaseFactory, Error> {
-        Ok(DatabaseFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for DatabaseFactory {
+impl ActionFactory for Factory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.config()["url"]
             .as_str()

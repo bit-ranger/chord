@@ -5,16 +5,16 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::{from_str, Number, Value};
 use chord::Error;
 
-pub struct RedisFactory {}
+pub struct Factory {}
 
-impl RedisFactory {
-    pub async fn new(_: Option<Value>) -> Result<RedisFactory, Error> {
-        Ok(RedisFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for RedisFactory {
+impl ActionFactory for Factory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.config()["url"]
             .as_str()

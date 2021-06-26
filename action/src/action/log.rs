@@ -4,16 +4,16 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::Value;
 use chord::Error;
 
-pub struct LogFactory {}
+pub struct Factory {}
 
-impl LogFactory {
-    pub async fn new(_: Option<Value>) -> Result<LogFactory, Error> {
-        Ok(LogFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for LogFactory {
+impl ActionFactory for Factory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Echo {}))
     }

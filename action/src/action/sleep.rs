@@ -5,16 +5,16 @@ use chord::value::Value;
 use chord::Error;
 use std::time::Duration;
 
-pub struct SleepFactory {}
+pub struct Factory {}
 
-impl SleepFactory {
-    pub async fn new(_: Option<Value>) -> Result<SleepFactory, Error> {
-        Ok(SleepFactory {})
+impl Factory {
+    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
+        Ok(Factory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for SleepFactory {
+impl ActionFactory for Factory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Sleep {}))
     }

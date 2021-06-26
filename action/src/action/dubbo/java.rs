@@ -14,15 +14,15 @@ use chord::value::{Deserialize, Serialize};
 use chord::Error;
 use chord::{err, rerr};
 
-pub struct DubboFactory {
+pub struct Factory {
     registry_protocol: String,
     registry_address: String,
     port: usize,
     child: Child,
 }
 
-impl DubboFactory {
-    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
+impl Factory {
+    pub async fn new(config: Option<Value>) -> Result<Factory, Error> {
         if config.is_none() {
             return rerr!("010", "missing config");
         }
@@ -74,7 +74,7 @@ impl DubboFactory {
         }
 
         child.stdout = Some(std_out.into_inner());
-        Ok(DubboFactory {
+        Ok(Factory {
             registry_protocol,
             registry_address,
             port,
@@ -84,7 +84,7 @@ impl DubboFactory {
 }
 
 #[async_trait]
-impl ActionFactory for DubboFactory {
+impl ActionFactory for Factory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Dubbo {
             registry_protocol: self.registry_protocol.clone(),
@@ -180,7 +180,7 @@ async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, 
     }
 }
 
-impl Drop for DubboFactory {
+impl Drop for Factory {
     fn drop(&mut self) {
         let _ = self.child.kill();
     }

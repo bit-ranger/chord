@@ -5,16 +5,16 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::{from_str, Number, Value};
 use chord::Error;
 
-pub struct Factory {}
+pub struct RedisFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl RedisFactory {
+    pub async fn new(_: Option<Value>) -> Result<RedisFactory, Error> {
+        Ok(RedisFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl ActionFactory for RedisFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.config()["url"]
             .as_str()
@@ -22,23 +22,23 @@ impl ActionFactory for Factory {
             .ok_or(err!("010", "missing url"))??;
 
         if !arg.is_task_shared(url.as_str()) {
-            return Ok(Box::new(Runner { client: None }));
+            return Ok(Box::new(Redis { client: None }));
         }
 
         let client = redis::Client::open(url)?;
 
-        Ok(Box::new(Runner {
+        Ok(Box::new(Redis {
             client: Some(client),
         }))
     }
 }
 
-struct Runner {
+struct Redis {
     client: Option<Client>,
 }
 
 #[async_trait]
-impl Action for Runner {
+impl Action for Redis {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,

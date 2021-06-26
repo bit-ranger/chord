@@ -7,16 +7,16 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::{to_string, Value};
 use chord::Error;
 
-pub struct Factory {}
+pub struct DylibFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl DylibFactory {
+    pub async fn new(_: Option<Value>) -> Result<DylibFactory, Error> {
+        Ok(DylibFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl ActionFactory for DylibFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let dir = arg.config()["dir"]
             .as_str()
@@ -33,16 +33,16 @@ impl ActionFactory for Factory {
         let config_str = arg.render_str(config_str.as_str())?;
         action_create(arg.id().to_string().as_str(), config_str.as_str())?;
 
-        Ok(Box::new(Runner { lib }))
+        Ok(Box::new(Dylib { lib }))
     }
 }
 
-struct Runner {
+struct Dylib {
     lib: Arc<Lib>,
 }
 
 #[async_trait]
-impl Action for Runner {
+impl Action for Dylib {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let action_run: Symbol<fn(&str, &str) -> ActionValue> =
             unsafe { self.lib.lib.get(b"run")? };

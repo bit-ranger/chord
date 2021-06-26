@@ -6,25 +6,25 @@ use chord::value::{from_str, Value};
 use chord::Error;
 use chord::{err, rerr};
 
-pub struct Factory {}
+pub struct MongodbFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl MongodbFactory {
+    pub async fn new(_: Option<Value>) -> Result<MongodbFactory, Error> {
+        Ok(MongodbFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl ActionFactory for MongodbFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Runner {}))
+        Ok(Box::new(Mongodb {}))
     }
 }
 
-struct Runner {}
+struct Mongodb {}
 
 #[async_trait]
-impl Action for Runner {
+impl Action for Mongodb {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         run(arg).await
     }

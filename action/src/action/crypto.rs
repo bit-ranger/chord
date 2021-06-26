@@ -3,25 +3,25 @@ use chord::value::Value;
 use chord::Error;
 use chord::{err, rerr};
 
-pub struct Factory {}
+pub struct CryptoFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl CryptoFactory {
+    pub async fn new(_: Option<Value>) -> Result<CryptoFactory, Error> {
+        Ok(CryptoFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl ActionFactory for CryptoFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Runner {}))
+        Ok(Box::new(Crypto {}))
     }
 }
 
-struct Runner {}
+struct Crypto {}
 
 #[async_trait]
-impl Action for Runner {
+impl Action for Crypto {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         run(arg).await
     }

@@ -5,25 +5,25 @@ use chord::value::Value;
 use chord::Error;
 use std::time::Duration;
 
-pub struct Factory {}
+pub struct SleepFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl SleepFactory {
+    pub async fn new(_: Option<Value>) -> Result<SleepFactory, Error> {
+        Ok(SleepFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl ActionFactory for SleepFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Runner {}))
+        Ok(Box::new(Sleep {}))
     }
 }
 
-struct Runner {}
+struct Sleep {}
 
 #[async_trait]
-impl Action for Runner {
+impl Action for Sleep {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let sec = arg.render_value(&arg.config()["duration"])?;
         if sec.is_null() {

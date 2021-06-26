@@ -4,25 +4,25 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::Value;
 use chord::Error;
 
-pub struct Factory {}
+pub struct LogFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl LogFactory {
+    pub async fn new(_: Option<Value>) -> Result<LogFactory, Error> {
+        Ok(LogFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl ActionFactory for LogFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Runner {}))
+        Ok(Box::new(Echo {}))
     }
 }
 
-struct Runner {}
+struct Echo {}
 
 #[async_trait]
-impl Action for Runner {
+impl Action for Echo {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let config = arg.render_value(arg.config())?;
         debug!("{}", config);

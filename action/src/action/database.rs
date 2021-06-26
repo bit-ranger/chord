@@ -7,37 +7,37 @@ use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, Ru
 use chord::value::{Map, Number, Value};
 use chord::Error;
 
-pub struct Factory {}
+pub struct DatabaseFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl DatabaseFactory {
+    pub async fn new(_: Option<Value>) -> Result<DatabaseFactory, Error> {
+        Ok(DatabaseFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl ActionFactory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.config()["url"]
             .as_str()
             .ok_or(err!("010", "missing url"))?;
 
         if !arg.is_task_shared(url) {
-            return Ok(Box::new(Runner { rb: None }));
+            return Ok(Box::new(Database { rb: None }));
         }
 
         let url = arg.render_str(url)?;
         let rb = create_rb(url.as_str()).await?;
-        return Ok(Box::new(Runner { rb: Some(rb) }));
+        return Ok(Box::new(Database { rb: Some(rb) }));
     }
 }
 
-struct Runner {
+struct Database {
     rb: Option<Rbatis>,
 }
 
 #[async_trait]
-impl Action for Runner {
+impl Action for Database {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         run(&self, arg).await
     }
@@ -49,7 +49,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
     Ok(rb)
 }
 
-async fn run(obj: &Runner, arg: &dyn RunArg) -> ActionValue {
+async fn run(obj: &Database, arg: &dyn RunArg) -> ActionValue {
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {

@@ -3,25 +3,25 @@ use chord::value::Value;
 use chord::Error;
 use chord::{err, rerr};
 
-pub struct Factory {}
+pub struct UrlFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl UrlFactory {
+    pub async fn new(_: Option<Value>) -> Result<UrlFactory, Error> {
+        Ok(UrlFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl ActionFactory for UrlFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Runner {}))
+        Ok(Box::new(Url {}))
     }
 }
 
-struct Runner {}
+struct Url {}
 
 #[async_trait]
-impl Action for Runner {
+impl Action for Url {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let by = arg.config()["by"]
             .as_str()

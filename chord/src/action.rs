@@ -1,13 +1,12 @@
 use async_trait::async_trait;
 
-use crate::step::StepId;
 use crate::value::Value;
 use crate::Error;
 
 pub type ActionValue = std::result::Result<Value, Error>;
 
 pub trait RunArg: Sync + Send {
-    fn id(&self) -> &dyn StepId;
+    fn id(&self) -> &str;
 
     fn config(&self) -> &Value;
 
@@ -17,7 +16,7 @@ pub trait RunArg: Sync + Send {
 }
 
 pub trait CreateArg: Sync + Send {
-    fn id(&self) -> &dyn StepId;
+    fn id(&self) -> &str;
 
     fn action(&self) -> &str;
 

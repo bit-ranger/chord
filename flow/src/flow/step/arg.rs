@@ -20,6 +20,7 @@ use crate::model::app::RenderContext;
 pub struct StepIdStruct {
     step_id: String,
     case_id: Arc<dyn CaseId>,
+    display: String,
 }
 
 impl StepId for StepIdStruct {
@@ -34,7 +35,7 @@ impl StepId for StepIdStruct {
 
 impl Display for StepIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}", self.case_id, self.step_id).as_str())
+        f.write_str(self.display.as_str())
     }
 }
 
@@ -55,17 +56,19 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
         action: String,
         id: String,
     ) -> CreateArgStruct<'f, 'h, 'reg, 'r> {
+        let case_id = Arc::new(CaseIdStruct::new(
+            task_id,
+            "create".into(),
+            Arc::new("create".into()),
+        ));
         let context = CreateArgStruct {
             flow,
             handlebars,
             render_context,
             action,
             id: StepIdStruct {
-                case_id: Arc::new(CaseIdStruct::new(
-                    task_id,
-                    "create".into(),
-                    Arc::new("create".into()),
-                )),
+                display: format!("{}-{}", case_id, id),
+                case_id,
                 step_id: id,
             },
         };
@@ -75,8 +78,8 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
 }
 
 impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
-    fn id(&self) -> &dyn StepId {
-        &self.id
+    fn id(&self) -> &str {
+        self.id.display.as_str()
     }
 
     fn action(&self) -> &str {
@@ -121,6 +124,7 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         id: String,
     ) -> RunArgStruct<'f, 'h, 'reg, 'r> {
         let id = StepIdStruct {
+            display: format!("{}-{}", case_id, id),
             case_id,
             step_id: id,
         };
@@ -149,8 +153,8 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
 }
 
 impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
-    fn id(&self) -> &dyn StepId {
-        self.id()
+    fn id(&self) -> &str {
+        self.id().display.as_str()
     }
 
     fn config(&self) -> &Value {

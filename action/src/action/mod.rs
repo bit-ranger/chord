@@ -78,7 +78,7 @@ impl ActionFactoryDefault {
         register!(table, config_ref, "dylib", dylib::Factory::new, false);
 
         #[cfg(feature = "act_docker")]
-        register!(table, config_ref, "docker", docker::Factory::new, true);
+        register!(table, config_ref, "docker", docker::Docker::new, true);
 
         Ok(ActionFactoryDefault { table })
     }

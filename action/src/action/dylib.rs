@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 
+use chord::action::{Action, ActionFactory, ActionValue, CreateArg, RunArg};
 use chord::err;
-use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
+use chord::step::async_trait;
 use chord::value::{to_string, Value};
 use chord::Error;
 

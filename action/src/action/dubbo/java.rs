@@ -8,7 +8,8 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
+use chord::action::{Action, ActionFactory, ActionValue, CreateArg, RunArg};
+use chord::step::async_trait;
 use chord::value::{from_str, to_string_pretty, Value};
 use chord::value::{Deserialize, Serialize};
 use chord::Error;

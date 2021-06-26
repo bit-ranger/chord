@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
+use chord::action::{Action, ActionFactory, CreateArg};
 use chord::err;
-use chord::step::{async_trait, Action, ActionFactory, CreateArg};
+use chord::step::async_trait;
 use chord::value::Value;
 use chord::Error;
 

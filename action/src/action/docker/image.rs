@@ -1,12 +1,13 @@
 use surf::http::Method;
 
+use chord::action::{Action, ActionValue, RunArg};
+use chord::step::async_trait;
 use chord::value::{from_str, json};
 use chord::Error;
 
 use crate::action::docker::container::Container;
 use crate::action::docker::http::call;
 use crate::action::docker::Docker;
-use chord::step::{async_trait, Action, ActionValue, RunArg};
 
 pub struct Image {
     address: String,

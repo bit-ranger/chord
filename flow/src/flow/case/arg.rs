@@ -2,9 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use async_std::sync::Arc;
 
+use chord::action::Action;
 use chord::case::CaseId;
 use chord::flow::Flow;
-use chord::step::Action;
 use chord::task::TaskId;
 use chord::value::Value;
 use chord::value::{to_value, Map};

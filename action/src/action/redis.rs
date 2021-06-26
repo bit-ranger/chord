@@ -1,7 +1,8 @@
 use redis::{Client, Value as RedisValue};
 
+use chord::action::{Action, ActionFactory, ActionValue, CreateArg, RunArg};
 use chord::err;
-use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
+use chord::step::async_trait;
 use chord::value::{from_str, Number, Value};
 use chord::Error;
 

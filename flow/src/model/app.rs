@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use handlebars::Handlebars;
 
 use crate::model::helper::register;
-use chord::step::ActionFactory;
+use chord::action::ActionFactory;
 
 pub trait Context: Sync + Send {
     fn get_handlebars(&self) -> &Handlebars;

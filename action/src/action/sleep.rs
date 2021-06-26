@@ -1,9 +1,12 @@
+use std::time::Duration;
+
 use async_std::task::sleep;
+
+use chord::action::{Action, ActionFactory, ActionValue, CreateArg, RunArg};
 use chord::rerr;
-use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
+use chord::step::async_trait;
 use chord::value::Value;
 use chord::Error;
-use std::time::Duration;
 
 pub struct Factory {}
 

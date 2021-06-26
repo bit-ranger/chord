@@ -4,13 +4,14 @@ use async_std::task::{Builder, JoinHandle};
 use futures::future::join_all;
 use log::{debug, info, trace, warn};
 
+use chord::action::Action;
 use chord::case::{CaseAssess, CaseState};
 use chord::flow::Flow;
 use chord::input::CaseLoad;
 use chord::output::AssessReport;
 use chord::output::Utc;
 use chord::rerr;
-use chord::step::{Action, StepState};
+use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::{to_value, Map, Value};
 use chord::Error;

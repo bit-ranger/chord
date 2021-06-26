@@ -1,6 +1,7 @@
 use log::debug;
 
-use chord::step::{async_trait, Action, ActionFactory, ActionValue, CreateArg, RunArg};
+use chord::action::{Action, ActionFactory, ActionValue, CreateArg, RunArg};
+use chord::step::async_trait;
 use chord::value::Value;
 use chord::Error;
 

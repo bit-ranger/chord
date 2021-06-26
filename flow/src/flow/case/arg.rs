@@ -21,11 +21,11 @@ pub struct CaseIdStruct {
 }
 
 impl CaseIdStruct {
-    pub fn new(task_id: Arc<dyn TaskId>, case: String, exec_id: Arc<String>) -> CaseIdStruct {
+    pub fn new(task_id: Arc<dyn TaskId>, case_id: String, exec_id: Arc<String>) -> CaseIdStruct {
         CaseIdStruct {
             task_id,
             exec_id,
-            case,
+            case: case_id,
         }
     }
 }

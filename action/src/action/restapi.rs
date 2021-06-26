@@ -5,10 +5,8 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord::action::async_trait;
-use chord::action::{Action, ActionFactory, ActionValue, CreateArg, RunArg};
-use chord::value::{Map, Number, Value};
-use chord::Error;
+use chord::action::prelude::*;
+use chord::value::{Map, Number};
 use chord::{err, rerr};
 
 pub struct Factory {}

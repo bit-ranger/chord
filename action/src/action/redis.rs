@@ -1,10 +1,8 @@
 use redis::{Client, Value as RedisValue};
 
-use chord::action::async_trait;
-use chord::action::{Action, ActionFactory, ActionValue, CreateArg, RunArg};
+use chord::action::prelude::*;
 use chord::err;
-use chord::value::{from_str, Number, Value};
-use chord::Error;
+use chord::value::{from_str, Number};
 
 pub struct Factory {}
 

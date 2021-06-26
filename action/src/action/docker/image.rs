@@ -1,7 +1,7 @@
 use surf::http::Method;
 
+use chord::action::async_trait;
 use chord::action::{Action, ActionValue, RunArg};
-use chord::step::async_trait;
 use chord::value::{from_str, json};
 use chord::Error;
 

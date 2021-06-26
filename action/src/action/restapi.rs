@@ -5,8 +5,8 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
+use chord::action::async_trait;
 use chord::action::{Action, ActionFactory, ActionValue, CreateArg, RunArg};
-use chord::step::async_trait;
 use chord::value::{Map, Number, Value};
 use chord::Error;
 use chord::{err, rerr};

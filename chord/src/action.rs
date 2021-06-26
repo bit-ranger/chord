@@ -1,4 +1,4 @@
-use async_trait::async_trait;
+pub use async_trait::async_trait;
 
 use crate::value::Value;
 use crate::Error;

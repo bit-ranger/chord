@@ -32,7 +32,7 @@ impl ActionFactory for Factory {
 
         let config_str = to_string(arg.config())?;
         let config_str = arg.render_str(config_str.as_str())?;
-        action_create(arg.id().to_string().as_str(), config_str.as_str())?;
+        action_create(arg.id(), config_str.as_str())?;
 
         Ok(Box::new(Dylib { lib }))
     }
@@ -50,6 +50,6 @@ impl Action for Dylib {
 
         let config_str = to_string(arg.config())?;
         let config_str = arg.render_str(config_str.as_str())?;
-        action_run(arg.id().to_string().as_str(), config_str.as_str())
+        action_run(arg.id(), config_str.as_str())
     }
 }

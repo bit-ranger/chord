@@ -22,7 +22,7 @@ impl ActionFactory for Factory {
             .map(|s| arg.render_str(s))
             .ok_or(err!("010", "missing url"))??;
 
-        if !arg.is_task_shared(url.as_str()) {
+        if !arg.is_shared(url.as_str()) {
             return Ok(Box::new(Redis { client: None }));
         }
 

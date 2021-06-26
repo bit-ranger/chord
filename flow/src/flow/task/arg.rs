@@ -8,7 +8,7 @@ use chord::Error;
 #[derive(Debug, Clone)]
 pub struct TaskIdSimple {
     exec_id: String,
-    task_id: String,
+    task: String,
 }
 
 impl TaskIdSimple {
@@ -17,13 +17,16 @@ impl TaskIdSimple {
             return rerr!("task", format!("invalid task_id {}", task_id));
         }
 
-        Ok(TaskIdSimple { exec_id, task_id })
+        Ok(TaskIdSimple {
+            exec_id,
+            task: task_id,
+        })
     }
 }
 
 impl TaskId for TaskIdSimple {
-    fn id(&self) -> &str {
-        self.task_id.as_str()
+    fn task(&self) -> &str {
+        self.task.as_str()
     }
 
     fn exec_id(&self) -> &str {
@@ -33,6 +36,6 @@ impl TaskId for TaskIdSimple {
 
 impl Display for TaskIdSimple {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}", self.exec_id, self.task_id).as_str())
+        f.write_str(format!("{}-{}", self.exec_id, self.task).as_str())
     }
 }

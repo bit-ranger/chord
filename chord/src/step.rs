@@ -8,7 +8,7 @@ use crate::error::Error;
 use crate::value::Value;
 
 pub trait StepId: Sync + Send + Display {
-    fn id(&self) -> &str;
+    fn step(&self) -> &str;
 
     fn case_id(&self) -> &dyn CaseId;
 }

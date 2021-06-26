@@ -8,7 +8,7 @@ use crate::task::TaskId;
 use crate::value::Value;
 
 pub trait CaseId: Sync + Send + Display {
-    fn id(&self) -> &str;
+    fn case(&self) -> &str;
 
     fn exec_id(&self) -> &str;
 

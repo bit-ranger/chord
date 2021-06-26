@@ -24,7 +24,8 @@ pub trait CreateArg: Sync + Send {
 
     fn render_str(&self, text: &str) -> Result<String, Error>;
 
-    fn is_task_shared(&self, text: &str) -> bool;
+    /// shared in whole action
+    fn is_shared(&self, text: &str) -> bool;
 }
 
 #[async_trait]

@@ -19,7 +19,7 @@ impl Action for Image {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let cmd = arg.render_value(&arg.config()["cmd"]).unwrap_or(json!([]));
 
-        let mut container = Container::new(&self, arg.id().to_string().as_str(), cmd).await?;
+        let mut container = Container::new(&self, arg.id(), cmd).await?;
         container.start().await?;
 
         let tail = arg

@@ -42,10 +42,10 @@ impl AssessReport for Reporter {
 
         let report_file = self
             .report_dir
-            .join(format!("{}_result.csv", self.task_id.id()));
+            .join(format!("{}_result.csv", self.task_id.task()));
         let report_file_new = self.report_dir.join(format!(
             "{}_result_{}.csv",
-            self.task_id.id(),
+            self.task_id.task(),
             task_state_view
         ));
         rename(report_file, report_file_new).await?;
@@ -60,7 +60,7 @@ impl Reporter {
         task_id: Arc<dyn TaskId>,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
-        let report_file = report_dir.join(format!("{}_result.csv", task_id.id()));
+        let report_file = report_dir.join(format!("{}_result.csv", task_id.task()));
 
         let step_id_vec: Vec<String> = flow
             .stage_id_vec()
@@ -138,7 +138,7 @@ fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
     let value_vec: Vec<&str> = vec![""; head_len];
     let mut value_vec: Vec<String> = value_vec.into_iter().map(|v| v.to_owned()).collect();
 
-    value_vec[0] = ca.id().id().into();
+    value_vec[0] = ca.id().case().into();
     match ca.state() {
         CaseState::Ok(_) => {
             value_vec[1] = String::from("O");
@@ -189,7 +189,10 @@ fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
                 }
             };
 
-            let pai = sid_vec.iter().position(|sid| sid == pa.id().id()).unwrap();
+            let pai = sid_vec
+                .iter()
+                .position(|sid| sid == pa.id().step())
+                .unwrap();
             let pos = 4 + pai * 3;
 
             for (pvi, pve) in pv.into_iter().enumerate() {

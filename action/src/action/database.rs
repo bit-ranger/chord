@@ -23,7 +23,7 @@ impl ActionFactory for Factory {
             .as_str()
             .ok_or(err!("010", "missing url"))?;
 
-        if !arg.is_task_shared(url) {
+        if !arg.is_shared(url) {
             return Ok(Box::new(Database { rb: None }));
         }
 

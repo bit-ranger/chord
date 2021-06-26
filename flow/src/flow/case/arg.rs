@@ -16,23 +16,23 @@ use crate::model::app::RenderContext;
 #[derive(Clone)]
 pub struct CaseIdStruct {
     task_id: Arc<dyn TaskId>,
-    case_id: String,
     exec_id: Arc<String>,
+    case: String,
 }
 
 impl CaseIdStruct {
-    pub fn new(task_id: Arc<dyn TaskId>, case_id: String, exec_id: Arc<String>) -> CaseIdStruct {
+    pub fn new(task_id: Arc<dyn TaskId>, case: String, exec_id: Arc<String>) -> CaseIdStruct {
         CaseIdStruct {
             task_id,
-            case_id,
             exec_id,
+            case,
         }
     }
 }
 
 impl CaseId for CaseIdStruct {
-    fn id(&self) -> &str {
-        self.case_id.as_str()
+    fn case(&self) -> &str {
+        self.case.as_str()
     }
 
     fn exec_id(&self) -> &str {
@@ -46,7 +46,7 @@ impl CaseId for CaseIdStruct {
 
 impl Display for CaseIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}-{}", self.task_id, self.exec_id, self.case_id).as_str())
+        f.write_str(format!("{}-{}-{}", self.task_id, self.exec_id, self.case).as_str())
     }
 }
 

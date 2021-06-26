@@ -11,7 +11,7 @@ lazy_static! {
 }
 
 pub trait TaskId: Sync + Send + Display {
-    fn id(&self) -> &str;
+    fn task(&self) -> &str;
 
     fn exec_id(&self) -> &str;
 }

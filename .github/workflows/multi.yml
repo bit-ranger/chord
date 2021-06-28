@@ -22,10 +22,10 @@ jobs:
                 
                     sudo ls /data
                     echo "--------"
+                    sudo chmod 777 /data/
                     sudo cp -r $PWD/zero/devops/chord /data/
                     sudo ls /data
                     echo "--------"
-                    sudo chmod 777 /data/
                     sudo chmod 777 -R /data/chord/
                     sudo apt-get update
                     sudo apt-get install curl

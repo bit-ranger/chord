@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use async_std::prelude::*;
-use log::trace;
+use log::{info, trace};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{RequestBuilder, Response, Url};
@@ -9,6 +9,7 @@ use surf::{RequestBuilder, Response, Url};
 use chord::value::Value;
 use chord::Error;
 use chord::{cause, err, rcause, rerr};
+use std::collections::VecDeque;
 
 pub struct Docker {
     address: String,
@@ -16,7 +17,11 @@ pub struct Docker {
 
 impl Docker {
     pub async fn new(address: String) -> Result<Docker, Error> {
-        Ok(Docker { address })
+        trace!("docker info {}", address);
+        call0(address.as_str(), "info", Method::Get, None, 999)
+            .await
+            .map_err(|e| e.into())
+            .map(|_| Docker { address })
     }
 
     pub async fn call(
@@ -52,7 +57,7 @@ async fn call0(
 
     let mut res: Response = rb.send().await?;
 
-    let mut tail: Vec<String> = vec![];
+    let mut tail: VecDeque<String> = VecDeque::with_capacity(tail_size);
     let mut line = String::new();
     loop {
         line.clear();
@@ -67,11 +72,16 @@ async fn call0(
                 line = String::from_utf8_lossy(&line.as_bytes()[8..]).to_string();
             }
 
-            trace!("{}", line.trim_end());
-            if tail.len() >= tail_size {
-                tail.pop();
+            if res.status().is_success() {
+                trace!("{}", line);
+            } else {
+                info!("{}", line);
             }
-            tail.push(line.clone());
+
+            tail.push_back(line.clone());
+            if tail.len() > tail_size {
+                tail.pop_front();
+            }
         } else {
             break;
         }
@@ -79,7 +89,7 @@ async fn call0(
     return if !res.status().is_success() {
         rerr!("docker", res.status().to_string())?
     } else {
-        Ok(tail)
+        Ok(tail.into())
     };
 }
 

@@ -21,7 +21,7 @@ impl Container {
         name: &str,
         cmd: Value,
     ) -> Result<Container, Error> {
-        trace!("container create {}", name);
+        trace!("container create {}, {}", name, cmd);
         docker
             .call(
                 format!("containers/create?name={}", name).as_str(),

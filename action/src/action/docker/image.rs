@@ -3,6 +3,7 @@ use surf::http::Method;
 use chord::action::prelude::*;
 use chord::value::{from_str, json};
 use chord::Error;
+use log::trace;
 
 use crate::action::docker::container::Container;
 use crate::action::docker::docker::Docker;
@@ -27,6 +28,11 @@ impl Action for Image {
             .as_u64()
             .unwrap_or(1) as usize;
         let tail_log = container.tail(tail).await?;
+        let tail_log: Vec<String> = tail_log
+            .into_iter()
+            .map(|row| row.trim().to_string())
+            .filter(|row| !row.is_empty())
+            .collect();
 
         if tail_log.len() > 0 {
             Ok(from_str(tail_log.join("").as_str())?)
@@ -48,6 +54,7 @@ impl Image {
             format!("{}:latest", name)
         };
 
+        trace!("image create {}", name);
         docker
             .call(
                 format!("images/create?fromImage={}", name).as_str(),

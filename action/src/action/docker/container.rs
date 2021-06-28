@@ -21,6 +21,7 @@ impl Container {
         name: &str,
         cmd: Value,
     ) -> Result<Container, Error> {
+        trace!("container create {}", name);
         docker
             .call(
                 format!("containers/create?name={}", name).as_str(),
@@ -31,16 +32,14 @@ impl Container {
                 1,
             )
             .await
-            .map(|_| {
-                trace!("container create {}", name);
-                Container {
-                    name: name.into(),
-                    docker,
-                }
+            .map(|_| Container {
+                name: name.into(),
+                docker,
             })
     }
 
-    pub async fn start(&mut self) -> Result<(), Error> {
+    pub async fn start(&mut self) -> Result<Vec<String>, Error> {
+        trace!("container start {}", self.name);
         self.docker
             .call(
                 format!("containers/{}/start", self.name).as_str(),
@@ -49,12 +48,22 @@ impl Container {
                 1,
             )
             .await
-            .map(|_| {
-                trace!("container start {}", self.name);
-            })
+    }
+
+    pub async fn wait(&self) -> Result<Vec<String>, Error> {
+        trace!("container wait {}", self.name);
+        self.docker
+            .call(
+                format!("containers/{}/wait", self.name).as_str(),
+                Method::Post,
+                None,
+                1,
+            )
+            .await
     }
 
     pub async fn tail(&self, tail: usize) -> Result<Vec<String>, Error> {
+        trace!("container log {}", self.name);
         self.docker
             .call(
                 format!(
@@ -67,10 +76,6 @@ impl Container {
                 tail,
             )
             .await
-            .map(|tl| {
-                trace!("container log {}", self.name);
-                tl
-            })
     }
 }
 

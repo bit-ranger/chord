@@ -20,6 +20,7 @@ impl Action for Image {
 
         let mut container = Container::new(self.docker.clone(), &self, arg.id(), cmd).await?;
         container.start().await?;
+        container.wait().await?;
 
         let tail = arg
             .render_value(&arg.config()["tail"])?
@@ -27,7 +28,11 @@ impl Action for Image {
             .unwrap_or(1) as usize;
         let tail_log = container.tail(tail).await?;
 
-        Ok(from_str(tail_log.join("").as_str())?)
+        if tail_log.len() > 0 {
+            Ok(from_str(tail_log.join("").as_str())?)
+        } else {
+            Ok(Value::Null)
+        }
     }
 }
 

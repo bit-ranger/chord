@@ -28,8 +28,6 @@ jobs:
             
             -   name: init
                 run: |
-                    sudo find /data/chord/
-                    echo "--------"
                     sudo chmod 777 /data/
                     cp -r $PWD/zero/devops/chord /data/
                     chmod 777 -R /data/chord/

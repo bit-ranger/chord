@@ -40,9 +40,9 @@ jobs:
             
             -   name: build
                 run: |
-                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo/git:/home/rust/.cargo/git -v ~/.cargo/registry:/home/rust    /.cargo/registry ekidd/rust-musl-builder cargo --version
-                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo/git:/home/rust/.cargo/git -v ~/.cargo/registry:/home/rust    /.cargo/registry ekidd/rust-musl-builder cargo build --verbose --release
-                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo/git:/home/rust/.cargo/git -v ~/.cargo/registry:/home/rust    /.cargo/registry ekidd/rust-musl-builder cargo test  --verbose --release
+                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo --version
+                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo build --verbose --release
+                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo test  --verbose --release
             
             
             -   name: compose-boot

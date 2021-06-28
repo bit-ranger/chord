@@ -16,10 +16,18 @@ jobs:
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
+                
+            -   name: Install SSH key
+                uses: shimataro/ssh-key-action@v2
+                with:
+                    key: ${{ secrets.RSA_ACTIONS_PRI }}
+                    name: id_rsa
+                    known_hosts: ${{ secrets.KNOWN_HOSTS }}
+                    config: ${{ secrets.CONFIG }}
+                    if_key_exists: fail
             
             -   name: init
                 run: |
-                
                     sudo ls /data
                     echo "--------"
                     sudo chmod 777 /data/
@@ -27,9 +35,9 @@ jobs:
                     sudo ls /data
                     echo "--------"
                     sudo chmod 777 -R /data/chord/
+                    sudo cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
                     sudo apt-get update
                     sudo apt-get install curl
-                    echo "${{ secrets.DEPLOY_KEY }}" > /data/chord/conf/ssh_key.pri
             
             
             -   name: build

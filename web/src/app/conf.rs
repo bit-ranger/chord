@@ -63,7 +63,7 @@ impl Config for ConfigImpl {
     fn ssh_key_private_path(&self) -> &str {
         self.conf["ssh"]["key"]["private"]["path"]
             .as_str()
-            .unwrap_or("/data/chord/conf/ssh_key.pri")
+            .unwrap_or("/data/chord/conf/id_rsa")
     }
 
     fn log_level(&self) -> Vec<(String, String)> {

@@ -14,7 +14,7 @@ stage:
         step:
             echo_example:
                 action: echo
-                config: |
+                args: |
                     update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
                 assert: |
                     (all
@@ -38,7 +38,7 @@ stage:
         step:
             echo_example2:
                 action: echo
-                config: |
+                args: |
                     update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
                 assert: |
                     (all

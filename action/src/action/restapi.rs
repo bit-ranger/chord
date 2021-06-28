@@ -38,13 +38,13 @@ async fn run(arg: &dyn RunArg) -> ActionValue {
 }
 
 async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
-    let url = arg.config()["url"]
+    let url = arg.args()["url"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing url"))??;
     let url = Url::from_str(url.as_str()).or(rerr!("011", format!("invalid url: {}", url)))?;
 
-    let method = arg.config()["method"]
+    let method = arg.args()["method"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("020", "missing method"))??;
@@ -56,7 +56,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
         HeaderValue::from_str("application/json")?,
     );
 
-    if let Some(header) = arg.config()["header"].as_object() {
+    if let Some(header) = arg.args()["header"].as_object() {
         for (k, v) in header.iter() {
             let hn = HeaderName::from_string(arg.render_str(k)?)
                 .or(rerr!("030", "invalid header name"))?;
@@ -67,7 +67,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
         }
     }
 
-    let body = arg.config()["body"].borrow();
+    let body = arg.args()["body"].borrow();
     if !body.is_null() {
         let body = arg.render_value(body)?;
         rb = rb.body(Body::from(body));

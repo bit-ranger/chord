@@ -103,8 +103,8 @@ impl Flow {
         return self.flow["pre"]["step"][step_id].borrow();
     }
 
-    pub fn step_config(&self, step_id: &str) -> &Value {
-        self.step(step_id)["config"].borrow()
+    pub fn step_args(&self, step_id: &str) -> &Value {
+        self.step(step_id)["args"].borrow()
     }
 
     pub fn def(&self) -> Option<&Map> {

@@ -30,23 +30,23 @@ impl Action for Mongodb {
 }
 
 async fn run(arg: &dyn RunArg) -> ActionValue {
-    let url = arg.config()["url"]
+    let url = arg.args()["url"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing url"))??;
-    let database = arg.config()["database"]
+    let database = arg.args()["database"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing database"))??;
-    let collection = arg.config()["collection"]
+    let collection = arg.args()["collection"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing collection"))??;
-    let op = arg.config()["operation"]
+    let op = arg.args()["operation"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing operation"))??;
-    let op_arg = arg.config()["arg"]
+    let op_arg = arg.args()["arg"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing arg"))??;

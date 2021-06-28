@@ -11,7 +11,7 @@ stage:
         step:
             mysql_select:
                 action: database
-                config:
+                args:
                     url: "{{def.database.url}}"
                     sql: |+
                         select * from  user where user = '{{case.user}}'

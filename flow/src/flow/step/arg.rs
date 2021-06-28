@@ -86,8 +86,8 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
         self.action.as_str()
     }
 
-    fn config(&self) -> &Value {
-        self.flow.step_config(self.id.step())
+    fn args(&self) -> &Value {
+        self.flow.step_args(self.id.step())
     }
 
     fn render_str(&self, text: &str) -> Result<String, Error> {
@@ -124,10 +124,7 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         case_id: Arc<dyn CaseId>,
         id: String,
     ) -> RunArgStruct<'f, 'h, 'reg, 'r> {
-        let id = StepIdStruct {
-            case_id: case_id,
-            step: id,
-        };
+        let id = StepIdStruct { case_id, step: id };
 
         let context = RunArgStruct {
             flow,
@@ -158,9 +155,8 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
         self.id_str.as_str()
     }
 
-    fn config(&self) -> &Value {
-        let config = self.flow.step_config(self.id().step());
-        return config;
+    fn args(&self) -> &Value {
+        self.flow.step_args(self.id().step())
     }
 
     fn render_str(&self, txt: &str) -> Result<String, Error> {

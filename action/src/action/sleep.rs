@@ -25,7 +25,7 @@ struct Sleep {}
 #[async_trait]
 impl Action for Sleep {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
-        let sec = arg.render_value(&arg.config()["duration"])?;
+        let sec = arg.render_value(&arg.args()["duration"])?;
         if sec.is_null() {
             return rerr!("sleep", "duration must > 0");
         }

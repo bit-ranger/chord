@@ -13,13 +13,13 @@ stage:
         step:
             delete_index:
                 action: restapi
-                config:
+                args:
                     url: "{{def.es.url}}/article"
                     method: DELETE
     
             create_index:
                 action: restapi
-                config:
+                args:
                     url: "{{def.es.url}}/article"
                     method: PUT
                     body:
@@ -58,7 +58,7 @@ stage:
             insert_data:
                 action: restapi
                 timeout: 5
-                config:
+                args:
                     url: "{{def.es.url}}/article/_doc/1"
                     method: PUT
                     body:
@@ -76,13 +76,13 @@ stage:
     
             wait_data:
                 action: sleep
-                config:
+                args:
                     duration: 9
     
             search_data:
                 action: restapi
                 timeout: 5
-                config:
+                args:
                     url: "{{def.es.url}}/article/_search"
                     method: GET
                     body:

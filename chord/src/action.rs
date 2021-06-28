@@ -19,7 +19,7 @@ pub type ActionValue = std::result::Result<Value, Error>;
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &str;
 
-    fn config(&self) -> &Value;
+    fn args(&self) -> &Value;
 
     fn render_str(&self, text: &str) -> Result<String, Error>;
 
@@ -31,7 +31,7 @@ pub trait CreateArg: Sync + Send {
 
     fn action(&self) -> &str;
 
-    fn config(&self) -> &Value;
+    fn args(&self) -> &Value;
 
     fn render_str(&self, text: &str) -> Result<String, Error>;
 

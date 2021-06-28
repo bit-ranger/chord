@@ -36,7 +36,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
         let step_arg = step_arg.unwrap();
         let step_assess = step::run(flow_ctx, &step_arg, action.as_ref()).await;
 
-        let config_raw = step_arg.config().to_string();
+        let config_raw = step_arg.args().to_string();
         match step_assess {
             StepAssessStruct {
                 state: StepState::Err(e),

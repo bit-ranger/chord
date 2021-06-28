@@ -7,7 +7,7 @@ stage:
             docker_example:
                 action: docker
                 timeout: 30
-                config:
+                args:
                     image: "curlimages/curl"
                     cmd:
                         - echo

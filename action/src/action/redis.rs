@@ -15,7 +15,7 @@ impl RedisFactory {
 #[async_trait]
 impl Factory for RedisFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let url = arg.config()["url"]
+        let url = arg.args()["url"]
             .as_str()
             .map(|s| arg.render_str(s))
             .ok_or(err!("010", "missing url"))??;
@@ -42,7 +42,7 @@ impl Action for Redis {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
-                let url = arg.config()["url"]
+                let url = arg.args()["url"]
                     .as_str()
                     .map(|s| arg.render_str(s))
                     .ok_or(err!("010", "missing url"))??;
@@ -55,7 +55,7 @@ impl Action for Redis {
 }
 
 async fn run0(arg: &dyn RunArg, client: &Client) -> ActionValue {
-    let cmd = arg.config()["cmd"]
+    let cmd = arg.args()["cmd"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing cmd"))??;
@@ -63,7 +63,7 @@ async fn run0(arg: &dyn RunArg, client: &Client) -> ActionValue {
     let mut con = client.get_async_connection().await?;
 
     let mut command = redis::cmd(cmd.as_str());
-    let args_opt = arg.render_value(&arg.config()["args"])?;
+    let args_opt = arg.render_value(&arg.args()["args"])?;
 
     if let Some(arg_vec) = args_opt.as_array() {
         for a in arg_vec {

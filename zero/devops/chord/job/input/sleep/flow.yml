@@ -6,7 +6,7 @@ stage:
         step:
             sleep_example:
                 action: sleep
-                config:
+                args:
                     duration: "{{case.seconds}}"
                 assert: |+
                     (all

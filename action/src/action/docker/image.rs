@@ -17,16 +17,13 @@ pub struct Image {
 #[async_trait]
 impl Action for Image {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
-        let cmd = arg.render_value(&arg.config()["cmd"]).unwrap_or(json!([]));
+        let cmd = arg.render_value(&arg.args()["cmd"]).unwrap_or(json!([]));
 
         let mut container = Container::new(self.engine.clone(), &self, arg.id(), cmd).await?;
         container.start().await?;
         container.wait().await?;
 
-        let tail = arg
-            .render_value(&arg.config()["tail"])?
-            .as_u64()
-            .unwrap_or(1) as usize;
+        let tail = arg.render_value(&arg.args()["tail"])?.as_u64().unwrap_or(1) as usize;
         let tail_log = container.tail(tail).await?;
         let tail_log: Vec<String> = tail_log
             .into_iter()

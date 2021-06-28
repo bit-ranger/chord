@@ -17,7 +17,7 @@ impl DatabaseFactory {
 #[async_trait]
 impl Factory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let url = arg.config()["url"]
+        let url = arg.args()["url"]
             .as_str()
             .ok_or(err!("010", "missing url"))?;
 
@@ -52,7 +52,7 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> ActionValue {
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {
-            let url = arg.config()["url"]
+            let url = arg.args()["url"]
                 .as_str()
                 .map(|s| arg.render_str(s))
                 .ok_or(err!("010", "missing url"))??;
@@ -64,7 +64,7 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> ActionValue {
 }
 
 async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> ActionValue {
-    let sql = arg.config()["sql"]
+    let sql = arg.args()["sql"]
         .as_str()
         .map(|s| arg.render_str(s))
         .ok_or(err!("010", "missing sql"))??;

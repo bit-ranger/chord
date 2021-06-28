@@ -103,7 +103,7 @@ struct Dubbo {
 #[async_trait]
 impl Action for Dubbo {
     async fn run(&self, run_arg: &dyn RunArg) -> ActionValue {
-        let method_long = run_arg.config()["method"]
+        let method_long = run_arg.args()["method"]
             .as_str()
             .ok_or(err!("010", "missing method"))?;
         let parts = method_long
@@ -115,7 +115,7 @@ impl Action for Dubbo {
             return rerr!("010", "invalid method");
         }
 
-        let args_raw = &run_arg.config()["args"];
+        let args_raw = &run_arg.args()["args"];
         let args: Vec<Value> = match args_raw {
             Value::Array(aw_vec) => {
                 let mut ar_vec: Vec<Value> = vec![];

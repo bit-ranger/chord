@@ -20,7 +20,7 @@ struct Echo {}
 #[async_trait]
 impl Action for Echo {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
-        let config = arg.render_value(arg.config())?;
+        let config = arg.render_value(arg.args())?;
         return Ok(config);
     }
 }

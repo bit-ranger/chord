@@ -1,7 +1,6 @@
 use crate::action::docker::engine::Engine;
 use async_std::sync::Arc;
 use chord::action::prelude::*;
-use chord::err;
 use image::Image;
 
 mod container;

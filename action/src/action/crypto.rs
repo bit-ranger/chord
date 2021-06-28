@@ -1,7 +1,5 @@
 use chord::action::prelude::*;
 
-use chord::{err, rerr};
-
 pub struct CryptoFactory {}
 
 impl CryptoFactory {

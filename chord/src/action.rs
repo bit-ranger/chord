@@ -7,6 +7,8 @@ pub mod prelude {
     pub use super::Factory;
     pub use super::RunArg;
     pub use super::Value;
+    pub use crate::err;
+    pub use crate::rerr;
 }
 
 pub use async_trait::async_trait;

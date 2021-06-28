@@ -3,7 +3,6 @@ use std::sync::Arc;
 use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 
 use chord::action::prelude::*;
-use chord::err;
 use chord::value::to_string;
 
 pub struct DylibFactory {}

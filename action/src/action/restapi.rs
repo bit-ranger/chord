@@ -7,7 +7,6 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
-use chord::{err, rerr};
 
 pub struct RestapiFactory {}
 

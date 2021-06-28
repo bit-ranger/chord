@@ -3,7 +3,6 @@ use mongodb::{options::ClientOptions, Client};
 
 use chord::action::prelude::*;
 use chord::value::from_str;
-use chord::{err, rerr};
 
 pub struct MongodbFactory {}
 

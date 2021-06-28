@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use chord::action::prelude::*;
 use chord::err;
 
+mod assert;
 mod echo;
 mod log;
 mod sleep;
@@ -47,6 +48,13 @@ impl FactoryComposite {
 
         let config_ref = config.as_ref();
 
+        register!(
+            table,
+            config_ref,
+            "assert",
+            assert::AssertFactory::new,
+            true
+        );
         register!(table, config_ref, "echo", echo::EchoFactory::new, true);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new, true);
         register!(table, config_ref, "log", log::LogFactory::new, true);

@@ -28,7 +28,6 @@ jobs:
             
             -   name: init
                 run: |
-                    chmod 777 $PWD
                     sudo chmod 777 /data/
                     cp -r $PWD/zero/devops/chord /data/
                     chmod 777 -R /data/chord/
@@ -41,6 +40,7 @@ jobs:
             
             -   name: build
                 run: |
+                    chmod 777 $PWD
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo --version
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo build --verbose --release
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo test  --verbose --release

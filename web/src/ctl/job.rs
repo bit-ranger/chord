@@ -204,23 +204,23 @@ fn split(is_delimiter: fn(char) -> bool, text: &str) -> Vec<&str> {
 }
 
 fn credentials_callback(
-    ssh_key_private: &Path,
+    ssh_key_private: Option<&PathBuf>,
     cred_types_allowed: git2::CredentialType,
 ) -> Result<git2::Cred, git2::Error> {
-    if cred_types_allowed.contains(git2::CredentialType::SSH_KEY) {
-        let cred = git2::Cred::ssh_key(
-            "git",
-            None,
-            std::path::Path::new(ssh_key_private.as_os_str()),
-            None,
-        );
-        if let Err(e) = &cred {
-            error!("ssh_key error {}", e);
+    return if cred_types_allowed.contains(git2::CredentialType::SSH_KEY) {
+        match ssh_key_private {
+            Some(key) => {
+                git2::Cred::ssh_key("git", None, std::path::Path::new(key.as_os_str()), None)
+                    .map_err(|e| {
+                        error!("ssh_key error {}", e);
+                        e
+                    })
+            }
+            None => git2::Cred::default(),
         }
-        return cred;
-    }
-
-    return Err(git2::Error::from_str("ssh_key not allowed"));
+    } else {
+        git2::Cred::default()
+    };
 }
 
 async fn checkout(
@@ -229,12 +229,9 @@ async fn checkout(
     into: &Path,
     branch: &str,
 ) -> Result<Repository, git2::Error> {
+    let ssh_key_private = ssh_key_private.as_ref();
     let mut callbacks = git2::RemoteCallbacks::new();
-    if ssh_key_private.is_some() {
-        callbacks.credentials(|_, _, allowed| {
-            credentials_callback(ssh_key_private.as_ref().unwrap().as_path(), allowed)
-        });
-    }
+    callbacks.credentials(move |_, _, allowed| credentials_callback(ssh_key_private, allowed));
 
     let mut fetch_opts = git2::FetchOptions::new();
     fetch_opts.remote_callbacks(callbacks);

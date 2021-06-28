@@ -29,6 +29,7 @@ jobs:
                     sudo chmod 777 -R /data/chord/
                     sudo apt-get update
                     sudo apt-get install curl
+                    echo "${{ secrets.DEPLOY_KEY }}" > /data/chord/conf/ssh_key.pri
             
             
             -   name: build

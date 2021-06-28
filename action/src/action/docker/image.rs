@@ -5,11 +5,11 @@ use chord::value::{from_str, json};
 use chord::Error;
 
 use crate::action::docker::container::Container;
-use crate::action::docker::http::call;
-use crate::action::docker::Docker;
+use crate::action::docker::docker::Docker;
+use async_std::sync::Arc;
 
 pub struct Image {
-    address: String,
+    docker: Arc<Docker>,
     name: String,
 }
 
@@ -18,7 +18,7 @@ impl Action for Image {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let cmd = arg.render_value(&arg.config()["cmd"]).unwrap_or(json!([]));
 
-        let mut container = Container::new(&self, arg.id(), cmd).await?;
+        let mut container = Container::new(self.docker.clone(), &self, arg.id(), cmd).await?;
         container.start().await?;
 
         let tail = arg
@@ -36,28 +36,21 @@ impl Image {
         self.name.as_str()
     }
 
-    pub fn address(&self) -> &str {
-        self.address.as_str()
-    }
-
-    pub async fn new(docker: &Docker, name: &str) -> Result<Image, Error> {
+    pub async fn new(docker: Arc<Docker>, name: &str) -> Result<Image, Error> {
         let name = if name.contains(":") {
             name.into()
         } else {
             format!("{}:latest", name)
         };
 
-        call(
-            docker.address.as_str(),
-            format!("images/create?fromImage={}", name).as_str(),
-            Method::Post,
-            None,
-            1,
-        )
-        .await
-        .map(|_| Image {
-            address: docker.address.clone(),
-            name,
-        })
+        docker
+            .call(
+                format!("images/create?fromImage={}", name).as_str(),
+                Method::Post,
+                None,
+                1,
+            )
+            .await
+            .map(|_| Image { docker, name })
     }
 }

@@ -10,16 +10,26 @@ use chord::value::Value;
 use chord::Error;
 use chord::{cause, err, rcause, rerr};
 
-pub async fn call(
-    address: &str,
-    uri: &str,
-    method: Method,
-    data: Option<Value>,
-    tail_size: usize,
-) -> Result<Vec<String>, Error> {
-    call0(address, uri, method, data, tail_size)
-        .await
-        .map_err(|e| e.into())
+pub struct Docker {
+    address: String,
+}
+
+impl Docker {
+    pub async fn new(address: String) -> Result<Docker, Error> {
+        Ok(Docker { address })
+    }
+
+    pub async fn call(
+        &self,
+        uri: &str,
+        method: Method,
+        data: Option<Value>,
+        tail_size: usize,
+    ) -> Result<Vec<String>, Error> {
+        call0(self.address.as_str(), uri, method, data, tail_size)
+            .await
+            .map_err(|e| e.into())
+    }
 }
 
 async fn call0(

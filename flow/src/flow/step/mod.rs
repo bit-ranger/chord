@@ -25,29 +25,26 @@ pub async fn run(
     let start = Utc::now();
     let future = AssertUnwindSafe(action.run(arg)).catch_unwind();
     let timeout_value = timeout(arg.timeout(), future).await;
-    let value = match timeout_value {
-        Ok(cu) => match cu {
-            Ok(sv) => sv,
-            Err(_) => {
-                return StepAssessStruct::new(
-                    arg.id().clone(),
-                    start,
-                    Utc::now(),
-                    StepState::Err(Error::new("002", "unwind")),
-                );
-            }
-        },
-        Err(_) => {
-            return StepAssessStruct::new(
-                arg.id().clone(),
-                start,
-                Utc::now(),
-                StepState::Err(Error::new("001", "timeout")),
-            );
-        }
-    };
+    if let Err(_) = timeout_value {
+        return StepAssessStruct::new(
+            arg.id().clone(),
+            start,
+            Utc::now(),
+            StepState::Err(Error::new("001", "timeout")),
+        );
+    }
+    let unwind_value = timeout_value.unwrap();
+    if let Err(_) = unwind_value {
+        return StepAssessStruct::new(
+            arg.id().clone(),
+            start,
+            Utc::now(),
+            StepState::Err(Error::new("002", "unwind")),
+        );
+    }
+    let action_value = unwind_value.unwrap();
 
-    return match value {
+    return match action_value {
         ActionValue::Ok(json) => {
             StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Ok(json))
         }

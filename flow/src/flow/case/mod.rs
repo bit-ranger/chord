@@ -36,7 +36,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
         let step_arg = step_arg.unwrap();
         let step_assess = step::run(flow_ctx, &step_arg, action.as_ref()).await;
 
-        let config_raw = step_arg.args().to_string();
+        let args_raw = step_arg.args().to_string();
         match step_assess {
             StepAssessStruct {
                 state: StepState::Err(e),
@@ -44,13 +44,13 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 start,
                 end,
             } => {
-                let config_rendered = render(
+                let args_rendered = render(
                     flow_ctx.get_handlebars(),
                     &render_context,
-                    config_raw.as_str(),
+                    args_raw.as_str(),
                 )
                 .unwrap_or("".to_owned());
-                info!("step Err  {} - {} <<< {}", id, e, config_rendered);
+                info!("step Err  {} - {} <<< {}", id, e, args_rendered);
                 let step_assess = StepAssessStruct::new(id, start, end, StepState::Err(e));
                 step_assess_vec.push(Box::new(step_assess));
                 info!("case Fail {}", arg.id());
@@ -68,13 +68,13 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 start,
                 end,
             } => {
-                let config_rendered = render(
+                let args_rendered = render(
                     flow_ctx.get_handlebars(),
                     &render_context,
-                    config_raw.as_str(),
+                    args_raw.as_str(),
                 )
                 .unwrap_or("".to_owned());
-                info!("step Fail {} - {} <<< {}", arg.id(), json, config_rendered);
+                info!("step Fail {} - {} <<< {}", arg.id(), json, args_rendered);
                 let step_assess = StepAssessStruct::new(id, start, end, StepState::Fail(json));
                 step_assess_vec.push(Box::new(step_assess));
                 info!("case Fail {}", arg.id());
@@ -95,7 +95,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 let assert_present = step_arg.assert().map(|s| s.to_owned());
                 step_register(&mut render_context, step_id, &json).await;
                 if let Some(con) = assert_present {
-                    if assert(flow_ctx.get_handlebars(), &mut render_context, con.as_str()).await {
+                    if assert(flow_ctx.get_handlebars(), &render_context, con.as_str()).await {
                         debug!("step Ok   {}", id);
                         let step_assess =
                             StepAssessStruct::new(id, start, end, StepState::Ok(json));
@@ -104,7 +104,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                         let config_rendered = render(
                             flow_ctx.get_handlebars(),
                             &render_context,
-                            config_raw.as_str(),
+                            args_raw.as_str(),
                         )
                         .unwrap_or("".to_owned());
                         info!("step Fail {} - {} <<< {}", id, json, config_rendered);

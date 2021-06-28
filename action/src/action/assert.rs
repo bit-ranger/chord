@@ -12,14 +12,14 @@ impl AssertFactory {
 #[async_trait]
 impl Factory for AssertFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Echo {}))
+        Ok(Box::new(Assert {}))
     }
 }
 
-struct Echo {}
+struct Assert {}
 
 #[async_trait]
-impl Action for Echo {
+impl Action for Assert {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let condition = arg.args().as_str().ok_or(err!("assert", "missing args"))?;
 

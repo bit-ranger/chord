@@ -66,3 +66,17 @@ impl Image {
             })
     }
 }
+
+impl Drop for Image {
+    fn drop(&mut self) {
+        let uri = format!("containers/{}?force=true", self.name);
+        let f = self.engine.call(uri.as_str(), Method::Delete, None, 1);
+        let _ = block_on(f)
+            .map_err(|_| {
+                warn!("container remove fail {}", self.name);
+            })
+            .map(|_| {
+                trace!("container remove {}", self.name);
+            });
+    }
+}

@@ -28,6 +28,7 @@ jobs:
             
             -   name: init
                 run: |
+                    chmod 777 $PWD
                     sudo chmod 777 /data/
                     cp -r $PWD/zero/devops/chord /data/
                     chmod 777 -R /data/chord/

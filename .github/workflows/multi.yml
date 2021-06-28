@@ -59,12 +59,12 @@ jobs:
             
             -   name: cmd-test
                 run: |
-                    ./target/x86_64-unknown-linux-musl/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+                    ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
             
             
             -   name: web-boot
                 run: |
-                    ./target/x86_64-unknown-linux-musl/release/chord-web &
+                    ./target/release/chord-web &
                     sleep 10
             
             

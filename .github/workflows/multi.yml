@@ -28,14 +28,14 @@ jobs:
             
             -   name: init
                 run: |
-                    sudo ls /data
+                    sudo find /data/chord/
                     echo "--------"
                     sudo chmod 777 /data/
-                    sudo cp -r $PWD/zero/devops/chord /data/
-                    sudo ls /data
+                    cp -r $PWD/zero/devops/chord /data/
+                    chmod 777 -R /data/chord/
+                    cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
+                    find /data/chord/
                     echo "--------"
-                    sudo chmod 777 -R /data/chord/
-                    sudo cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
                     sudo apt-get update
                     sudo apt-get install curl
             

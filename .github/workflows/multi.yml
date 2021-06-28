@@ -17,7 +17,7 @@ jobs:
             -   name: checkout
                 uses: actions/checkout@v2
                 
-            -   name: Install SSH key
+            -   name: sshkey-install
                 uses: shimataro/ssh-key-action@v2
                 with:
                     key: ${{ secrets.RSA_ACTIONS_PRI }}
@@ -40,10 +40,9 @@ jobs:
             
             -   name: build
                 run: |
-                    cargo --version
-                    cargo build --verbose --release
-                    cargo test  --verbose --release
-            
+                    docker run --rm -it -v "$(pwd)":/home/rust/src  cargo --version
+                    docker run --rm -it -v "$(pwd)":/home/rust/src -v ~/.cargo/git:/home/rust/.cargo/git -v ~/.cargo/registry:/home/rust    /.cargo/registry ekidd/rust-musl-builder cargo build --verbose --release
+                    docker run --rm -it -v "$(pwd)":/home/rust/src -v ~/.cargo/git:/home/rust/.cargo/git -v ~/.cargo/registry:/home/rust    /.cargo/registry ekidd/rust-musl-builder cargo test  --verbose --release
             
             
             -   name: compose-boot
@@ -53,16 +52,18 @@ jobs:
             
             
             -   name: compose-test
-                run: curl http://127.0.0.1:9200/
+                run: |
+                    curl -X GET "http://127.0.0.1:9200/_cat/indices?v"
             
             
             -   name: cmd-test
-                run: ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+                run: |
+                    ./target/x86_64-unknown-linux-musl/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
             
             
             -   name: web-boot
                 run: |
-                    ./target/release/chord-web &
+                    ./target/x86_64-unknown-linux-musl/release/chord-web &
                     sleep 10
             
             
@@ -80,7 +81,6 @@ jobs:
             
             -   name: web-report
                 run: |
-                    curl -X GET "http://localhost:9200/_cat/indices?v"
                     curl -X GET --location "http://127.0.0.1:9200/chord@bit-ranger@github.com/_search" \
                         -H "Content-Type: application/json" \
                         -d "{

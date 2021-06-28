@@ -15,3 +15,6 @@ report:
 action:
     dubbo:
         enable: false
+        
+    docker:
+        enable: false

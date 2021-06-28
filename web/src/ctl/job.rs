@@ -14,7 +14,7 @@ use validator::Validate;
 
 use chord::Error;
 use chord::{err, rerr};
-use chord_action::ActionFactoryDefault;
+use chord_action::FactoryComposite;
 use chord_flow::Context;
 
 use crate::app::conf::Config;
@@ -64,7 +64,7 @@ impl CtlImpl {
                 .ssh_key_private_path()
                 .map(|c| Path::new(c).to_path_buf()),
             flow_ctx: chord_flow::context_create(Box::new(
-                ActionFactoryDefault::new(config.action_config().map(|c| c.clone())).await?,
+                FactoryComposite::new(config.action_config().map(|c| c.clone())).await?,
             ))
             .await,
             config,

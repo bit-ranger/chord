@@ -6,16 +6,16 @@ use chord::action::prelude::*;
 use chord::err;
 use chord::value::to_string;
 
-pub struct Factory {}
+pub struct DylibFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl DylibFactory {
+    pub async fn new(_: Option<Value>) -> Result<DylibFactory, Error> {
+        Ok(DylibFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl Factory for DylibFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let dir = arg.config()["dir"]
             .as_str()

@@ -6,11 +6,11 @@ use chord::Error;
 use log::trace;
 
 use crate::action::docker::container::Container;
-use crate::action::docker::docker::Docker;
+use crate::action::docker::engine::Engine;
 use async_std::sync::Arc;
 
 pub struct Image {
-    docker: Arc<Docker>,
+    engine: Arc<Engine>,
     name: String,
 }
 
@@ -19,7 +19,7 @@ impl Action for Image {
     async fn run(&self, arg: &dyn RunArg) -> ActionValue {
         let cmd = arg.render_value(&arg.config()["cmd"]).unwrap_or(json!([]));
 
-        let mut container = Container::new(self.docker.clone(), &self, arg.id(), cmd).await?;
+        let mut container = Container::new(self.engine.clone(), &self, arg.id(), cmd).await?;
         container.start().await?;
         container.wait().await?;
 
@@ -47,7 +47,7 @@ impl Image {
         self.name.as_str()
     }
 
-    pub async fn new(docker: Arc<Docker>, name: &str) -> Result<Image, Error> {
+    pub async fn new(engine: Arc<Engine>, name: &str) -> Result<Image, Error> {
         let name = if name.contains(":") {
             name.into()
         } else {
@@ -55,7 +55,7 @@ impl Image {
         };
 
         trace!("image create {}", name);
-        docker
+        engine
             .call(
                 format!("images/create?fromImage={}", name).as_str(),
                 Method::Post,
@@ -63,6 +63,9 @@ impl Image {
                 1,
             )
             .await
-            .map(|_| Image { docker, name })
+            .map(|_| Image {
+                engine: engine,
+                name,
+            })
     }
 }

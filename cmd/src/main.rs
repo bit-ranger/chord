@@ -9,7 +9,7 @@ use chord::rerr;
 use chord::task::TaskState;
 use chord::value::Value;
 use chord::Error;
-use chord_action::ActionFactoryDefault;
+use chord_action::FactoryComposite;
 use futures::AsyncReadExt;
 
 mod conf;
@@ -42,7 +42,7 @@ async fn main() -> Result<(), Error> {
     let log_handler = logger::init(config.log_level(), &log_file_path).await?;
 
     let flow_ctx = chord_flow::context_create(Box::new(
-        ActionFactoryDefault::new(config.action_config().map(|c| c.clone())).await?,
+        FactoryComposite::new(config.action_config().map(|c| c.clone())).await?,
     ))
     .await;
     let task_state_vec = job::run(input_dir, output_dir, exec_id, flow_ctx).await;

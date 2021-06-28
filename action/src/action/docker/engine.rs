@@ -11,17 +11,17 @@ use chord::Error;
 use chord::{cause, err, rcause, rerr};
 use std::collections::VecDeque;
 
-pub struct Docker {
+pub struct Engine {
     address: String,
 }
 
-impl Docker {
-    pub async fn new(address: String) -> Result<Docker, Error> {
+impl Engine {
+    pub async fn new(address: String) -> Result<Engine, Error> {
         trace!("docker info {}", address);
         call0(address.as_str(), "info", Method::Get, None, 999)
             .await
             .map_err(|e| e.into())
-            .map(|_| Docker { address })
+            .map(|_| Engine { address })
     }
 
     pub async fn call(

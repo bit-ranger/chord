@@ -6,16 +6,16 @@ use chord::action::prelude::*;
 use chord::err;
 use chord::value::{Map, Number};
 
-pub struct Factory {}
+pub struct DatabaseFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl DatabaseFactory {
+    pub async fn new(_: Option<Value>) -> Result<DatabaseFactory, Error> {
+        Ok(DatabaseFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl Factory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.config()["url"]
             .as_str()

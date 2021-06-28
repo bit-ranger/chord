@@ -1,3 +1,3 @@
 mod java;
 
-pub use java::Factory;
+pub use java::DubboFactory;

@@ -6,17 +6,17 @@ use surf::http::Method;
 use chord::value::{json, Value};
 use chord::Error;
 
-use crate::action::docker::docker::Docker;
+use crate::action::docker::engine::Engine;
 use crate::action::docker::image::Image;
 
 pub struct Container {
-    docker: Arc<Docker>,
+    engine: Arc<Engine>,
     name: String,
 }
 
 impl Container {
     pub async fn new(
-        docker: Arc<Docker>,
+        docker: Arc<Engine>,
         image: &Image,
         name: &str,
         cmd: Value,
@@ -34,13 +34,13 @@ impl Container {
             .await
             .map(|_| Container {
                 name: name.into(),
-                docker,
+                engine: docker,
             })
     }
 
     pub async fn start(&mut self) -> Result<Vec<String>, Error> {
         trace!("container start {}", self.name);
-        self.docker
+        self.engine
             .call(
                 format!("containers/{}/start", self.name).as_str(),
                 Method::Post,
@@ -52,7 +52,7 @@ impl Container {
 
     pub async fn wait(&self) -> Result<Vec<String>, Error> {
         trace!("container wait {}", self.name);
-        self.docker
+        self.engine
             .call(
                 format!("containers/{}/wait", self.name).as_str(),
                 Method::Post,
@@ -64,7 +64,7 @@ impl Container {
 
     pub async fn tail(&self, tail: usize) -> Result<Vec<String>, Error> {
         trace!("container log {}", self.name);
-        self.docker
+        self.engine
             .call(
                 format!(
                     "containers/{}/logs?stdout=true&stderr=true&tail={}",
@@ -82,7 +82,7 @@ impl Container {
 impl Drop for Container {
     fn drop(&mut self) {
         let uri = format!("containers/{}?force=true", self.name);
-        let f = self.docker.call(uri.as_str(), Method::Delete, None, 1);
+        let f = self.engine.call(uri.as_str(), Method::Delete, None, 1);
         let _ = block_on(f)
             .map_err(|_| {
                 warn!("container remove fail {}", self.name);

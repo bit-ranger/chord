@@ -1,15 +1,15 @@
 use chord::action::prelude::*;
 
-pub struct Factory {}
+pub struct EchoFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl EchoFactory {
+    pub async fn new(_: Option<Value>) -> Result<EchoFactory, Error> {
+        Ok(EchoFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl Factory for EchoFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Echo {}))
     }

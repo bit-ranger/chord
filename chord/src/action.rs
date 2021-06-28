@@ -1,10 +1,10 @@
 pub mod prelude {
     pub use super::async_trait;
     pub use super::Action;
-    pub use super::ActionFactory;
     pub use super::ActionValue;
     pub use super::CreateArg;
     pub use super::Error;
+    pub use super::Factory;
     pub use super::RunArg;
     pub use super::Value;
 }
@@ -45,6 +45,6 @@ pub trait Action: Sync + Send {
 }
 
 #[async_trait]
-pub trait ActionFactory: Sync + Send {
+pub trait Factory: Sync + Send {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error>;
 }

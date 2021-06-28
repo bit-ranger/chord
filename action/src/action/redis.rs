@@ -4,16 +4,16 @@ use chord::action::prelude::*;
 use chord::err;
 use chord::value::{from_str, Number};
 
-pub struct Factory {}
+pub struct RedisFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl RedisFactory {
+    pub async fn new(_: Option<Value>) -> Result<RedisFactory, Error> {
+        Ok(RedisFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl Factory for RedisFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.config()["url"]
             .as_str()

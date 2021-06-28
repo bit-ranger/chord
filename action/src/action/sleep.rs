@@ -5,16 +5,16 @@ use async_std::task::sleep;
 use chord::action::prelude::*;
 use chord::rerr;
 
-pub struct Factory {}
+pub struct SleepFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl SleepFactory {
+    pub async fn new(_: Option<Value>) -> Result<SleepFactory, Error> {
+        Ok(SleepFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl Factory for SleepFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Sleep {}))
     }

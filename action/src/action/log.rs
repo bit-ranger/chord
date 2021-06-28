@@ -1,16 +1,16 @@
 use chord::action::prelude::*;
 use log::debug;
 
-pub struct Factory {}
+pub struct LogFactory {}
 
-impl Factory {
-    pub async fn new(_: Option<Value>) -> Result<Factory, Error> {
-        Ok(Factory {})
+impl LogFactory {
+    pub async fn new(_: Option<Value>) -> Result<LogFactory, Error> {
+        Ok(LogFactory {})
     }
 }
 
 #[async_trait]
-impl ActionFactory for Factory {
+impl Factory for LogFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Echo {}))
     }

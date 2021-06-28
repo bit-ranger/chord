@@ -1,3 +1,3 @@
 mod action;
 
-pub use action::ActionFactoryDefault;
+pub use action::FactoryComposite;

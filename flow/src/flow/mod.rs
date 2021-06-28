@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use async_std::sync::Arc;
 use async_std::task_local;
 
-use chord::action::ActionFactory;
+use chord::action::Factory;
 use chord::rerr;
 use chord::Error;
 pub use task::arg::TaskIdSimple;
@@ -21,7 +21,7 @@ task_local! {
     pub static CTX_ID: RefCell<String> = RefCell::new(String::new());
 }
 
-pub async fn context_create(action_factory: Box<dyn ActionFactory>) -> Arc<dyn Context> {
+pub async fn context_create(action_factory: Box<dyn Factory>) -> Arc<dyn Context> {
     Arc::new(FlowContextStruct::<'_>::new(action_factory))
 }
 

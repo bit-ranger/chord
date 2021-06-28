@@ -20,6 +20,8 @@ mod dubbo;
 mod dylib;
 #[cfg(feature = "act_mongodb")]
 mod mongodb;
+#[cfg(feature = "act_python")]
+mod python;
 #[cfg(feature = "act_redis")]
 mod redis;
 #[cfg(feature = "act_restapi")]
@@ -109,6 +111,15 @@ impl FactoryComposite {
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new, true);
+
+        #[cfg(feature = "act_python")]
+        register!(
+            table,
+            config_ref,
+            "python",
+            python::PythonFactory::new,
+            true
+        );
 
         Ok(FactoryComposite { table })
     }

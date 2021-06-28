@@ -164,6 +164,9 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
     }
 
     fn render_value(&self, value: &Value) -> Result<Value, Error> {
+        if value.is_null() {
+            return Ok(Value::Null);
+        }
         let value_str = to_string(&value)?;
         let value_str = self.render_str(value_str.as_str())?;
         let value: Value = from_str(value_str.as_str())?;

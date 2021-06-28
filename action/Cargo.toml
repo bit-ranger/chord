@@ -27,7 +27,8 @@ rbatis = { version = "1.8.87",  optional = true }
 mongodb = { version = "2.0.0-alpha.1",  default-features = false, features = ["async-std-runtime"], optional = true }
 urlencoding = { version = "1.3.3", optional = true }
 dynamic_reload = {version = "0.4.0", optional = true}
-futures = { version="0.3.13", optional = true}
+futures = { version = "0.3.13", optional = true }
+pyo3 = { version = "0.13.2", features = ["auto-initialize"], optional = true }
 
 
 [target.'cfg(linux)'.dependencies]
@@ -45,4 +46,5 @@ act_mongodb = ["mongodb"]
 act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
 act_docker = ["surf", "futures"]
+act_python = ["pyo3"]
 

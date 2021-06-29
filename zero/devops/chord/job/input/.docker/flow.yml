@@ -2,7 +2,7 @@ version: "0.0.1"
 
 stage:
     benchmark1:
-        concurrency: 10
+        concurrency: 100
         step:
             docker_example:
                 action: docker
@@ -11,9 +11,9 @@ stage:
                     image: "curlimages/curl"
                     cmd:
                         - echo
-                        - |
-                           {    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}
+                        - |-
+                            {    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}
                 assert: |+
-                    true
+                    (eq curr.value.size 100)
 
 

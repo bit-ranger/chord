@@ -11,6 +11,7 @@ env:
 
 jobs:
     linux:
+        needs: docker
         runs-on: ubuntu-latest
         
         steps:
@@ -106,7 +107,6 @@ jobs:
     
     
     docker:
-        needs: linux
         runs-on: ubuntu-latest
         
         steps:

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use pyo3::conversion::ToPyObject;
 use pyo3::prelude::*;
-use pyo3::types::{PyBool, PyDict, PyInt, PyLong, PyString};
+use pyo3::types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyLong, PyString, PyTuple};
 
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
@@ -50,19 +50,74 @@ impl Python {
             let obj = to_py_obj(v, py);
             locals.set_item(k, obj)?;
         }
-        let value = py.eval(code, None, Some(&locals))?;
-        if value.is_instance::<PyLong>()? {
-            return Ok(Value::Number(Number::from(value.extract::<i64>().unwrap())));
-        } else if value.is_instance::<PyInt>()? {
-            return Ok(Value::Number(Number::from(value.extract::<i32>().unwrap())));
-        } else if value.is_instance::<PyBool>()? {
-            return Ok(Value::Bool(value.extract::<bool>().unwrap()));
-        } else if value.is_instance::<PyString>()? {
-            return Ok(Value::String(value.extract::<String>().unwrap()));
-        }
-
-        Ok(Value::Null)
+        let py_any = py
+            .eval(code, None, Some(&locals))
+            .map_err(|e| err!("python", e.to_string()))?;
+        Ok(to_value(py_any))
     }
+}
+
+fn to_value(py_any: &PyAny) -> Value {
+    if py_any.is_none() {
+        return Value::Null;
+    } else if py_any.is_instance::<PyLong>().unwrap_or(false) {
+        if let Ok(v) = py_any.extract::<i64>() {
+            return Value::Number(Number::from(v));
+        }
+    } else if py_any.is_instance::<PyInt>().unwrap_or(false) {
+        if let Ok(v) = py_any.extract::<i32>() {
+            return Value::Number(Number::from(v));
+        }
+    } else if py_any.is_instance::<PyFloat>().unwrap_or(false) {
+        if let Ok(v) = py_any.extract::<f64>() {
+            if let Some(v) = Number::from_f64(v) {
+                return Value::Number(v);
+            }
+        }
+        return Value::Null;
+    } else if py_any.is_instance::<PyBool>().unwrap_or(false) {
+        if let Ok(v) = py_any.extract::<bool>() {
+            return Value::Bool(v);
+        }
+    } else if py_any.is_instance::<PyString>().unwrap_or(false) {
+        if let Ok(v) = py_any.extract::<String>() {
+            return Value::String(v);
+        }
+    } else if py_any.is_instance::<PyList>().unwrap_or(false) {
+        if let Ok(iter) = py_any.iter() {
+            let vec: Vec<Value> = iter
+                .map(|item| {
+                    if let Ok(item) = item {
+                        to_value(item)
+                    } else {
+                        Value::Null
+                    }
+                })
+                .collect();
+            return Value::Array(vec);
+        }
+    } else if py_any.is_instance::<PyDict>().unwrap_or(false) {
+        let mut obj = Map::new();
+        if let Ok(dict) = <PyDict as PyTryFrom>::try_from(py_any) {
+            for item in dict.items().iter() {
+                if item.is_instance::<PyTuple>().unwrap_or(false) {
+                    if let Ok(k) = item.get_item(0) {
+                        if let Ok(v) = item.get_item(1) {
+                            if k.is_instance::<PyString>().unwrap_or(false) {
+                                let k = to_value(k);
+                                let v = to_value(v);
+                                if let Value::String(k) = k {
+                                    obj.insert(k, v);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return Value::Object(obj);
+        }
+    }
+    Value::Null
 }
 
 fn to_py_obj(vars: Value, py: pyo3::prelude::Python) -> PyObject {

@@ -4,16 +4,29 @@ stage:
     stage1:
         concurrency: 10
         step:
-            python1:
+            step1:
                 action: python
                 args:
-                    code: a["b"]+ a["c"]
+                    code: |
+                        {"k": [ 
+                                obj["foo"], 
+                                float(obj["bar"]), 
+                                obj["foo"]+obj["bar"], 
+                                int(obj["foo"]) + float(obj["bar"])
+                              ]
+                        }
                     vars:
-                        a:
-                            b: 1
-                            c: 2
+                        obj:
+                            foo: "{{case.foo}}"
+                            bar: "{{case.bar}}"
+        
                 assert:
-                    (eq curr.value 3)
+                    (all
+                    (eq curr.value.k ["1", 2.3, "12.3", 3.3])
+                    (eq curr.value.k.2 "12.3")
+                    (eq curr.value.k.3 3.3)
+                    )
+                    
 
 
 

@@ -8,6 +8,9 @@ WORKDIR /workdir
 
 EXPOSE 9999
 
+RUN sudo apt-get update
+RUN sudo apt-get install python3 -y
+
 COPY chord chord
 COPY cmd cmd
 COPY flow flow

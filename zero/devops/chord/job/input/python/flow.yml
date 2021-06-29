@@ -1,0 +1,20 @@
+version: "0.0.1"
+
+stage:
+    stage1:
+        concurrency: 10
+        step:
+            python1:
+                action: python
+                timeout: 30
+                args:
+                    code: a["b"]+ a["c"]
+                    vars:
+                        a:
+                            b: 1
+                            c: 2
+                assert:
+                    (eq curr.value 3)
+
+
+

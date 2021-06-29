@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use pyo3::conversion::ToPyObject;
 use pyo3::prelude::*;
-use pyo3::types::{IntoPyDict, PyDict};
+use pyo3::types::{PyBool, PyDict, PyInt, PyLong, PyString};
 
 use chord::action::prelude::*;
-use chord::value::{from_str, Map};
+use chord::value::{Map, Number};
 
 pub struct PythonFactory {}
 
@@ -46,40 +47,51 @@ impl Python {
     fn eval(&self, py: pyo3::prelude::Python, code: &str, vars: Map) -> ActionValue {
         let locals = PyDict::new(py);
         for (k, v) in vars {
-            collect(locals, k.as_str(), v)?
+            let obj = to_py_obj(v, py);
+            locals.set_item(k, obj)?;
         }
-        let value: String = py.eval(code, None, Some(&locals))?.extract()?;
-        Ok(from_str(value.as_str())?)
+        let value = py.eval(code, None, Some(&locals))?;
+        if value.is_instance::<PyLong>()? {
+            return Ok(Value::Number(Number::from(value.extract::<i64>().unwrap())));
+        } else if value.is_instance::<PyInt>()? {
+            return Ok(Value::Number(Number::from(value.extract::<i32>().unwrap())));
+        } else if value.is_instance::<PyBool>()? {
+            return Ok(Value::Bool(value.extract::<bool>().unwrap()));
+        } else if value.is_instance::<PyString>()? {
+            return Ok(Value::String(value.extract::<String>().unwrap()));
+        }
+
+        Ok(Value::Null)
     }
 }
 
-fn collect(dict: &PyDict, k: &str, vars: Value) -> Result<(), Error> {
+fn to_py_obj(vars: Value, py: pyo3::prelude::Python) -> PyObject {
     match vars {
-        Value::String(v) => dict.set_item(k, v)?,
+        Value::String(v) => v.to_object(py),
         Value::Number(v) => {
             if v.is_f64() {
-                dict.set_item(k, v.as_f64())?
+                v.as_f64().to_object(py)
             } else if v.is_u64() {
-                dict.set_item(k, v.as_u64())?
+                v.as_u64().to_object(py)
             } else if v.is_i64() {
-                dict.set_item(k, v.as_i64())?
+                v.as_i64().to_object(py)
+            } else {
+                py.None()
             }
         }
-        // Value::Array(vec) => {
-        //     for v in vec {
-        //         collect(dict, v)?
-        //     }
-        // }
+        Value::Bool(v) => v.to_object(py),
+        Value::Array(vec) => {
+            let r: Vec<PyObject> = vec.into_iter().map(|e| to_py_obj(e, py)).collect();
+            r.to_object(py)
+        }
         Value::Object(m) => {
-            let dict0 = dict.copy()?;
-            dict0.clear();
+            let mut dict: HashMap<String, PyObject> = HashMap::new();
             for (k0, v0) in m {
-                collect(dict0, k0.as_str(), v0)?
+                let v: PyObject = to_py_obj(v0, py);
+                dict.insert(k0, v);
             }
-            dict.set_item(k, dict0)?
+            dict.to_object(py)
         }
-        _ => {}
+        _ => py.None(),
     }
-
-    Ok(())
 }

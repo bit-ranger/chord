@@ -6,7 +6,6 @@ stage:
         step:
             python1:
                 action: python
-                timeout: 30
                 args:
                     code: a["b"]+ a["c"]
                     vars:

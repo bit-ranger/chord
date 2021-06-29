@@ -12,8 +12,8 @@ ENV CARGO_HTTP_MULTIPLEXING false
 COPY zero/devops/apt /etc/apt
 COPY zero/devops/cargo /usr/local/cargo
 
-RUN sudo apt-get update
-RUN sudo apt-get install python3 -y
+RUN apt-get update
+RUN apt-get install python3 -y
 
 COPY chord chord
 COPY cmd cmd

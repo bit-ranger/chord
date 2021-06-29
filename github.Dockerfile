@@ -8,8 +8,10 @@ WORKDIR /workdir
 
 EXPOSE 9999
 
+RUN apt-get install software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get update
-RUN apt-get install python3 -y
+RUN apt-get install python3.7 -y
 
 COPY chord chord
 COPY cmd cmd

@@ -1,8 +1,11 @@
+use std::fs::File;
+
 use async_std::fs::rename;
 use async_std::path::{Path, PathBuf};
+use async_std::sync::Arc;
+use chrono::{DateTime, Utc};
 use csv::Writer;
 
-use async_std::sync::Arc;
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
 use chord::flow::Flow;
@@ -12,8 +15,6 @@ use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::to_string;
 use chord::Error;
-use chrono::{DateTime, Utc};
-use std::fs::File;
 
 pub struct Reporter {
     writer: Writer<File>,
@@ -193,7 +194,7 @@ fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
                 .iter()
                 .position(|sid| sid == pa.id().step())
                 .unwrap();
-            let pos = 4 + pai * 3;
+            let pos = 5 + pai * 3;
 
             for (pvi, pve) in pv.into_iter().enumerate() {
                 value_vec[pos + pvi] = pve;

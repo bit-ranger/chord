@@ -110,7 +110,7 @@ impl FactoryComposite {
         register!(table, config_ref, "dylib", dylib::DylibFactory::new, false);
 
         #[cfg(feature = "act_docker")]
-        register!(table, config_ref, "docker", docker::Docker::new, true);
+        register!(table, config_ref, "docker", docker::Docker::new, false);
 
         #[cfg(feature = "act_python")]
         register!(
@@ -118,7 +118,7 @@ impl FactoryComposite {
             config_ref,
             "python",
             python::PythonFactory::new,
-            true
+            false
         );
 
         Ok(FactoryComposite { table })

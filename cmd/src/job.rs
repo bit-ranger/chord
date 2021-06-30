@@ -18,7 +18,7 @@ pub async fn run<P: AsRef<Path>>(
     task_vec: Option<Vec<String>>,
     exec_id: String,
     app_ctx: Arc<dyn Context>,
-) -> Vec<TaskState> {
+) -> Result<Vec<TaskState>, Error> {
     let job_path_str = input_dir.as_ref().to_str().unwrap();
 
     trace!("job start {}", job_path_str);
@@ -66,7 +66,7 @@ pub async fn run<P: AsRef<Path>>(
 
     let task_state_vec = join_all(futures).await;
     trace!("job end {}", job_path_str);
-    return task_state_vec;
+    return Ok(task_state_vec);
 }
 
 async fn run_task<P: AsRef<Path>>(

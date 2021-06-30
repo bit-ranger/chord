@@ -47,10 +47,8 @@ async fn main() -> Result<(), Error> {
         FactoryComposite::new(config.action_config().map(|c| c.clone())).await?,
     ))
     .await;
-    let task_state_vec = job::run(input_dir, output_dir, opt.task, exec_id, flow_ctx).await;
-
+    let task_state_vec = job::run(input_dir, output_dir, opt.task, exec_id, flow_ctx).await?;
     logger::terminal(log_handler).await?;
-
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
     return match et {
         Some(et) => match et {

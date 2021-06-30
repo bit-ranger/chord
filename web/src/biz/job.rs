@@ -1,6 +1,5 @@
-use async_std::path::Path;
-
 use async_std::fs::read_dir;
+use async_std::path::Path;
 use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
@@ -55,15 +54,13 @@ pub async fn run<P: AsRef<Path>>(
         let builder = Builder::new().name(task_name);
 
         let task_input_dir = job_path.as_ref().join(task_dir.path());
-        let jh = builder
-            .spawn(task_run(
-                task_input_dir,
-                exec_id.clone(),
-                app_ctx.clone(),
-                es_url.clone(),
-                es_index.clone(),
-            ))
-            .unwrap();
+        let jh = builder.spawn(task_run(
+            task_input_dir,
+            exec_id.clone(),
+            app_ctx.clone(),
+            es_url.clone(),
+            es_index.clone(),
+        ))?;
         futures.push(jh);
     }
 

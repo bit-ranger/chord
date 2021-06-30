@@ -7,7 +7,7 @@ def:
 
 stage:
     benchmark1:
-        concurrency: 10
+    
         step:
             mysql_select:
                 action: database

@@ -2,11 +2,12 @@ use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::time::Duration;
 
+use lazy_static::lazy_static;
+use regex::Regex;
+
 use crate::error::Error;
 use crate::value::{Map, Value};
 use crate::{err, rerr};
-use lazy_static::lazy_static;
-use regex::Regex;
 
 lazy_static! {
     pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
@@ -179,7 +180,7 @@ impl Flow {
     fn _step_timeout(&self, step_id: &str) -> Result<Duration, Error> {
         let s = self.step(step_id)["timeout"].as_u64();
         if s.is_none() {
-            return Ok(Duration::from_secs(10));
+            return Ok(Duration::from_secs(30));
         }
 
         let s = s.unwrap();
@@ -198,10 +199,12 @@ impl Flow {
     }
 
     fn _stage_concurrency(&self, stage_id: &str) -> Result<usize, Error> {
-        let s = self.flow["stage"][stage_id]["concurrency"]
-            .as_u64()
-            .ok_or(err!("stage", "missing concurrency"))?;
+        let s = self.flow["stage"][stage_id]["concurrency"].as_u64();
+        if s.is_none() {
+            return Ok(10);
+        }
 
+        let s = s.unwrap();
         if s < 1 {
             return rerr!("stage", "concurrency must > 0");
         }
@@ -224,7 +227,7 @@ impl Flow {
     fn _stage_duration(&self, stage_id: &str) -> Result<Duration, Error> {
         let s = self.flow["stage"][stage_id]["duration"].as_u64();
         if s.is_none() {
-            return Ok(Duration::from_secs(600));
+            return Ok(Duration::from_secs(300));
         }
 
         let s = s.unwrap();

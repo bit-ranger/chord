@@ -2,7 +2,7 @@ version: "0.0.1"
 
 stage:
     stage1:
-        concurrency: 10
+    
         step:
             assert1:
                 action: assert

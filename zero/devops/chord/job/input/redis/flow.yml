@@ -6,7 +6,7 @@ def:
 
 stage:
     benchmark1:
-        concurrency: 10
+    
         step:
             set_redis:
                 action: redis

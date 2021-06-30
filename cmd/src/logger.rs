@@ -8,16 +8,16 @@ use std::vec::Vec;
 
 use async_std::fs::File;
 use async_std::io::BufWriter;
+use async_std::path::Path;
+use flume::{bounded, Receiver, Sender};
 use futures::executor::block_on;
 use futures::AsyncWriteExt;
+use itertools::Itertools;
 use log;
 use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
 
-use async_std::path::Path;
 use chord::Error;
-use flume::{bounded, Receiver, Sender};
-use itertools::Itertools;
 
 struct ChannelLogger {
     target_level: Vec<(String, LevelFilter)>,
@@ -66,19 +66,20 @@ impl log::Log for ChannelLogger {
         if self.enabled(record.metadata()) {
             let now = at(get_time());
             let date = strftime("%F %T", &now).unwrap();
-            let microseconds = now.tm_nsec / 1000;
+            let ms = now.tm_nsec / 1000000;
 
             let ctx_id = chord_flow::CTX_ID
                 .try_with(|c| c.borrow().clone())
                 .unwrap_or("".to_owned());
 
             let data = format!(
-                "[{}.{:06}][{}][{}:{}] - [{}], {}\n",
+                "{}.{:03}  {:<5} {:<5} --- [{:>17}] {:<30} : [{:<40}] {}\n",
                 date,
-                microseconds,
+                ms,
                 record.level(),
-                record.target(),
-                record.line().unwrap_or(0),
+                std::process::id(),
+                thread::current().name().unwrap_or(""),
+                format!("{}:{}", record.target(), record.line().unwrap_or(0)),
                 ctx_id,
                 record.args()
             );

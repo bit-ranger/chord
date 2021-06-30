@@ -26,10 +26,11 @@ async fn main() -> Result<(), Error> {
         panic!("input is not a dir {}", input_dir.to_str().unwrap());
     }
 
-    let exec_id = SystemTime::now()
+    let exec_id = (SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
         .as_millis()
+        - 1622476800000)
         .to_string();
 
     let output_dir = Path::new(&opt.output).join(exec_id.as_str());

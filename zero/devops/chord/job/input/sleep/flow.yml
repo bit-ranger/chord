@@ -4,7 +4,7 @@ stage:
     benchmark1:
     
         step:
-            sleep_example:
+            example:
                 action: sleep
                 args:
                     duration: "{{case.seconds}}"

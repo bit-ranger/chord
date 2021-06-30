@@ -1,14 +1,8 @@
 use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
-use lazy_static::lazy_static;
 
 use crate::error::Error;
-use regex::Regex;
-
-lazy_static! {
-    pub static ref TASK_ID_PATTERN: Regex = Regex::new(r"^[\w]+$").unwrap();
-}
 
 pub trait TaskId: Sync + Send + Display {
     fn task(&self) -> &str;

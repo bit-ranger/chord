@@ -12,7 +12,7 @@ stage:
             filter: |
                 (eq case.tag "tag1")
         step:
-            echo_example:
+            example:
                 action: echo
                 args: |
                     update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
@@ -36,7 +36,7 @@ stage:
             filter: |
                 (eq case.tag "tag2")
         step:
-            echo_example2:
+            example2:
                 action: echo
                 args: |
                     update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"

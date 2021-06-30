@@ -11,13 +11,13 @@ stage:
         round: 1
         duration: 30
         step:
-            delete_index:
+            del_idx:
                 action: restapi
                 args:
                     url: "{{def.es.url}}/article"
                     method: DELETE
     
-            create_index:
+            crt_inx:
                 action: restapi
                 args:
                     url: "{{def.es.url}}/article"
@@ -55,7 +55,7 @@ stage:
                       (eq curr.value.body.acknowledged true)
                     )
     
-            insert_data:
+            insert:
                 action: restapi
                 timeout: 5
                 args:
@@ -74,12 +74,12 @@ stage:
                       (eq curr.value.body.result "created")
                     )
     
-            wait_data:
+            wait:
                 action: sleep
                 args:
                     duration: 9
     
-            search_data:
+            search:
                 action: restapi
                 timeout: 5
                 args:

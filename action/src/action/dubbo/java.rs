@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use async_std::io::BufReader;
 use async_std::prelude::*;
-use async_std::process::{Child, Command, Stdio};
-use log::trace;
+use async_std::process::{Child, ChildStdout, Command, Stdio};
+use async_std::task::Builder;
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
@@ -56,6 +56,7 @@ impl DubboFactory {
             .arg(jar_path)
             .arg(format!("--server.port={}", port))
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()?;
 
         let std_out = child.stdout.ok_or(err!("020", "missing stdout"))?;
@@ -67,13 +68,17 @@ impl DubboFactory {
                 return rerr!("020", "failed to start dubbo-generic-gateway");
             }
             let line = line.unwrap()?;
-            trace!("{}", line);
+            println!("{}", line);
             if line == "----dubbo-generic-gateway-started----" {
                 break;
             }
         }
 
-        child.stdout = Some(std_out.into_inner());
+        let _ = Builder::new()
+            .name("dubbo-gateway-output".into())
+            .spawn(loop_out(std_out));
+
+        child.stdout = None;
         Ok(DubboFactory {
             registry_protocol,
             registry_address,
@@ -177,6 +182,21 @@ async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, 
     } else {
         let body: Value = res.body_json().await?;
         Ok(body)
+    }
+}
+
+async fn loop_out(mut std_out: BufReader<ChildStdout>) {
+    let mut lines = std_out.by_ref().lines();
+    loop {
+        let line = lines.next().await;
+        if line.is_none() {
+            break;
+        }
+        if let Ok(line) = line.unwrap() {
+            println!("{}", line);
+        } else {
+            break;
+        }
     }
 }
 

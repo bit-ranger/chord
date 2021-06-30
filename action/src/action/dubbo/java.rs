@@ -4,6 +4,7 @@ use async_std::io::BufReader;
 use async_std::prelude::*;
 use async_std::process::{Child, ChildStdout, Command, Stdio};
 use async_std::task::Builder;
+use log::trace;
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
@@ -68,7 +69,7 @@ impl DubboFactory {
                 return rerr!("020", "failed to start dubbo-generic-gateway");
             }
             let line = line.unwrap()?;
-            println!("{}", line);
+            trace!("{}", line);
             if line == "----dubbo-generic-gateway-started----" {
                 break;
             }
@@ -193,7 +194,7 @@ async fn loop_out(mut std_out: BufReader<ChildStdout>) {
             break;
         }
         if let Ok(line) = line.unwrap() {
-            println!("{}", line);
+            trace!("{}", line);
         } else {
             break;
         }

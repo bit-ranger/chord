@@ -1,16 +1,17 @@
 use std::time::SystemTime;
 
-use structopt::StructOpt;
-
-use crate::conf::Config;
 use async_std::fs::File;
 use async_std::path::{Path, PathBuf};
+use futures::AsyncReadExt;
+use structopt::StructOpt;
+
 use chord::rerr;
 use chord::task::TaskState;
 use chord::value::Value;
 use chord::Error;
 use chord_action::FactoryComposite;
-use futures::AsyncReadExt;
+
+use crate::conf::Config;
 
 mod conf;
 mod job;
@@ -45,7 +46,7 @@ async fn main() -> Result<(), Error> {
         FactoryComposite::new(config.action_config().map(|c| c.clone())).await?,
     ))
     .await;
-    let task_state_vec = job::run(input_dir, output_dir, exec_id, flow_ctx).await;
+    let task_state_vec = job::run(input_dir, output_dir, opt.task, exec_id, flow_ctx).await;
 
     logger::terminal(log_handler).await?;
 
@@ -86,6 +87,10 @@ struct Opt {
     /// output dir
     #[structopt(short, long, parse(from_os_str))]
     output: PathBuf,
+
+    /// task list
+    #[structopt(short, long)]
+    task: Option<Vec<String>>,
 
     /// config file path
     #[structopt(

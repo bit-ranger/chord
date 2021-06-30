@@ -1,4 +1,5 @@
 use async_std::fs::read_dir;
+use async_std::path::{Path, PathBuf};
 use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
@@ -6,7 +7,6 @@ use futures::StreamExt;
 use log::info;
 use log::trace;
 
-use async_std::path::{Path, PathBuf};
 use chord::flow::{Flow, ID_PATTERN};
 use chord::task::TaskState;
 use chord::Error;
@@ -15,6 +15,7 @@ use chord_flow::{Context, TaskIdSimple};
 pub async fn run<P: AsRef<Path>>(
     input_dir: P,
     output_dir: P,
+    task_vec: Option<Vec<String>>,
     exec_id: String,
     app_ctx: Arc<dyn Context>,
 ) -> Vec<TaskState> {
@@ -41,6 +42,11 @@ pub async fn run<P: AsRef<Path>>(
         let task_name: String = task_dir.file_name().to_str().unwrap().into();
         if !ID_PATTERN.is_match(task_name.as_str()) {
             continue;
+        }
+        if let Some(t) = &task_vec {
+            if !t.contains(&task_name) {
+                continue;
+            }
         }
 
         let builder = Builder::new().name(task_name);

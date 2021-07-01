@@ -180,7 +180,7 @@ impl Flow {
     fn _step_timeout(&self, step_id: &str) -> Result<Duration, Error> {
         let s = self.step(step_id)["timeout"].as_u64();
         if s.is_none() {
-            return Ok(Duration::from_secs(30));
+            return Ok(Duration::from_secs(10));
         }
 
         let s = s.unwrap();
@@ -227,7 +227,7 @@ impl Flow {
     fn _stage_duration(&self, stage_id: &str) -> Result<Duration, Error> {
         let s = self.flow["stage"][stage_id]["duration"].as_u64();
         if s.is_none() {
-            return Ok(Duration::from_secs(300));
+            return Ok(Duration::from_secs(600));
         }
 
         let s = s.unwrap();

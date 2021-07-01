@@ -52,7 +52,7 @@ impl Display for CaseIdStruct {
 
 pub struct CaseArgStruct {
     flow: Arc<Flow>,
-    action_vec: Arc<Vec<(String, Box<dyn Action>)>>,
+    step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
     data: Value,
     pre_ctx: Arc<Value>,
     id: Arc<CaseIdStruct>,
@@ -61,7 +61,7 @@ pub struct CaseArgStruct {
 impl CaseArgStruct {
     pub fn new(
         flow: Arc<Flow>,
-        action_vec: Arc<Vec<(String, Box<dyn Action>)>>,
+        step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
         data: Value,
         pre_ctx: Arc<Value>,
         task_id: Arc<dyn TaskId>,
@@ -72,7 +72,7 @@ impl CaseArgStruct {
 
         let context = CaseArgStruct {
             flow,
-            action_vec,
+            step_vec,
             data,
             pre_ctx,
             id,
@@ -116,8 +116,8 @@ impl CaseArgStruct {
         ))
     }
 
-    pub fn action_vec(self: &CaseArgStruct) -> Arc<Vec<(String, Box<dyn Action>)>> {
-        self.action_vec.clone()
+    pub fn step_vec(self: &CaseArgStruct) -> Arc<Vec<(String, Box<dyn Action>)>> {
+        self.step_vec.clone()
     }
 
     pub fn id(&self) -> Arc<CaseIdStruct> {

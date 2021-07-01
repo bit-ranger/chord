@@ -13,8 +13,11 @@ report:
 
 
 action:
+    python:
+        enable: true
+    
     dubbo:
         enable: false
-        
+    
     docker:
         enable: false

@@ -23,6 +23,7 @@ COPY output output
 COPY action action
 COPY web web
 COPY Cargo.toml Cargo.toml
+COPY Cargo.lock Cargo.lock
 
 RUN cargo test --release --verbose \
 && cargo build --release --verbose \

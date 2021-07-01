@@ -39,11 +39,11 @@ jobs:
                     sudo apt-get install curl
                     sudo apt-get install python3
     
-            -   name: cache
+            -   name: cache-target
                 uses: actions/cache@v2
                 with:
+                    key: build-target-linux-musl
                     path: |
-                        ~/.cargo
                         ./target
     
             -   name: build
@@ -132,10 +132,17 @@ jobs:
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-            
+    
+            -   name: cache-target
+                uses: actions/cache@v2
+                with:
+                    key: build-target-windows-msvc
+                    path: |
+                        ./target
+    
             -   name: build
                 run: cargo build --verbose --release
-            
+    
             -   name: upload
                 uses: actions/upload-artifact@v2
                 with:
@@ -153,10 +160,17 @@ jobs:
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-            
+    
+            -   name: cache-target
+                uses: actions/cache@v2
+                with:
+                    key: build-target-apple-darwin
+                    path: |
+                        ./target
+    
             -   name: build
                 run: cargo build --verbose --release
-            
+    
             -   name: upload
                 uses: actions/upload-artifact@v2
                 with:

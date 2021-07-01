@@ -38,16 +38,22 @@ jobs:
                     sudo apt-get update
                     sudo apt-get install curl
                     sudo apt-get install python3
-
-
+    
+            -   name: cache
+                uses: actions/cache@v2
+                with:
+                    path: |
+                        ~/.cargo
+                        ~/target
+    
             -   name: build
                 run: |
                     chmod 777 $PWD
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo --version
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder sudo apt-get update && sudo apt-get install python3 -y && cargo build --verbose --release
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder sudo apt-get update && sudo apt-get install python3 -y && cargo test  --verbose --release
-
-
+    
+    
             -   name: compose-boot
                 run: |
                     docker-compose -f docker-compose.yml up -d

@@ -48,5 +48,5 @@ act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
 act_docker = ["surf", "futures"]
 act_python = ["pyo3"]
-act_download = ['rm_rf']
+act_download = ['futures', 'rm_rf']
 

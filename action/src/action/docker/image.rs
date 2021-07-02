@@ -71,8 +71,12 @@ impl Drop for Image {
         let uri = format!("images/{}", self.name);
         let f = self.engine.call(uri.as_str(), Method::Delete, None, 1);
         let _ = block_on(f)
-            .map_err(|_| {
-                warn!("image remove fail {}", self.name);
+            .map_err(|e| {
+                if e.code() == "docker" && e.message() == "404" {
+                    trace!("image remove {}", self.name);
+                } else {
+                    warn!("image remove fail {}, {}", self.name, e);
+                }
             })
             .map(|_| {
                 trace!("image remove {}", self.name);

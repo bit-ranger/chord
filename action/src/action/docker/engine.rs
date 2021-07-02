@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::str::FromStr;
 
 use async_std::prelude::*;
-use log::{info, trace};
+use log::trace;
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{RequestBuilder, Response, Url};

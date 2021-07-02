@@ -12,7 +12,7 @@ use chord::output::AssessReport;
 use chord::output::Utc;
 use chord::rerr;
 use chord::step::StepState;
-use chord::task::{TaskAssess, TaskId, TaskState};
+use chord::task::{TaskAssess, TaskState};
 use chord::value::{to_value, Map, Value};
 use chord::Error;
 use res::TaskAssessStruct;
@@ -28,9 +28,9 @@ pub mod arg;
 pub mod res;
 
 pub struct TaskRunner {
-    step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
-    case_exec_id: Arc<String>,
-    stage_state: TaskState,
+    step_vec: Option<Arc<Vec<(String, Box<dyn Action>)>>>,
+    case_exec_id: Option<Arc<String>>,
+    stage_state: Option<TaskState>,
 
     pre_ctx: Option<Arc<Value>>,
     #[allow(dead_code)]
@@ -38,15 +38,43 @@ pub struct TaskRunner {
     #[allow(dead_code)]
     pre_step_vec: Option<Arc<Vec<(String, Box<dyn Action>)>>>,
 
-    task_state: TaskState,
-    assess_report: Box<dyn AssessReport>,
-    case_load: Box<dyn CaseLoad>,
-    id: Arc<TaskIdSimple>,
-    flow_ctx: Arc<dyn Context>,
-    flow: Arc<Flow>,
+    task_state: Option<TaskState>,
+    assess_report: Option<Box<dyn AssessReport>>,
+    case_load: Option<Box<dyn CaseLoad>>,
+    id: Option<Arc<TaskIdSimple>>,
+    flow_ctx: Option<Arc<dyn Context>>,
+    flow: Option<Arc<Flow>>,
 }
 
 impl TaskRunner {
+    fn step_vec(&self) -> Arc<Vec<(String, Box<dyn Action>)>> {
+        self.step_vec.clone().unwrap()
+    }
+
+    fn case_exec_id(&self) -> Arc<String> {
+        self.case_exec_id.clone().unwrap()
+    }
+
+    fn stage_state(&self) -> &TaskState {
+        self.stage_state.as_ref().unwrap()
+    }
+
+    fn task_state(&self) -> &TaskState {
+        self.task_state.as_ref().unwrap()
+    }
+
+    fn id(&self) -> Arc<TaskIdSimple> {
+        self.id.clone().unwrap()
+    }
+
+    fn flow_ctx(&self) -> Arc<dyn Context> {
+        self.flow_ctx.clone().unwrap()
+    }
+
+    fn flow(&self) -> Arc<Flow> {
+        self.flow.clone().unwrap()
+    }
+
     pub async fn new(
         case_load: Box<dyn CaseLoad>,
         assess_report: Box<dyn AssessReport>,
@@ -71,21 +99,21 @@ impl TaskRunner {
 
         return if pre_step_vec.is_empty() {
             let runner = TaskRunner {
-                step_vec: Arc::new(vec![]),
+                step_vec: Some(Arc::new(vec![])),
 
-                case_exec_id: Arc::new("".into()),
-                task_state: TaskState::Ok,
-                stage_state: TaskState::Ok,
+                case_exec_id: Some(Arc::new("".into())),
+                task_state: Some(TaskState::Ok),
+                stage_state: Some(TaskState::Ok),
 
                 pre_ctx: None,
                 pre_assess: None,
                 pre_step_vec: None,
 
-                assess_report,
-                case_load,
-                id,
-                flow_ctx,
-                flow,
+                assess_report: Some(assess_report),
+                case_load: Some(case_load),
+                id: Some(id),
+                flow_ctx: Some(flow_ctx),
+                flow: Some(flow),
             };
             Ok(runner)
         } else {
@@ -93,82 +121,72 @@ impl TaskRunner {
             let pre_assess = case_run(flow_ctx.as_ref(), pre_arg).await;
             let pre_ctx = pre_ctx_create(pre_assess.as_ref()).await?;
             let runner = TaskRunner {
-                step_vec: Arc::new(vec![]),
+                step_vec: None,
 
-                case_exec_id: Arc::new("".into()),
-                task_state: TaskState::Ok,
-                stage_state: TaskState::Ok,
+                case_exec_id: Some(Arc::new("".into())),
+                task_state: Some(TaskState::Ok),
+                stage_state: Some(TaskState::Ok),
 
                 pre_ctx: Some(Arc::new(pre_ctx)),
                 pre_assess: Some(pre_assess),
                 pre_step_vec: Some(pre_step_vec),
 
-                assess_report,
-                case_load,
-                id,
-                flow_ctx,
-                flow,
+                assess_report: Some(assess_report),
+                case_load: Some(case_load),
+                id: Some(id),
+                flow_ctx: Some(flow_ctx),
+                flow: Some(flow),
             };
             Ok(runner)
         };
     }
 
-    pub fn id(&self) -> Arc<dyn TaskId> {
-        self.id.clone()
-    }
-
     pub async fn run(&mut self) -> Result<Box<dyn TaskAssess>, Error> {
-        trace!("task start {}", self.id);
+        trace!("task start {}", self.id());
         let start = Utc::now();
-        self.assess_report.start(start).await?;
+        self.assess_report.as_mut().unwrap().start(start).await?;
         let result = self.start_run().await;
 
         let task_assess = if let Err(e) = result {
-            warn!("task Err {}", self.id);
-            TaskAssessStruct::new(
-                self.id.clone(),
-                start,
-                Utc::now(),
-                TaskState::Err(e.clone()),
-            )
+            warn!("task Err {}", self.id());
+            TaskAssessStruct::new(self.id(), start, Utc::now(), TaskState::Err(e.clone()))
         } else {
-            match &self.task_state {
+            match self.task_state() {
                 TaskState::Ok => {
-                    debug!("task Ok {}", self.id);
-                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok)
+                    debug!("task Ok {}", self.id());
+                    TaskAssessStruct::new(self.id(), start, Utc::now(), TaskState::Ok)
                 }
                 TaskState::Fail => {
-                    info!("task Fail {}", self.id);
-                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Fail)
+                    info!("task Fail {}", self.id());
+                    TaskAssessStruct::new(self.id(), start, Utc::now(), TaskState::Fail)
                 }
                 TaskState::Err(e) => {
-                    warn!("task Err {}", self.id);
-                    TaskAssessStruct::new(
-                        self.id.clone(),
-                        start,
-                        Utc::now(),
-                        TaskState::Err(e.clone()),
-                    )
+                    warn!("task Err {}", self.id());
+                    TaskAssessStruct::new(self.id(), start, Utc::now(), TaskState::Err(e.clone()))
                 }
             }
         };
 
-        self.assess_report.end(&task_assess).await?;
+        self.assess_report
+            .as_mut()
+            .unwrap()
+            .end(&task_assess)
+            .await?;
         Ok(Box::new(task_assess))
     }
 
     async fn start_run(&mut self) -> Result<(), Error> {
         let stage_id_vec: Vec<String> = self
-            .flow
+            .flow()
             .stage_id_vec()
             .into_iter()
             .map(|s| s.to_owned())
             .collect();
         for state_id in stage_id_vec {
-            trace!("task stage {}, {}", self.id, state_id);
+            trace!("task stage {}, {}", self.id(), state_id);
             self.stage_run(state_id.as_str()).await?;
-            if let TaskState::Fail = self.stage_state {
-                if "stage_fail" == self.flow.stage_break_on(state_id.as_str()) {
+            if let TaskState::Fail = self.stage_state() {
+                if "stage_fail" == self.flow().stage_break_on(state_id.as_str()) {
                     break;
                 }
             }
@@ -177,24 +195,24 @@ impl TaskRunner {
     }
 
     async fn stage_run(&mut self, stage_id: &str) -> Result<(), Error> {
-        self.stage_state = TaskState::Ok;
+        self.stage_state = Some(TaskState::Ok);
         let step_id_vec: Vec<String> = self
-            .flow
+            .flow()
             .stage_step_id_vec(stage_id)
             .into_iter()
             .map(|s| s.to_owned())
             .collect();
         let action_vec = step_vec_create(
-            self.flow_ctx.clone(),
-            self.flow.clone(),
+            self.flow_ctx(),
+            self.flow(),
             self.pre_ctx.clone(),
             step_id_vec,
-            self.id.clone(),
+            self.id(),
         )
         .await?;
-        self.step_vec = Arc::new(action_vec);
+        self.step_vec = Some(Arc::new(action_vec));
 
-        let duration = self.flow.stage_duration(stage_id);
+        let duration = self.flow().stage_duration(stage_id);
         let srr = self.stage_round_run(stage_id);
         match timeout(duration, srr).await {
             Ok(r) => r?,
@@ -204,14 +222,14 @@ impl TaskRunner {
     }
 
     async fn stage_round_run(&mut self, stage_id: &str) -> Result<(), Error> {
-        let concurrency = self.flow.stage_concurrency(stage_id);
-        let round_max = self.flow.stage_round(stage_id);
+        let concurrency = self.flow().stage_concurrency(stage_id);
+        let round_max = self.flow().stage_round(stage_id);
         let mut round_count = 0;
         loop {
-            self.case_exec_id = Arc::new(format!("{}_{}", stage_id, round_count + 1));
+            self.case_exec_id = Some(Arc::new(format!("{}_{}", stage_id, round_count + 1)));
             self.stage_data_vec_run_remaining(stage_id, concurrency)
                 .await?;
-            self.case_load.reset().await?;
+            self.case_load.as_mut().unwrap().reset().await?;
             round_count += 1;
             if round_count >= round_max {
                 break;
@@ -233,15 +251,17 @@ impl TaskRunner {
                 return Ok(());
             }
 
-            trace!("task load data {}, {}", self.id, case_data_vec.len());
+            trace!("task load data {}, {}", self.id(), case_data_vec.len());
 
             let case_assess_vec = self.case_data_vec_run(case_data_vec, concurrency).await?;
             let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
             if any_fail {
-                self.stage_state = TaskState::Fail;
-                self.task_state = TaskState::Fail;
+                self.stage_state = Some(TaskState::Fail);
+                self.task_state = Some(TaskState::Fail);
             }
             self.assess_report
+                .as_mut()
+                .unwrap()
                 .report(stage_id, &case_assess_vec)
                 .await?;
         }
@@ -252,23 +272,27 @@ impl TaskRunner {
         stage_id: &str,
         size: usize,
     ) -> Result<Vec<(String, Value)>, Error> {
-        let case_data_vec: Vec<(String, Value)> = match self.flow.stage_case_filter(stage_id) {
+        let case_data_vec: Vec<(String, Value)> = match self.flow().stage_case_filter(stage_id) {
             Some(filter) => {
                 let mut ccdv: Vec<(String, Value)> = vec![];
                 loop {
-                    let cdv = self.case_load.load(size - ccdv.len()).await?;
+                    let cdv = self
+                        .case_load
+                        .as_mut()
+                        .unwrap()
+                        .load(size - ccdv.len())
+                        .await?;
                     if cdv.len() == 0 {
                         break;
                     }
 
                     for (cid, cd) in cdv {
-                        let mut ctx =
-                            render_context_create(self.flow.clone(), self.pre_ctx.clone());
+                        let mut ctx = render_context_create(self.flow(), self.pre_ctx.clone());
 
                         if let Value::Object(d) = ctx.data_mut() {
                             d.insert("case".into(), cd.clone());
                             let filter_ok =
-                                crate::flow::assert(self.flow_ctx.get_handlebars(), &ctx, filter)
+                                crate::flow::assert(self.flow_ctx().get_handlebars(), &ctx, filter)
                                     .await;
                             if filter_ok {
                                 ccdv.push((cid, cd));
@@ -282,7 +306,7 @@ impl TaskRunner {
                 }
                 ccdv
             }
-            None => self.case_load.load(size).await?,
+            None => self.case_load.as_mut().unwrap().load(size).await?,
         };
 
         return Ok(case_data_vec);
@@ -298,7 +322,7 @@ impl TaskRunner {
         let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
         let mut futures = vec![];
         for ca in ca_vec {
-            let f = case_spawn(self.flow_ctx.clone(), ca);
+            let f = case_spawn(self.flow_ctx().clone(), ca);
             futures.push(f);
             if futures.len() >= concurrency {
                 let case_assess = join_all(futures.split_off(0)).await;
@@ -317,13 +341,13 @@ impl TaskRunner {
             .into_iter()
             .map(|(id, d)| {
                 CaseArgStruct::new(
-                    self.flow.clone(),
-                    self.step_vec.clone(),
+                    self.flow().clone(),
+                    self.step_vec().clone(),
                     d,
                     self.pre_ctx.clone(),
-                    self.id.clone(),
+                    self.id(),
                     id,
-                    self.case_exec_id.clone(),
+                    self.case_exec_id(),
                 )
             })
             .collect();

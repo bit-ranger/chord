@@ -2,9 +2,9 @@ use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
 
+use crate::action::Scope;
 use crate::case::CaseId;
 use crate::error::Error;
-use crate::value::Value;
 
 pub trait StepId: Sync + Send + Display {
     fn step(&self) -> &str;
@@ -12,10 +12,9 @@ pub trait StepId: Sync + Send + Display {
     fn case_id(&self) -> &dyn CaseId;
 }
 
-#[derive(Debug, Clone)]
 pub enum StepState {
-    Ok(Value),
-    Fail(Value),
+    Ok(Box<dyn Scope>),
+    Fail(Box<dyn Scope>),
     Err(Error),
 }
 

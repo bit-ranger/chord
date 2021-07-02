@@ -203,7 +203,8 @@ fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
     }
 
     match pa_vec.last().unwrap().state() {
-        StepState::Fail(json) | StepState::Ok(json) => {
+        StepState::Fail(scope) | StepState::Ok(scope) => {
+            let json = scope.as_value();
             if json.is_string() {
                 value_vec[head_len - 1] = json.as_str().map_or(json.to_string(), |j| j.to_owned());
             } else {

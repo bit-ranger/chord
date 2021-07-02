@@ -344,7 +344,7 @@ async fn pre_ctx_create(
             for pa in pa_vec {
                 match pa.state() {
                     StepState::Ok(pv) => {
-                        pre_ctx["step"][pa.id().step()]["value"] = pv.clone();
+                        pre_ctx["step"][pa.id().step()]["value"] = pv.as_value().clone();
                     }
                     _ => return rerr!("012", "pre step run failure"),
                 }

@@ -10,7 +10,6 @@ pub trait TaskId: Sync + Send + Display {
     fn exec_id(&self) -> &str;
 }
 
-#[derive(Clone)]
 pub enum TaskState {
     Ok,
     Fail,

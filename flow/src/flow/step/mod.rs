@@ -45,12 +45,9 @@ pub async fn run(
     let action_value = unwind_value.unwrap();
 
     return match action_value {
-        Ok(scope) => StepAssessStruct::new(
-            arg.id().clone(),
-            start,
-            Utc::now(),
-            StepState::Ok(scope.as_value().clone()),
-        ),
+        Ok(scope) => {
+            StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Ok(scope))
+        }
         Err(e) => StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e)),
     };
 }

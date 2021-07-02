@@ -4,6 +4,7 @@ use itertools::Itertools;
 pub use mongodb::bson::doc;
 pub use mongodb::bson::Document;
 pub use mongodb::options::ClientOptions;
+use mongodb::options::UpdateOptions;
 pub use mongodb::Client;
 pub use mongodb::Collection;
 pub use mongodb::Database;
@@ -13,7 +14,6 @@ use chord::rerr;
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::Error;
-use mongodb::options::UpdateOptions;
 
 pub struct Reporter {
     collection: Arc<Collection>,
@@ -45,7 +45,7 @@ impl Reporter {
         Ok(Reporter {
             collection,
             task_id,
-            total_task_state: TaskState::Ok(vec![]),
+            total_task_state: TaskState::Ok,
         })
     }
 
@@ -60,9 +60,9 @@ impl Reporter {
         }
 
         match task_assess.state() {
-            TaskState::Ok(_) => {}
-            TaskState::Fail(_) => {
-                self.total_task_state = TaskState::Fail(vec![]);
+            TaskState::Ok => {}
+            TaskState::Fail => {
+                self.total_task_state = TaskState::Fail;
             }
             TaskState::Err(e) => {
                 self.total_task_state = TaskState::Err(e.clone());
@@ -92,7 +92,7 @@ impl Reporter {
         }
 
         match task_assess.state() {
-            TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
+            TaskState::Ok | TaskState::Fail => {
                 self.collection.update_one(
                     doc! { "exec_id": self.exec_id.as_str(), "task_assess.id": task_assess.id()},
                     doc! {
@@ -128,8 +128,8 @@ impl Reporter {
 
     pub async fn close(self) -> Result<(), Error> {
         let state = match self.total_task_state {
-            TaskState::Ok(_) => "O",
-            TaskState::Fail(_) => "F",
+            TaskState::Ok => "O",
+            TaskState::Fail => "F",
             TaskState::Err(_) => "E",
         };
 
@@ -146,13 +146,13 @@ impl Reporter {
 
 fn ta_doc_init(ta: &dyn TaskAssess) -> Document {
     match ta.state() {
-        TaskState::Ok(ca_vec) | TaskState::Fail(ca_vec) => {
+        TaskState::Ok | TaskState::Fail => {
             doc! {
                 "id": ta.id().task(),
                 "start": ta.start(),
                 "end": ta.end(),
                 "state": "R",
-                "case_assess": ca_vec.iter().map(|ca| ca_doc(ca.as_ref())).collect_vec()
+                "case_assess": []
             }
         }
         TaskState::Err(e) => {

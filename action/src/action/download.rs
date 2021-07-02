@@ -41,11 +41,15 @@ impl Factory for DownloadFactory {
         let tmp = self.workdir.join(arg.id());
         async_std::fs::create_dir_all(tmp.as_path()).await?;
         trace!("tmp create {}", tmp.as_path().to_str().unwrap());
-        Ok(Box::new(Download { tmp }))
+        Ok(Box::new(Download {
+            name: arg.id().into(),
+            tmp,
+        }))
     }
 }
 
 struct Download {
+    name: String,
     tmp: PathBuf,
 }
 
@@ -69,7 +73,10 @@ impl Action for Download {
         trace!("file create {}", path.as_path().to_str().unwrap());
 
         let download_file = DownloadFile {
-            value: Value::Array(vec![]),
+            value: Value::Array(vec![
+                Value::String(self.name.clone()),
+                Value::String(arg.id().into()),
+            ]),
             path,
         };
         return Ok(Box::new(download_file));

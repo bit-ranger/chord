@@ -29,6 +29,7 @@ urlencoding = { version = "1.3.3", optional = true }
 dynamic_reload = {version = "0.4.0", optional = true}
 futures = { version = "0.3.13", optional = true }
 pyo3 = { version = "0.13.2", features = ["auto-initialize"], optional = true }
+rm_rf = { version = "0.6.1", optional = true }
 
 
 [target.'cfg(linux)'.dependencies]
@@ -47,4 +48,5 @@ act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
 act_docker = ["surf", "futures"]
 act_python = ["pyo3"]
+act_download = ['rm_rf']
 

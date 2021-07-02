@@ -14,6 +14,8 @@ mod crypto;
 mod database;
 #[cfg(feature = "act_docker")]
 mod docker;
+#[cfg(feature = "act_download")]
+mod download;
 #[cfg(feature = "act_dubbo")]
 mod dubbo;
 #[cfg(feature = "act_dylib")]
@@ -118,6 +120,15 @@ impl FactoryComposite {
             config_ref,
             "python",
             python::PythonFactory::new,
+            false
+        );
+
+        #[cfg(feature = "act_download")]
+        register!(
+            table,
+            config_ref,
+            "download",
+            download::PythonFactory::new,
             false
         );
 

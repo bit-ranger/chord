@@ -23,12 +23,12 @@ struct Mongodb {}
 
 #[async_trait]
 impl Action for Mongodb {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }
 
-async fn run(arg: &dyn RunArg) -> ActionValue {
+async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     let url = arg.args()["url"]
         .as_str()
         .map(|s| arg.render_str(s))
@@ -65,7 +65,7 @@ async fn run(arg: &dyn RunArg) -> ActionValue {
                     let doc_vec: Vec<Document> =
                         arr.iter().map(|v| to_document(v).unwrap()).collect();
                     collection.insert_many(doc_vec, None).await?;
-                    return Ok(Value::Null);
+                    return Ok(Box::new(Value::Null));
                 }
                 _ => rerr!("010", "illegal arg"),
             }

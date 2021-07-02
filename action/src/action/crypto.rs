@@ -19,12 +19,12 @@ struct Crypto {}
 
 #[async_trait]
 impl Action for Crypto {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }
 
-async fn run(arg: &dyn RunArg) -> ActionValue {
+async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     let by = arg.args()["by"].as_str().ok_or(err!("010", "missing by"))?;
 
     let from = arg.args()["from"]
@@ -36,7 +36,7 @@ async fn run(arg: &dyn RunArg) -> ActionValue {
         "md5" => {
             let digest = md5::compute(from);
             let digest = format!("{:x}", digest);
-            return Ok(Value::String(digest));
+            return Ok(Box::new(Value::String(digest)));
         }
         _ => {
             rerr!("crypto", format!("unsupported {}", by))

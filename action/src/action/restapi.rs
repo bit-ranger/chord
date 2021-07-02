@@ -27,13 +27,14 @@ struct Restapi {}
 
 #[async_trait]
 impl Action for Restapi {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }
 
-async fn run(arg: &dyn RunArg) -> ActionValue {
-    return run0(arg).await.map_err(|e| e.0);
+async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    let value = run0(arg).await.map_err(|e| e.0)?;
+    Ok(Box::new(value))
 }
 
 async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {

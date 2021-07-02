@@ -1,5 +1,6 @@
-use chord::action::prelude::*;
 use log::info;
+
+use chord::action::prelude::*;
 
 pub struct AssertFactory {}
 
@@ -20,7 +21,7 @@ struct Assert {}
 
 #[async_trait]
 impl Action for Assert {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let condition = arg.args().as_str().ok_or(err!("assert", "missing args"))?;
 
         let template = format!(
@@ -32,7 +33,7 @@ impl Action for Assert {
         return match result {
             Ok(result) => {
                 if result.eq("true") {
-                    Ok(Value::Null)
+                    Ok(Box::new(Value::Null))
                 } else {
                     rerr!("assert", "assert fail")
                 }

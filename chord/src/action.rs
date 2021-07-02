@@ -1,22 +1,25 @@
-pub mod prelude {
-    pub use super::async_trait;
-    pub use super::Action;
-    pub use super::ActionValue;
-    pub use super::CreateArg;
-    pub use super::Error;
-    pub use super::Factory;
-    pub use super::RunArg;
-    pub use super::Value;
-    pub use crate::err;
-    pub use crate::rerr;
-}
-
 pub use async_trait::async_trait;
 
 pub use crate::value::Value;
 pub use crate::Error;
 
-pub type ActionValue = std::result::Result<Value, Error>;
+pub mod prelude {
+    pub use crate::err;
+    pub use crate::rerr;
+
+    pub use super::async_trait;
+    pub use super::Action;
+    pub use super::CreateArg;
+    pub use super::Error;
+    pub use super::Factory;
+    pub use super::RunArg;
+    pub use super::Scope;
+    pub use super::Value;
+}
+
+pub trait Scope: Sync + Send {
+    fn as_value(&self) -> &Value;
+}
 
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &str;
@@ -43,10 +46,16 @@ pub trait CreateArg: Sync + Send {
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue;
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error>;
 }
 
 #[async_trait]
 pub trait Factory: Sync + Send {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error>;
+}
+
+impl Scope for Value {
+    fn as_value(&self) -> &Value {
+        &self
+    }
 }

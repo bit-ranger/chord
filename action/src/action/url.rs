@@ -19,7 +19,7 @@ struct Url {}
 
 #[async_trait]
 impl Action for Url {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let by = arg.args()["by"].as_str().ok_or(err!("010", "missing by"))?;
 
         let from = arg.args()["from"]
@@ -30,11 +30,11 @@ impl Action for Url {
         return match by {
             "encode" => {
                 let to = urlencoding::encode(from.as_str());
-                Ok(Value::String(to))
+                Ok(Box::new(Value::String(to)))
             }
             "decode" => {
                 let to = urlencoding::decode(from.as_str())?;
-                Ok(Value::String(to))
+                Ok(Box::new(Value::String(to)))
             }
             _ => {
                 rerr!("url", format!("unsupported {}", by))

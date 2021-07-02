@@ -5,7 +5,7 @@ use chrono::Utc;
 use futures::FutureExt;
 use log::trace;
 
-use chord::action::{Action, ActionValue};
+use chord::action::Action;
 use chord::step::StepState;
 use chord::Error;
 use res::StepAssessStruct;
@@ -45,11 +45,12 @@ pub async fn run(
     let action_value = unwind_value.unwrap();
 
     return match action_value {
-        ActionValue::Ok(json) => {
-            StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Ok(json))
-        }
-        ActionValue::Err(e) => {
-            StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e))
-        }
+        Ok(scope) => StepAssessStruct::new(
+            arg.id().clone(),
+            start,
+            Utc::now(),
+            StepState::Ok(scope.as_value().clone()),
+        ),
+        Err(e) => StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e)),
     };
 }

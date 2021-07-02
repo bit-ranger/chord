@@ -41,8 +41,8 @@ struct Dylib {
 
 #[async_trait]
 impl Action for Dylib {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
-        let action_run: Symbol<fn(&str, &str) -> ActionValue> =
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+        let action_run: Symbol<fn(&str, &str) -> Result<Box<dyn Scope>, Error>> =
             unsafe { self.lib.lib.get(b"run")? };
 
         let config_str = to_string(arg.args())?;

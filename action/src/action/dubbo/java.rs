@@ -108,7 +108,7 @@ struct Dubbo {
 
 #[async_trait]
 impl Action for Dubbo {
-    async fn run(&self, run_arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, run_arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let method_long = run_arg.args()["method"]
             .as_str()
             .ok_or(err!("010", "missing method"))?;
@@ -157,7 +157,7 @@ impl Action for Dubbo {
         let value = remote_invoke(self.port, invoke).await.map_err(|e| e.0)?;
         let value = &value;
         if value["success"].as_bool().unwrap_or(false) {
-            return Ok(value["data"].clone());
+            return Ok(Box::new(value["data"].clone()));
         }
 
         return rerr!("dubbo", format!("{}::{}", value["code"], value["message"]));

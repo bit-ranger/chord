@@ -1,5 +1,6 @@
-use chord::action::prelude::*;
 use log::debug;
+
+use chord::action::prelude::*;
 
 pub struct LogFactory {}
 
@@ -12,17 +13,17 @@ impl LogFactory {
 #[async_trait]
 impl Factory for LogFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Echo {}))
+        Ok(Box::new(Log {}))
     }
 }
 
-struct Echo {}
+struct Log {}
 
 #[async_trait]
-impl Action for Echo {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+impl Action for Log {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let config = arg.render_value(arg.args())?;
         debug!("{}", config);
-        return Ok(Value::Null);
+        return Ok(Box::new(Value::Null));
     }
 }

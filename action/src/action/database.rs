@@ -36,7 +36,7 @@ struct Database {
 
 #[async_trait]
 impl Action for Database {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         run(&self, arg).await
     }
 }
@@ -47,7 +47,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
     Ok(rb)
 }
 
-async fn run(obj: &Database, arg: &dyn RunArg) -> ActionValue {
+async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {
@@ -62,7 +62,7 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> ActionValue {
     };
 }
 
-async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> ActionValue {
+async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
     let sql = arg.args()["sql"]
         .as_str()
         .map(|s| arg.render_str(s))
@@ -92,7 +92,7 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> ActionValue {
         map.insert(String::from("records"), Value::Array(page.records));
         let page = Value::Object(map);
         trace!("select: {} >>> {}", arg.id(), page);
-        return Ok(page);
+        return Ok(Box::new(page));
     } else {
         let exec = rb.exec("", sql.as_str()).await?;
         let mut map = Map::new();
@@ -111,6 +111,6 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> ActionValue {
         }
         let exec = Value::Object(map);
         trace!("exec: {} >>> {}", arg.id(), exec);
-        return Ok(exec);
+        return Ok(Box::new(exec));
     }
 }

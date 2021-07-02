@@ -17,7 +17,7 @@ pub struct Image {
 
 #[async_trait]
 impl Action for Image {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let cmd = arg.render_value(&arg.args()["cmd"]).unwrap_or(json!([]));
 
         let mut container = Container::new(self.engine.clone(), &self, arg.id(), cmd).await?;
@@ -33,9 +33,10 @@ impl Action for Image {
             .collect();
 
         if tail_log.len() > 0 {
-            Ok(from_str(tail_log.join("").as_str())?)
+            let value: Value = from_str(tail_log.join("").as_str())?;
+            Ok(Box::new(value))
         } else {
-            Ok(Value::Null)
+            Ok(Box::new(Value::Null))
         }
     }
 }

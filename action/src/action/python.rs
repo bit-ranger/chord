@@ -26,7 +26,7 @@ struct Python {}
 
 #[async_trait]
 impl Action for Python {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         pyo3::prelude::Python::with_gil(|py| {
             let code = arg.args()["code"]
                 .as_str()
@@ -44,7 +44,12 @@ impl Action for Python {
 }
 
 impl Python {
-    fn eval(&self, py: pyo3::prelude::Python, code: &str, vars: Map) -> ActionValue {
+    fn eval(
+        &self,
+        py: pyo3::prelude::Python,
+        code: &str,
+        vars: Map,
+    ) -> Result<Box<dyn Scope>, Error> {
         let locals = PyDict::new(py);
         for (k, v) in vars {
             let obj = to_py_obj(v, py);
@@ -53,7 +58,7 @@ impl Python {
         let py_any = py
             .eval(code, None, Some(&locals))
             .map_err(|e| err!("python", e.to_string()))?;
-        Ok(to_value(py_any))
+        Ok(Box::new(to_value(py_any)))
     }
 }
 

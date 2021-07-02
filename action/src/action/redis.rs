@@ -37,7 +37,7 @@ struct Redis {
 
 #[async_trait]
 impl Action for Redis {
-    async fn run(&self, arg: &dyn RunArg) -> ActionValue {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
@@ -53,7 +53,7 @@ impl Action for Redis {
     }
 }
 
-async fn run0(arg: &dyn RunArg, client: &Client) -> ActionValue {
+async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error> {
     let cmd = arg.args()["cmd"]
         .as_str()
         .map(|s| arg.render_str(s))
@@ -86,5 +86,5 @@ async fn run0(arg: &dyn RunArg, client: &Client) -> ActionValue {
         RedisValue::Okay => Value::String("OK".to_string()),
         _ => Value::Array(vec![]),
     };
-    return Ok(result);
+    return Ok(Box::new(result));
 }

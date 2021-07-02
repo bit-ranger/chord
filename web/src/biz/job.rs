@@ -147,7 +147,11 @@ async fn task_run1<P: AsRef<Path>>(
     .await?;
 
     let task_assess = runner.run().await?;
-    return Ok(task_assess.state().clone());
+    return match task_assess.state() {
+        TaskState::Ok => Ok(TaskState::Ok),
+        TaskState::Fail => Ok(TaskState::Fail),
+        TaskState::Err(e) => Ok(TaskState::Err(e.clone())),
+    };
 }
 
 async fn task_end(

@@ -38,7 +38,7 @@ impl AssessReport for Reporter {
             data_vec.push(ca_data);
             match ca.state() {
                 CaseState::Ok(pa_vec) | CaseState::Fail(pa_vec) => {
-                    for pa in pa_vec {
+                    for pa in pa_vec.iter() {
                         let pa_data = sa_doc(pa.as_ref());
                         data_vec.push(pa_data);
                     }

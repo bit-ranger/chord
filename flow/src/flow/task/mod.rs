@@ -28,18 +28,22 @@ pub mod arg;
 pub mod res;
 
 pub struct TaskRunner {
-    flow_ctx: Arc<dyn Context>,
-    flow: Arc<Flow>,
     step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
-    id: Arc<TaskIdSimple>,
-    #[allow(dead_code)]
-    pre_step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
-    pre_ctx: Arc<Value>,
     case_exec_id: Arc<String>,
+    stage_state: TaskState,
+
+    pre_ctx: Option<Arc<Value>>,
+    #[allow(dead_code)]
+    pre_assess: Option<Box<dyn CaseAssess>>,
+    #[allow(dead_code)]
+    pre_step_vec: Option<Arc<Vec<(String, Box<dyn Action>)>>>,
+
+    task_state: TaskState,
     assess_report: Box<dyn AssessReport>,
     case_load: Box<dyn CaseLoad>,
-    task_state: TaskState,
-    stage_state: TaskState,
+    id: Arc<TaskIdSimple>,
+    flow_ctx: Arc<dyn Context>,
+    flow: Arc<Flow>,
 }
 
 impl TaskRunner {
@@ -55,7 +59,7 @@ impl TaskRunner {
                 step_vec_create(
                     flow_ctx.clone(),
                     flow.clone(),
-                    Arc::new(Value::Null),
+                    None,
                     pre_ste_id_vec.into_iter().map(|s| s.to_owned()).collect(),
                     id.clone(),
                 )
@@ -65,34 +69,48 @@ impl TaskRunner {
         };
         let pre_step_vec = Arc::new(pre_step_vec);
 
-        let pre_ctx = if pre_step_vec.is_empty() {
-            Value::Null
+        return if pre_step_vec.is_empty() {
+            let runner = TaskRunner {
+                step_vec: Arc::new(vec![]),
+
+                case_exec_id: Arc::new("".into()),
+                task_state: TaskState::Ok,
+                stage_state: TaskState::Ok,
+
+                pre_ctx: None,
+                pre_assess: None,
+                pre_step_vec: None,
+
+                assess_report,
+                case_load,
+                id,
+                flow_ctx,
+                flow,
+            };
+            Ok(runner)
         } else {
-            pre_ctx_create(
-                flow_ctx.clone(),
-                flow.clone(),
-                id.clone(),
-                pre_step_vec.clone(),
-            )
-            .await?
-        };
+            let pre_arg = pre_arg(flow.clone(), id.clone(), pre_step_vec.clone()).await?;
+            let pre_assess = case_run(flow_ctx.as_ref(), pre_arg).await;
+            let pre_ctx = pre_ctx_create(pre_assess.as_ref()).await?;
+            let runner = TaskRunner {
+                step_vec: Arc::new(vec![]),
 
-        let pre_ctx = Arc::new(pre_ctx);
+                case_exec_id: Arc::new("".into()),
+                task_state: TaskState::Ok,
+                stage_state: TaskState::Ok,
 
-        let runner = TaskRunner {
-            assess_report,
-            case_load,
-            flow_ctx,
-            flow,
-            step_vec: Arc::new(vec![]),
-            id,
-            pre_step_vec,
-            pre_ctx,
-            case_exec_id: Arc::new("".into()),
-            task_state: TaskState::Ok,
-            stage_state: TaskState::Ok,
+                pre_ctx: Some(Arc::new(pre_ctx)),
+                pre_assess: Some(pre_assess),
+                pre_step_vec: Some(pre_step_vec),
+
+                assess_report,
+                case_load,
+                id,
+                flow_ctx,
+                flow,
+            };
+            Ok(runner)
         };
-        Ok(runner)
     }
 
     pub fn id(&self) -> Arc<dyn TaskId> {
@@ -322,21 +340,14 @@ async fn pre_arg(
         flow.clone(),
         pre_action_vec,
         Value::Null,
-        Arc::new(Value::Null),
+        None,
         task_id.clone(),
         "pre".into(),
         Arc::new("pre".into()),
     ))
 }
 
-async fn pre_ctx_create(
-    flow_ctx: Arc<dyn Context>,
-    flow: Arc<Flow>,
-    task_id: Arc<TaskIdSimple>,
-    pre_step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
-) -> Result<Value, Error> {
-    let pre_arg = pre_arg(flow, task_id.clone(), pre_step_vec).await?;
-    let pre_assess = case_run(flow_ctx.as_ref(), pre_arg).await;
+async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
     match pre_assess.state() {
         CaseState::Ok(pa_vec) => {
             let mut pre_ctx = Map::new();
@@ -365,11 +376,11 @@ async fn pre_ctx_create(
 async fn step_vec_create(
     flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
-    pre_ctx: Arc<Value>,
+    pre_ctx: Option<Arc<Value>>,
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdSimple>,
 ) -> Result<Vec<(String, Box<dyn Action>)>, Error> {
-    let render_context = render_context_create(flow.clone(), pre_ctx.clone());
+    let render_context = render_context_create(flow.clone(), pre_ctx);
     let mut action_vec = vec![];
     for sid in step_id_vec {
         let pr = step_create(
@@ -385,7 +396,7 @@ async fn step_vec_create(
     Ok(action_vec)
 }
 
-fn render_context_create(flow: Arc<Flow>, pre_ctx: Arc<Value>) -> RenderContext {
+fn render_context_create(flow: Arc<Flow>, pre_ctx: Option<Arc<Value>>) -> RenderContext {
     let mut render_data: Map = Map::new();
     let config_def = flow.def();
     match config_def {
@@ -395,7 +406,10 @@ fn render_context_create(flow: Arc<Flow>, pre_ctx: Arc<Value>) -> RenderContext 
         None => {}
     }
 
-    render_data.insert("pre".to_owned(), pre_ctx.as_ref().clone());
+    if let Some(pre_ctx) = pre_ctx {
+        render_data.insert("pre".to_owned(), pre_ctx.as_ref().clone());
+    }
+
     return RenderContext::wraps(render_data).unwrap();
 }
 

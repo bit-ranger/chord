@@ -54,7 +54,7 @@ pub struct CaseArgStruct {
     flow: Arc<Flow>,
     step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
     data: Value,
-    pre_ctx: Arc<Value>,
+    pre_ctx: Option<Arc<Value>>,
     id: Arc<CaseIdStruct>,
 }
 
@@ -63,7 +63,7 @@ impl CaseArgStruct {
         flow: Arc<Flow>,
         step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
         data: Value,
-        pre_ctx: Arc<Value>,
+        pre_ctx: Option<Arc<Value>>,
         task_id: Arc<dyn TaskId>,
         case_id: String,
         case_exec_id: Arc<String>,
@@ -90,7 +90,9 @@ impl CaseArgStruct {
         render_data.insert(String::from("case"), self.data.clone());
         render_data.insert(String::from("step"), Value::Object(Map::new()));
         render_data.insert(String::from("curr"), Value::Null);
-        render_data.insert(String::from("pre"), self.pre_ctx.as_ref().clone());
+        if let Some(pre_ctx) = self.pre_ctx.as_ref() {
+            render_data.insert(String::from("pre"), pre_ctx.as_ref().clone());
+        }
 
         return RenderContext::wraps(render_data).unwrap();
     }

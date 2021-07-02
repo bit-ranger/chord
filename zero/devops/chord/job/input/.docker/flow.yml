@@ -4,9 +4,9 @@ stage:
     benchmark1:
     
         step:
-            docker_example:
+            docker1:
                 action: docker
-                timeout: 30
+                timeout: 10
                 args:
                     image: "curlimages/curl"
                     cmd:
@@ -15,5 +15,6 @@ stage:
                             {    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}
                 assert: |+
                     (eq curr.value.size 100)
+                
 
 

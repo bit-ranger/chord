@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::str::FromStr;
 
 use async_std::prelude::*;
@@ -9,7 +10,6 @@ use surf::{RequestBuilder, Response, Url};
 use chord::value::Value;
 use chord::Error;
 use chord::{cause, err, rcause, rerr};
-use std::collections::VecDeque;
 
 pub struct Engine {
     address: String,
@@ -72,11 +72,7 @@ async fn call0(
                 line = String::from_utf8_lossy(&line.as_bytes()[8..]).to_string();
             }
 
-            if res.status().is_success() {
-                trace!("{}", line);
-            } else {
-                info!("{}", line);
-            }
+            trace!("{}", line);
 
             tail.push_back(line.clone());
             if tail.len() > tail_size {

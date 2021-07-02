@@ -46,7 +46,11 @@ impl Drop for CaseState {
     fn drop(&mut self) {
         if let CaseState::Ok(vec) | CaseState::Fail(vec) = self {
             // last step first drop
-            let _ = vec.pop();
+            loop {
+                if let None = vec.pop() {
+                    break;
+                }
+            }
         }
     }
 }

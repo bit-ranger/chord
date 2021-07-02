@@ -4,7 +4,7 @@ use async_std::io::BufWriter;
 use async_std::path::PathBuf;
 use futures::executor::block_on;
 use futures::AsyncWriteExt;
-use log::{debug, error, info};
+use log::{trace, warn};
 
 use chord::action::prelude::*;
 
@@ -40,7 +40,7 @@ impl Factory for DownloadFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let tmp = self.workdir.join(arg.id());
         async_std::fs::create_dir_all(tmp.as_path()).await?;
-        debug!("tmp create {}", tmp.as_path().to_str().unwrap());
+        trace!("tmp create {}", tmp.as_path().to_str().unwrap());
         Ok(Box::new(Download { tmp }))
     }
 }
@@ -52,18 +52,27 @@ struct Download {
 #[async_trait]
 impl Action for Download {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        // let url = arg.render_str(arg.args()["url"].as_str()?)?;
-        let file_path = self.tmp.join(arg.id());
+        let url = arg.render_str(
+            arg.args()["url"]
+                .as_str()
+                .ok_or(err!("010", "missing url"))?,
+        )?;
+        let path = self.tmp.join(arg.id());
         let file = async_std::fs::OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
-            .open(file_path.as_path())
+            .open(path.as_path())
             .await?;
         let mut writer = BufWriter::new(file);
-        writer.write_all(format!("hello world!").as_bytes());
-        debug!("download {}", file_path.as_path().to_str().unwrap());
-        return Ok(Box::new(config));
+        writer.write_all(url.as_bytes()).await?;
+        trace!("file create {}", path.as_path().to_str().unwrap());
+
+        let download_file = DownloadFile {
+            value: Value::Array(vec![]),
+            path,
+        };
+        return Ok(Box::new(download_file));
     }
 }
 
@@ -73,30 +82,34 @@ impl Drop for Download {
         let result = rm_rf::ensure_removed(path);
 
         match result {
-            Ok(()) => debug!("tmp remove {}", self.tmp.as_path().to_str().unwrap),
-            Err(e) => error!("tmp remove {}, {}", self.tmp.as_path().to_str().unwrap, e),
+            Ok(()) => trace!("tmp remove {}", self.tmp.as_path().to_str().unwrap()),
+            Err(e) => warn!("tmp remove {}, {}", self.tmp.as_path().to_str().unwrap(), e),
         }
     }
 }
 
 struct DownloadFile {
     path: PathBuf,
-    name: Value,
+    value: Value,
 }
 
 impl Scope for DownloadFile {
     fn as_value(&self) -> &Value {
-        &self.name
+        &self.value
     }
 }
 
 impl Drop for DownloadFile {
     fn drop(&mut self) {
-        let result = block_on(async || async_std::fs::remove_file(self.path.as_path()).await);
+        let result = block_on(async_std::fs::remove_file(self.path.as_path()));
 
         match result {
-            Ok(()) => debug!("file remove {}", self.tmp.as_path().to_str().unwrap),
-            Err(e) => error!("file remove {}, {}", self.tmp.as_path().to_str().unwrap, e),
+            Ok(()) => trace!("file remove {}", self.path.as_path().to_str().unwrap()),
+            Err(e) => warn!(
+                "file remove {}, {}",
+                self.path.as_path().to_str().unwrap(),
+                e
+            ),
         }
     }
 }

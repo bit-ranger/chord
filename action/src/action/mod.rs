@@ -128,8 +128,8 @@ impl FactoryComposite {
             table,
             config_ref,
             "download",
-            download::PythonFactory::new,
-            false
+            download::DownloadFactory::new,
+            true
         );
 
         Ok(FactoryComposite { table })

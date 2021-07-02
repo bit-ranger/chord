@@ -4,6 +4,7 @@ use async_std::sync::Arc;
 
 use chord::action::Action;
 use chord::case::CaseId;
+use chord::collection::TailDropVec;
 use chord::flow::Flow;
 use chord::task::TaskId;
 use chord::value::Value;
@@ -52,7 +53,7 @@ impl Display for CaseIdStruct {
 
 pub struct CaseArgStruct {
     flow: Arc<Flow>,
-    step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
+    step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
     data: Value,
     pre_ctx: Option<Arc<Value>>,
     id: Arc<CaseIdStruct>,
@@ -61,7 +62,7 @@ pub struct CaseArgStruct {
 impl CaseArgStruct {
     pub fn new(
         flow: Arc<Flow>,
-        step_vec: Arc<Vec<(String, Box<dyn Action>)>>,
+        step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
         data: Value,
         pre_ctx: Option<Arc<Value>>,
         task_id: Arc<dyn TaskId>,
@@ -118,7 +119,7 @@ impl CaseArgStruct {
         ))
     }
 
-    pub fn step_vec(self: &CaseArgStruct) -> Arc<Vec<(String, Box<dyn Action>)>> {
+    pub fn step_vec(self: &CaseArgStruct) -> Arc<TailDropVec<(String, Box<dyn Action>)>> {
         self.step_vec.clone()
     }
 

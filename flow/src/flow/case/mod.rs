@@ -3,6 +3,7 @@ use log::{debug, info, trace, warn};
 
 use chord::action::RunArg;
 use chord::case::CaseState;
+use chord::collection::TailDropVec;
 use chord::err;
 use chord::step::{StepAssess, StepState};
 use chord::value::Value;
@@ -21,7 +22,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     let start = Utc::now();
     let mut render_context = arg.create_render_context();
     let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
-    for (step_id, action) in arg.step_vec().clone().iter() {
+    for (step_id, action) in arg.step_vec().iter() {
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if step_arg.is_none() {
             warn!("case Err {}", arg.id());
@@ -59,7 +60,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                     start,
                     Utc::now(),
                     arg.take_data(),
-                    CaseState::Fail(step_assess_vec),
+                    CaseState::Fail(TailDropVec::from(step_assess_vec)),
                 );
             }
             StepAssessStruct {
@@ -88,7 +89,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                     start,
                     Utc::now(),
                     arg.take_data(),
-                    CaseState::Fail(step_assess_vec),
+                    CaseState::Fail(TailDropVec::from(step_assess_vec)),
                 );
             }
             StepAssessStruct {
@@ -127,7 +128,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                             start,
                             Utc::now(),
                             arg.take_data(),
-                            CaseState::Fail(step_assess_vec),
+                            CaseState::Fail(TailDropVec::from(step_assess_vec)),
                         );
                     }
                 } else {
@@ -145,7 +146,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
         start,
         Utc::now(),
         arg.take_data(),
-        CaseState::Ok(step_assess_vec),
+        CaseState::Ok(TailDropVec::from(step_assess_vec)),
     );
 }
 

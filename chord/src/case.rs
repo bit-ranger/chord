@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
 
+use crate::collection::TailDropVec;
 use crate::error::Error;
 use crate::step::StepAssess;
 use crate::task::TaskId;
@@ -28,9 +29,9 @@ pub trait CaseAssess: Sync + Send {
 }
 
 pub enum CaseState {
-    Ok(Vec<Box<dyn StepAssess>>),
+    Ok(TailDropVec<Box<dyn StepAssess>>),
     Err(Error),
-    Fail(Vec<Box<dyn StepAssess>>),
+    Fail(TailDropVec<Box<dyn StepAssess>>),
 }
 
 impl CaseState {
@@ -38,19 +39,6 @@ impl CaseState {
         match self {
             CaseState::Ok(_) => true,
             _ => false,
-        }
-    }
-}
-
-impl Drop for CaseState {
-    fn drop(&mut self) {
-        if let CaseState::Ok(vec) | CaseState::Fail(vec) = self {
-            // last step first drop
-            loop {
-                if let None = vec.pop() {
-                    break;
-                }
-            }
         }
     }
 }

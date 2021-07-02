@@ -355,6 +355,38 @@ impl TaskRunner {
     }
 }
 
+impl Drop for TaskRunner {
+    fn drop(&mut self) {
+        if let Some(step_vec) = &mut self.step_vec {
+            loop {
+                if let None = step_vec.pop() {
+                    break;
+                }
+            }
+        }
+
+        self.case_exec_id = None;
+        self.stage_state = None;
+        self.pre_ctx = None;
+        self.pre_assess = None;
+
+        if let Some(step_vec) = &mut self.pre_step_vec {
+            loop {
+                if let None = step_vec.pop() {
+                    break;
+                }
+            }
+        }
+
+        self.task_state = None;
+        self.assess_report = None;
+        self.case_load = None;
+        self.id = None;
+        self.flow_ctx = None;
+        self.flow = None;
+    }
+}
+
 async fn pre_arg(
     flow: Arc<Flow>,
     task_id: Arc<TaskIdSimple>,

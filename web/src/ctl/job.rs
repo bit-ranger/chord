@@ -12,8 +12,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use chord::err;
 use chord::Error;
-use chord::{err, rerr};
 use chord_action::FactoryComposite;
 use chord_flow::Context;
 

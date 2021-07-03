@@ -15,15 +15,15 @@ pub fn register(handlebars: &mut Handlebars) {
 
     //literal
     handlebars.register_helper(
-        "brace_left",
+        "lbrace",
         Box::new(LiteralHelper {
-            code: "brace_left".into(),
+            literal: "{".into(),
         }),
     );
     handlebars.register_helper(
-        "brace_right",
+        "rbrace",
         Box::new(LiteralHelper {
-            code: "brace_right".into(),
+            literal: "}".into(),
         }),
     );
 
@@ -57,7 +57,7 @@ pub fn register(handlebars: &mut Handlebars) {
 }
 
 pub struct LiteralHelper {
-    code: String,
+    literal: String,
 }
 
 impl HelperDef for LiteralHelper {
@@ -68,17 +68,8 @@ impl HelperDef for LiteralHelper {
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        let lit = match self.code.as_str() {
-            "brace_left" => "{",
-            "brace_right" => "}",
-            _ => {
-                return Err(RenderError::new(format!(
-                    "literal {} unrecognized in ",
-                    self.code.as_str()
-                )))
-            }
-        };
-
-        Ok(Some(ScopedJson::Derived(Value::String(lit.to_string()))))
+        Ok(Some(ScopedJson::Derived(Value::String(
+            self.literal.to_string(),
+        ))))
     }
 }

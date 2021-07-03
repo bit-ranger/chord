@@ -194,7 +194,7 @@ pub async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
     index_create_0(rb).await.map_err(|e| e.0)
 }
 
-async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), Rae> {
+async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), ElasticError> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -214,7 +214,7 @@ async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), Rae> {
     Ok(())
 }
 
-async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), Rae> {
+async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), ElasticError> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -242,7 +242,7 @@ async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), Rae>
     Ok(())
 }
 
-async fn empty_send_0(rb: RequestBuilder) -> Result<Response, Rae> {
+async fn empty_send_0(rb: RequestBuilder) -> Result<Response, ElasticError> {
     let rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -253,7 +253,7 @@ async fn empty_send_0(rb: RequestBuilder) -> Result<Response, Rae> {
     Ok(res)
 }
 
-async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
+async fn index_create_0(rb: RequestBuilder) -> Result<(), ElasticError> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -307,26 +307,26 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), Rae> {
     Ok(())
 }
 
-struct Rae(chord::Error);
+struct ElasticError(chord::Error);
 
-impl From<surf::Error> for Rae {
-    fn from(err: surf::Error) -> Rae {
-        Rae(err!("elasticsearch", format!("{}", err.status())))
+impl From<surf::Error> for ElasticError {
+    fn from(err: surf::Error) -> ElasticError {
+        ElasticError(err!("elasticsearch", format!("{}", err.status())))
     }
 }
 
-impl From<chord::value::Error> for Rae {
-    fn from(err: chord::value::Error) -> Rae {
-        Rae(err!(
+impl From<chord::value::Error> for ElasticError {
+    fn from(err: chord::value::Error) -> ElasticError {
+        ElasticError(err!(
             "serde_json",
             format!("{}:{}", err.line(), err.column())
         ))
     }
 }
 
-impl From<chord::Error> for Rae {
+impl From<chord::Error> for ElasticError {
     fn from(err: Error) -> Self {
-        Rae(err)
+        ElasticError(err)
     }
 }
 

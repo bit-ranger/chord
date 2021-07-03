@@ -164,7 +164,7 @@ impl Action for Dubbo {
     }
 }
 
-async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, Rae> {
+async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, DubboError> {
     let rb = RequestBuilder::new(
         Method::Post,
         Url::from_str(format!("http://127.0.0.1:{}/api/dubbo/generic/invoke", port).as_str())
@@ -233,23 +233,23 @@ struct Registry {
     address: String,
 }
 
-struct Rae(chord::Error);
+struct DubboError(chord::Error);
 
-impl From<surf::Error> for Rae {
-    fn from(err: surf::Error) -> Rae {
-        Rae(err!("dubbo", format!("{}", err.status())))
+impl From<surf::Error> for DubboError {
+    fn from(err: surf::Error) -> DubboError {
+        DubboError(err!("dubbo", format!("{}", err.status())))
     }
 }
 
-impl From<chord::value::Error> for Rae {
-    fn from(err: chord::value::Error) -> Rae {
-        Rae(err!("dubbo", format!("{}:{}", err.line(), err.column())))
+impl From<chord::value::Error> for DubboError {
+    fn from(err: chord::value::Error) -> DubboError {
+        DubboError(err!("dubbo", format!("{}:{}", err.line(), err.column())))
     }
 }
 
-impl From<chord::Error> for Rae {
+impl From<chord::Error> for DubboError {
     fn from(err: Error) -> Self {
-        Rae(err)
+        DubboError(err)
     }
 }
 

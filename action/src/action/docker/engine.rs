@@ -43,7 +43,7 @@ async fn call0(
     method: Method,
     data: Option<Value>,
     tail_size: usize,
-) -> Result<Vec<String>, Rae> {
+) -> Result<Vec<String>, DockerError> {
     let url = format!("http://{}/{}", address, uri);
     let url = Url::from_str(url.as_str()).or(rerr!("docker", format!("invalid url: {}", url)))?;
     let mut rb = RequestBuilder::new(method, url);
@@ -89,27 +89,27 @@ async fn call0(
     };
 }
 
-struct Rae(chord::Error);
+struct DockerError(chord::Error);
 
-impl From<surf::Error> for Rae {
-    fn from(err: surf::Error) -> Rae {
-        Rae(err!("docker", format!("{}", err.status())))
+impl From<surf::Error> for DockerError {
+    fn from(err: surf::Error) -> DockerError {
+        DockerError(err!("docker", format!("{}", err.status())))
     }
 }
 
-impl From<chord::Error> for Rae {
+impl From<chord::Error> for DockerError {
     fn from(err: Error) -> Self {
-        Rae(err)
+        DockerError(err)
     }
 }
 
-impl From<chord::value::Error> for Rae {
+impl From<chord::value::Error> for DockerError {
     fn from(err: chord::value::Error) -> Self {
-        Rae(cause!("docker", "parse fail", err))
+        DockerError(cause!("docker", "parse fail", err))
     }
 }
 
-impl Into<chord::Error> for Rae {
+impl Into<chord::Error> for DockerError {
     fn into(self) -> Error {
         self.0
     }

@@ -8,13 +8,19 @@ stage:
             step1:
                 action: download
                 args:
-                    url: hello
+                    url: "{{case.url}}"
                 
                     
             step2:
                 action: download
                 args:
-                    url: world!
+                    url: "{{case.url}}"
+                    
+            setp3:
+                action: log
+                args: |
+                    {{each step.step1.value.header}}
+                    {{each step.step2.value.header}}
                 
     
               

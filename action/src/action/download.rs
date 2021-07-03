@@ -3,10 +3,13 @@ use std::str::FromStr;
 use async_std::io::BufWriter;
 use async_std::path::PathBuf;
 use futures::executor::block_on;
-use futures::AsyncWriteExt;
 use log::{trace, warn};
+use surf::http::headers::{HeaderName, HeaderValue};
+use surf::http::Method;
+use surf::{RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
+use chord::value::{Map, Number};
 
 pub struct DownloadFactory {
     workdir: PathBuf,
@@ -56,31 +59,72 @@ struct Download {
 #[async_trait]
 impl Action for Download {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let url = arg.render_str(
-            arg.args()["url"]
-                .as_str()
-                .ok_or(err!("010", "missing url"))?,
-        )?;
-        let path = self.tmp.join(arg.id());
-        let file = async_std::fs::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .append(true)
-            .open(path.as_path())
-            .await?;
-        let mut writer = BufWriter::new(file);
-        writer.write_all(url.as_bytes()).await?;
-        trace!("file create {}", path.as_path().to_str().unwrap());
-
-        let download_file = DownloadFile {
-            value: Value::Array(vec![
-                Value::String(self.name.clone()),
-                Value::String(arg.id().into()),
-            ]),
-            path,
-        };
-        return Ok(Box::new(download_file));
+        let file = run0(self, arg).await.map_err(|e| e.0)?;
+        Ok(Box::new(file))
     }
+}
+
+async fn run0(
+    download: &Download,
+    arg: &dyn RunArg,
+) -> std::result::Result<DownloadFile, DownloadError> {
+    let args = arg.render_value(arg.args())?;
+    let url = args["url"].as_str().ok_or(err!("010", "missing url"))?;
+    let url = Url::from_str(url).or(rerr!("011", format!("invalid url: {}", url)))?;
+
+    let mut rb = RequestBuilder::new(Method::Get, url);
+    if let Some(header) = args["header"].as_object() {
+        for (k, v) in header.iter() {
+            let hn = HeaderName::from_string(k.clone()).or(rerr!("030", "invalid header name"))?;
+            let hvt = v.as_str().ok_or(err!("031", "invalid header value"))?;
+            let hv = HeaderValue::from_str(hvt).or(rerr!("031", "invalid header value"))?;
+            rb = rb.header(hn, hv);
+        }
+    }
+
+    let path = download.tmp.join(arg.id());
+
+    let mut df = DownloadFile {
+        path: path.clone(),
+        value: Value::Null,
+    };
+
+    let file = async_std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open(path.as_path())
+        .await?;
+    let writer = BufWriter::new(file);
+
+    let mut res: Response = rb.send().await?;
+    let mut value = Map::new();
+    value.insert(
+        String::from("status"),
+        Value::Number(Number::from_str(res.status().to_string().as_str()).unwrap()),
+    );
+
+    let mut header_data = Map::new();
+    for (hn, hv) in res.iter() {
+        header_data.insert(hn.to_string(), Value::String(hv.to_string()));
+    }
+    value.insert(String::from("header"), Value::Object(header_data));
+
+    value.insert(
+        String::from("path"),
+        Value::Array(vec![
+            Value::String(download.name.clone()),
+            Value::String(arg.id().into()),
+        ]),
+    );
+
+    let size = async_std::io::copy(res.take_body(), writer).await?;
+    trace!("file create {}, {}", path.as_path().to_str().unwrap(), size);
+
+    value.insert(String::from("size"), Value::Number(Number::from(size)));
+
+    df.value = Value::Object(value);
+    return Ok(df);
 }
 
 impl Drop for Download {
@@ -90,7 +134,13 @@ impl Drop for Download {
 
         match result {
             Ok(()) => trace!("tmp remove {}", self.tmp.as_path().to_str().unwrap()),
-            Err(e) => warn!("tmp remove {}, {}", self.tmp.as_path().to_str().unwrap(), e),
+            Err(e) => {
+                if let rm_rf::Error::NotFound = e {
+                    trace!("tmp not found {}", self.tmp.as_path().to_str().unwrap());
+                } else {
+                    warn!("tmp remove {}, {}", self.tmp.as_path().to_str().unwrap(), e);
+                }
+            }
         }
     }
 }
@@ -112,11 +162,37 @@ impl Drop for DownloadFile {
 
         match result {
             Ok(()) => trace!("file remove {}", self.path.as_path().to_str().unwrap()),
-            Err(e) => warn!(
-                "file remove {}, {}",
-                self.path.as_path().to_str().unwrap(),
-                e
-            ),
+            Err(e) => {
+                if let std::io::ErrorKind::NotFound = e.kind() {
+                    trace!("file not found {}", self.path.as_path().to_str().unwrap());
+                } else {
+                    warn!(
+                        "file remove {}, {}",
+                        self.path.as_path().to_str().unwrap(),
+                        e
+                    );
+                }
+            }
         }
+    }
+}
+
+struct DownloadError(chord::Error);
+
+impl From<surf::Error> for DownloadError {
+    fn from(err: surf::Error) -> DownloadError {
+        DownloadError(err!("download", format!("{}", err.status())))
+    }
+}
+
+impl From<chord::Error> for DownloadError {
+    fn from(err: Error) -> Self {
+        DownloadError(err)
+    }
+}
+
+impl From<std::io::Error> for DownloadError {
+    fn from(err: std::io::Error) -> Self {
+        DownloadError(cause!("download", err.to_string(), err))
     }
 }

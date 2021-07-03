@@ -73,7 +73,7 @@ impl Drop for Image {
         let _ = block_on(f)
             .map_err(|e| {
                 if e.code() == "docker" && e.message() == "404" {
-                    trace!("image remove {}", self.name);
+                    trace!("image not found {}", self.name);
                 } else {
                     warn!("image remove fail {}, {}", self.name, e);
                 }

@@ -37,18 +37,16 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     Ok(Box::new(value))
 }
 
-async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
-    let url = arg.args()["url"]
-        .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing url"))??;
-    let url = Url::from_str(url.as_str()).or(rerr!("011", format!("invalid url: {}", url)))?;
+async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
+    let args = arg.render_value(arg.args())?;
 
-    let method = arg.args()["method"]
+    let url = args["url"].as_str().ok_or(err!("010", "missing url"))?;
+    let url = Url::from_str(url).or(rerr!("011", format!("invalid url: {}", url)))?;
+
+    let method = args["method"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("020", "missing method"))??;
-    let method = Method::from_str(method.as_str()).or(rerr!("021", "invalid method"))?;
+        .ok_or(err!("020", "missing method"))?;
+    let method = Method::from_str(method).or(rerr!("021", "invalid method"))?;
 
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
@@ -56,21 +54,18 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
         HeaderValue::from_str("application/json")?,
     );
 
-    if let Some(header) = arg.args()["header"].as_object() {
+    if let Some(header) = args["header"].as_object() {
         for (k, v) in header.iter() {
-            let hn = HeaderName::from_string(arg.render_str(k)?)
-                .or(rerr!("030", "invalid header name"))?;
-            let hvt = arg.render_str(v.as_str().ok_or(err!("031", "invalid header value"))?)?;
-            let hv =
-                HeaderValue::from_str(hvt.as_str()).or(rerr!("031", "invalid header value"))?;
+            let hn = HeaderName::from_string(k.clone()).or(rerr!("030", "invalid header name"))?;
+            let hvt = v.as_str().ok_or(err!("031", "invalid header value"))?;
+            let hv = HeaderValue::from_str(hvt).or(rerr!("031", "invalid header value"))?;
             rb = rb.header(hn, hv);
         }
     }
 
-    let body = arg.args()["body"].borrow();
+    let body = args["body"].borrow();
     if !body.is_null() {
-        let body = arg.render_value(body)?;
-        rb = rb.body(Body::from(body));
+        rb = rb.body(Body::from(body.clone()));
     }
 
     let mut res: Response = rb.send().await?;
@@ -81,13 +76,9 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
     );
 
     let mut header_data = Map::new();
-    for header_name in res.header_names() {
-        header_data.insert(
-            header_name.to_string(),
-            Value::String(res.header(header_name).unwrap().to_string()),
-        );
+    for (hn, hv) in res.iter() {
+        header_data.insert(hn.to_string(), Value::String(hv.to_string()));
     }
-
     res_data.insert(String::from("header"), Value::Object(header_data));
 
     let body: Value = res.body_json().await?;
@@ -95,16 +86,16 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Rae> {
     return Ok(Value::Object(res_data));
 }
 
-struct Rae(chord::Error);
+struct RestapiError(chord::Error);
 
-impl From<surf::Error> for Rae {
-    fn from(err: surf::Error) -> Rae {
-        Rae(err!("restapi", format!("{}", err.status())))
+impl From<surf::Error> for RestapiError {
+    fn from(err: surf::Error) -> RestapiError {
+        RestapiError(err!("restapi", format!("{}", err.status())))
     }
 }
 
-impl From<chord::Error> for Rae {
+impl From<chord::Error> for RestapiError {
     fn from(err: Error) -> Self {
-        Rae(err)
+        RestapiError(err)
     }
 }

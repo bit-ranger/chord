@@ -2,5 +2,3 @@
 pub mod csv;
 #[cfg(feature = "report_elasticsearch")]
 pub mod elasticsearch;
-#[cfg(feature = "report_mongodb")]
-pub mod mongodb;

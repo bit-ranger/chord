@@ -16,37 +16,41 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chord = {path = "../chord" }
-serde = {version = "1.0"}
-async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
-log = { version = "0.4.14", features = ["std"]}
-surf = {version = "2.1.0",  optional = true}
-md5 = {version = "0.7.0", optional = true }
-redis = {version="0.20.0", features = [ "async-std-comp"], optional = true }
-rbatis = { version = "1.8.87",  optional = true }
-mongodb = { version = "2.0.0-alpha.1",  default-features = false, features = ["async-std-runtime"], optional = true }
+chord = { path = "../chord" }
+serde = { version = "1.0" }
+async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
+log = { version = "0.4.14", features = ["std"] }
+surf = { version = "2.1.0", optional = true }
+md5 = { version = "0.7.0", optional = true }
+redis = { version = "0.20.0", features = ["async-std-comp"], optional = true }
+rbatis = { version = "1.8.87", optional = true }
+mongodb = { version = "2.0.0-alpha.1", default-features = false, features = ["async-std-runtime"], optional = true }
 urlencoding = { version = "1.3.3", optional = true }
-dynamic_reload = {version = "0.4.0", optional = true}
+dynamic_reload = { version = "0.4.0", optional = true }
 futures = { version = "0.3.13", optional = true }
 pyo3 = { version = "0.13.2", features = ["auto-initialize"], optional = true }
 rm_rf = { version = "0.6.1", optional = true }
+rlua = { version = "0.17.0", optional = true }
 
 
 [target.'cfg(linux)'.dependencies]
-openssl = {version = "0.10", features = ["vendored"]}
+openssl = { version = "0.10", features = ["vendored"] }
 
 
 [features]
 default = []
+act_restapi = ["surf"]
 act_database = ["rbatis"]
 act_dubbo = []
 act_redis = ["redis"]
 act_crypto = ["md5"]
-act_restapi = ["surf"]
+act_download = ['futures', 'rm_rf', 'surf']
 act_mongodb = ["mongodb"]
 act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
 act_docker = ["surf", "futures"]
 act_python = ["pyo3"]
-act_download = ['futures', 'rm_rf', 'surf']
+act_lua = ["rlua"]
+
+
 

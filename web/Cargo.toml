@@ -15,17 +15,17 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chord = {path = "../chord" }
+chord = { path = "../chord" }
 serde = { version = "1.0" }
-chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_download"] }
+chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_download", "act_lua"] }
 chord-flow = { path = "../flow" }
-chord-input = {path = "../input"}
-chord-output = {path = "../output", features = ["report_elasticsearch"]}
-async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
+chord-input = { path = "../input" }
+chord-output = { path = "../output", features = ["report_elasticsearch"] }
+async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 time = "0.1.42"
 futures = "0.3.13"
 itertools = "0.10.0"
-log = { version = "0.4.14", features = ["std"]}
+log = { version = "0.4.14", features = ["std"] }
 flume = "0.10.5"
 tide = "0.16.0"
 validator = { version = "0.13", features = ["derive"] }

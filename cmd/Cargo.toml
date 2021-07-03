@@ -15,13 +15,13 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chord = {path = "../chord" }
-chord-flow = {path = "../flow"}
-chord-input = {path = "../input"}
+chord = { path = "../chord" }
+chord-flow = { path = "../flow" }
+chord-input = { path = "../input" }
 chord-output = { path = "../output", features = ["report_csv"] }
-chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_dylib", "act_docker", "act_python", "act_download"] }
+chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_dylib", "act_docker", "act_python", "act_download", "act_lua"] }
 log = { version = "0.4.14", features = ["std"] }
-async-std = {version = "1.9.0", features = ["std", "attributes", "tokio1"]}
+async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 time = "0.1.42"
 futures = "0.3.13"
 itertools = "0.10.0"

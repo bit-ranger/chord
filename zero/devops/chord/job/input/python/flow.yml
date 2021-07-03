@@ -20,7 +20,7 @@ stage:
                             foo: "{{case.foo}}"
                             bar: "{{case.bar}}"
         
-                assert:
+                assert: |
                     (all
                     (eq curr.value.k ["1", 2.3, "12.3", 3.3])
                     (eq curr.value.k.2 "12.3")

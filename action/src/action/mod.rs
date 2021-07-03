@@ -20,6 +20,8 @@ mod download;
 mod dubbo;
 #[cfg(feature = "act_dylib")]
 mod dylib;
+#[cfg(feature = "act_lua")]
+mod lua;
 #[cfg(feature = "act_mongodb")]
 mod mongodb;
 #[cfg(feature = "act_python")]
@@ -122,6 +124,9 @@ impl FactoryComposite {
             python::PythonFactory::new,
             false
         );
+
+        #[cfg(feature = "act_lua")]
+        register!(table, config_ref, "lua", lua::LuaFactory::new, true);
 
         #[cfg(feature = "act_download")]
         register!(

@@ -688,6 +688,7 @@ dependencies = [
  "pyo3",
  "rbatis",
  "redis",
+ "rlua",
  "rm_rf",
  "serde",
  "surf",
@@ -3064,6 +3065,19 @@ dependencies = [
  "untrusted",
  "web-sys",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "rlua"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25fa5b2c667bae0b6218361e96d365e414fe4a0fa80f476b9631aa2dea2c6881"
+dependencies = [
+ "bitflags",
+ "bstr",
+ "cc",
+ "libc",
+ "num-traits",
 ]
 
 [[package]]

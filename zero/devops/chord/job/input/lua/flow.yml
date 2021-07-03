@@ -1,0 +1,33 @@
+version: "0.0.1"
+
+stage:
+    stage1:
+    
+        step:
+            step1:
+                action: lua
+                args:
+                    code: |
+                        for i = 1, 5 do
+                            print("hello lua");
+                        end
+                        
+                        return {{brace_left}}
+                            {{brace_left}}
+                             ['foo'] = {{case.foo}}
+                            {{brace_right}}
+                            ,
+                            {{brace_left}}
+                             ['bar'] = {{case.bar}} ,
+                            {{brace_right}}
+                        {{brace_right}}
+        
+                assert: |
+                    (all
+                        (eq curr.value.2.bar (num case.bar)
+                        )
+                    )
+                    
+
+
+

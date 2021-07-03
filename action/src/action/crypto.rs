@@ -38,8 +38,6 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
             let digest = format!("{:x}", digest);
             return Ok(Box::new(Value::String(digest)));
         }
-        _ => {
-            rerr!("crypto", format!("unsupported {}", by))
-        }
+        _ => Err(err!("crypto", format!("unsupported {}", by))),
     };
 }

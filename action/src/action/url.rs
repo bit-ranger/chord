@@ -36,9 +36,7 @@ impl Action for Url {
                 let to = urlencoding::decode(from.as_str())?;
                 Ok(Box::new(Value::String(to)))
             }
-            _ => {
-                rerr!("url", format!("unsupported {}", by))
-            }
+            _ => Err(err!("url", format!("unsupported {}", by))),
         };
     }
 }

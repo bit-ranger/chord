@@ -10,7 +10,7 @@ pub use mongodb::Collection;
 pub use mongodb::Database;
 
 use chord::case::{CaseAssess, CaseState};
-use chord::rerr;
+use chord::err;
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::Error;
@@ -56,7 +56,7 @@ impl Reporter {
 
     pub async fn write(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
         if let TaskState::Err(_) = self.total_task_state {
-            return rerr!("500", "task is error");
+            return Err(err!("500", "task is error"));
         }
 
         match task_assess.state() {

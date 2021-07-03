@@ -5,9 +5,9 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::err;
 use crate::error::Error;
 use crate::value::{Map, Value};
-use crate::{err, rerr};
 
 lazy_static! {
     pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,10}$").unwrap();
@@ -28,10 +28,10 @@ impl Flow {
         let pre_sid_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
         for pre_sid in pre_sid_vec {
             if !ID_PATTERN.is_match(pre_sid) {
-                return rerr!("step", format!("invalid step_id {}", pre_sid));
+                return Err(err!("step", format!("invalid step_id {}", pre_sid)));
             }
             if step_id_checked.contains(pre_sid) {
-                return rerr!("step", format!("duplicate step_id {}", pre_sid));
+                return Err(err!("step", format!("duplicate step_id {}", pre_sid)));
             } else {
                 step_id_checked.insert(pre_sid.into());
             }
@@ -41,7 +41,7 @@ impl Flow {
 
         for stage_id in stage_id_vec {
             if !ID_PATTERN.is_match(stage_id) {
-                return rerr!("stage", format!("invalid stage_id {}", stage_id));
+                return Err(err!("stage", format!("invalid stage_id {}", stage_id)));
             }
 
             flow._stage_concurrency(stage_id)?;
@@ -52,11 +52,11 @@ impl Flow {
             let stage_sid_vec = flow._stage_step_id_vec(stage_id)?;
             for stage_sid in stage_sid_vec {
                 if !ID_PATTERN.is_match(stage_sid) {
-                    return rerr!("step", format!("invalid step_id {}", stage_sid));
+                    return Err(err!("step", format!("invalid step_id {}", stage_sid)));
                 }
 
                 if step_id_checked.contains(stage_sid) {
-                    return rerr!("step", format!("duplicate step_id {}", stage_sid));
+                    return Err(err!("step", format!("duplicate step_id {}", stage_sid)));
                 } else {
                     step_id_checked.insert(stage_sid.into());
                 }
@@ -157,7 +157,7 @@ impl Flow {
             .ok_or(err!("version", "missing version"))?;
 
         if v != "0.0.1" {
-            return rerr!("version", "version only supports 0.0.1");
+            return Err(err!("version", "version only supports 0.0.1"));
         } else {
             Ok(v)
         }
@@ -185,7 +185,7 @@ impl Flow {
 
         let s = s.unwrap();
         if s < 1 {
-            return rerr!("step", "timeout must > 0");
+            return Err(err!("step", "timeout must > 0"));
         }
         Ok(Duration::from_secs(s))
     }
@@ -206,7 +206,7 @@ impl Flow {
 
         let s = s.unwrap();
         if s < 1 {
-            return rerr!("stage", "concurrency must > 0");
+            return Err(err!("stage", "concurrency must > 0"));
         }
         Ok(s as usize)
     }
@@ -219,7 +219,7 @@ impl Flow {
 
         let s = s.unwrap();
         if s < 1 {
-            return rerr!("stage", "round must > 0");
+            return Err(err!("stage", "round must > 0"));
         }
         Ok(s as usize)
     }
@@ -232,7 +232,7 @@ impl Flow {
 
         let s = s.unwrap();
         if s < 1 {
-            return rerr!("stage", "duration must > 0");
+            return Err(err!("stage", "duration must > 0"));
         }
         Ok(Duration::from_secs(s))
     }
@@ -244,7 +244,7 @@ impl Flow {
         match break_on {
             "never" => Ok(break_on),
             "stage_fail" => Ok(break_on),
-            _ => rerr!("stage", "break_on unsupported value"),
+            _ => Err(err!("stage", "break_on unsupported value")),
         }
     }
 }

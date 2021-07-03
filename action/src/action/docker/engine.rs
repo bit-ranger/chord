@@ -9,7 +9,7 @@ use surf::{RequestBuilder, Response, Url};
 
 use chord::value::Value;
 use chord::Error;
-use chord::{cause, err, rcause, rerr};
+use chord::{cause, err};
 
 pub struct Engine {
     address: String,
@@ -45,7 +45,8 @@ async fn call0(
     tail_size: usize,
 ) -> Result<Vec<String>, DockerError> {
     let url = format!("http://{}/{}", address, uri);
-    let url = Url::from_str(url.as_str()).or(rerr!("docker", format!("invalid url: {}", url)))?;
+    let url =
+        Url::from_str(url.as_str()).or(Err(err!("docker", format!("invalid url: {}", url))))?;
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
@@ -64,7 +65,7 @@ async fn call0(
         let size = res
             .read_line(&mut line)
             .await
-            .or_else(|e| rcause!("docker", "read fail", e))?;
+            .or_else(|e| Err(cause!("docker", "read fail", e)))?;
         if size > 0 {
             if res.content_type().is_some()
                 && res.content_type().unwrap().to_string() == "application/octet-stream"
@@ -83,7 +84,7 @@ async fn call0(
         }
     }
     return if !res.status().is_success() {
-        rerr!("docker", res.status().to_string())?
+        Err(err!("docker", res.status().to_string()))?
     } else {
         Ok(tail.into())
     };

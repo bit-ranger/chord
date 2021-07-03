@@ -10,10 +10,10 @@ use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
+use chord::err;
 use chord::value::{from_str, to_string_pretty};
 use chord::value::{Deserialize, Serialize};
 use chord::Error;
-use chord::{err, rerr};
 
 pub struct DubboFactory {
     registry_protocol: String,
@@ -25,12 +25,12 @@ pub struct DubboFactory {
 impl DubboFactory {
     pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
         if config.is_none() {
-            return rerr!("010", "missing config");
+            return Err(err!("010", "missing config"));
         }
         let config = config.as_ref().unwrap();
 
         if config.is_null() {
-            return rerr!("010", "missing config");
+            return Err(err!("010", "missing config"));
         }
 
         let jar_path = config["jar_path"]
@@ -66,7 +66,7 @@ impl DubboFactory {
         loop {
             let line = lines.next().await;
             if line.is_none() {
-                return rerr!("020", "failed to start dubbo-generic-gateway");
+                return Err(err!("020", "failed to start dubbo-generic-gateway"));
             }
             let line = line.unwrap()?;
             trace!("{}", line);
@@ -118,7 +118,7 @@ impl Action for Dubbo {
             .filter(|s| !s.is_empty())
             .collect::<Vec<&str>>();
         if parts.len() < 2 {
-            return rerr!("010", "invalid method");
+            return Err(err!("010", "invalid method"));
         }
 
         let args_raw = &run_arg.args()["args"];
@@ -160,7 +160,10 @@ impl Action for Dubbo {
             return Ok(Box::new(value["data"].clone()));
         }
 
-        return rerr!("dubbo", format!("{}::{}", value["code"], value["message"]));
+        return Err(err!(
+            "dubbo",
+            format!("{}::{}", value["code"], value["message"])
+        ));
     }
 }
 
@@ -168,7 +171,7 @@ async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, 
     let rb = RequestBuilder::new(
         Method::Post,
         Url::from_str(format!("http://127.0.0.1:{}/api/dubbo/generic/invoke", port).as_str())
-            .or(rerr!("021", "invalid url"))?,
+            .or(Err(err!("021", "invalid url")))?,
     );
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
@@ -179,7 +182,7 @@ async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, 
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
-        return rerr!("dubbo", res.status().to_string())?;
+        return Err(err!("dubbo", res.status().to_string()))?;
     } else {
         let body: Value = res.body_json().await?;
         Ok(body)
@@ -264,7 +267,7 @@ fn render(arg: &dyn RunArg, content: &Value) -> Result<Value, Error> {
             .ok_or(err!("032", "invalid content"))?
             .to_owned()
     } else {
-        to_string_pretty(content).or(rerr!("032", "invalid content"))?
+        to_string_pretty(content).or(Err(err!("032", "invalid content")))?
     };
     let content_str = arg.render_str(body_str.as_str())?;
     return Ok(from_str(content_str.as_str())?);

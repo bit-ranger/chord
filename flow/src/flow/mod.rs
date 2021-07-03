@@ -4,7 +4,7 @@ use async_std::sync::Arc;
 use async_std::task_local;
 
 use chord::action::Factory;
-use chord::rerr;
+use chord::err;
 use chord::Error;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
@@ -33,7 +33,7 @@ pub fn render(
     let render = handlebars.render_template_with_context(text, render_context);
     return match render {
         Ok(r) => Ok(r),
-        Err(e) => rerr!("tpl", format!("{}", e)),
+        Err(e) => Err(err!("tpl", format!("{}", e))),
     };
 }
 

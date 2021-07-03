@@ -28,7 +28,7 @@ async fn run(arg: &dyn RunArg) -> StepValue {
     let mut server_stream = match TcpStream::connect(address).await {
         Ok(server_stream) => server_stream,
         Err(e) => {
-            return rerr!("connection error", format!("{}", e));
+            return Err(err!("connection error", format!("{}", e)));
         }
     };
 
@@ -66,9 +66,7 @@ async fn run(arg: &dyn RunArg) -> StepValue {
             let json = Json::from_str(value.as_str())?;
             StepValue::Ok(json)
         }
-        None => {
-            rerr!("001", value)
-        }
+        None => Err(err!("001", value)),
     }
 }
 

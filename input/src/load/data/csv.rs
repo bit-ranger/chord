@@ -7,7 +7,6 @@ use csv::{Reader, ReaderBuilder};
 use chord::err;
 use chord::input::async_trait;
 use chord::input::CaseLoad;
-use chord::rerr;
 use chord::value::{to_string, Map, Value};
 use chord::Error;
 
@@ -56,7 +55,7 @@ async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<V
     let mut curr_size = 0;
     for result in reader.deserialize() {
         let result: Map = match result {
-            Err(e) => return rerr!("csv", format!("{:?}", e)),
+            Err(e) => return Err(err!("csv", format!("{:?}", e))),
             Ok(r) => r,
         };
 

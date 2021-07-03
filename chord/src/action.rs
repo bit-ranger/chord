@@ -6,8 +6,6 @@ pub use crate::Error;
 pub mod prelude {
     pub use crate::cause;
     pub use crate::err;
-    pub use crate::rcause;
-    pub use crate::rerr;
 
     pub use super::async_trait;
     pub use super::Action;

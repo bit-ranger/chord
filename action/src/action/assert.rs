@@ -35,12 +35,12 @@ impl Action for Assert {
                 if result.eq("true") {
                     Ok(Box::new(Value::Null))
                 } else {
-                    rerr!("assert", "assert fail")
+                    Err(err!("assert", "assert fail"))
                 }
             }
             Err(e) => {
                 info!("assert err: {} >>> {}", condition, e);
-                rerr!("assert", "assert err")
+                Err(err!("assert", "assert err"))
             }
         };
     }

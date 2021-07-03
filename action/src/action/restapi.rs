@@ -41,12 +41,12 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
     let args = arg.render_value(arg.args())?;
 
     let url = args["url"].as_str().ok_or(err!("010", "missing url"))?;
-    let url = Url::from_str(url).or(rerr!("011", format!("invalid url: {}", url)))?;
+    let url = Url::from_str(url).or(Err(err!("011", format!("invalid url: {}", url))))?;
 
     let method = args["method"]
         .as_str()
         .ok_or(err!("020", "missing method"))?;
-    let method = Method::from_str(method).or(rerr!("021", "invalid method"))?;
+    let method = Method::from_str(method).or(Err(err!("021", "invalid method")))?;
 
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
@@ -56,10 +56,11 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
 
     if let Some(header) = args["header"].as_object() {
         for (k, v) in header.iter() {
-            let hn = HeaderName::from_string(k.clone()).or(rerr!("030", "invalid header name"))?;
+            let hn =
+                HeaderName::from_string(k.clone()).or(Err(err!("030", "invalid header name")))?;
             let hvs: Vec<HeaderValue> = match v {
                 Value::String(v) => {
-                    vec![HeaderValue::from_str(v).or(rerr!("031", "invalid header value"))?]
+                    vec![HeaderValue::from_str(v).or(Err(err!("031", "invalid header value")))?]
                 }
                 Value::Array(vs) => {
                     let mut vec = vec![];
@@ -69,7 +70,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
                     }
                     vec
                 }
-                _ => rerr!("031", "invalid header value")?,
+                _ => Err(err!("031", "invalid header value"))?,
             };
             rb = rb.header(hn, hvs.as_slice());
         }

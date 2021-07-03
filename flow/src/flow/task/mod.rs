@@ -11,11 +11,10 @@ use chord::flow::Flow;
 use chord::input::CaseLoad;
 use chord::output::AssessReport;
 use chord::output::Utc;
-use chord::rerr;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::{to_value, Map, Value};
-use chord::Error;
+use chord::{err, Error};
 use res::TaskAssessStruct;
 
 use crate::flow::case;
@@ -358,18 +357,16 @@ async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
                     StepState::Ok(pv) => {
                         pre_ctx["step"][pa.id().step()]["value"] = pv.as_value().clone();
                     }
-                    _ => return rerr!("012", "pre step run failure"),
+                    _ => return Err(err!("012", "pre step run failure")),
                 }
             }
             Ok(Value::Object(pre_ctx))
         }
         CaseState::Fail(pa_vec) => {
             let pa_last = pa_vec.last().unwrap();
-            rerr!("020", format!("pre Fail : {}", pa_last.id()))
+            Err(err!("020", format!("pre Fail : {}", pa_last.id())))
         }
-        CaseState::Err(e) => {
-            rerr!("021", format!("pre Err  : {}", e.to_string()))
-        }
+        CaseState::Err(e) => Err(err!("021", format!("pre Err  : {}", e.to_string()))),
     }
 }
 

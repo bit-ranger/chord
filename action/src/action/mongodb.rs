@@ -67,9 +67,9 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
                     collection.insert_many(doc_vec, None).await?;
                     return Ok(Box::new(Value::Null));
                 }
-                _ => rerr!("010", "illegal arg"),
+                _ => Err(err!("010", "illegal arg")),
             }
         }
-        _ => rerr!("010", "illegal operation"),
+        _ => Err(err!("010", "illegal operation")),
     }
 }

@@ -5,7 +5,7 @@ use async_std::path::{Path, PathBuf};
 use futures::AsyncReadExt;
 use structopt::StructOpt;
 
-use chord::rerr;
+use chord::err;
 use chord::task::TaskState;
 use chord::value::Value;
 use chord::Error;
@@ -54,7 +54,7 @@ async fn main() -> Result<(), Error> {
         Some(et) => match et {
             TaskState::Ok => Ok(()),
             TaskState::Err(e) => Err(e.clone()),
-            TaskState::Fail => rerr!("task", "fail"),
+            TaskState::Fail => Err(err!("task", "fail")),
         },
         None => Ok(()),
     };
@@ -71,7 +71,7 @@ async fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
 
     let deserialized: Result<Value, serde_yaml::Error> = serde_yaml::from_str(content.as_str());
     return match deserialized {
-        Err(e) => return rerr!("yaml", format!("{:?}", e)),
+        Err(e) => return Err(err!("yaml", format!("{:?}", e))),
         Ok(r) => Ok(r),
     };
 }

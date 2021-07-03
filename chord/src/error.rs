@@ -3,25 +3,9 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
 #[macro_export]
-macro_rules! rerr {
-    ($code:expr, $message:expr) => {{
-        let res = $crate::Error::new($code, $message);
-        std::result::Result::Err(res)
-    }};
-}
-
-#[macro_export]
 macro_rules! err {
     ($code:expr, $message:expr) => {{
         $crate::Error::new($code, $message)
-    }};
-}
-
-#[macro_export]
-macro_rules! rcause {
-    ($code:expr, $message:expr, $cause:expr) => {{
-        let res = $crate::Error::cause($code, $message, $cause);
-        std::result::Result::Err(res)
     }};
 }
 

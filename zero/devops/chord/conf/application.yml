@@ -15,10 +15,7 @@ report:
 action:
     download:
         workdir: /data/chord/workdir/download
-
-    python:
-        enable: true
-    
+ 
     dubbo:
         enable: false
     

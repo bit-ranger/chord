@@ -24,8 +24,6 @@ mod dylib;
 mod lua;
 #[cfg(feature = "act_mongodb")]
 mod mongodb;
-#[cfg(feature = "act_python")]
-mod python;
 #[cfg(feature = "act_redis")]
 mod redis;
 #[cfg(feature = "act_restapi")]
@@ -115,15 +113,6 @@ impl FactoryComposite {
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new, false);
-
-        #[cfg(feature = "act_python")]
-        register!(
-            table,
-            config_ref,
-            "python",
-            python::PythonFactory::new,
-            false
-        );
 
         #[cfg(feature = "act_lua")]
         register!(table, config_ref, "lua", lua::LuaFactory::new, true);

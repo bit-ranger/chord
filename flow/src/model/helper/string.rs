@@ -1,7 +1,7 @@
 use handlebars::handlebars_helper;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
-use chord::value::Value;
+use chord::value::{to_string_pretty, Value};
 
 handlebars_helper!(start_with: |x: Json, y: Json|
     x.is_string() && y.is_string() && x.as_str().unwrap().starts_with(y.as_str().unwrap())
@@ -34,8 +34,8 @@ impl HelperDef for StrHelper {
             .ok_or_else(|| RenderError::new("Param not found for helper \"str\""))?;
 
         let param = param.value();
-
-        Ok(Some(ScopedJson::Derived(Value::String(param.to_string()))))
+        let txt = to_string_pretty(param)?;
+        Ok(Some(ScopedJson::Derived(Value::String(txt))))
     }
 }
 

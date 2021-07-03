@@ -14,13 +14,15 @@ stage:
             step2:
                 action: download
                 args:
+                    header:
+                        abc: ["a", "b", "c"]
                     url: "{{case.url}}"
                     
             setp3:
                 action: log
-                args: |
-                    {{each step.step1.value.header}}
-                    {{each step.step2.value.header}}
+                args: |-
+                    {{str step.step1.value.header.content-length.0}}
+                    
                 
     
               

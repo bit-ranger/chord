@@ -76,9 +76,21 @@ async fn run0(
     if let Some(header) = args["header"].as_object() {
         for (k, v) in header.iter() {
             let hn = HeaderName::from_string(k.clone()).or(rerr!("030", "invalid header name"))?;
-            let hvt = v.as_str().ok_or(err!("031", "invalid header value"))?;
-            let hv = HeaderValue::from_str(hvt).or(rerr!("031", "invalid header value"))?;
-            rb = rb.header(hn, hv);
+            let hvs: Vec<HeaderValue> = match v {
+                Value::String(v) => {
+                    vec![HeaderValue::from_str(v).or(rerr!("031", "invalid header value"))?]
+                }
+                Value::Array(vs) => {
+                    let mut vec = vec![];
+                    for v in vs {
+                        let v = HeaderValue::from_str(v.to_string().as_str())?;
+                        vec.push(v)
+                    }
+                    vec
+                }
+                _ => rerr!("031", "invalid header value")?,
+            };
+            rb = rb.header(hn, hvs.as_slice());
         }
     }
 
@@ -106,7 +118,10 @@ async fn run0(
 
     let mut header_data = Map::new();
     for (hn, hv) in res.iter() {
-        header_data.insert(hn.to_string(), Value::String(hv.to_string()));
+        header_data.insert(
+            hn.to_string(),
+            Value::Array(hv.iter().map(|v| Value::String(v.to_string())).collect()),
+        );
     }
     value.insert(String::from("header"), Value::Object(header_data));
 

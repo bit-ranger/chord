@@ -41,7 +41,7 @@ jobs:
             -   name: cache-target
                 uses: actions/cache@v2
                 with:
-                    key: build-target-linux-musl
+                    key: build-target-linux-musl-${{ hashFiles('Cargo.lock') }}
                     path: |
                         ./target
     
@@ -111,16 +111,16 @@ jobs:
     
     
     
-    docker:
-        needs: linux
-        runs-on: ubuntu-latest
-        
-        steps:
-            -   name: checkout
-                uses: actions/checkout@v2
-            
-            -   name: build
-                run: docker build -f github.Dockerfile -t chord .
+#    docker:
+#        needs: linux
+#        runs-on: ubuntu-latest
+#
+#        steps:
+#            -   name: checkout
+#                uses: actions/checkout@v2
+#
+#            -   name: build
+#                run: docker build -f github.Dockerfile -t chord .
     
     
     
@@ -135,7 +135,7 @@ jobs:
             -   name: cache-target
                 uses: actions/cache@v2
                 with:
-                    key: build-target-windows-msvc
+                    key: build-target-windows-msvc-${{ hashFiles('Cargo.lock') }}
                     path: |
                         ./target
     
@@ -163,7 +163,7 @@ jobs:
             -   name: cache-target
                 uses: actions/cache@v2
                 with:
-                    key: build-target-apple-darwin
+                    key: build-target-apple-darwin--${{ hashFiles('Cargo.lock') }}
                     path: |
                         ./target
     

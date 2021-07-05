@@ -11,7 +11,6 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
 use chord::err;
-use chord::value::{from_str, to_string_pretty};
 use chord::value::{Deserialize, Serialize};
 use chord::Error;
 
@@ -33,15 +32,6 @@ impl DubboFactory {
             return Err(err!("dubbo", "missing dubbo.config"));
         }
 
-        let path = config["gateway"]["path"]
-            .as_str()
-            .ok_or(err!("dubbo", "missing dubbo.gateway.path"))?;
-
-        let port = config["gateway"]["port"]
-            .as_u64()
-            .map(|p| p as usize)
-            .ok_or(err!("dubbo", "missing port"))?;
-
         let registry_protocol = config["registry"]["protocol"]
             .as_str()
             .unwrap_or("zookeeper")
@@ -52,19 +42,44 @@ impl DubboFactory {
             .ok_or(err!("dubbo", "missing dubbo.registry.address"))?
             .to_owned();
 
-        let mut command = Command::new("java");
-        command
-            .arg("-jar")
-            .arg(path)
-            .arg(format!("--server.port={}", port));
-
-        if let Some(args) = config["gateway"]["args"].as_array() {
-            for arg in args {
-                if let Some(a) = arg.as_str() {
-                    command.arg(a);
+        let gateway_args = config["gateway"]["args"]
+            .as_array()
+            .ok_or(err!("dubbo", "missing dubbo.gateway.args"))?;
+        let gateway_args: Vec<String> = gateway_args
+            .iter()
+            .map(|a| {
+                if a.is_string() {
+                    a.as_str().unwrap().to_owned()
+                } else {
+                    a.to_string()
                 }
-            }
+            })
+            .collect();
+
+        let _ = gateway_args
+            .iter()
+            .filter(|a| a.trim() == "-jar")
+            .last()
+            .ok_or(err!("dubbo", "missing dubbo.gateway.args.-jar"))?;
+
+        let port = gateway_args
+            .iter()
+            .filter(|a| a.trim().starts_with("--server.port="))
+            .last()
+            .ok_or(err!("dubbo", "missing dubbo.gateway.args.--server.port"))?;
+        let port: Vec<&str> = port.split("=").collect();
+        let port: usize = port
+            .get(1)
+            .ok_or(err!("dubbo", "missing dubbo.gateway.args.--server.port"))?
+            .parse()?;
+
+        let mut command = Command::new("java");
+
+        for arg in gateway_args {
+            command.arg(arg);
         }
+
+        trace!("command {:?}", command);
 
         let mut child = command
             .stdout(Stdio::piped())
@@ -137,12 +152,13 @@ impl Action for Dubbo {
             Value::Array(aw_vec) => {
                 let mut ar_vec: Vec<Value> = vec![];
                 for aw in aw_vec {
-                    let ar = render(run_arg, aw)?;
+                    let ar = run_arg.render_value(aw)?;
                     ar_vec.push(ar);
                 }
                 ar_vec
             }
-            _ => render(run_arg, args_raw)?
+            _ => run_arg
+                .render_value(args_raw)?
                 .as_array()
                 .ok_or(err!("010", "missing args"))?
                 .clone(),
@@ -265,21 +281,4 @@ impl From<chord::Error> for DubboError {
     fn from(err: Error) -> Self {
         DubboError(err)
     }
-}
-
-fn render(arg: &dyn RunArg, content: &Value) -> Result<Value, Error> {
-    if content.is_null() {
-        return Ok(Value::Null);
-    }
-
-    let body_str: String = if content.is_string() {
-        content
-            .as_str()
-            .ok_or(err!("032", "invalid content"))?
-            .to_owned()
-    } else {
-        to_string_pretty(content).or(Err(err!("032", "invalid content")))?
-    };
-    let content_str = arg.render_str(body_str.as_str())?;
-    return Ok(from_str(content_str.as_str())?);
 }

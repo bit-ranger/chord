@@ -10,7 +10,7 @@ use crate::error::Error;
 use crate::value::{Map, Value};
 
 lazy_static! {
-    pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,10}$").unwrap();
+    pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,20}$").unwrap();
 }
 
 #[derive(Debug, Clone)]

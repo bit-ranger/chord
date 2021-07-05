@@ -73,12 +73,11 @@ impl log::Log for ChannelLogger {
                 .unwrap_or("".to_owned());
 
             let data = format!(
-                "{}.{:03}  {:<5} {:<5} --- [{:>17}] {:<30} : [{:<40}] {}\n",
+                "{}.{:03}  {:<5} {:<5} --- {:<30} : [{}] {}\n",
                 date,
                 ms,
                 record.level(),
                 std::process::id(),
-                thread::current().name().unwrap_or(""),
                 format!("{}:{}", record.target(), record.line().unwrap_or(0)),
                 ctx_id,
                 record.args()

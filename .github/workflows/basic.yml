@@ -1,67 +1,61 @@
 name: multi
 
 on:
-    push:
+    pull_request:
         branches: [ master ]
+
 
 env:
     CARGO_TERM_COLOR: always
 
 jobs:
     linux:
-    
+        
         runs-on: ubuntu-latest
         
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-    
-            -   name: sshkey-install
-                uses: shimataro/ssh-key-action@v2
-                with:
-                    key: ${{ secrets.RSA_ACTIONS_PRI }}
-                    name: id_rsa
-                    known_hosts: ${{ secrets.KNOWN_HOSTS }}
-                    config: ${{ secrets.CONFIG }}
-                    if_key_exists: fail
-    
+            
+            
             -   name: init
                 run: |
                     sudo chmod 777 /data/
                     cp -r $PWD/zero/devops/chord /data/
                     chmod 777 -R /data/chord/
-                    cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
                     find /data/chord/
                     echo "--------"
                     sudo apt-get update
                     sudo apt-get install curl
-    
-    
+            
+            
             -   name: cache-target
                 uses: actions/cache@v2
                 with:
                     key: build-target-linux-musl-${{ hashFiles('Cargo.lock') }}
                     path: |
                         ./target
-    
+            
+            
             -   name: build
                 run: |
                     chmod -R 777 $PWD
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo --version
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo build --verbose --release
                     docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo test  --verbose --release
-    
-    
+            
+            
             -   name: compose-boot
                 run: |
                     docker-compose -f docker-compose.yml up -d
                     sleep 30
-    
-    
+            
+            
             -   name: compose-test
                 run: |
                     curl -X GET "http://127.0.0.1:9200/_cat/indices?v"
-    
+            
+            
             -   name: dubbo
                 run: |
                     cd action/src/action/dubbo/generic-gateway
@@ -77,95 +71,33 @@ jobs:
                     cd ../../..
                     pwd
                     echo "--------"
-    
-    
+            
+            
             -   name: cmd-test
                 run: |
                     ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
     
     
-            -   name: web-boot
-                run: |
-                    ./target/release/chord-web &
-                    sleep 10
     
     
-            -   name: web-test
-                run: |
-                    curl -X POST --location "http://127.0.0.1:9999/job/exec" \
-                        -H "Content-Type: application/json" \
-                        -d "{
-                                \"git_url\": \"git@github.com:bit-ranger/chord.git\",
-                                \"branch\": \"master\"
-                            }"
-                    sleep 30
-                    tail -2000 /data/chord/job/output/web.log
-            
-            
-            -   name: web-report
-                run: |
-                    curl -X GET --location "http://127.0.0.1:9200/chord@bit-ranger@github.com/_search" \
-                        -H "Content-Type: application/json" \
-                        -d "{
-                            \"query\": {
-                                  \"match\": {
-                                        \"layer\": \"task\"
-                                  }
-                            }
-                            }"
-            
-            -   name: upload
-                uses: actions/upload-artifact@v2
-                with:
-                    name: linux-release
-                    retention-days: 1
-                    if-no-files-found: error
-                    path: |
-                        target/release/chord-cmd
-                        target/release/chord-web
-    
-    
-    
-    #    docker:
-    #        needs: linux
-    #        runs-on: ubuntu-latest
-    #
-    #        steps:
-    #            -   name: checkout
-    #                uses: actions/checkout@v2
-    #
-    #            -   name: build
-    #                run: docker build -f github.Dockerfile -t chord .
-
-
-
     windows:
         needs: linux
         runs-on: windows-latest
-    
+        
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-        
+            
             -   name: cache-target
                 uses: actions/cache@v2
                 with:
                     key: build-target-windows-msvc-${{ hashFiles('Cargo.lock') }}
                     path: |
                         ./target
-        
+            
             -   name: build
                 run: cargo build --verbose --release
-        
-            -   name: upload
-                uses: actions/upload-artifact@v2
-                with:
-                    name: windows-release
-                    retention-days: 1
-                    if-no-files-found: error
-                    path: |
-                        target/release/chord-cmd.exe
-                        target/release/chord-web.exe
+    
     
     macos:
         needs: linux
@@ -174,23 +106,13 @@ jobs:
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-
+            
             -   name: cache-target
                 uses: actions/cache@v2
                 with:
                     key: build-target-apple-darwin--${{ hashFiles('Cargo.lock') }}
                     path: |
                         ./target
-
+            
             -   name: build
                 run: cargo build --verbose --release
-
-            -   name: upload
-                uses: actions/upload-artifact@v2
-                with:
-                    name: macos-release
-                    retention-days: 1
-                    if-no-files-found: error
-                    path: |
-                        target/release/chord-cmd
-                        target/release/chord-web

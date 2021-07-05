@@ -14,10 +14,12 @@ report:
 
 action:
     download:
-        workdir: /data/chord/workdir/download
- 
-    dubbo:
-        enable: false
+        enable: true
+        workdir: /data/chord/workdir
     
-    docker:
-        enable: false
+    fstore:
+        enable: true
+        workdir: /data/chord/workdir
+    
+    lua:
+        enable: true

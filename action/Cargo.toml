@@ -49,6 +49,6 @@ act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
 act_docker = ["surf", "futures"]
 act_lua = ["rlua"]
-
+act_fstore = []
 
 

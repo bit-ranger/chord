@@ -1,0 +1,92 @@
+use std::str::FromStr;
+
+use async_std::path::PathBuf;
+use log::{trace, warn};
+
+use chord::action::prelude::*;
+use chord::value::{Map, Number};
+
+pub struct FstoreFactory {
+    workdir: PathBuf,
+}
+
+impl FstoreFactory {
+    pub async fn new(config: Option<Value>) -> Result<FstoreFactory, Error> {
+        if config.is_none() {
+            return Err(err!("010", "missing config"));
+        }
+        let config = config.as_ref().unwrap();
+
+        if config.is_null() {
+            return Err(err!("010", "missing config"));
+        }
+
+        let workdir = config["workdir"]
+            .as_str()
+            .ok_or(err!("010", "missing workdir"))?;
+
+        let workdir = PathBuf::from_str(workdir)?;
+
+        async_std::fs::create_dir_all(workdir.as_path()).await?;
+
+        Ok(FstoreFactory { workdir })
+    }
+}
+
+#[async_trait]
+impl Factory for FstoreFactory {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+        let tmp = self.workdir.join(arg.id());
+        async_std::fs::create_dir_all(tmp.as_path()).await?;
+        trace!("tmp create {}", tmp.as_path().to_str().unwrap());
+        Ok(Box::new(Fstore {
+            name: arg.id().into(),
+            tmp,
+        }))
+    }
+}
+
+struct Fstore {
+    name: String,
+    tmp: PathBuf,
+}
+
+#[async_trait]
+impl Action for Fstore {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+        let file = run0(self, arg).await?;
+        Ok(Box::new(file))
+    }
+}
+
+async fn run0(fstore: &Fstore, arg: &dyn RunArg) -> std::result::Result<Value, Error> {
+    let args = arg.render_value(arg.args())?;
+    let pav: Vec<String> = args["path"]
+        .as_array()
+        .ok_or(err!("010", "missing url"))?
+        .iter()
+        .map(|p| p.as_str())
+        .filter(|p| p.is_some())
+        .map(|p| p.unwrap())
+        .map(|p| p.to_owned())
+        .collect();
+
+    let mut path_src = fstore.tmp.parent().unwrap().to_path_buf();
+    for pa in pav {
+        path_src = path_src.join(pa.as_str());
+    }
+    let path_dest = fstore.tmp.join(arg.id());
+
+    let size = async_std::fs::copy(path_src, path_dest).await?;
+
+    let mut value = Map::new();
+    value.insert(
+        String::from("path"),
+        Value::Array(vec![
+            Value::String(fstore.name.clone()),
+            Value::String(arg.id().into()),
+        ]),
+    );
+    value.insert(String::from("size"), Value::Number(Number::from(size)));
+    return Ok(Value::Object(value));
+}

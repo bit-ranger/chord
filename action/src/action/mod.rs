@@ -20,6 +20,8 @@ mod download;
 mod dubbo;
 #[cfg(feature = "act_dylib")]
 mod dylib;
+#[cfg(feature = "act_fstore")]
+mod fstore;
 #[cfg(feature = "act_lua")]
 mod lua;
 #[cfg(feature = "act_mongodb")]
@@ -84,9 +86,6 @@ impl FactoryComposite {
         #[cfg(feature = "act_url")]
         register!(table, config_ref, "url", url::UrlFactory::new, true);
 
-        #[cfg(feature = "act_dubbo")]
-        register!(table, config_ref, "dubbo", dubbo::DubboFactory::new, false);
-
         #[cfg(feature = "act_database")]
         register!(
             table,
@@ -108,6 +107,9 @@ impl FactoryComposite {
             true
         );
 
+        #[cfg(feature = "act_dubbo")]
+        register!(table, config_ref, "dubbo", dubbo::DubboFactory::new, false);
+
         #[cfg(feature = "act_dylib")]
         register!(table, config_ref, "dylib", dylib::DylibFactory::new, false);
 
@@ -115,7 +117,7 @@ impl FactoryComposite {
         register!(table, config_ref, "docker", docker::Docker::new, false);
 
         #[cfg(feature = "act_lua")]
-        register!(table, config_ref, "lua", lua::LuaFactory::new, true);
+        register!(table, config_ref, "lua", lua::LuaFactory::new, false);
 
         #[cfg(feature = "act_download")]
         register!(
@@ -123,7 +125,16 @@ impl FactoryComposite {
             config_ref,
             "download",
             download::DownloadFactory::new,
-            true
+            false
+        );
+
+        #[cfg(feature = "act_fstore")]
+        register!(
+            table,
+            config_ref,
+            "fstore",
+            fstore::FstoreFactory::new,
+            false
         );
 
         Ok(FactoryComposite { table })

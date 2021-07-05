@@ -1,3 +1,3 @@
-mod java;
+pub use gateway::DubboFactory;
 
-pub use java::DubboFactory;
+mod gateway;

@@ -11,7 +11,7 @@
     <groupId>com.bitranger</groupId>
     <artifactId>dubbo-generic-gateway</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>generic-gateway</name>
+    <name>dubbo-generic-gateway</name>
     <description>Dubbo Generic Gateway</description>
     <properties>
         <java.version>1.8</java.version>

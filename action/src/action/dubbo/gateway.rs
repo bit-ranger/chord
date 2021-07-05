@@ -25,22 +25,22 @@ pub struct DubboFactory {
 impl DubboFactory {
     pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
         if config.is_none() {
-            return Err(err!("010", "missing config"));
+            return Err(err!("dubbo", "missing dubbo.config"));
         }
         let config = config.as_ref().unwrap();
 
         if config.is_null() {
-            return Err(err!("010", "missing config"));
+            return Err(err!("dubbo", "missing dubbo.config"));
         }
 
-        let jar_path = config["jar_path"]
+        let path = config["gateway"]["path"]
             .as_str()
-            .ok_or(err!("010", "missing jar_path"))?;
+            .ok_or(err!("dubbo", "missing dubbo.gateway.path"))?;
 
-        let port = config["port"]
+        let port = config["gateway"]["port"]
             .as_u64()
             .map(|p| p as usize)
-            .ok_or(err!("010", "missing port"))?;
+            .ok_or(err!("dubbo", "missing port"))?;
 
         let registry_protocol = config["registry"]["protocol"]
             .as_str()
@@ -49,24 +49,35 @@ impl DubboFactory {
 
         let registry_address = config["registry"]["address"]
             .as_str()
-            .ok_or(err!("010", "missing registry_address"))?
+            .ok_or(err!("dubbo", "missing dubbo.registry.address"))?
             .to_owned();
 
-        let mut child = Command::new("java")
+        let mut command = Command::new("java");
+        command
             .arg("-jar")
-            .arg(jar_path)
-            .arg(format!("--server.port={}", port))
+            .arg(path)
+            .arg(format!("--server.port={}", port));
+
+        if let Some(args) = config["gateway"]["args"].as_array() {
+            for arg in args {
+                if let Some(a) = arg.as_str() {
+                    command.arg(a);
+                }
+            }
+        }
+
+        let mut child = command
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
 
-        let std_out = child.stdout.ok_or(err!("020", "missing stdout"))?;
+        let std_out = child.stdout.ok_or(err!("dubbo", "missing stdout"))?;
         let mut std_out = BufReader::new(std_out);
         let mut lines = std_out.by_ref().lines();
         loop {
             let line = lines.next().await;
             if line.is_none() {
-                return Err(err!("020", "failed to start dubbo-generic-gateway"));
+                return Err(err!("dubbo", "failed to start dubbo-generic-gateway"));
             }
             let line = line.unwrap()?;
             trace!("{}", line);

@@ -63,13 +63,20 @@ async fn run0(fstore: &Fstore, arg: &dyn RunArg) -> std::result::Result<Value, E
     let args = arg.render_value(arg.args())?;
     let pav: Vec<String> = args["path"]
         .as_array()
-        .ok_or(err!("010", "missing url"))?
+        .ok_or(err!("010", "missing path"))?
         .iter()
         .map(|p| p.as_str())
         .filter(|p| p.is_some())
         .map(|p| p.unwrap())
         .map(|p| p.to_owned())
         .collect();
+
+    if pav.len() < 1 {
+        return Err(err!("fstore", "missing path"));
+    }
+    if !pav[0].starts_with(arg.id().case_id().task_id().to_string().as_str()) {
+        return Err(err!("fstore", "forbidden access"));
+    }
 
     let mut path_src = fstore.tmp.parent().unwrap().to_path_buf();
     for pa in pav {

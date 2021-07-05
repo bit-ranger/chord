@@ -1,4 +1,4 @@
-name: multi
+name: basic
 
 on:
     pull_request:

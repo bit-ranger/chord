@@ -9,9 +9,10 @@ stage:
                 args:
                     code: |
                         for i = 1, 5 do
-                            print("hello lua");
+                            n = math.random(100)
+                            print("hello lua: " .. tostring(n));
                         end
-                        
+    
                         return
                         {
                              {

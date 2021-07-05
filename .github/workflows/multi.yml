@@ -17,7 +17,7 @@ jobs:
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-                
+    
             -   name: sshkey-install
                 uses: shimataro/ssh-key-action@v2
                 with:
@@ -26,7 +26,7 @@ jobs:
                     known_hosts: ${{ secrets.KNOWN_HOSTS }}
                     config: ${{ secrets.CONFIG }}
                     if_key_exists: fail
-            
+    
             -   name: init
                 run: |
                     sudo chmod 777 /data/
@@ -37,6 +37,14 @@ jobs:
                     echo "--------"
                     sudo apt-get update
                     sudo apt-get install curl
+    
+            -   name: dubbo-bin
+                run: |
+                    cd action/src/action/dubbo/generic-gateway
+                    mvn package
+                    cp target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar /data/chord/bin/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
+                    cd ../../../../..
+                    pwd
     
             -   name: cache-target
                 uses: actions/cache@v2
@@ -57,13 +65,13 @@ jobs:
                 run: |
                     docker-compose -f docker-compose.yml up -d
                     sleep 30
-            
-            
+    
+    
             -   name: compose-test
                 run: |
                     curl -X GET "http://127.0.0.1:9200/_cat/indices?v"
-            
-            
+    
+    
             -   name: cmd-test
                 run: |
                     ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
@@ -111,37 +119,37 @@ jobs:
     
     
     
-#    docker:
-#        needs: linux
-#        runs-on: ubuntu-latest
-#
-#        steps:
-#            -   name: checkout
-#                uses: actions/checkout@v2
-#
-#            -   name: build
-#                run: docker build -f github.Dockerfile -t chord .
-    
-    
-    
+    #    docker:
+    #        needs: linux
+    #        runs-on: ubuntu-latest
+    #
+    #        steps:
+    #            -   name: checkout
+    #                uses: actions/checkout@v2
+    #
+    #            -   name: build
+    #                run: docker build -f github.Dockerfile -t chord .
+
+
+
     windows:
         needs: linux
         runs-on: windows-latest
-        
+    
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-    
+        
             -   name: cache-target
                 uses: actions/cache@v2
                 with:
                     key: build-target-windows-msvc-${{ hashFiles('Cargo.lock') }}
                     path: |
                         ./target
-    
+        
             -   name: build
                 run: cargo build --verbose --release
-    
+        
             -   name: upload
                 uses: actions/upload-artifact@v2
                 with:
@@ -159,17 +167,17 @@ jobs:
         steps:
             -   name: checkout
                 uses: actions/checkout@v2
-    
+
             -   name: cache-target
                 uses: actions/cache@v2
                 with:
                     key: build-target-apple-darwin--${{ hashFiles('Cargo.lock') }}
                     path: |
                         ./target
-    
+
             -   name: build
                 run: cargo build --verbose --release
-    
+
             -   name: upload
                 uses: actions/upload-artifact@v2
                 with:

@@ -1,11 +1,12 @@
 use chrono::{DateTime, Utc};
 
-use chord::step::{StepAssess, StepId, StepState};
+use chord::action::RunId;
+use chord::step::{StepAssess, StepState};
 
-use crate::flow::step::arg::StepIdStruct;
+use crate::flow::step::arg::RunIdStruct;
 
 pub struct StepAssessStruct {
-    pub id: StepIdStruct,
+    pub id: RunIdStruct,
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
     pub state: StepState,
@@ -13,7 +14,7 @@ pub struct StepAssessStruct {
 
 impl StepAssessStruct {
     pub fn new(
-        id: StepIdStruct,
+        id: RunIdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         state: StepState,
@@ -28,7 +29,7 @@ impl StepAssessStruct {
 }
 
 impl StepAssess for StepAssessStruct {
-    fn id(&self) -> &dyn StepId {
+    fn id(&self) -> &dyn RunId {
         &self.id
     }
 

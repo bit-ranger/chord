@@ -41,11 +41,11 @@ impl DownloadFactory {
 #[async_trait]
 impl Factory for DownloadFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let tmp = self.workdir.join(arg.id());
+        let tmp = self.workdir.join(arg.id().to_string());
         async_std::fs::create_dir_all(tmp.as_path()).await?;
         trace!("tmp create {}", tmp.as_path().to_str().unwrap());
         Ok(Box::new(Download {
-            name: arg.id().into(),
+            name: arg.id().to_string(),
             tmp,
         }))
     }
@@ -95,7 +95,7 @@ async fn run0(
         }
     }
 
-    let path = download.tmp.join(arg.id());
+    let path = download.tmp.join(arg.id().to_string());
 
     let mut df = DownloadFile {
         path: path.clone(),
@@ -130,7 +130,7 @@ async fn run0(
         String::from("path"),
         Value::Array(vec![
             Value::String(download.name.clone()),
-            Value::String(arg.id().into()),
+            Value::String(arg.id().to_string()),
         ]),
     );
 

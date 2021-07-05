@@ -1,5 +1,9 @@
+use std::fmt::Display;
+
 pub use async_trait::async_trait;
 
+use crate::case::CaseId;
+use crate::task::TaskId;
 pub use crate::value::Value;
 pub use crate::Error;
 
@@ -22,7 +26,7 @@ pub trait Scope: Sync + Send {
 }
 
 pub trait RunArg: Sync + Send {
-    fn id(&self) -> &str;
+    fn id(&self) -> &dyn RunId;
 
     fn args(&self) -> &Value;
 
@@ -32,7 +36,7 @@ pub trait RunArg: Sync + Send {
 }
 
 pub trait CreateArg: Sync + Send {
-    fn id(&self) -> &str;
+    fn id(&self) -> &dyn CreateId;
 
     fn action(&self) -> &str;
 
@@ -58,4 +62,16 @@ impl Scope for Value {
     fn as_value(&self) -> &Value {
         &self
     }
+}
+
+pub trait CreateId: Sync + Send + Display {
+    fn step(&self) -> &str;
+
+    fn task_id(&self) -> &dyn TaskId;
+}
+
+pub trait RunId: Sync + Send + Display {
+    fn step(&self) -> &str;
+
+    fn case_id(&self) -> &dyn CaseId;
 }

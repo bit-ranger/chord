@@ -20,7 +20,13 @@ impl Action for Image {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let cmd = arg.render_value(&arg.args()["cmd"]).unwrap_or(json!([]));
 
-        let mut container = Container::new(self.engine.clone(), &self, arg.id(), cmd).await?;
+        let mut container = Container::new(
+            self.engine.clone(),
+            &self,
+            arg.id().to_string().as_str(),
+            cmd,
+        )
+        .await?;
         container.start().await?;
         container.wait().await?;
 

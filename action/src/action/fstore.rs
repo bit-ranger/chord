@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use async_std::path::PathBuf;
-use log::{trace, warn};
+use log::trace;
 
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
@@ -36,11 +36,11 @@ impl FstoreFactory {
 #[async_trait]
 impl Factory for FstoreFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let tmp = self.workdir.join(arg.id());
+        let tmp = self.workdir.join(arg.id().to_string());
         async_std::fs::create_dir_all(tmp.as_path()).await?;
         trace!("tmp create {}", tmp.as_path().to_str().unwrap());
         Ok(Box::new(Fstore {
-            name: arg.id().into(),
+            name: arg.id().to_string(),
             tmp,
         }))
     }
@@ -75,7 +75,7 @@ async fn run0(fstore: &Fstore, arg: &dyn RunArg) -> std::result::Result<Value, E
     for pa in pav {
         path_src = path_src.join(pa.as_str());
     }
-    let path_dest = fstore.tmp.join(arg.id());
+    let path_dest = fstore.tmp.join(arg.id().to_string());
 
     let size = async_std::fs::copy(path_src, path_dest).await?;
 
@@ -84,7 +84,7 @@ async fn run0(fstore: &Fstore, arg: &dyn RunArg) -> std::result::Result<Value, E
         String::from("path"),
         Value::Array(vec![
             Value::String(fstore.name.clone()),
-            Value::String(arg.id().into()),
+            Value::String(arg.id().to_string()),
         ]),
     );
     value.insert(String::from("size"), Value::Number(Number::from(size)));

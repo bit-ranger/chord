@@ -4,25 +4,24 @@ use std::time::Duration;
 
 use handlebars::Handlebars;
 
-use chord::action::{CreateArg, RunArg};
+use chord::action::RunId;
+use chord::action::{CreateArg, CreateId, RunArg};
 use chord::case::CaseId;
 use chord::flow::Flow;
-use chord::step::StepId;
 use chord::task::TaskId;
 use chord::value::{from_str, to_string, Value};
 use chord::Error;
 
 use crate::flow;
-use crate::flow::case::arg::CaseIdStruct;
 use crate::model::app::RenderContext;
 
 #[derive(Clone)]
-pub struct StepIdStruct {
+pub struct RunIdStruct {
     step: String,
     case_id: Arc<dyn CaseId>,
 }
 
-impl StepId for StepIdStruct {
+impl RunId for RunIdStruct {
     fn step(&self) -> &str {
         self.step.as_str()
     }
@@ -32,9 +31,31 @@ impl StepId for StepIdStruct {
     }
 }
 
-impl Display for StepIdStruct {
+impl Display for RunIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(format!("{}-{}", self.case_id, self.step).as_str())
+    }
+}
+
+#[derive(Clone)]
+pub struct CreateIdStruct {
+    step: String,
+    task_id: Arc<dyn TaskId>,
+}
+
+impl CreateId for CreateIdStruct {
+    fn step(&self) -> &str {
+        self.step.as_str()
+    }
+
+    fn task_id(&self) -> &dyn TaskId {
+        self.task_id.as_ref()
+    }
+}
+
+impl Display for CreateIdStruct {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(format!("{}-{}", self.task_id, self.step).as_str())
     }
 }
 
@@ -43,8 +64,7 @@ pub struct CreateArgStruct<'f, 'h, 'reg, 'r> {
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
     action: String,
-    id: StepIdStruct,
-    id_str: String,
+    id: CreateIdStruct,
 }
 
 impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
@@ -54,22 +74,17 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
         render_context: &'r RenderContext,
         task_id: Arc<dyn TaskId>,
         action: String,
-        id: String,
+        step_id: String,
     ) -> CreateArgStruct<'f, 'h, 'reg, 'r> {
-        let id = StepIdStruct {
-            case_id: Arc::new(CaseIdStruct::new(
-                task_id,
-                "create".into(),
-                Arc::new("create".into()),
-            )),
-            step: id,
+        let id = CreateIdStruct {
+            task_id,
+            step: step_id,
         };
         let context = CreateArgStruct {
             flow,
             handlebars,
             render_context,
             action,
-            id_str: id.to_string(),
             id,
         };
 
@@ -78,8 +93,8 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
 }
 
 impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
-    fn id(&self) -> &str {
-        self.id_str.as_str()
+    fn id(&self) -> &dyn CreateId {
+        &self.id
     }
 
     fn action(&self) -> &str {
@@ -112,8 +127,7 @@ pub struct RunArgStruct<'f, 'h, 'reg, 'r> {
     flow: &'f Flow,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
-    id: StepIdStruct,
-    id_str: String,
+    id: RunIdStruct,
 }
 
 impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
@@ -122,22 +136,24 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         handlebars: &'h Handlebars<'reg>,
         render_context: &'r RenderContext,
         case_id: Arc<dyn CaseId>,
-        id: String,
+        step_id: String,
     ) -> RunArgStruct<'f, 'h, 'reg, 'r> {
-        let id = StepIdStruct { case_id, step: id };
+        let id = RunIdStruct {
+            case_id,
+            step: step_id,
+        };
 
         let context = RunArgStruct {
             flow,
             handlebars,
             render_context,
-            id_str: id.to_string(),
             id,
         };
 
         return context;
     }
 
-    pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r>) -> &StepIdStruct {
+    pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r>) -> &RunIdStruct {
         return &self.id;
     }
 
@@ -151,8 +167,8 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
 }
 
 impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
-    fn id(&self) -> &str {
-        self.id_str.as_str()
+    fn id(&self) -> &dyn RunId {
+        &self.id
     }
 
     fn args(&self) -> &Value {

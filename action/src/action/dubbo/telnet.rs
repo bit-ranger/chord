@@ -1,11 +1,9 @@
-use std::str::FromStr;
-
-use async_std::net::TcpStream;
-use futures::io::{AsyncReadExt, AsyncWriteExt};
-use log::trace;
-
+use async_std::net::{Shutdown, TcpStream};
 use chord::action::prelude::*;
 use chord::value::to_string;
+use futures::io::{AsyncReadExt, AsyncWriteExt};
+use log::trace;
+use std::str::FromStr;
 
 pub struct DubboFactory {
     address: String,
@@ -87,44 +85,48 @@ impl Action for Dubbo {
         let invoke = format!("invoke {}.{}({})", parts[0], parts[1], args_invoke);
         trace!("{}", invoke);
         stream.write_all(invoke.as_bytes()).await?;
-        let crlf = vec![13u8, 10u8];
-        stream.write_all(&crlf).await?;
+        stream.shutdown(Shutdown::Write)?;
 
         let suffix = "dubbo>".as_bytes();
         let mut response = vec![0; 0];
         let mut seek_idx = 0;
-        let mut buf = [0u8; 100];
-        loop {
-            let rx = stream.read_exact(&mut buf[..]).await;
-            response.extend(&buf);
-            println!("{}", unsafe {
-                String::from_utf8_unchecked(response.clone())
-            });
-            match sub_vec_index(&response[seek_idx..], &suffix) {
-                Some(i) => {
-                    response.truncate(seek_idx + i);
-                    break;
-                }
-                None => {
-                    seek_idx = std::cmp::min(response.len() - 1, response.len() - suffix.len());
-                }
-            }
-            if rx.is_err() {
-                break;
-            }
-        }
+        let mut resp = String::new();
+        let size = stream.read_to_string(&mut resp);
+        // loop {
+        //     let rx = stream.read(&mut buf).await?;
+        //     if
+        //     response.extend(&buf);
+        //     println!("{}", unsafe {
+        //         String::from_utf8_unchecked(response.clone())
+        //     });
+        //     match sub_vec_index(&response[seek_idx..], &suffix) {
+        //         Some(i) => {
+        //             response.truncate(seek_idx + i);
+        //             break;
+        //         }
+        //         None => {
+        //             seek_idx = std::cmp::min(response.len() - 1, response.len() - suffix.len());
+        //         }
+        //     }
+        //     if rx.is_err() {
+        //         break;
+        //     }
+        // }
 
-        let mut value = unsafe { String::from_utf8_unchecked(Vec::from(response)) };
-        trace!("response: {}", value);
-        let i = value.rfind("\r\nelapsed:");
-        match i {
-            Some(i) => {
-                value.truncate(i);
-                let json = Value::from_str(value.as_str())?;
-                Ok(Box::new(json))
-            }
-            None => Err(err!("001", value)),
-        }
+        // let mut value = unsafe { String::from_utf8_unchecked(Vec::from(response)) };
+        trace!("response: {}", resp);
+        // let i = resp.rfind("\r\nelapsed:");
+        // match i {
+        //     Some(i) => {
+        //         value.truncate(i);
+        //         let json = Value::from_str(value.as_str())?;
+        //         Ok(Box::new(json))
+        //     }
+        //     None => Err(err!("001", value)),
+        // }
+
+        let json = Value::from_str(resp.as_str())?;
+        Ok(Box::new(json))
     }
 }
 

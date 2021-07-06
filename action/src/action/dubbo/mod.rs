@@ -1,7 +1,7 @@
 use chord::action::prelude::*;
 
 mod gateway;
-mod telnet;
+// mod telnet;
 
 pub struct DubboFactory {
     delegate: Box<dyn Factory>,
@@ -24,9 +24,9 @@ impl DubboFactory {
             "gateway" => Ok(DubboFactory {
                 delegate: Box::new(gateway::DubboFactory::new(config).await?),
             }),
-            "telnet" => Ok(DubboFactory {
-                delegate: Box::new(telnet::DubboFactory::new(config).await?),
-            }),
+            // "telnet" => Ok(DubboFactory {
+            //     delegate: Box::new(telnet::DubboFactory::new(config).await?),
+            // }),
             _ => Err(err!("dubbo", "unsupported mode")),
         }
     }

@@ -19,9 +19,9 @@ impl DubboFactory {
 
         let config = config.as_ref().unwrap();
 
-        let address = config["address"]
+        let address = config["telnet"]["address"]
             .as_str()
-            .ok_or(err!("010", "missing address"))?;
+            .ok_or(err!("010", "missing telnet.address"))?;
         Ok(DubboFactory {
             address: address.to_owned(),
         })

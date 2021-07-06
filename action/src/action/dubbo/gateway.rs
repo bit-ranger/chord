@@ -32,14 +32,14 @@ impl DubboFactory {
             return Err(err!("dubbo", "missing dubbo.config"));
         }
 
-        let registry_protocol = config["registry"]["protocol"]
+        let registry_protocol = config["gateway"]["registry"]["protocol"]
             .as_str()
             .unwrap_or("zookeeper")
             .to_owned();
 
-        let registry_address = config["registry"]["address"]
+        let registry_address = config["gateway"]["registry"]["address"]
             .as_str()
-            .ok_or(err!("dubbo", "missing dubbo.registry.address"))?
+            .ok_or(err!("dubbo", "missing dubbo.gateway.registry.address"))?
             .to_owned();
 
         let gateway_args = config["gateway"]["args"]

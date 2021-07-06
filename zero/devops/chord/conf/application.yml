@@ -27,11 +27,12 @@ action:
     dubbo:
         enable: true
         mode: telnet
+        telnet:
             address: 127.0.0.1:20880
-        registry:
-            protocol: zookeeper
-            address: zookeeper://127.0.0.1:2181
         gateway:
+            registry:
+                protocol: zookeeper
+                address: zookeeper://127.0.0.1:2181
             args:
                 - "-Ddubbo.application.qos.enable=false"
                 - "-jar"

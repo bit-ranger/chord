@@ -26,9 +26,7 @@ action:
     
     dubbo:
         enable: true
-        mode: telnet
-        telnet:
-            address: 127.0.0.1:20880
+        mode: gateway
         gateway:
             registry:
                 protocol: zookeeper

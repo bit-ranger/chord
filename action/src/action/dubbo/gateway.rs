@@ -11,7 +11,7 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
 use chord::err;
-use chord::value::{Deserialize, Serialize};
+use chord::value::{to_string, Deserialize, Serialize};
 use chord::Error;
 
 pub struct DubboFactory {
@@ -181,6 +181,7 @@ impl Action for Dubbo {
             args,
         };
 
+        trace!("invoke {}", to_string(&invoke)?);
         let value = remote_invoke(self.port, invoke).await.map_err(|e| e.0)?;
         let value = &value;
         if value["success"].as_bool().unwrap_or(false) {

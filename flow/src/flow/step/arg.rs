@@ -164,6 +164,10 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
     pub fn timeout(&self) -> Duration {
         self.flow.step_timeout(self.id().step())
     }
+
+    pub fn catch_err(&self) -> bool {
+        self.flow.step_catch_err(self.id().step())
+    }
 }
 
 impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {

@@ -124,6 +124,10 @@ impl Flow {
         self._step_timeout(step_id).unwrap()
     }
 
+    pub fn step_catch_err(&self, step_id: &str) -> bool {
+        self.step(step_id)["catch_err"].as_bool().unwrap_or(false)
+    }
+
     pub fn stage_id_vec(&self) -> Vec<&str> {
         self._stage_id_vec().unwrap()
     }

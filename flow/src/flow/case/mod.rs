@@ -39,34 +39,8 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
         let step_assess = step::run(flow_ctx, &step_arg, action.as_ref()).await;
 
         if step_assess.state.is_fail() {
-            let StepAssessStruct {
-                id,
-                start,
-                end,
-                state,
-            } = step_assess;
-            // let args_rendered = render(
-            //     flow_ctx.get_handlebars(),
-            //     &render_context,
-            //     step_arg.args().to_string().as_str(),
-            // )
-            // .unwrap_or("".to_owned());
-            // info!(
-            //     "step Fail {} - {} <<< {}",
-            //     arg.id(),
-            //     scope.as_value(),
-            //     args_rendered
-            // );
-            let step_assess = StepAssessStruct::new(id, start, end, state);
-            step_assess_vec.push(Box::new(step_assess));
-            info!("case Fail {}", arg.id());
-            return CaseAssessStruct::new(
-                arg.id().clone(),
-                start,
-                Utc::now(),
-                arg.take_data(),
-                CaseState::Fail(TailDropVec::from(step_assess_vec)),
-            );
+            // never reach
+            panic!("step state cannot be fail");
         } else if step_assess.state.is_ok() {
             let assert_present = step_arg.assert().map(|s| s.to_owned());
             let step_assess =
@@ -239,12 +213,18 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     );
 }
 
+/// step_assess.state cannot be Fail
 async fn step_assess_assert(
     flow_ctx: &dyn Context,
     render_context: &mut RenderContext,
     step_assess: StepAssessStruct,
     assert_present: Option<String>,
 ) -> StepAssessStruct {
+    if step_assess.state().is_fail() {
+        // never reach
+        panic!("step state cannot be fail")
+    }
+
     let StepAssessStruct {
         id,
         start,
@@ -266,8 +246,9 @@ async fn step_assess_assert(
                         "message": e.message()
                     }))),
                 ),
-                StepState::Fail(scope) => {
-                    StepAssessStruct::new(id, start, end, StepState::Ok(scope))
+                StepState::Fail(_) => {
+                    // never reach
+                    panic!("step state cannot be fail")
                 }
             }
         } else {
@@ -293,8 +274,9 @@ async fn step_assess_assert(
                         "message": e.message()
                     }))),
                 ),
-                StepState::Fail(scope) => {
-                    StepAssessStruct::new(id, start, end, StepState::Fail(scope))
+                StepState::Fail(_) => {
+                    // never reach
+                    panic!("step state cannot be fail")
                 }
             }
         }
@@ -311,7 +293,10 @@ async fn step_assess_assert(
                     "message": e.message()
                 }))),
             ),
-            StepState::Fail(scope) => StepAssessStruct::new(id, start, end, StepState::Ok(scope)),
+            StepState::Fail(_) => {
+                // never reach
+                panic!("step state cannot be fail")
+            }
         }
     }
 }
@@ -330,26 +315,21 @@ pub async fn step_register(render_context: &mut RenderContext, sid: &str, state:
         StepState::Err(e) => {
             if let Value::Object(data) = render_context.data_mut() {
                 data["step"][sid]["state"] = Value::String("Err".to_owned());
-                data["step"][sid]["value"] = json!({
+                data["step"][sid]["error"] = json!({
                     "code": e.code(),
                     "message": e.message()
                 });
 
                 data["curr"]["state"] = Value::String("Err".to_owned());
-                data["curr"]["value"] = json!({
+                data["curr"]["error"] = json!({
                     "code": e.code(),
                     "message": e.message()
                 });
             }
         }
         StepState::Fail(scope) => {
-            if let Value::Object(data) = render_context.data_mut() {
-                data["step"][sid]["state"] = Value::String("Fail".to_owned());
-                data["step"][sid]["value"] = scope.as_value().clone();
-
-                data["curr"]["state"] = Value::String("Fail".to_owned());
-                data["curr"]["value"] = scope.as_value().clone();
-            }
+            // never reach
+            panic!("step state cannot be fail");
         }
     }
 }

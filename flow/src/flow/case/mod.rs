@@ -10,9 +10,8 @@ use chord::value::{json, Value};
 use res::CaseAssessStruct;
 
 use crate::flow::case::arg::CaseArgStruct;
-use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepAssessStruct;
-use crate::flow::{assert, render, step};
+use crate::flow::{assert, step};
 use crate::model::app::{Context, RenderContext};
 
 pub mod arg;
@@ -42,14 +41,29 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
             // never reach
             panic!("step state cannot be fail");
         } else if step_assess.state.is_ok() {
+            let step_arg_id = step_arg.id().clone();
+            let step_arg_args = step_arg
+                .render_value(step_arg.args())
+                .unwrap_or(Value::Null);
+
             let assert_present = step_arg.assert().map(|s| s.to_owned());
             let step_assess =
                 step_assess_assert(flow_ctx, &mut render_context, step_assess, assert_present)
                     .await;
 
             if step_assess.state.is_ok() {
+                debug!("step Ok   {}", step_arg_id);
                 step_assess_vec.push(Box::new(step_assess));
             } else {
+                if let StepState::Fail(scope) = &step_assess.state {
+                    info!(
+                        "step Fail {} - {} <<< {}",
+                        step_arg_id,
+                        scope.as_value(),
+                        step_arg_args
+                    );
+                }
+
                 step_assess_vec.push(Box::new(step_assess));
                 info!("case Fail {}", arg.id());
                 return CaseAssessStruct::new(
@@ -61,15 +75,8 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 );
             }
         } else if step_assess.state.is_err() {
-            // let args_rendered = render(
-            //     flow_ctx.get_handlebars(),
-            //     &render_context,
-            //     step_arg.args().to_string().as_str(),
-            // )
-            //     .unwrap_or("".to_owned());
-            // info!("step Err  {} - {} <<< {}", id, e, args_rendered);
-
             if !step_arg.catch_err() {
+                debug!("step Err  {}", step_arg.id());
                 step_assess_vec.push(Box::new(step_assess));
                 info!("case Fail {}", arg.id());
                 return CaseAssessStruct::new(
@@ -80,14 +87,30 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                     CaseState::Fail(TailDropVec::from(step_assess_vec)),
                 );
             } else {
-                debug!("step catch_err {}", step_arg.id());
+                trace!("step catch {}", step_arg.id());
+
+                let step_arg_id = step_arg.id().clone();
+                let step_arg_args = step_arg
+                    .render_value(step_arg.args())
+                    .unwrap_or(Value::Null);
+
                 let assert_present = step_arg.assert().map(|s| s.to_owned());
                 let step_assess =
                     step_assess_assert(flow_ctx, &mut render_context, step_assess, assert_present)
                         .await;
                 if step_assess.state.is_ok() {
+                    debug!("step Ok   {}", step_arg_id);
                     step_assess_vec.push(Box::new(step_assess));
                 } else {
+                    if let StepState::Fail(scope) = &step_assess.state {
+                        info!(
+                            "step Fail {} - {} <<< {}",
+                            step_arg_id,
+                            scope.as_value(),
+                            step_arg_args
+                        );
+                    }
+
                     step_assess_vec.push(Box::new(step_assess));
                     info!("case Fail {}", arg.id());
                     return CaseAssessStruct::new(
@@ -100,107 +123,6 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 }
             }
         }
-
-        // match step_assess {
-        //     StepAssessStruct {
-        //         state: StepState::Err(e),
-        //         id,
-        //         start,
-        //         end,
-        //     } => {
-        //         let args_rendered = render(
-        //             flow_ctx.get_handlebars(),
-        //             &render_context,
-        //             args_raw.as_str(),
-        //         )
-        //         .unwrap_or("".to_owned());
-        //         info!("step Err  {} - {} <<< {}", id, e, args_rendered);
-        //         let step_assess = StepAssessStruct::new(id, start, end, StepState::Err(e));
-        //         step_assess_vec.push(Box::new(step_assess));
-        //         info!("case Fail {}", arg.id());
-        //         return CaseAssessStruct::new(
-        //             arg.id().clone(),
-        //             start,
-        //             Utc::now(),
-        //             arg.take_data(),
-        //             CaseState::Fail(TailDropVec::from(step_assess_vec)),
-        //         );
-        //     }
-        //     StepAssessStruct {
-        //         state: StepState::Fail(scope),
-        //         id,
-        //         start,
-        //         end,
-        //     } => {
-        //         let args_rendered = render(
-        //             flow_ctx.get_handlebars(),
-        //             &render_context,
-        //             args_raw.as_str(),
-        //         )
-        //         .unwrap_or("".to_owned());
-        //         info!(
-        //             "step Fail {} - {} <<< {}",
-        //             arg.id(),
-        //             scope.as_value(),
-        //             args_rendered
-        //         );
-        //         let step_assess = StepAssessStruct::new(id, start, end, StepState::Fail(scope));
-        //         step_assess_vec.push(Box::new(step_assess));
-        //         info!("case Fail {}", arg.id());
-        //         return CaseAssessStruct::new(
-        //             arg.id().clone(),
-        //             start,
-        //             Utc::now(),
-        //             arg.take_data(),
-        //             CaseState::Fail(TailDropVec::from(step_assess_vec)),
-        //         );
-        //     }
-        //     StepAssessStruct {
-        //         state: StepState::Ok(scope),
-        //         id,
-        //         start,
-        //         end,
-        //     } => {
-        //         let assert_present = step_arg.assert().map(|s| s.to_owned());
-        //         step_register(&mut render_context, step_id, &state).await;
-        //         if let Some(con) = assert_present {
-        //             if assert(flow_ctx.get_handlebars(), &render_context, con.as_str()).await {
-        //                 debug!("step Ok   {}", id);
-        //                 let step_assess =
-        //                     StepAssessStruct::new(id, start, end, StepState::Ok(scope));
-        //                 step_assess_vec.push(Box::new(step_assess));
-        //             } else {
-        //                 let config_rendered = render(
-        //                     flow_ctx.get_handlebars(),
-        //                     &render_context,
-        //                     args_raw.as_str(),
-        //                 )
-        //                 .unwrap_or("".to_owned());
-        //                 info!(
-        //                     "step Fail {} - {} <<< {}",
-        //                     id,
-        //                     scope.as_value(),
-        //                     config_rendered
-        //                 );
-        //                 let step_assess =
-        //                     StepAssessStruct::new(id, start, end, StepState::Fail(scope));
-        //                 step_assess_vec.push(Box::new(step_assess));
-        //                 info!("case Fail {}", arg.id());
-        //                 return CaseAssessStruct::new(
-        //                     arg.id().clone(),
-        //                     start,
-        //                     Utc::now(),
-        //                     arg.take_data(),
-        //                     CaseState::Fail(TailDropVec::from(step_assess_vec)),
-        //                 );
-        //             }
-        //         } else {
-        //             debug!("step Ok   {}", id);
-        //             let step_assess = StepAssessStruct::new(id, start, end, StepState::Ok(scope));
-        //             step_assess_vec.push(Box::new(step_assess));
-        //         }
-        //     }
-        // }
     }
 
     debug!("case Ok {}", arg.id());
@@ -234,7 +156,6 @@ async fn step_assess_assert(
     step_register(render_context, id.step(), &state).await;
     if let Some(con) = assert_present {
         if assert(flow_ctx.get_handlebars(), &render_context, con.as_str()).await {
-            debug!("step Ok   {}", id);
             match state {
                 StepState::Ok(scope) => StepAssessStruct::new(id, start, end, StepState::Ok(scope)),
                 StepState::Err(e) => StepAssessStruct::new(
@@ -252,15 +173,6 @@ async fn step_assess_assert(
                 }
             }
         } else {
-            // let config_rendered =
-            //     render(flow_ctx.get_handlebars(), render_context, args_raw.as_str())
-            //         .unwrap_or("".to_owned());
-            // info!(
-            //     "step Fail {} - {} <<< {}",
-            //     id,
-            //     scope.as_value(),
-            //     config_rendered
-            // );
             match state {
                 StepState::Ok(scope) => {
                     StepAssessStruct::new(id, start, end, StepState::Fail(scope))
@@ -281,7 +193,6 @@ async fn step_assess_assert(
             }
         }
     } else {
-        debug!("step Ok   {}", id);
         match state {
             StepState::Ok(scope) => StepAssessStruct::new(id, start, end, StepState::Ok(scope)),
             StepState::Err(e) => StepAssessStruct::new(
@@ -327,7 +238,7 @@ pub async fn step_register(render_context: &mut RenderContext, sid: &str, state:
                 });
             }
         }
-        StepState::Fail(scope) => {
+        StepState::Fail(_) => {
             // never reach
             panic!("step state cannot be fail");
         }

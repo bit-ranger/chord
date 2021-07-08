@@ -87,7 +87,9 @@ impl Debug for Error {
             })
             .to_string()
             .as_str(),
-        )
+        )?;
+        f.write_str("\n")?;
+        Debug::fmt(self.cause.as_ref(), f)
     }
 }
 

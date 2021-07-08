@@ -10,6 +10,7 @@ pub use crate::Error;
 pub mod prelude {
     pub use crate::cause;
     pub use crate::err;
+    pub use crate::value::*;
 
     pub use super::async_trait;
     pub use super::Action;
@@ -18,7 +19,6 @@ pub mod prelude {
     pub use super::Factory;
     pub use super::RunArg;
     pub use super::Scope;
-    pub use super::Value;
 }
 
 pub trait Scope: Sync + Send {

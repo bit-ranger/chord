@@ -6,19 +6,29 @@
 
 chord - async 并行任务处理框架
 
+### prepare
 
+    cd action/src/action/dubbo/generic-gateway
+    mvn package
+    cp target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar /data/chord/bin/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
+    cd ../../../../..
 
-## usage
+    cd zero/action/dubbo
+    mvn package
+    java -jar target/dubbo-provider-0.0.1-SNAPSHOT.jar &
+    cd ../../..
 
-### cmd
+    docker-compose up -d
+    
+### run cmd
 
     cargo run --package  chord-cmd --bin chord-cmd  -- \ 
         -c$(pwd)/zero/devops/chord/conf/application.yml \ 
         -i$(pwd)/zero/devops/chord/job/input \ 
         -o$(pwd)/zero/devops/chord/job/output
 
+### help
 
-#### help
     cargo run --package  chord-cmd --bin chord-cmd -- --help
 
 ##### 

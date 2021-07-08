@@ -1,6 +1,7 @@
+use rlua::StdLib;
+
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
-use rlua::StdLib;
 
 pub struct LuaFactory {}
 
@@ -30,7 +31,7 @@ impl Action for Lua {
             let code = arg.render_str(
                 arg.args()["code"]
                     .as_str()
-                    .ok_or(err!("lua", "missing code"))?,
+                    .ok_or(err!("100", "missing code"))?,
             )?;
 
             self.eval(lua, code)
@@ -45,7 +46,7 @@ impl Lua {
                 let v = to_value(&v)?;
                 Ok(Box::new(v))
             }
-            Err(e) => Err(err!("lua", format!("{}", e))),
+            Err(e) => Err(err!("101", format!("{}", e))),
         }
     }
 }
@@ -70,6 +71,6 @@ fn to_value(lua_value: &rlua::Value) -> Result<Value, Error> {
             Ok(Value::Object(map))
         }
 
-        _ => Err(err!("lua", "invalid value")),
+        _ => Err(err!("102", "invalid value")),
     }
 }

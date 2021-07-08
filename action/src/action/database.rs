@@ -18,7 +18,7 @@ impl Factory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let url = arg.args()["url"]
             .as_str()
-            .ok_or(err!("010", "missing url"))?;
+            .ok_or(err!("100", "missing url"))?;
 
         if !arg.is_shared(url) {
             return Ok(Box::new(Database { rb: None }));
@@ -54,7 +54,7 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> 
             let url = arg.args()["url"]
                 .as_str()
                 .map(|s| arg.render_str(s))
-                .ok_or(err!("010", "missing url"))??;
+                .ok_or(err!("100", "missing url"))??;
             let rb = Rbatis::new();
             rb.link(url.as_str()).await?;
             run0(arg, &rb).await
@@ -66,7 +66,7 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
     let sql = arg.args()["sql"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing sql"))??;
+        .ok_or(err!("101", "missing sql"))??;
 
     if sql.trim_start().to_uppercase().starts_with("SELECT ") {
         let pr = PageRequest::new(1, 20);

@@ -22,7 +22,7 @@ struct Assert {}
 #[async_trait]
 impl Action for Assert {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let condition = arg.args().as_str().ok_or(err!("assert", "missing args"))?;
+        let condition = arg.args().as_str().ok_or(err!("100", "missing args"))?;
 
         let template = format!(
             "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
@@ -35,12 +35,12 @@ impl Action for Assert {
                 if result.eq("true") {
                     Ok(Box::new(Value::Null))
                 } else {
-                    Err(err!("assert", "assert fail"))
+                    Err(err!("101", "assert fail"))
                 }
             }
             Err(e) => {
                 info!("assert err: {} >>> {}", condition, e);
-                Err(err!("assert", "assert err"))
+                Err(err!("102", "assert err"))
             }
         };
     }

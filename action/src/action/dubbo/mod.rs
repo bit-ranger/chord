@@ -10,12 +10,12 @@ pub struct DubboFactory {
 impl DubboFactory {
     pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
         if config.is_none() {
-            return Err(err!("dubbo", "missing dubbo.config"));
+            return Err(err!("100", "missing dubbo.config"));
         }
         let config_ref = config.as_ref().unwrap();
 
         if config_ref.is_null() {
-            return Err(err!("dubbo", "missing dubbo.config"));
+            return Err(err!("101", "missing dubbo.config"));
         }
 
         let mode = config_ref["mode"].as_str().unwrap_or("gateway").to_owned();
@@ -27,7 +27,7 @@ impl DubboFactory {
             // "telnet" => Ok(DubboFactory {
             //     delegate: Box::new(telnet::DubboFactory::new(config).await?),
             // }),
-            _ => Err(err!("dubbo", "unsupported mode")),
+            _ => Err(err!("102", "unsupported mode")),
         }
     }
 }

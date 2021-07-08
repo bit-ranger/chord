@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::str::FromStr;
 
-use async_std::prelude::*;
+use futures::AsyncBufReadExt;
 use log::trace;
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
@@ -45,8 +45,7 @@ async fn call0(
     tail_size: usize,
 ) -> Result<Vec<String>, DockerError> {
     let url = format!("http://{}/{}", address, uri);
-    let url =
-        Url::from_str(url.as_str()).or(Err(err!("docker", format!("invalid url: {}", url))))?;
+    let url = Url::from_str(url.as_str()).or(Err(err!("100", format!("invalid url: {}", url))))?;
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
@@ -84,7 +83,7 @@ async fn call0(
         }
     }
     return if !res.status().is_success() {
-        Err(err!("docker", res.status().to_string()))?
+        Err(err!("101", res.status().to_string()))?
     } else {
         Ok(tail.into())
     };
@@ -94,7 +93,7 @@ struct DockerError(chord::Error);
 
 impl From<surf::Error> for DockerError {
     fn from(err: surf::Error) -> DockerError {
-        DockerError(err!("docker", format!("{}", err.status())))
+        DockerError(err!("102", format!("{}", err.status())))
     }
 }
 
@@ -106,7 +105,7 @@ impl From<chord::Error> for DockerError {
 
 impl From<chord::value::Error> for DockerError {
     fn from(err: chord::value::Error) -> Self {
-        DockerError(cause!("docker", "parse fail", err))
+        DockerError(cause!("103", "parse fail", err))
     }
 }
 

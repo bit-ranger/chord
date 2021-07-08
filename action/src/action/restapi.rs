@@ -40,13 +40,13 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
 async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
     let args = arg.render_value(arg.args())?;
 
-    let url = args["url"].as_str().ok_or(err!("010", "missing url"))?;
-    let url = Url::from_str(url).or(Err(err!("011", format!("invalid url: {}", url))))?;
+    let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
+    let url = Url::from_str(url).or(Err(err!("101", format!("invalid url: {}", url))))?;
 
     let method = args["method"]
         .as_str()
-        .ok_or(err!("020", "missing method"))?;
-    let method = Method::from_str(method).or(Err(err!("021", "invalid method")))?;
+        .ok_or(err!("102", "missing method"))?;
+    let method = Method::from_str(method).or(Err(err!("103", "invalid method")))?;
 
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
@@ -57,10 +57,10 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
     if let Some(header) = args["header"].as_object() {
         for (k, v) in header.iter() {
             let hn =
-                HeaderName::from_string(k.clone()).or(Err(err!("030", "invalid header name")))?;
+                HeaderName::from_string(k.clone()).or(Err(err!("104", "invalid header name")))?;
             let hvs: Vec<HeaderValue> = match v {
                 Value::String(v) => {
-                    vec![HeaderValue::from_str(v).or(Err(err!("031", "invalid header value")))?]
+                    vec![HeaderValue::from_str(v).or(Err(err!("105", "invalid header value")))?]
                 }
                 Value::Array(vs) => {
                     let mut vec = vec![];
@@ -70,7 +70,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
                     }
                     vec
                 }
-                _ => Err(err!("031", "invalid header value"))?,
+                _ => Err(err!("106", "invalid header value"))?,
             };
             rb = rb.header(hn, hvs.as_slice());
         }
@@ -114,7 +114,7 @@ struct RestapiError(chord::Error);
 
 impl From<surf::Error> for RestapiError {
     fn from(err: surf::Error) -> RestapiError {
-        RestapiError(err!("restapi", format!("{}", err.status())))
+        RestapiError(err!("107", format!("{}", err.status())))
     }
 }
 

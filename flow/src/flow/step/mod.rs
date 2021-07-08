@@ -30,7 +30,7 @@ pub async fn run(
             arg.id().clone(),
             start,
             Utc::now(),
-            StepState::Err(Error::new("001", "timeout")),
+            StepState::Err(Error::new("timeout", "timeout")),
         );
     }
     let unwind_value = timeout_value.unwrap();
@@ -39,7 +39,7 @@ pub async fn run(
             arg.id().clone(),
             start,
             Utc::now(),
-            StepState::Err(Error::new("002", "unwind")),
+            StepState::Err(Error::new("unwind", "unwind")),
         );
     }
     let action_value = unwind_value.unwrap();

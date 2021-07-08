@@ -18,17 +18,17 @@ pub struct DownloadFactory {
 impl DownloadFactory {
     pub async fn new(config: Option<Value>) -> Result<DownloadFactory, Error> {
         if config.is_none() {
-            return Err(err!("010", "missing config"));
+            return Err(err!("100", "missing config"));
         }
         let config = config.as_ref().unwrap();
 
         if config.is_null() {
-            return Err(err!("010", "missing config"));
+            return Err(err!("100", "missing config"));
         }
 
         let workdir = config["workdir"]
             .as_str()
-            .ok_or(err!("010", "missing workdir"))?;
+            .ok_or(err!("101", "missing workdir"))?;
 
         let workdir = PathBuf::from_str(workdir)?;
 
@@ -69,17 +69,17 @@ async fn run0(
     arg: &dyn RunArg,
 ) -> std::result::Result<DownloadFile, DownloadError> {
     let args = arg.render_value(arg.args())?;
-    let url = args["url"].as_str().ok_or(err!("010", "missing url"))?;
-    let url = Url::from_str(url).or(Err(err!("011", format!("invalid url: {}", url))))?;
+    let url = args["url"].as_str().ok_or(err!("102", "missing url"))?;
+    let url = Url::from_str(url).or(Err(err!("103", format!("invalid url: {}", url))))?;
 
     let mut rb = RequestBuilder::new(Method::Get, url);
     if let Some(header) = args["header"].as_object() {
         for (k, v) in header.iter() {
             let hn =
-                HeaderName::from_string(k.clone()).or(Err(err!("030", "invalid header name")))?;
+                HeaderName::from_string(k.clone()).or(Err(err!("104", "invalid header name")))?;
             let hvs: Vec<HeaderValue> = match v {
                 Value::String(v) => {
-                    vec![HeaderValue::from_str(v).or(Err(err!("031", "invalid header value")))?]
+                    vec![HeaderValue::from_str(v).or(Err(err!("105", "invalid header value")))?]
                 }
                 Value::Array(vs) => {
                     let mut vec = vec![];
@@ -89,7 +89,7 @@ async fn run0(
                     }
                     vec
                 }
-                _ => Err(err!("031", "invalid header value"))?,
+                _ => Err(err!("106", "invalid header value"))?,
             };
             rb = rb.header(hn, hvs.as_slice());
         }
@@ -197,7 +197,7 @@ struct DownloadError(chord::Error);
 
 impl From<surf::Error> for DownloadError {
     fn from(err: surf::Error) -> DownloadError {
-        DownloadError(err!("download", format!("{}", err.status())))
+        DownloadError(err!("107", format!("{}", err.status())))
     }
 }
 
@@ -209,6 +209,6 @@ impl From<chord::Error> for DownloadError {
 
 impl From<std::io::Error> for DownloadError {
     fn from(err: std::io::Error) -> Self {
-        DownloadError(cause!("download", err.to_string(), err))
+        DownloadError(cause!("108", err.to_string(), err))
     }
 }

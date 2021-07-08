@@ -13,17 +13,17 @@ pub struct FstoreFactory {
 impl FstoreFactory {
     pub async fn new(config: Option<Value>) -> Result<FstoreFactory, Error> {
         if config.is_none() {
-            return Err(err!("010", "missing config"));
+            return Err(err!("100", "missing config"));
         }
         let config = config.as_ref().unwrap();
 
         if config.is_null() {
-            return Err(err!("010", "missing config"));
+            return Err(err!("100", "missing config"));
         }
 
         let workdir = config["workdir"]
             .as_str()
-            .ok_or(err!("010", "missing workdir"))?;
+            .ok_or(err!("101", "missing workdir"))?;
 
         let workdir = PathBuf::from_str(workdir)?;
 
@@ -63,7 +63,7 @@ async fn run0(fstore: &Fstore, arg: &dyn RunArg) -> std::result::Result<Value, E
     let args = arg.render_value(arg.args())?;
     let pav: Vec<String> = args["path"]
         .as_array()
-        .ok_or(err!("010", "missing path"))?
+        .ok_or(err!("102", "missing path"))?
         .iter()
         .map(|p| p.as_str())
         .filter(|p| p.is_some())
@@ -72,10 +72,10 @@ async fn run0(fstore: &Fstore, arg: &dyn RunArg) -> std::result::Result<Value, E
         .collect();
 
     if pav.len() < 1 {
-        return Err(err!("fstore", "missing path"));
+        return Err(err!("103", "missing path"));
     }
     if !pav[0].starts_with(arg.id().case_id().task_id().to_string().as_str()) {
-        return Err(err!("fstore", "forbidden access"));
+        return Err(err!("104", "forbidden access"));
     }
 
     let mut path_src = fstore.tmp.parent().unwrap().to_path_buf();

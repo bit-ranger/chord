@@ -25,12 +25,12 @@ impl Action for Crypto {
 }
 
 async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-    let by = arg.args()["by"].as_str().ok_or(err!("010", "missing by"))?;
+    let by = arg.args()["by"].as_str().ok_or(err!("100", "missing by"))?;
 
     let from = arg.args()["from"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing from"))??;
+        .ok_or(err!("101", "missing from"))??;
 
     return match by {
         "md5" => {
@@ -38,6 +38,6 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
             let digest = format!("{:x}", digest);
             return Ok(Box::new(Value::String(digest)));
         }
-        _ => Err(err!("crypto", format!("unsupported {}", by))),
+        _ => Err(err!("102", format!("unsupported {}", by))),
     };
 }

@@ -1,9 +1,10 @@
 use std::str::FromStr;
 
 use async_std::io::BufReader;
-use async_std::prelude::*;
 use async_std::process::{Child, ChildStdout, Command, Stdio};
 use async_std::task::Builder;
+use futures::io::Lines;
+use futures::{AsyncBufReadExt, StreamExt};
 use log::{debug, info, trace};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
@@ -24,12 +25,12 @@ pub struct DubboFactory {
 impl DubboFactory {
     pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
         if config.is_none() {
-            return Err(err!("dubbo", "missing dubbo.config"));
+            return Err(err!("100", "missing dubbo.config"));
         }
         let config = config.as_ref().unwrap();
 
         if config.is_null() {
-            return Err(err!("dubbo", "missing dubbo.config"));
+            return Err(err!("101", "missing dubbo.config"));
         }
 
         let registry_protocol = config["gateway"]["registry"]["protocol"]
@@ -39,12 +40,12 @@ impl DubboFactory {
 
         let registry_address = config["gateway"]["registry"]["address"]
             .as_str()
-            .ok_or(err!("dubbo", "missing dubbo.gateway.registry.address"))?
+            .ok_or(err!("102", "missing dubbo.gateway.registry.address"))?
             .to_owned();
 
         let gateway_args = config["gateway"]["args"]
             .as_array()
-            .ok_or(err!("dubbo", "missing dubbo.gateway.args"))?;
+            .ok_or(err!("103", "missing dubbo.gateway.args"))?;
         let gateway_args: Vec<String> = gateway_args
             .iter()
             .map(|a| {
@@ -60,17 +61,17 @@ impl DubboFactory {
             .iter()
             .filter(|a| a.trim() == "-jar")
             .last()
-            .ok_or(err!("dubbo", "missing dubbo.gateway.args.-jar"))?;
+            .ok_or(err!("104", "missing dubbo.gateway.args.-jar"))?;
 
         let port = gateway_args
             .iter()
             .filter(|a| a.trim().starts_with("--server.port="))
             .last()
-            .ok_or(err!("dubbo", "missing dubbo.gateway.args.--server.port"))?;
+            .ok_or(err!("105", "missing dubbo.gateway.args.--server.port"))?;
         let port: Vec<&str> = port.split("=").collect();
         let port: usize = port
             .get(1)
-            .ok_or(err!("dubbo", "missing dubbo.gateway.args.--server.port"))?
+            .ok_or(err!("106", "missing dubbo.gateway.args.--server.port"))?
             .parse()?;
 
         let mut command = Command::new("java");
@@ -86,13 +87,13 @@ impl DubboFactory {
             .stderr(Stdio::piped())
             .spawn()?;
 
-        let std_out = child.stdout.ok_or(err!("dubbo", "missing stdout"))?;
-        let mut std_out = BufReader::new(std_out);
-        let mut lines = std_out.by_ref().lines();
+        let std_out = child.stdout.ok_or(err!("107", "missing stdout"))?;
+        let std_out = BufReader::new(std_out);
+        let mut lines = std_out.lines();
         loop {
             let line = lines.next().await;
             if line.is_none() {
-                return Err(err!("dubbo", "failed to start dubbo-generic-gateway"));
+                return Err(err!("108", "failed to start dubbo-generic-gateway"));
             }
             let line = line.unwrap()?;
             log_line(&line).await;
@@ -103,7 +104,7 @@ impl DubboFactory {
 
         let _ = Builder::new()
             .name("dubbo-gateway-output".into())
-            .spawn(loop_out(std_out));
+            .spawn(loop_out(lines));
 
         child.stdout = None;
         Ok(DubboFactory {
@@ -137,14 +138,14 @@ impl Action for Dubbo {
     async fn run(&self, run_arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let method_long = run_arg.args()["method"]
             .as_str()
-            .ok_or(err!("010", "missing method"))?;
+            .ok_or(err!("109", "missing method"))?;
         let parts = method_long
             .split(&['#', '(', ',', ')'][..])
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
             .collect::<Vec<&str>>();
         if parts.len() < 2 {
-            return Err(err!("010", "invalid method"));
+            return Err(err!("110", "invalid method"));
         }
 
         let args_raw = &run_arg.args()["args"];
@@ -154,14 +155,14 @@ impl Action for Dubbo {
                 let args_render: Value = from_str(txt_render.as_str())?;
                 match args_render {
                     Value::Array(aw_vec) => Ok(aw_vec),
-                    _ => return Err(err!("dubbo", "args must be array")),
+                    _ => return Err(err!("111", "args must be array")),
                 }
             }
             _ => {
                 let args_render = run_arg.render_value(args_raw)?;
                 match args_render {
                     Value::Array(aw_vec) => Ok(aw_vec),
-                    _ => return Err(err!("dubbo", "args must be array")),
+                    _ => return Err(err!("112", "args must be array")),
                 }
             }
         };
@@ -194,7 +195,7 @@ impl Action for Dubbo {
         }
 
         return Err(err!(
-            "dubbo",
+            "113",
             format!("{}::{}", value["code"], value["message"])
         ));
     }
@@ -204,7 +205,7 @@ async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, 
     let rb = RequestBuilder::new(
         Method::Post,
         Url::from_str(format!("http://127.0.0.1:{}/api/dubbo/generic/invoke", port).as_str())
-            .or(Err(err!("021", "invalid url")))?,
+            .or(Err(err!("114", "invalid url")))?,
     );
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
@@ -215,15 +216,14 @@ async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, 
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
-        return Err(err!("dubbo", res.status().to_string()))?;
+        return Err(err!("115", res.status().to_string()))?;
     } else {
         let body: Value = res.body_json().await?;
         Ok(body)
     }
 }
 
-async fn loop_out(mut std_out: BufReader<ChildStdout>) {
-    let mut lines = std_out.by_ref().lines();
+async fn loop_out(mut lines: Lines<BufReader<ChildStdout>>) {
     loop {
         let line = lines.next().await;
         if line.is_none() {
@@ -287,13 +287,13 @@ struct DubboError(chord::Error);
 
 impl From<surf::Error> for DubboError {
     fn from(err: surf::Error) -> DubboError {
-        DubboError(err!("dubbo", format!("{}", err.status())))
+        DubboError(err!("116", format!("{}", err.status())))
     }
 }
 
 impl From<chord::value::Error> for DubboError {
     fn from(err: chord::value::Error) -> DubboError {
-        DubboError(err!("dubbo", format!("{}:{}", err.line(), err.column())))
+        DubboError(err!("117", format!("{}:{}", err.line(), err.column())))
     }
 }
 

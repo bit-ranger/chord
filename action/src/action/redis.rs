@@ -17,7 +17,7 @@ impl Factory for RedisFactory {
         let url = arg.args()["url"]
             .as_str()
             .map(|s| arg.render_str(s))
-            .ok_or(err!("010", "missing url"))??;
+            .ok_or(err!("100", "missing url"))??;
 
         if !arg.is_shared(url.as_str()) {
             return Ok(Box::new(Redis { client: None }));
@@ -44,7 +44,7 @@ impl Action for Redis {
                 let url = arg.args()["url"]
                     .as_str()
                     .map(|s| arg.render_str(s))
-                    .ok_or(err!("010", "missing url"))??;
+                    .ok_or(err!("101", "missing url"))??;
 
                 let client = redis::Client::open(url)?;
                 run0(arg, &client).await
@@ -57,7 +57,7 @@ async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error
     let cmd = arg.args()["cmd"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing cmd"))??;
+        .ok_or(err!("102", "missing cmd"))??;
 
     let mut con = client.get_async_connection().await?;
 

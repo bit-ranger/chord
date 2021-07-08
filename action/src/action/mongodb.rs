@@ -32,23 +32,23 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     let url = arg.args()["url"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing url"))??;
+        .ok_or(err!("100", "missing url"))??;
     let database = arg.args()["database"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing database"))??;
+        .ok_or(err!("101", "missing database"))??;
     let collection = arg.args()["collection"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing collection"))??;
+        .ok_or(err!("102", "missing collection"))??;
     let op = arg.args()["operation"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing operation"))??;
+        .ok_or(err!("103", "missing operation"))??;
     let op_arg = arg.args()["arg"]
         .as_str()
         .map(|s| arg.render_str(s))
-        .ok_or(err!("010", "missing arg"))??;
+        .ok_or(err!("104", "missing arg"))??;
 
     // Parse a connection string into an options struct.
     let client_options = ClientOptions::parse(url.as_str()).await?;
@@ -67,9 +67,9 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
                     collection.insert_many(doc_vec, None).await?;
                     return Ok(Box::new(Value::Null));
                 }
-                _ => Err(err!("010", "illegal arg")),
+                _ => Err(err!("105", "illegal arg")),
             }
         }
-        _ => Err(err!("010", "illegal operation")),
+        _ => Err(err!("106", "illegal operation")),
     }
 }

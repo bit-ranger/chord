@@ -18,7 +18,7 @@ impl Factory for DylibFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let dir = arg.args()["dir"]
             .as_str()
-            .ok_or(err!("010", "missing dir"))?;
+            .ok_or(err!("100", "missing dir"))?;
 
         let mut reload_handler = DynamicReload::new(Some(vec![dir]), Some(dir), Search::Default);
 

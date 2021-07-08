@@ -36,7 +36,7 @@ chord - async 并行任务处理框架
     chord 0.1.0
 
     USAGE:
-    chord-cmd [OPTIONS] --input <input> --output <output>
+        chord-cmd [OPTIONS] --input <input> --output <output>
 
     FLAGS:
         -h, --help       Prints help information
@@ -46,6 +46,12 @@ chord - async 并行任务处理框架
         -c, --config <config>    config file path [default: /data/chord/conf/application.yml]
         -i, --input <input>      input dir
         -o, --output <output>    output dir
-    
+        -t, --task <task>...     task list
+
 ### example
+
 [example](https://github.com/bit-ranger/chord/tree/master/zero/devops/chord/job/input)
+
+### workflow
+
+[github action](https://github.com/bit-ranger/chord/blob/master/.github/workflows/multi.yml)

@@ -1,6 +1,9 @@
+use std::error::Error as StdError;
 use std::fmt;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
+
+use crate::value::json;
 
 #[macro_export]
 macro_rules! err {
@@ -16,7 +19,7 @@ macro_rules! cause {
     }};
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Error {
     code: String,
     message: String,
@@ -42,12 +45,12 @@ impl Error {
     where
         C: Into<String>,
         M: Into<String>,
-        E: Into<anyhow::Error>,
+        E: StdError + Send + Sync + 'static,
     {
         Error {
             code: code.into(),
             message: message.into(),
-            cause: Arc::new(cause.into()),
+            cause: Arc::new(anyhow::Error::from(cause)),
         }
     }
 
@@ -65,33 +68,46 @@ impl Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_str(
-            format!(
-                "{} code: {}, message: {} {}",
-                "{", self.code, self.message, "}"
-            )
+            json!({
+                "code": self.code.clone(),
+                "message": self.message.clone()
+            })
+            .to_string()
             .as_str(),
-        )?;
-
-        // if let Some(cause) = &self.cause{
-        //     f.write_str("\n")?;
-        //     f.write_str(cause.to_string().as_str())?;
-        // }
-
-        return Ok(());
+        )
     }
 }
 
-impl Into<anyhow::Error> for Error {
-    fn into(self) -> anyhow::Error {
-        anyhow::Error::msg(format!("{}: {}", self.code, self.message))
+impl Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(
+            json!({
+                "code": self.code.clone(),
+                "message": self.message.clone()
+            })
+            .to_string()
+            .as_str(),
+        )
     }
 }
 
 impl<E> From<E> for Error
 where
-    E: std::error::Error + Send + Sync + 'static,
+    E: StdError + Send + Sync + 'static,
 {
     fn from(error: E) -> Self {
         Error::cause("std", error.to_string(), error)
+    }
+}
+
+impl AsRef<dyn StdError + Send + Sync> for Error {
+    fn as_ref(&self) -> &(dyn StdError + Send + Sync + 'static) {
+        self.cause.as_ref().as_ref()
+    }
+}
+
+impl AsRef<dyn StdError> for Error {
+    fn as_ref(&self) -> &(dyn StdError + 'static) {
+        self.cause.as_ref().as_ref()
     }
 }

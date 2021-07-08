@@ -11,7 +11,7 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
 use chord::err;
-use chord::value::{to_string, Deserialize, Serialize};
+use chord::value::{from_str, to_string, Deserialize, Serialize};
 use chord::Error;
 
 pub struct DubboFactory {
@@ -148,20 +148,26 @@ impl Action for Dubbo {
         }
 
         let args_raw = &run_arg.args()["args"];
-        let args: Vec<Value> = match args_raw {
-            Value::Array(aw_vec) => {
-                let mut ar_vec: Vec<Value> = vec![];
-                for aw in aw_vec {
-                    let ar = run_arg.render_value(aw)?;
-                    ar_vec.push(ar);
+        let args = match args_raw {
+            Value::String(txt) => {
+                let txt_render = run_arg.render_str(txt.as_str())?;
+                if &run_arg.args()["content_type"] == "json" {
+                    let args_render = from_str(txt_render.as_str())?;
+                    match args_render {
+                        Value::Array(aw_vec) => aw_vec,
+                        _ => vec![args_render],
+                    }
+                } else {
+                    vec![Value::String(txt_render)]
                 }
-                ar_vec
             }
-            _ => run_arg
-                .render_value(args_raw)?
-                .as_array()
-                .ok_or(err!("010", "missing args"))?
-                .clone(),
+            _ => {
+                let args_render = run_arg.render_value(args_raw)?;
+                match args_render {
+                    Value::Array(aw_vec) => aw_vec,
+                    _ => vec![args_render],
+                }
+            }
         };
 
         let invoke = GenericInvoke {
@@ -181,8 +187,10 @@ impl Action for Dubbo {
             args,
         };
 
-        trace!("invoke {}", to_string(&invoke)?);
+        let invoke_str = to_string(&invoke)?;
+        trace!("invoke request {}", invoke_str);
         let value = remote_invoke(self.port, invoke).await.map_err(|e| e.0)?;
+        trace!("invoke response {}, {}", invoke_str, &value);
         let value = &value;
         if value["success"].as_bool().unwrap_or(false) {
             return Ok(Box::new(value["data"].clone()));

@@ -148,27 +148,24 @@ impl Action for Dubbo {
         }
 
         let args_raw = &run_arg.args()["args"];
-        let args = match args_raw {
+        let args: Result<Vec<Value>, Error> = match args_raw {
             Value::String(txt) => {
                 let txt_render = run_arg.render_str(txt.as_str())?;
-                if &run_arg.args()["content_type"] == "json" {
-                    let args_render = from_str(txt_render.as_str())?;
-                    match args_render {
-                        Value::Array(aw_vec) => aw_vec,
-                        _ => vec![args_render],
-                    }
-                } else {
-                    vec![Value::String(txt_render)]
+                let args_render: Value = from_str(txt_render.as_str())?;
+                match args_render {
+                    Value::Array(aw_vec) => Ok(aw_vec),
+                    _ => return Err(err!("dubbo", "args must be array")),
                 }
             }
             _ => {
                 let args_render = run_arg.render_value(args_raw)?;
                 match args_render {
-                    Value::Array(aw_vec) => aw_vec,
-                    _ => vec![args_render],
+                    Value::Array(aw_vec) => Ok(aw_vec),
+                    _ => return Err(err!("dubbo", "args must be array")),
                 }
             }
         };
+        let args = args?;
 
         let invoke = GenericInvoke {
             reference: Reference {

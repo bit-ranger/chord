@@ -23,7 +23,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     let mut render_context = arg.create_render_context();
     let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
     for (step_id, action) in arg.step_vec().iter() {
-        curr_unregister(&mut render_context).await;
+        curr_reset(&mut render_context).await;
 
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if step_arg.is_none() {
@@ -271,7 +271,7 @@ pub async fn curr_register(render_context: &mut RenderContext, state: &StepState
     }
 }
 
-pub async fn curr_unregister(render_context: &mut RenderContext) {
+pub async fn curr_reset(render_context: &mut RenderContext) {
     if let Value::Object(reg) = render_context.data_mut() {
         reg["curr"] = Value::Null;
     }

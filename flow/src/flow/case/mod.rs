@@ -1,7 +1,7 @@
 use chrono::Utc;
 use log::{debug, info, trace, warn};
 
-use chord::action::{RunArg, RunId};
+use chord::action::RunArg;
 use chord::case::CaseState;
 use chord::collection::TailDropVec;
 use chord::err;
@@ -23,6 +23,8 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
     let mut render_context = arg.create_render_context();
     let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
     for (step_id, action) in arg.step_vec().iter() {
+        curr_unregister(&mut render_context).await;
+
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if step_arg.is_none() {
             warn!("case Err {}", arg.id());
@@ -37,20 +39,28 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
         let step_arg = step_arg.unwrap();
         let step_assess = step::run(flow_ctx, &step_arg, action.as_ref()).await;
 
+        let step_arg_id = step_arg.id().clone();
+        let step_arg_args = step_arg
+            .render_value(step_arg.args())
+            .unwrap_or(Value::Null);
+        let step_arg_assert = step_arg.assert().map(|s| s.to_owned());
+        let step_arg_catch_err = step_arg.catch_err();
+
+        curr_register(&mut render_context, step_assess.state()).await;
+        step_register(
+            &mut render_context,
+            step_assess.id().step(),
+            step_assess.state(),
+        )
+        .await;
+
         if step_assess.state.is_fail() {
             // never reach
             panic!("step state cannot be fail");
         } else if step_assess.state.is_ok() {
-            let step_arg_id = step_arg.id().clone();
-            let step_arg_args = step_arg
-                .render_value(step_arg.args())
-                .unwrap_or(Value::Null);
-
-            let assert_present = step_arg.assert().map(|s| s.to_owned());
             let step_assess =
-                step_assess_assert(flow_ctx, &mut render_context, step_assess, assert_present)
+                step_assess_assert(flow_ctx, &mut render_context, step_assess, step_arg_assert)
                     .await;
-
             if step_assess.state.is_ok() {
                 debug!("step Ok   {}", step_arg_id);
                 step_assess_vec.push(Box::new(step_assess));
@@ -75,8 +85,8 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 );
             }
         } else if step_assess.state.is_err() {
-            if !step_arg.catch_err() {
-                debug!("step Err  {}", step_arg.id());
+            if !step_arg_catch_err {
+                debug!("step Err  {}", step_arg_id);
                 step_assess_vec.push(Box::new(step_assess));
                 info!("case Fail {}", arg.id());
                 return CaseAssessStruct::new(
@@ -87,16 +97,9 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                     CaseState::Fail(TailDropVec::from(step_assess_vec)),
                 );
             } else {
-                trace!("step catch {}", step_arg.id());
-
-                let step_arg_id = step_arg.id().clone();
-                let step_arg_args = step_arg
-                    .render_value(step_arg.args())
-                    .unwrap_or(Value::Null);
-
-                let assert_present = step_arg.assert().map(|s| s.to_owned());
+                trace!("step catch {}", step_arg_id);
                 let step_assess =
-                    step_assess_assert(flow_ctx, &mut render_context, step_assess, assert_present)
+                    step_assess_assert(flow_ctx, &mut render_context, step_assess, step_arg_assert)
                         .await;
                 if step_assess.state.is_ok() {
                     debug!("step Ok   {}", step_arg_id);
@@ -138,7 +141,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
 /// step_assess.state cannot be Fail
 async fn step_assess_assert(
     flow_ctx: &dyn Context,
-    render_context: &mut RenderContext,
+    render_context: &RenderContext,
     step_assess: StepAssessStruct,
     assert_present: Option<String>,
 ) -> StepAssessStruct {
@@ -153,7 +156,7 @@ async fn step_assess_assert(
         end,
         state,
     } = step_assess;
-    step_register(render_context, id.step(), &state).await;
+
     if let Some(con) = assert_present {
         if assert(flow_ctx.get_handlebars(), &render_context, con.as_str()).await {
             match state {
@@ -215,24 +218,15 @@ async fn step_assess_assert(
 pub async fn step_register(render_context: &mut RenderContext, sid: &str, state: &StepState) {
     match state {
         StepState::Ok(scope) => {
-            if let Value::Object(data) = render_context.data_mut() {
-                data["step"][sid]["state"] = Value::String("Ok".to_owned());
-                data["step"][sid]["value"] = scope.as_value().clone();
-
-                data["curr"]["state"] = Value::String("Ok".to_owned());
-                data["curr"]["value"] = scope.as_value().clone();
+            if let Value::Object(reg) = render_context.data_mut() {
+                reg["step"][sid]["state"] = Value::String("Ok".to_owned());
+                reg["step"][sid]["value"] = scope.as_value().clone();
             }
         }
         StepState::Err(e) => {
-            if let Value::Object(data) = render_context.data_mut() {
-                data["step"][sid]["state"] = Value::String("Err".to_owned());
-                data["step"][sid]["error"] = json!({
-                    "code": e.code(),
-                    "message": e.message()
-                });
-
-                data["curr"]["state"] = Value::String("Err".to_owned());
-                data["curr"]["error"] = json!({
+            if let Value::Object(reg) = render_context.data_mut() {
+                reg["step"][sid]["state"] = Value::String("Err".to_owned());
+                reg["step"][sid]["error"] = json!({
                     "code": e.code(),
                     "message": e.message()
                 });
@@ -242,5 +236,43 @@ pub async fn step_register(render_context: &mut RenderContext, sid: &str, state:
             // never reach
             panic!("step state cannot be fail");
         }
+    }
+}
+
+pub async fn step_unregister(render_context: &mut RenderContext, sid: &str) {
+    if let Value::Object(reg) = render_context.data_mut() {
+        if let Some(step) = reg["step"].as_object_mut() {
+            step.remove(sid);
+        }
+    }
+}
+
+pub async fn curr_register(render_context: &mut RenderContext, state: &StepState) {
+    match state {
+        StepState::Ok(scope) => {
+            if let Value::Object(reg) = render_context.data_mut() {
+                reg["curr"]["state"] = Value::String("Ok".to_owned());
+                reg["curr"]["value"] = scope.as_value().clone();
+            }
+        }
+        StepState::Err(e) => {
+            if let Value::Object(reg) = render_context.data_mut() {
+                reg["curr"]["state"] = Value::String("Err".to_owned());
+                reg["curr"]["error"] = json!({
+                    "code": e.code(),
+                    "message": e.message()
+                });
+            }
+        }
+        StepState::Fail(_) => {
+            // never reach
+            panic!("step state cannot be fail");
+        }
+    }
+}
+
+pub async fn curr_unregister(render_context: &mut RenderContext) {
+    if let Value::Object(reg) = render_context.data_mut() {
+        reg["curr"] = Value::Null;
     }
 }

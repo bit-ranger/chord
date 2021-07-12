@@ -11,8 +11,8 @@ pub struct CaseAssessStruct {
     id: Arc<CaseIdStruct>,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
-    state: CaseState,
     data: Value,
+    state: CaseState,
 }
 
 impl CaseAssessStruct {
@@ -20,15 +20,15 @@ impl CaseAssessStruct {
         id: Arc<CaseIdStruct>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
-        state: CaseState,
         data: Value,
+        state: CaseState,
     ) -> CaseAssessStruct {
         CaseAssessStruct {
             id,
             start,
             end,
-            state,
             data,
+            state,
         }
     }
 }

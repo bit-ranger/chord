@@ -23,10 +23,6 @@ pub mod prelude {
 
 pub trait Scope: Sync + Send {
     fn as_value(&self) -> &Value;
-
-    fn enter(&mut self) -> Result<(), Error> {
-        Ok(())
-    }
 }
 
 pub trait RunArg: Sync + Send {

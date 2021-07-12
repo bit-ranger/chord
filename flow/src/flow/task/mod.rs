@@ -90,7 +90,7 @@ impl TaskRunner {
             Ok(runner)
         } else {
             let pre_arg = pre_arg(flow.clone(), id.clone(), pre_step_vec.clone()).await?;
-            let pre_assess = case_run_arc(flow_ctx.clone(), pre_arg).await;
+            let pre_assess = case_run(flow_ctx.as_ref(), pre_arg).await;
             let pre_ctx = pre_ctx_create(pre_assess.as_ref()).await?;
             let runner = TaskRunner {
                 step_vec: Arc::new(TailDropVec::from(vec![])),
@@ -430,6 +430,10 @@ async fn step_create(
     flow_ctx.get_action_factory().create(&create_arg).await
 }
 
+async fn case_run(flow_ctx: &dyn Context, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+    Box::new(case::run(flow_ctx, case_arg).await)
+}
+
 fn case_spawn(
     flow_ctx: Arc<dyn Context>,
     case_arg: CaseArgStruct,
@@ -442,6 +446,5 @@ fn case_spawn(
 
 async fn case_run_arc(flow_ctx: Arc<dyn Context>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     CTX_ID.with(|cid| cid.replace(case_arg.id().to_string()));
-    let cr = case::CaseRunner::new(flow_ctx, case_arg).await;
-    cr.run().await
+    case_run(flow_ctx.as_ref(), case_arg).await
 }

@@ -168,10 +168,6 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
     pub fn catch_err(&self) -> bool {
         self.flow.step_catch_err(self.id().step())
     }
-
-    pub fn goto(&self) -> Option<(&str, &str)> {
-        None
-    }
 }
 
 impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {

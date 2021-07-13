@@ -82,13 +82,13 @@ impl Config for ConfigImpl {
     fn report_mongodb_url(&self) -> Result<&str, Error> {
         self.conf["report"]["mongodb"]["url"]
             .as_str()
-            .ok_or(err!("config", "missing report.mongodb.url"))
+            .ok_or(err!("conf", "missing report.mongodb.url"))
     }
 
     fn report_elasticsearch_url(&self) -> Result<&str, Error> {
         self.conf["report"]["elasticsearch"]["url"]
             .as_str()
-            .ok_or(err!("config", "missing report.mongodb.url"))
+            .ok_or(err!("conf", "missing report.mongodb.url"))
     }
 
     fn action_config(&self) -> Option<&Value> {

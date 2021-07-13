@@ -71,7 +71,7 @@ async fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
 
     let deserialized: Result<Value, serde_yaml::Error> = serde_yaml::from_str(content.as_str());
     return match deserialized {
-        Err(e) => return Err(err!("yaml", format!("{:?}", e))),
+        Err(e) => return Err(err!("conf", format!("{:?}", e))),
         Ok(r) => Ok(r),
     };
 }

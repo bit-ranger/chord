@@ -1,12 +1,5 @@
 # 基础镜像 
-FROM rust:1.53.0
-
-# 作者及联系方式   
-MAINTAINER bit-ranger sincerebravefight@gmail.com
-
-WORKDIR /workdir
-
-EXPOSE 9999
+FROM bitranger/chord:latest
 
 
 COPY chord chord

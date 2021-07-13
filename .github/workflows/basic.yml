@@ -2,7 +2,7 @@ name: basic
 
 on:
     pull_request:
-        branches: [ master ]
+        branches: [ dev ]
 
 
 env:

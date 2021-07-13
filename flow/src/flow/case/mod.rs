@@ -239,14 +239,6 @@ pub async fn step_register(render_context: &mut RenderContext, sid: &str, state:
     }
 }
 
-pub async fn step_unregister(render_context: &mut RenderContext, sid: &str) {
-    if let Value::Object(reg) = render_context.data_mut() {
-        if let Some(step) = reg["step"].as_object_mut() {
-            step.remove(sid);
-        }
-    }
-}
-
 pub async fn curr_register(render_context: &mut RenderContext, state: &StepState) {
     match state {
         StepState::Ok(scope) => {

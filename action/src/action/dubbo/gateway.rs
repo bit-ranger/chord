@@ -178,6 +178,7 @@ impl Action for Dubbo {
                     address: self.registry_address.clone(),
                 },
                 interface: parts[0].to_owned(),
+                timeout: run_arg.timeout().as_millis() as usize,
             },
 
             method: parts[1].to_owned(),
@@ -270,6 +271,7 @@ struct Reference {
     interface: String,
     application: Application,
     registry: Registry,
+    timeout: usize,
 }
 
 #[derive(Serialize, Deserialize)]

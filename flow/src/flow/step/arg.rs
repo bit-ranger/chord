@@ -192,4 +192,8 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
         let value: Value = from_str(value_str.as_str())?;
         return Ok(value);
     }
+
+    fn timeout(&self) -> Duration {
+        self.timeout()
+    }
 }

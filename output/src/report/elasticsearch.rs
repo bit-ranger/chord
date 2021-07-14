@@ -101,7 +101,7 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
         layer: "task".to_owned(),
         start,
         end,
-        elapse: (Utc::now() - start).num_microseconds().unwrap_or(-1) as usize,
+        elapse: (Utc::now() - start).num_milliseconds().unwrap_or(-1) as usize,
         state: match ts {
             TaskState::Ok => "O",
             TaskState::Fail => "F",
@@ -126,7 +126,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
         layer: "case".to_owned(),
         start: ca.start(),
         end: ca.end(),
-        elapse: (ca.end() - ca.start()).num_microseconds().unwrap_or(-1) as usize,
+        elapse: (ca.end() - ca.start()).num_milliseconds().unwrap_or(-1) as usize,
         state: match ca.state() {
             CaseState::Ok(_) => "O",
             CaseState::Fail(_) => "F",
@@ -151,7 +151,7 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         layer: "step".to_owned(),
         start: sa.start(),
         end: sa.end(),
-        elapse: (sa.end() - sa.start()).num_microseconds().unwrap_or(-1) as usize,
+        elapse: (sa.end() - sa.start()).num_milliseconds().unwrap_or(-1) as usize,
         state: match sa.state() {
             StepState::Ok(_) => "O",
             StepState::Fail(_) => "F",

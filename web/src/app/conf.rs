@@ -1,8 +1,6 @@
 use lazy_static::lazy_static;
 
-use chord::err;
 use chord::value::{Map, Value};
-use chord::Error;
 
 pub trait Config: Sync + Send {
     fn server_ip(&self) -> &str;

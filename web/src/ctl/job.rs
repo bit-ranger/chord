@@ -87,6 +87,7 @@ impl Ctl for CtlImpl {
             .to_string();
         let input = self.input_dir.clone();
         let ssh_key_pri = self.ssh_key_private.clone();
+        let report = self.config.report().map(|c| c.clone());
         let app_ctx_0 = self.flow_ctx.clone();
         let exec_id_0 = exec_id.clone();
         spawn(checkout_run(
@@ -95,7 +96,7 @@ impl Ctl for CtlImpl {
             ssh_key_pri,
             req,
             exec_id_0,
-            self.config.report(),
+            report,
         ));
         return Ok(Rep { exec_id });
     }
@@ -107,7 +108,7 @@ async fn checkout_run(
     ssh_key_pri: PathBuf,
     req: Req,
     exec_id: String,
-    report: Option<&Value>,
+    report: Option<Value>,
 ) {
     let req_text = format!("{:?}", req);
     trace!("checkout_run start {}", req_text);
@@ -141,7 +142,7 @@ async fn checkout_run_0(
     ssh_key_pri: PathBuf,
     req: Req,
     exec_id: String,
-    report: Option<&Value>,
+    report: Option<Value>,
     checkout_path: PathBuf,
     job_name: String,
 ) -> Result<Repository, Error> {
@@ -245,9 +246,9 @@ async fn job_run(
     job_path: PathBuf,
     job_name: String,
     exec_id: String,
-    report: Option<&Value>,
+    report: Option<Value>,
 ) {
-    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, report).await;
+    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, report.as_ref()).await;
     if let Err(e) = job_result {
         warn!("job run error {}", e);
     }

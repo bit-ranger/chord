@@ -1,4 +1,4 @@
-name: multi
+name: full
 
 on:
     pull_request:
@@ -32,7 +32,7 @@ jobs:
                     chmod 777 -R /data/chord/
                     cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
                     find /data/chord/
-                    echo "--------"
+                    echo "------------------------------------------------"
                     sudo apt-get update
                     sudo apt-get install curl
     
@@ -69,14 +69,14 @@ jobs:
                     cp target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar /data/chord/bin/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
                     cd ../../../../..
                     pwd
-                    echo "--------"
+                    echo "------------------------------------------------"
                     cd zero/action/dubbo
                     mvn package
                     java -jar target/dubbo-provider-0.0.1-SNAPSHOT.jar &
                     sleep 10
                     cd ../../..
                     pwd
-                    echo "--------"
+                    echo "------------------------------------------------"
     
     
             -   name: cmd-test
@@ -86,7 +86,7 @@ jobs:
     
             -   name: web-boot
                 run: |
-                    ./target/release/chord-web &
+                    ./target/release/chord-web > web.out &
                     sleep 10
     
     
@@ -99,6 +99,8 @@ jobs:
                                 \"branch\": \"master\"
                             }"
                     sleep 30
+                    tail -2000 web.out
+                    echo "------------------------------------------------" 
                     tail -2000 /data/chord/job/output/web.log
             
             

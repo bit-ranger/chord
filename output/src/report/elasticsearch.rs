@@ -7,15 +7,41 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
+use crate::report::Factory;
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
+use chord::flow::Flow;
 use chord::output::async_trait;
-use chord::output::AssessReport;
+use chord::output::Report;
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::{json, to_string, Value};
 use chord::value::{Deserialize, Serialize};
 use chord::Error;
+
+pub struct ReportFactory {
+    es_url: String,
+    es_index: String,
+}
+
+#[async_trait]
+impl Factory for ReportFactory {
+    async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Box<dyn Report>, Error> {
+        let reporter = ReportFactory::create(self, task_id).await?;
+        Ok(Box::new(reporter))
+    }
+}
+
+impl ReportFactory {
+    pub async fn new(es_url: String, es_index: String) -> Result<ReportFactory, Error> {
+        index_create(es_url.as_str(), es_index.as_str()).await?;
+        Ok(ReportFactory { es_url, es_index })
+    }
+
+    pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
+        Reporter::new(self.es_url.clone(), self.es_index.clone(), task_id).await
+    }
+}
 
 pub struct Reporter {
     es_url: String,
@@ -24,8 +50,8 @@ pub struct Reporter {
 }
 
 #[async_trait]
-impl AssessReport for Reporter {
-    async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error> {
+impl Report for Reporter {
+    async fn start(&mut self, time: DateTime<Utc>, _: Arc<Flow>) -> Result<(), Error> {
         let task_data = ta_doc_init(self.task_id.as_ref(), time);
         data_send(self.es_url.as_str(), self.es_index.as_str(), task_data).await?;
         Ok(())
@@ -64,7 +90,7 @@ impl AssessReport for Reporter {
 }
 
 impl Reporter {
-    pub async fn new(
+    async fn new(
         es_url: String,
         es_index: String,
         task_id: Arc<dyn TaskId>,
@@ -74,10 +100,6 @@ impl Reporter {
             es_index,
             task_id,
         })
-    }
-
-    pub async fn close(self) -> Result<(), Error> {
-        Ok(())
     }
 }
 
@@ -180,7 +202,7 @@ async fn data_send(es_url: &str, es_index: &str, data: Data) -> Result<(), Error
     data_send_0(rb, data).await.map_err(|e| e.0)
 }
 
-pub async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
+async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
     let path = format!("{}/{}", es_url, index_name);
     let rb = RequestBuilder::new(Method::Get, Url::from_str(path.as_str())?);
     let res = empty_send_0(rb).await.map_err(|e| e.0)?;

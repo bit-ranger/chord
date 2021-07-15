@@ -12,6 +12,12 @@ impl Config {
 }
 
 impl Config {
+    pub fn log_path(&self) -> &str {
+        self.conf["log"]["path"]
+            .as_str()
+            .unwrap_or("/data/chord/job/output/cmd.log")
+    }
+
     pub fn log_level(&self) -> Vec<(String, String)> {
         let target_level: Vec<(String, String)> = match self.conf["log"]["level"].as_object() {
             None => Vec::new(),
@@ -25,7 +31,11 @@ impl Config {
         return target_level;
     }
 
-    pub fn action_config(&self) -> Option<&Value> {
+    pub fn action(&self) -> Option<&Value> {
         self.conf.get("action")
+    }
+
+    pub fn report(&self) -> Option<&Value> {
+        self.conf.get("report")
     }
 }

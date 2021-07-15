@@ -1,5 +1,5 @@
 use async_std::fs::read_dir;
-use async_std::path::{Path, PathBuf};
+use async_std::path::Path;
 use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
@@ -7,22 +7,27 @@ use futures::StreamExt;
 use log::info;
 use log::trace;
 
+use crate::conf::Config;
 use chord::flow::{Flow, ID_PATTERN};
 use chord::task::TaskState;
 use chord::Error;
 use chord_flow::{Context, TaskIdSimple};
+use chord_output::report::{Factory, ReportFactory};
 
 pub async fn run<P: AsRef<Path>>(
     input_dir: P,
-    output_dir: P,
     task_vec: Option<Vec<String>>,
     exec_id: String,
     app_ctx: Arc<dyn Context>,
+    conf: &Config,
 ) -> Result<Vec<TaskState>, Error> {
     let job_path_str = input_dir.as_ref().to_str().unwrap();
 
     trace!("job start {}", job_path_str);
     let mut job_dir = read_dir(input_dir.as_ref()).await.unwrap();
+
+    let report_factory = ReportFactory::new(conf.report()).await?;
+    let report_factory = Arc::new(report_factory);
 
     let mut futures = Vec::new();
     loop {
@@ -52,13 +57,12 @@ pub async fn run<P: AsRef<Path>>(
         let builder = Builder::new().name(task_name);
 
         let task_input_dir = input_dir.as_ref().join(task_dir.path());
-        let output_dir = PathBuf::from(output_dir.as_ref());
         let jh = builder
             .spawn(run_task(
                 task_input_dir,
-                output_dir,
                 exec_id.clone(),
                 app_ctx.clone(),
+                report_factory.clone(),
             ))
             .unwrap();
         futures.push(jh);
@@ -71,12 +75,12 @@ pub async fn run<P: AsRef<Path>>(
 
 async fn run_task<P: AsRef<Path>>(
     input_dir: P,
-    output_dir: P,
     exec_id: String,
     app_ctx: Arc<dyn Context>,
+    report_factory: Arc<ReportFactory>,
 ) -> TaskState {
     let input_dir = Path::new(input_dir.as_ref());
-    let rt = run_task0(input_dir, output_dir, exec_id, app_ctx).await;
+    let rt = run_task0(input_dir, exec_id, app_ctx, report_factory).await;
     match rt {
         Ok(ts) => {
             trace!("task end {}", input_dir.to_str().unwrap());
@@ -89,11 +93,11 @@ async fn run_task<P: AsRef<Path>>(
     }
 }
 
-async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
+async fn run_task0<I: AsRef<Path>>(
     input_dir: I,
-    output_dir: O,
     exec_id: String,
     app_ctx: Arc<dyn Context>,
+    report_factory: Arc<ReportFactory>,
 ) -> Result<TaskState, Error> {
     let input_dir = Path::new(input_dir.as_ref());
     let task_id = input_dir.file_name().unwrap().to_str().unwrap();
@@ -112,9 +116,7 @@ async fn run_task0<I: AsRef<Path>, O: AsRef<Path>>(
     let data_loader = Box::new(chord_input::load::data::csv::Loader::new(data_file_path).await?);
 
     //write
-    let assess_reporter = Box::new(
-        chord_output::report::csv::Reporter::new(output_dir, &flow, task_id.clone()).await?,
-    );
+    let assess_reporter = report_factory.create(task_id.clone()).await?;
 
     //runner
     let mut runner = chord_flow::TaskRunner::new(

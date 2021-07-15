@@ -23,6 +23,7 @@ chrono = {version = "0.4.19", features = ["serde"]}
 itertools = {version = "0.10.0"}
 surf = {version = "2.1.0",  optional = true}
 log = { version = "0.4.14", features = ["std"]}
+async-trait = "0.1.50"
 
 [features]
 default = []

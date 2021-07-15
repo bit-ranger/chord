@@ -17,11 +17,9 @@ pub trait Config: Sync + Send {
 
     fn log_level(&self) -> Vec<(String, String)>;
 
-    fn report_mongodb_url(&self) -> Result<&str, Error>;
+    fn report(&self) -> Option<&Value>;
 
-    fn report_elasticsearch_url(&self) -> Result<&str, Error>;
-
-    fn action_config(&self) -> Option<&Value>;
+    fn action(&self) -> Option<&Value>;
 }
 
 #[derive(Debug, Clone)]
@@ -79,19 +77,11 @@ impl Config for ConfigImpl {
         return target_level;
     }
 
-    fn report_mongodb_url(&self) -> Result<&str, Error> {
-        self.conf["report"]["mongodb"]["url"]
-            .as_str()
-            .ok_or(err!("conf", "missing report.mongodb.url"))
+    fn report(&self) -> Option<&Value> {
+        self.conf.get("report")
     }
 
-    fn report_elasticsearch_url(&self) -> Result<&str, Error> {
-        self.conf["report"]["elasticsearch"]["url"]
-            .as_str()
-            .ok_or(err!("conf", "missing report.mongodb.url"))
-    }
-
-    fn action_config(&self) -> Option<&Value> {
+    fn action(&self) -> Option<&Value> {
         self.conf.get("action")
     }
 }

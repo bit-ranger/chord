@@ -6,15 +6,40 @@ use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 
+use crate::report::Factory;
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
 use chord::flow::Flow;
 use chord::output::async_trait;
-use chord::output::AssessReport;
+use chord::output::Report;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::to_string;
 use chord::Error;
+
+pub struct ReportFactory {
+    dir: PathBuf,
+}
+
+#[async_trait]
+impl Factory for ReportFactory {
+    async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Box<dyn Report>, Error> {
+        let report = ReportFactory::create(self, task_id).await?;
+        Ok(Box::new(report))
+    }
+}
+
+impl ReportFactory {
+    pub async fn new<P: AsRef<Path>>(report_dir: P) -> Result<ReportFactory, Error> {
+        Ok(ReportFactory {
+            dir: report_dir.as_ref().to_path_buf(),
+        })
+    }
+
+    pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
+        Reporter::new(self.dir.clone(), task_id).await
+    }
+}
 
 pub struct Reporter {
     writer: Writer<File>,
@@ -24,8 +49,15 @@ pub struct Reporter {
 }
 
 #[async_trait]
-impl AssessReport for Reporter {
-    async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
+impl Report for Reporter {
+    async fn start(&mut self, _: DateTime<Utc>, flow: Arc<Flow>) -> Result<(), Error> {
+        let step_id_vec: Vec<String> = flow
+            .stage_id_vec()
+            .iter()
+            .flat_map(|s| flow.stage_step_id_vec(s))
+            .map(|s| s.to_owned())
+            .collect();
+        self.step_id_vec = step_id_vec;
         prepare(&mut self.writer, &self.step_id_vec).await?;
         Ok(())
     }
@@ -57,22 +89,14 @@ impl AssessReport for Reporter {
 impl Reporter {
     pub async fn new<P: AsRef<Path>>(
         report_dir: P,
-        flow: &Flow,
         task_id: Arc<dyn TaskId>,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task()));
 
-        let step_id_vec: Vec<String> = flow
-            .stage_id_vec()
-            .iter()
-            .flat_map(|s| flow.stage_step_id_vec(s))
-            .map(|s| s.to_owned())
-            .collect();
-
         let report = Reporter {
             writer: from_path(report_file).await?,
-            step_id_vec,
+            step_id_vec: vec![],
             report_dir,
             task_id,
         };

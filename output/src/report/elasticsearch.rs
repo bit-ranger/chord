@@ -312,7 +312,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), ElasticError> {
         "type": "keyword"
       },
       "value": {
-        "type": "nested"
+        "type": "text"
       }
     }
   }

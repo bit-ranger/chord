@@ -1,13 +1,21 @@
+use chord::value::json;
 use chord::value::Value;
 
 #[derive(Debug, Clone)]
 pub struct Config {
     conf: Value,
+    report_default: Value,
 }
 
 impl Config {
     pub fn new(conf: Value) -> Config {
-        Config { conf }
+        let report_default = json!({ "csv": {
+            "dir": "/data/chord/job/output"
+        } });
+        Config {
+            conf,
+            report_default,
+        }
     }
 }
 
@@ -36,6 +44,10 @@ impl Config {
     }
 
     pub fn report(&self) -> Option<&Value> {
-        self.conf.get("report")
+        let report = self.conf.get("report");
+        if report.is_some() {
+            return report;
+        }
+        return Some(&self.report_default);
     }
 }

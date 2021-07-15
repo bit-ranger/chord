@@ -15,4 +15,4 @@ target/
 
 .idea/
 zero/devops/chord/job/output/*
-!zero/devops/chord/job/output/README.md
+!zero/devops/chord/job/output/KEEPME.md

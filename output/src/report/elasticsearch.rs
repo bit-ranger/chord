@@ -130,14 +130,17 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
             TaskState::Err(_) => "E",
         }
         .to_owned(),
-        value: match ts {
-            TaskState::Ok => Value::Null,
-            TaskState::Fail => Value::Null,
-            TaskState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
-        },
+        value: Value::String(
+            match ts {
+                TaskState::Ok => Value::Null,
+                TaskState::Fail => Value::Null,
+                TaskState::Err(e) => json!({
+                    "code": e.code(),
+                    "message": e.message()
+                }),
+            }
+            .to_string(),
+        ),
     }
 }
 
@@ -155,14 +158,17 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
             CaseState::Err(_) => "E",
         }
         .to_owned(),
-        value: match ca.state() {
-            CaseState::Ok(_) => Value::Null,
-            CaseState::Fail(_) => Value::Null,
-            CaseState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
-        },
+        value: Value::String(
+            match ca.state() {
+                CaseState::Ok(_) => Value::Null,
+                CaseState::Fail(_) => Value::Null,
+                CaseState::Err(e) => json!({
+                    "code": e.code(),
+                    "message": e.message()
+                }),
+            }
+            .to_string(),
+        ),
     }
 }
 
@@ -180,13 +186,16 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
             StepState::Err(_) => "E",
         }
         .to_owned(),
-        value: match sa.state() {
-            StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().clone(),
-            StepState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
-        },
+        value: Value::String(
+            match sa.state() {
+                StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().clone(),
+                StepState::Err(e) => json!({
+                    "code": e.code(),
+                    "message": e.message()
+                }),
+            }
+            .to_string(),
+        ),
     }
 }
 

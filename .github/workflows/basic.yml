@@ -89,7 +89,7 @@ jobs:
                     tail -2000 /data/chord/job/output/web.log
             
             
-            _   name: web-report
+            -   name: web-report
                 run: |
                     find /data/chord/job/output
     

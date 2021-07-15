@@ -202,13 +202,13 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
 async fn data_send_all(es_url: &str, es_index: &str, data: Vec<Data>) -> Result<(), Error> {
     let path = format!("{}/{}/_doc/_bulk", es_url, es_index);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
-    data_send_all_0(rb, data).await.map_err(|e| e.0)
+    data_send_all_0(es_index, rb, data).await.map_err(|e| e.0)
 }
 
 async fn data_send(es_url: &str, es_index: &str, data: Data) -> Result<(), Error> {
     let path = format!("{}/{}/_doc/{}", es_url, es_index, data.id);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
-    data_send_0(rb, data).await.map_err(|e| e.0)
+    data_send_0(es_index, rb, data).await.map_err(|e| e.0)
 }
 
 async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
@@ -220,24 +220,25 @@ async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
         return Ok(());
     }
 
-    info!("index creating [{}]", index_name);
+    info!("index_create [{}]", index_name);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
     index_create_0(rb).await.map_err(|e| e.0)
 }
 
-async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), ElasticError> {
+async fn data_send_0(index: &str, rb: RequestBuilder, data: Data) -> Result<(), ElasticError> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
     );
 
+    trace!("data_send: {}, {}", index, to_string(&data)?.escape_debug());
     rb = rb.body(Body::from_json(&data)?);
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
         let body: Value = res.body_json().await?;
         warn!(
-            "data_send_0 failure: {}, {}",
+            "data_send failure: {}, {}",
             to_string(&data)?,
             to_string(&body)?
         )
@@ -245,7 +246,11 @@ async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), ElasticError>
     Ok(())
 }
 
-async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), ElasticError> {
+async fn data_send_all_0(
+    index: &str,
+    rb: RequestBuilder,
+    data: Vec<Data>,
+) -> Result<(), ElasticError> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -262,13 +267,13 @@ async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), Elas
         body.push_str("\n");
     }
 
-    trace!("data_send_all_0: {}", body.escape_debug());
+    trace!("data_send_all: {}, {}", index, body.escape_debug());
     rb = rb.body(Body::from_string(body));
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
         let body: Value = res.body_json().await?;
-        warn!("data_send_all_0 failure: {}", to_string(&body)?)
+        warn!("data_send_all failure: {}", to_string(&body)?)
     }
     Ok(())
 }

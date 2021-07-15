@@ -77,6 +77,11 @@ jobs:
                 run: |
                     ./target/release/chord-cmd  -i/data/chord/job/input
             
+            -   name: web-boot
+                run: |
+                    ./target/release/chord-web &
+                    sleep 10
+            
             -   name: web-test
                 run: |
                     curl -X POST --location "http://127.0.0.1:9999/job/exec" \

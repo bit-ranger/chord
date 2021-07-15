@@ -79,10 +79,9 @@ jobs:
             
             -   name: web-boot
                 run: |
-                    nohup ./target/release/chord-web &
+                    ./target/release/chord-web > web.out &
                     sleep 10
-                    pwd
-                    ls
+                    
             
             -   name: web-test
                 run: |
@@ -93,7 +92,7 @@ jobs:
                                \"branch\": \"master\"
                            }"
                     sleep 30
-                    tail -2000 nohup.out
+                    tail -2000 web.out
                     echo "------------------------------------------------" 
                     tail -2000 /data/chord/job/output/web.log
             

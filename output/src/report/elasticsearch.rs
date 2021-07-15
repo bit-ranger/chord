@@ -300,7 +300,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), ElasticError> {
   "mappings": {
     "properties": {
       "id": {
-        "type": "text"
+        "type": "keyword"
       },
       "id_in_layer": {
         "type": "keyword"

@@ -225,12 +225,17 @@ impl TaskRunner {
         stage_id: &str,
         concurrency: usize,
     ) -> Result<(), Error> {
+        let mut load_times = 0;
         loop {
             let case_data_vec: Vec<(String, Value)> =
                 self.stage_data_vec_load(stage_id, concurrency).await?;
-
+            load_times = load_times + 1;
             if case_data_vec.len() == 0 {
-                return Ok(());
+                if load_times == 1 {
+                    return Err(err!("011", "no case provided"));
+                } else {
+                    return Ok(());
+                }
             }
 
             trace!("task load data {}, {}", self.id, case_data_vec.len());

@@ -26,7 +26,7 @@ pub async fn run<P: AsRef<Path>>(
     trace!("job start {}", job_path_str);
     let mut job_dir = read_dir(input_dir.as_ref()).await.unwrap();
 
-    let report_factory = ReportFactory::new(conf.report()).await?;
+    let report_factory = ReportFactory::new(conf.report(), "chord_cmd").await?;
     let report_factory = Arc::new(report_factory);
 
     let mut futures = Vec::new();

@@ -21,7 +21,7 @@ pub struct ReportFactory {
 }
 
 impl ReportFactory {
-    pub async fn new(conf: Option<&Value>) -> Result<ReportFactory, Error> {
+    pub async fn new(conf: Option<&Value>, name: &str) -> Result<ReportFactory, Error> {
         match conf {
             None => {
                 return Err(err!("report", "missing conf"));
@@ -52,10 +52,7 @@ impl ReportFactory {
                                     .as_str()
                                     .ok_or(err!("report", "missing report.elasticsearch.url"))?
                                     .to_string(),
-                                v["index"]
-                                    .as_str()
-                                    .ok_or(err!("report", "missing report.elasticsearch.index"))?
-                                    .to_string(),
+                                name.to_string(),
                             )
                             .await?;
                             return Ok(ReportFactory {

@@ -13,7 +13,7 @@ use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::Value;
 use chord::Error;
 use chord_flow::{Context, TaskIdSimple};
-use chord_output::report::ReportFactory;
+use chord_output::report::{Factory, ReportFactory};
 
 pub async fn run<P: AsRef<Path>>(
     job_path: P,
@@ -104,7 +104,7 @@ async fn task_run0<P: AsRef<Path>>(
     chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
 
     //reporter
-    let assess_reporter = report_factory::create(task_id.clone()).await?;
+    let assess_reporter = report_factory.create(task_id.clone()).await?;
 
     let rt = task_run1(task_path, task_id.clone(), app_ctx.clone(), assess_reporter).await;
     return if let Err(e) = rt {

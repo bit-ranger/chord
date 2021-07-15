@@ -1,12 +1,12 @@
-use std::fs::File;
-
 use async_std::fs::rename;
 use async_std::path::{Path, PathBuf};
+use async_std::stream::StreamExt;
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 
 use crate::report::Factory;
+use async_std::fs::remove_file;
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
 use chord::flow::Flow;
@@ -24,13 +24,25 @@ pub struct ReportFactory {
 #[async_trait]
 impl Factory for ReportFactory {
     async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Box<dyn Report>, Error> {
-        let report = ReportFactory::create(self, task_id).await?;
-        Ok(Box::new(report))
+        let factory = ReportFactory::create(self, task_id).await?;
+        Ok(Box::new(factory))
     }
 }
 
 impl ReportFactory {
     pub async fn new<P: AsRef<Path>>(report_dir: P) -> Result<ReportFactory, Error> {
+        let mut job_dir = async_std::fs::read_dir(report_dir.as_ref()).await.unwrap();
+        loop {
+            let de = job_dir.next().await;
+            if de.is_none() {
+                break;
+            }
+            let de = de.unwrap()?;
+            if de.path().is_file().await {
+                remove_file(de.path()).await?;
+            }
+        }
+
         Ok(ReportFactory {
             dir: report_dir.as_ref().to_path_buf(),
         })
@@ -42,7 +54,7 @@ impl ReportFactory {
 }
 
 pub struct Reporter {
-    writer: Writer<File>,
+    writer: Writer<std::fs::File>,
     step_id_vec: Vec<String>,
     report_dir: PathBuf,
     task_id: Arc<dyn TaskId>,
@@ -104,7 +116,7 @@ impl Reporter {
     }
 }
 
-async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
+async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<std::fs::File>, Error> {
     csv::WriterBuilder::new()
         .from_path(path.as_ref().to_str().ok_or(err!("010", "invalid path"))?)
         .map_err(|e| err!("csv", e.to_string()))

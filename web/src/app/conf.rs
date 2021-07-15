@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 
+use chord::value::json;
 use chord::value::{Map, Value};
 
 pub trait Config: Sync + Send {
@@ -23,11 +24,18 @@ pub trait Config: Sync + Send {
 #[derive(Debug, Clone)]
 pub struct ConfigImpl {
     conf: Value,
+    report_default: Value,
 }
 
 impl ConfigImpl {
     pub fn new(conf: Value) -> ConfigImpl {
-        ConfigImpl { conf }
+        let report_default = json!({ "csv": {
+            "dir": "/data/chord/job/output"
+        } });
+        ConfigImpl {
+            conf,
+            report_default,
+        }
     }
 }
 
@@ -76,7 +84,11 @@ impl Config for ConfigImpl {
     }
 
     fn report(&self) -> Option<&Value> {
-        self.conf.get("report")
+        let report = self.conf.get("report");
+        if report.is_some() {
+            return report;
+        }
+        return Some(&self.report_default);
     }
 
     fn action(&self) -> Option<&Value> {

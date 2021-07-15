@@ -79,7 +79,7 @@ jobs:
             
             -   name: web-boot
                 run: |
-                    ./target/release/chord-web &
+                    ./target/release/chord-web
                     sleep 10
             
             -   name: web-test

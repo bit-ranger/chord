@@ -75,7 +75,23 @@ jobs:
             
             -   name: cmd-test
                 run: |
-                    ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+                    ./target/release/chord-cmd  -i/data/chord/job/input
+            
+            -   name: web-test
+                run: |
+                    curl -X POST --location "http://127.0.0.1:9999/job/exec" \
+                       -H "Content-Type: application/json" \
+                       -d "{
+                               \"git_url\": \"git@github.com:bit-ranger/chord.git\",
+                               \"branch\": \"master\"
+                           }"
+                    sleep 30
+                    tail -2000 /data/chord/job/output/web.log
+            
+            
+            _   name: web-report
+                run: |
+                    find /data/chord/job/output
     
     
     

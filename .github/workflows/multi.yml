@@ -81,7 +81,7 @@ jobs:
     
             -   name: cmd-test
                 run: |
-                    ./target/release/chord-cmd  -i/data/chord/job/input -o/data/chord/job/output
+                    ./target/release/chord-cmd  -i/data/chord/job/input
     
     
             -   name: web-boot
@@ -104,15 +104,7 @@ jobs:
             
             -   name: web-report
                 run: |
-                    curl -X GET --location "http://127.0.0.1:9200/chord@bit-ranger@github.com/_search" \
-                        -H "Content-Type: application/json" \
-                        -d "{
-                            \"query\": {
-                                  \"match\": {
-                                        \"layer\": \"task\"
-                                  }
-                            }
-                            }"
+                    find /data/chord/job/output
             
             -   name: upload
                 uses: actions/upload-artifact@v2
@@ -123,7 +115,6 @@ jobs:
                     path: |
                         target/release/chord-cmd
                         target/release/chord-web
-
 
 
     windows:

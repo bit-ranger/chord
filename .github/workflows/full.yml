@@ -3,9 +3,9 @@ name: full
 on:
     pull_request:
         branches: [ master ]
-
-env:
-    CARGO_TERM_COLOR: always
+        
+    push:
+        branches: [ dev ]
 
 jobs:
     linux:

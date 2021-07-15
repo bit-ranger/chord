@@ -7,6 +7,7 @@ use csv::Writer;
 
 use crate::report::Factory;
 use async_std::fs::remove_file;
+use async_std::fs::{create_dir_all, read_dir};
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
 use chord::flow::Flow;
@@ -30,8 +31,14 @@ impl Factory for ReportFactory {
 }
 
 impl ReportFactory {
-    pub async fn new<P: AsRef<Path>>(report_dir: P) -> Result<ReportFactory, Error> {
-        let mut job_dir = async_std::fs::read_dir(report_dir.as_ref()).await.unwrap();
+    pub async fn new<P: AsRef<Path>>(report_dir: P, name: String) -> Result<ReportFactory, Error> {
+        let dir = report_dir.as_ref().join(name);
+
+        if !dir.exists().await {
+            create_dir_all(dir.as_path()).await?;
+        }
+
+        let mut job_dir = read_dir(dir.as_path()).await.unwrap();
         loop {
             let de = job_dir.next().await;
             if de.is_none() {
@@ -44,7 +51,7 @@ impl ReportFactory {
         }
 
         Ok(ReportFactory {
-            dir: report_dir.as_ref().to_path_buf(),
+            dir: dir.to_path_buf(),
         })
     }
 

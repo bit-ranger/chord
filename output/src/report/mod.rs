@@ -39,6 +39,7 @@ impl ReportFactory {
                                 v["dir"]
                                     .as_str()
                                     .ok_or(err!("report", "missing report.csv.dir"))?,
+                                name.to_string(),
                             )
                             .await?;
                             return Ok(ReportFactory {

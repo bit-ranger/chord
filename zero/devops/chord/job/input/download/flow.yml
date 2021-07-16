@@ -20,8 +20,9 @@ stage:
                     
             setp3:
                 action: log
-                args: |-
-                    {{str step.step1.value.header.content-length.0}}
+                args:
+                    content: |
+                        {{str step.step1.value.header.content-length.0}}
                     
                 
     

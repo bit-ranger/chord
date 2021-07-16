@@ -28,28 +28,20 @@ impl Action for Lua {
         );
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {
-            let args = arg.render_value(arg.args())?;
+            let args = arg.args();
 
             if let Some(globals) = args["global"].as_object() {
                 for (k, v) in globals {
                     let v = rlua_serde::to_value(lua, v)?;
                     lua.globals().set(k.as_str(), v)?;
                 }
-            } else if let Some(globals) = args["global"].as_str() {
-                let globals: Map = from_str(globals)?;
-                for (k, v) in globals {
-                    let v = rlua_serde::to_value(lua, v)?;
-                    lua.globals().set(k.as_str(), v)?;
-                }
             }
 
-            let code = arg.render_str(
-                arg.args()["code"]
-                    .as_str()
-                    .ok_or(err!("100", "missing code"))?,
-            )?;
+            let code = arg.args()["code"]
+                .as_str()
+                .ok_or(err!("100", "missing code"))?;
 
-            self.eval(lua, code)
+            self.eval(lua, code.to_string())
         })
     }
 }

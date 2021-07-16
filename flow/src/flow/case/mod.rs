@@ -4,7 +4,6 @@ use log::{debug, info, trace, warn};
 use chord::action::RunArg;
 use chord::case::CaseState;
 use chord::collection::TailDropVec;
-use chord::err;
 use chord::step::{StepAssess, StepState};
 use chord::value::{json, Value};
 use res::CaseAssessStruct;
@@ -26,23 +25,21 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
         curr_reset(&mut render_context).await;
 
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
-        if step_arg.is_none() {
+        if let Err(e) = step_arg {
             warn!("case Err {}", arg.id());
             return CaseAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
                 arg.take_data(),
-                CaseState::Err(err!("010", format!("invalid step {}", step_id))),
+                CaseState::Err(e),
             );
         }
         let step_arg = step_arg.unwrap();
         let step_assess = step::run(flow_ctx, &step_arg, action.as_ref()).await;
 
         let step_arg_id = step_arg.id().clone();
-        let step_arg_args = step_arg
-            .render_value(step_arg.args())
-            .unwrap_or(Value::Null);
+        let step_arg_args = step_arg.args().clone();
         let step_arg_assert = step_arg.assert().map(|s| s.to_owned());
         let step_arg_catch_err = step_arg.catch_err();
 

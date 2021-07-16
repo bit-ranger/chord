@@ -46,7 +46,6 @@ impl Action for Dylib {
             unsafe { self.lib.lib.get(b"run")? };
 
         let config_str = to_string(arg.args())?;
-        let config_str = arg.render_str(config_str.as_str())?;
         action_run(arg.id().to_string().as_str(), config_str.as_str())
     }
 }

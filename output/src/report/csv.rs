@@ -245,17 +245,20 @@ fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
         }
     }
 
-    match pa_vec.last().unwrap().state() {
-        StepState::Fail(scope) | StepState::Ok(scope) => {
-            let json = scope.as_value();
-            if json.is_string() {
-                value_vec[head_len - 1] = json.as_str().map_or(json.to_string(), |j| j.to_owned());
-            } else {
-                value_vec[head_len - 1] = to_string(json).unwrap_or_else(|j| j.to_string());
+    if let Some(last) = pa_vec.last() {
+        match last.state() {
+            StepState::Fail(scope) | StepState::Ok(scope) => {
+                let json = scope.as_value();
+                if json.is_string() {
+                    value_vec[head_len - 1] =
+                        json.as_str().map_or(json.to_string(), |j| j.to_owned());
+                } else {
+                    value_vec[head_len - 1] = to_string(json).unwrap_or_else(|j| j.to_string());
+                }
             }
-        }
-        StepState::Err(e) => {
-            value_vec[head_len - 1] = e.to_string();
+            StepState::Err(e) => {
+                value_vec[head_len - 1] = e.to_string();
+            }
         }
     }
 

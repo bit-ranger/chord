@@ -20,7 +20,6 @@ struct Echo {}
 #[async_trait]
 impl Action for Echo {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let config = arg.render_value(arg.args())?;
-        return Ok(Box::new(config));
+        return Ok(Box::new(arg.args()["content"].clone()));
     }
 }

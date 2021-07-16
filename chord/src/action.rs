@@ -31,10 +31,6 @@ pub trait RunArg: Sync + Send {
 
     fn args(&self) -> &Value;
 
-    fn render_str(&self, text: &str) -> Result<String, Error>;
-
-    fn render_value(&self, text: &Value) -> Result<Value, Error>;
-
     fn timeout(&self) -> Duration;
 }
 

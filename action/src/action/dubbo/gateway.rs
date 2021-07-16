@@ -12,7 +12,7 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
 use chord::err;
-use chord::value::{from_str, to_string, Deserialize, Serialize};
+use chord::value::{to_string, Deserialize, Serialize};
 use chord::Error;
 
 pub struct DubboFactory {
@@ -148,25 +148,9 @@ impl Action for Dubbo {
             return Err(err!("110", "invalid method"));
         }
 
-        let args_raw = &run_arg.args()["args"];
-        let args: Result<Vec<Value>, Error> = match args_raw {
-            Value::String(txt) => {
-                let txt_render = run_arg.render_str(txt.as_str())?;
-                let args_render: Value = from_str(txt_render.as_str())?;
-                match args_render {
-                    Value::Array(aw_vec) => Ok(aw_vec),
-                    _ => return Err(err!("111", "args must be array")),
-                }
-            }
-            _ => {
-                let args_render = run_arg.render_value(args_raw)?;
-                match args_render {
-                    Value::Array(aw_vec) => Ok(aw_vec),
-                    _ => return Err(err!("112", "args must be array")),
-                }
-            }
-        };
-        let args = args?;
+        let args = run_arg.args()["args"]
+            .as_array()
+            .ok_or(err!("111", "args must be array"))?;
 
         let invoke = GenericInvoke {
             reference: Reference {
@@ -183,7 +167,7 @@ impl Action for Dubbo {
 
             method: parts[1].to_owned(),
             arg_types: parts[2..].iter().map(|p| p.to_owned().to_owned()).collect(),
-            args,
+            args: args.clone(),
         };
 
         let invoke_str = to_string(&invoke)?;

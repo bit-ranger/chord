@@ -24,16 +24,15 @@ impl Action for Url {
 
         let from = arg.args()["from"]
             .as_str()
-            .map(|s| arg.render_str(s))
-            .ok_or(err!("101", "missing from"))??;
+            .ok_or(err!("101", "missing from"))?;
 
         return match by {
             "encode" => {
-                let to = urlencoding::encode(from.as_str());
+                let to = urlencoding::encode(from);
                 Ok(Box::new(Value::String(to)))
             }
             "decode" => {
-                let to = urlencoding::decode(from.as_str())?;
+                let to = urlencoding::decode(from)?;
                 Ok(Box::new(Value::String(to)))
             }
             _ => Err(err!("102", format!("unsupported {}", by))),

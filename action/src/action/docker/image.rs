@@ -4,7 +4,7 @@ use log::{trace, warn};
 use surf::http::Method;
 
 use chord::action::prelude::*;
-use chord::value::{from_str, json};
+use chord::value::from_str;
 use chord::Error;
 
 use crate::action::docker::container::Container;
@@ -18,19 +18,19 @@ pub struct Image {
 #[async_trait]
 impl Action for Image {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let cmd = arg.render_value(&arg.args()["cmd"]).unwrap_or(json!([]));
+        let cmd = &arg.args()["cmd"];
 
         let mut container = Container::new(
             self.engine.clone(),
             &self,
             arg.id().to_string().as_str(),
-            cmd,
+            cmd.clone(),
         )
         .await?;
         container.start().await?;
         container.wait().await?;
 
-        let tail = arg.render_value(&arg.args()["tail"])?.as_u64().unwrap_or(1) as usize;
+        let tail = arg.args()["tail"].as_u64().unwrap_or(1) as usize;
         let tail_log = container.tail(tail).await?;
         let tail_log: Vec<String> = tail_log
             .into_iter()

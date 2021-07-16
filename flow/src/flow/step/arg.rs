@@ -9,8 +9,8 @@ use chord::action::{CreateArg, CreateId, RunArg};
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::task::TaskId;
-use chord::value::{from_str, to_string, Value};
-use chord::Error;
+use chord::value::{from_str, to_string, Map, Value};
+use chord::{err, Error};
 
 use crate::flow;
 use crate::model::app::RenderContext;
@@ -128,6 +128,7 @@ pub struct RunArgStruct<'f, 'h, 'reg, 'r> {
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
     id: RunIdStruct,
+    args: Value,
 }
 
 impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
@@ -137,20 +138,24 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         render_context: &'r RenderContext,
         case_id: Arc<dyn CaseId>,
         step_id: String,
-    ) -> RunArgStruct<'f, 'h, 'reg, 'r> {
+    ) -> Result<RunArgStruct<'f, 'h, 'reg, 'r>, Error> {
         let id = RunIdStruct {
             case_id,
             step: step_id,
         };
 
-        let context = RunArgStruct {
+        let mut run_arg = RunArgStruct {
             flow,
             handlebars,
             render_context,
             id,
+            args: Value::Null,
         };
 
-        return context;
+        let args = run_arg.flow.step_args(run_arg.id().step());
+        let args = run_arg.render_args(args)?;
+        run_arg.args = args;
+        return Ok(run_arg);
     }
 
     pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r>) -> &RunIdStruct {
@@ -168,6 +173,28 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
     pub fn catch_err(&self) -> bool {
         self.flow.step_catch_err(self.id().step())
     }
+
+    fn render_str(&self, txt: &str) -> Result<String, Error> {
+        return flow::render(self.handlebars, self.render_context, txt);
+    }
+
+    fn render_args(&self, value: &Value) -> Result<Value, Error> {
+        if value.is_null() {
+            return Ok(Value::Null);
+        }
+        if let Value::String(txt) = value {
+            let value_str = self.render_str(txt.as_str())?;
+            let value: Map = from_str(value_str.as_str())?;
+            return Ok(Value::Object(value));
+        } else if let Value::Object(map) = value {
+            let value_str = to_string(map)?;
+            let value_str = self.render_str(value_str.as_str())?;
+            let value: Map = from_str(value_str.as_str())?;
+            return Ok(Value::Object(value));
+        } else {
+            return Err(err!("001", "invalid args"));
+        }
+    }
 }
 
 impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
@@ -176,21 +203,7 @@ impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
     }
 
     fn args(&self) -> &Value {
-        self.flow.step_args(self.id().step())
-    }
-
-    fn render_str(&self, txt: &str) -> Result<String, Error> {
-        return flow::render(self.handlebars, self.render_context, txt);
-    }
-
-    fn render_value(&self, value: &Value) -> Result<Value, Error> {
-        if value.is_null() {
-            return Ok(Value::Null);
-        }
-        let value_str = to_string(&value)?;
-        let value_str = self.render_str(value_str.as_str())?;
-        let value: Value = from_str(value_str.as_str())?;
-        return Ok(value);
+        &self.args
     }
 
     fn timeout(&self) -> Duration {

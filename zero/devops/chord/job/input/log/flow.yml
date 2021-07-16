@@ -7,8 +7,9 @@ stage:
         step:
             step1:
                 action: log
-                args: |-
-                    dml >>> update some_table set column1 = '{{data.orgin_lon}}' where column2 = '{{data.origin_lat}}'
+                args:
+                    content: |-
+                        dml >>> update some_table set column1 = '{{data.orgin_lon}}' where column2 = '{{data.origin_lat}}'
     
               
 

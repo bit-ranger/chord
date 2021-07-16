@@ -13,6 +13,7 @@ use chord::value::{to_value, Map};
 use crate::flow::step::arg::RunArgStruct;
 use crate::model::app::Context;
 use crate::model::app::RenderContext;
+use chord::Error;
 
 #[derive(Clone)]
 pub struct CaseIdStruct {
@@ -103,20 +104,18 @@ impl CaseArgStruct {
         step_id: &str,
         flow_ctx: &'app dyn Context,
         render_ctx: &'r RenderContext,
-    ) -> Option<RunArgStruct<'_, 'h, 'reg, 'r>>
+    ) -> Result<RunArgStruct<'_, 'h, 'reg, 'r>, Error>
     where
         'app: 'h,
         'app: 'reg,
     {
-        let _ = self.flow.step(step_id).as_object()?;
-
-        Some(RunArgStruct::new(
+        RunArgStruct::new(
             self.flow.as_ref(),
             flow_ctx.get_handlebars(),
             render_ctx,
             self.id.clone(),
             step_id.to_owned(),
-        ))
+        )
     }
 
     pub fn step_vec(self: &CaseArgStruct) -> Arc<TailDropVec<(String, Box<dyn Action>)>> {

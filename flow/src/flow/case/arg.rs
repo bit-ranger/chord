@@ -99,20 +99,22 @@ impl CaseArgStruct {
         return RenderContext::wraps(render_data).unwrap();
     }
 
-    pub fn step_arg_create<'app, 'h, 'reg, 'r>(
+    pub fn step_arg_create<'app, 'h, 'reg, 'r, 'p>(
         self: &CaseArgStruct,
         step_id: &str,
         flow_ctx: &'app dyn Context,
         render_ctx: &'r RenderContext,
-    ) -> Result<RunArgStruct<'_, 'h, 'reg, 'r>, Error>
+    ) -> Result<RunArgStruct<'_, 'h, 'reg, 'r, 'p>, Error>
     where
         'app: 'h,
         'app: 'reg,
+        'app: 'p,
     {
         RunArgStruct::new(
             self.flow.as_ref(),
             flow_ctx.get_handlebars(),
             render_ctx,
+            flow_ctx.get_flow_parse(),
             self.id.clone(),
             step_id.to_owned(),
         )

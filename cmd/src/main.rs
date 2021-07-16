@@ -10,6 +10,7 @@ use chord::task::TaskState;
 use chord::value::Value;
 use chord::Error;
 use chord_action::FactoryComposite;
+use chord_input::load::flow::yml::YmlFlowParser;
 
 use crate::conf::Config;
 
@@ -39,9 +40,10 @@ async fn main() -> Result<(), Error> {
     let log_file_path = Path::new(config.log_path());
     let log_handler = logger::init(config.log_level(), &log_file_path).await?;
 
-    let flow_ctx = chord_flow::context_create(Box::new(
-        FactoryComposite::new(config.action().map(|c| c.clone())).await?,
-    ))
+    let flow_ctx = chord_flow::context_create(
+        Box::new(FactoryComposite::new(config.action().map(|c| c.clone())).await?),
+        Box::new(YmlFlowParser::new()),
+    )
     .await;
     let task_state_vec = job::run(input_dir, opt.task, exec_id, flow_ctx, &config).await?;
     logger::terminal(log_handler).await?;

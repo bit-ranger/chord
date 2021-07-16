@@ -14,6 +14,7 @@ use chord::{err, Error};
 
 use crate::flow;
 use crate::model::app::RenderContext;
+use chord::input::FlowParse;
 
 #[derive(Clone)]
 pub struct RunIdStruct {
@@ -67,7 +68,7 @@ pub struct CreateArgStruct<'f, 'h, 'reg, 'r> {
     id: CreateIdStruct,
 }
 
-impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
+impl<'f, 'h, 'reg, 'r, 'p> CreateArgStruct<'f, 'h, 'reg, 'r> {
     pub fn new(
         flow: &'f Flow,
         handlebars: &'h Handlebars<'reg>,
@@ -123,22 +124,24 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
     }
 }
 
-pub struct RunArgStruct<'f, 'h, 'reg, 'r> {
+pub struct RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
     flow: &'f Flow,
     handlebars: &'h Handlebars<'reg>,
     render_context: &'r RenderContext,
+    flow_parse: &'p dyn FlowParse,
     id: RunIdStruct,
     args: Value,
 }
 
-impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
+impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
     pub fn new(
         flow: &'f Flow,
         handlebars: &'h Handlebars<'reg>,
         render_context: &'r RenderContext,
+        flow_parse: &'p dyn FlowParse,
         case_id: Arc<dyn CaseId>,
         step_id: String,
-    ) -> Result<RunArgStruct<'f, 'h, 'reg, 'r>, Error> {
+    ) -> Result<RunArgStruct<'f, 'h, 'reg, 'r, 'p>, Error> {
         let id = RunIdStruct {
             case_id,
             step: step_id,
@@ -148,6 +151,7 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
             flow,
             handlebars,
             render_context,
+            flow_parse,
             id,
             args: Value::Null,
         };
@@ -158,7 +162,7 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         return Ok(run_arg);
     }
 
-    pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r>) -> &RunIdStruct {
+    pub fn id(self: &RunArgStruct<'f, 'h, 'reg, 'r, 'p>) -> &RunIdStruct {
         return &self.id;
     }
 
@@ -184,8 +188,12 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
         }
         if let Value::String(txt) = value {
             let value_str = self.render_str(txt.as_str())?;
-            let value: Map = from_str(value_str.as_str())?;
-            return Ok(Value::Object(value));
+            let value = self.flow_parse.parse_str(value_str.as_str())?;
+            if value.is_object() {
+                return Ok(value);
+            } else {
+                return Err(err!("001", "invalid args"));
+            }
         } else if let Value::Object(map) = value {
             let value_str = to_string(map)?;
             let value_str = self.render_str(value_str.as_str())?;
@@ -197,7 +205,7 @@ impl<'f, 'h, 'reg, 'r> RunArgStruct<'f, 'h, 'reg, 'r> {
     }
 }
 
-impl<'f, 'h, 'reg, 'r> RunArg for RunArgStruct<'f, 'h, 'reg, 'r> {
+impl<'f, 'h, 'reg, 'r, 'p> RunArg for RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
     fn id(&self) -> &dyn RunId {
         &self.id
     }

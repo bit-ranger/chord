@@ -9,3 +9,7 @@ pub trait CaseLoad: Sync + Send {
 
     async fn reset(&mut self) -> Result<(), Error>;
 }
+
+pub trait FlowParse: Sync + Send {
+    fn parse_str(&self, txt: &str) -> Result<Value, Error>;
+}

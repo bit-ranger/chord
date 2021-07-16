@@ -21,6 +21,7 @@ use crate::app::conf::Config;
 use crate::biz;
 use crate::util::yaml::load;
 use chord::value::Value;
+use chord_input::load::flow::yml::YmlFlowParser;
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
@@ -62,9 +63,10 @@ impl CtlImpl {
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: config.ssh_key_private_path().into(),
-            flow_ctx: chord_flow::context_create(Box::new(
-                FactoryComposite::new(config.action().map(|c| c.clone())).await?,
-            ))
+            flow_ctx: chord_flow::context_create(
+                Box::new(FactoryComposite::new(config.action().map(|c| c.clone())).await?),
+                Box::new(YmlFlowParser::new()),
+            )
             .await,
             config,
         })

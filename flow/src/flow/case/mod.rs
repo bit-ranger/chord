@@ -9,6 +9,7 @@ use chord::value::{json, Value};
 use res::CaseAssessStruct;
 
 use crate::flow::case::arg::CaseArgStruct;
+use crate::flow::step::arg::RunIdStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::flow::{assert, step};
 use crate::model::app::{Context, RenderContext};
@@ -26,13 +27,17 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
 
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if let Err(e) = step_arg {
-            warn!("case Err {}", arg.id());
+            let step_run_id = RunIdStruct::new(step_id.to_string(), arg.id());
+            let step_assess =
+                StepAssessStruct::new(step_run_id, Utc::now(), Utc::now(), StepState::Err(e));
+            step_assess_vec.push(Box::new(step_assess));
+            warn!("case Fail {}", arg.id());
             return CaseAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
                 arg.take_data(),
-                CaseState::Err(e),
+                CaseState::Fail(TailDropVec::from(step_assess_vec)),
             );
         }
         let step_arg = step_arg.unwrap();

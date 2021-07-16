@@ -22,6 +22,12 @@ pub struct RunIdStruct {
     case_id: Arc<dyn CaseId>,
 }
 
+impl RunIdStruct {
+    pub fn new(step: String, case_id: Arc<dyn CaseId>) -> RunIdStruct {
+        RunIdStruct { step, case_id }
+    }
+}
+
 impl RunId for RunIdStruct {
     fn step(&self) -> &str {
         self.step.as_str()

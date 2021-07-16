@@ -1,7 +1,6 @@
 use log::debug;
 
 use chord::action::prelude::*;
-use chord::value::to_string_pretty;
 
 pub struct LogFactory {}
 
@@ -23,8 +22,8 @@ struct Log {}
 #[async_trait]
 impl Action for Log {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let config = to_string_pretty(&arg.args()["content"])?;
-        debug!("\n{}", config);
+        let config = &arg.args()["content"];
+        debug!("{}", config.to_string().trim());
         return Ok(Box::new(Value::Null));
     }
 }

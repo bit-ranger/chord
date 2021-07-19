@@ -69,7 +69,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
             } else {
                 if let StepState::Fail(scope) = &step_assess.state {
                     info!(
-                        "step Fail {} - {} <<< {}",
+                        "step Fail {} - {}\n<<<\n{}",
                         step_arg_id,
                         scope.as_value(),
                         step_arg_args
@@ -109,7 +109,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 } else {
                     if let StepState::Fail(scope) = &step_assess.state {
                         info!(
-                            "step Fail {} - {} <<< {}",
+                            "step Fail {} - {}\n<<<\n{}",
                             step_arg_id,
                             scope.as_value(),
                             step_arg_args

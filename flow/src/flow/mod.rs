@@ -2,16 +2,17 @@ use std::cell::RefCell;
 
 use async_std::sync::Arc;
 use async_std::task_local;
+use handlebars::Handlebars;
+use log::info;
 
 use chord::action::Factory;
 use chord::err;
+use chord::input::FlowParse;
 use chord::Error;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
 use crate::model::app::{Context, FlowContextStruct, RenderContext};
-use handlebars::Handlebars;
-use log::info;
 
 mod case;
 mod step;
@@ -21,8 +22,11 @@ task_local! {
     pub static CTX_ID: RefCell<String> = RefCell::new(String::new());
 }
 
-pub async fn context_create(action_factory: Box<dyn Factory>) -> Arc<dyn Context> {
-    Arc::new(FlowContextStruct::<'_>::new(action_factory))
+pub async fn context_create(
+    action_factory: Box<dyn Factory>,
+    flow_parse: Box<dyn FlowParse>,
+) -> Arc<dyn Context> {
+    Arc::new(FlowContextStruct::<'_>::new(action_factory, flow_parse))
 }
 
 pub fn render(

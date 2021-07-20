@@ -53,10 +53,9 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> 
         None => {
             let url = arg.args()["url"]
                 .as_str()
-                .map(|s| arg.render_str(s))
-                .ok_or(err!("100", "missing url"))??;
+                .ok_or(err!("100", "missing url"))?;
             let rb = Rbatis::new();
-            rb.link(url.as_str()).await?;
+            rb.link(url).await?;
             run0(arg, &rb).await
         }
     };
@@ -65,13 +64,12 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> 
 async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
     let sql = arg.args()["sql"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("101", "missing sql"))??;
+        .ok_or(err!("101", "missing sql"))?;
 
     if sql.trim_start().to_uppercase().starts_with("SELECT ") {
         let pr = PageRequest::new(1, 20);
         let args = vec![];
-        let page: Page<Value> = rb.fetch_page("", sql.as_str(), &args, &pr).await?;
+        let page: Page<Value> = rb.fetch_page("", sql, &args, &pr).await?;
         let mut map = Map::new();
         map.insert(
             String::from("total"),
@@ -94,7 +92,7 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
         trace!("select: {} >>> {}", arg.id(), page);
         return Ok(Box::new(page));
     } else {
-        let exec = rb.exec("", sql.as_str()).await?;
+        let exec = rb.exec("", sql).await?;
         let mut map = Map::new();
         map.insert(
             String::from("rows_affected"),

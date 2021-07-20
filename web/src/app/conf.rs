@@ -1,8 +1,7 @@
 use lazy_static::lazy_static;
 
-use chord::err;
+use chord::value::json;
 use chord::value::{Map, Value};
-use chord::Error;
 
 pub trait Config: Sync + Send {
     fn server_ip(&self) -> &str;
@@ -17,21 +16,26 @@ pub trait Config: Sync + Send {
 
     fn log_level(&self) -> Vec<(String, String)>;
 
-    fn report_mongodb_url(&self) -> Result<&str, Error>;
+    fn report(&self) -> Option<&Value>;
 
-    fn report_elasticsearch_url(&self) -> Result<&str, Error>;
-
-    fn action_config(&self) -> Option<&Value>;
+    fn action(&self) -> Option<&Value>;
 }
 
 #[derive(Debug, Clone)]
 pub struct ConfigImpl {
     conf: Value,
+    report_default: Value,
 }
 
 impl ConfigImpl {
     pub fn new(conf: Value) -> ConfigImpl {
-        ConfigImpl { conf }
+        let report_default = json!({ "csv": {
+            "dir": "/data/chord/job/output"
+        } });
+        ConfigImpl {
+            conf,
+            report_default,
+        }
     }
 }
 
@@ -79,19 +83,15 @@ impl Config for ConfigImpl {
         return target_level;
     }
 
-    fn report_mongodb_url(&self) -> Result<&str, Error> {
-        self.conf["report"]["mongodb"]["url"]
-            .as_str()
-            .ok_or(err!("conf", "missing report.mongodb.url"))
+    fn report(&self) -> Option<&Value> {
+        let report = self.conf.get("report");
+        if report.is_some() {
+            return report;
+        }
+        return Some(&self.report_default);
     }
 
-    fn report_elasticsearch_url(&self) -> Result<&str, Error> {
-        self.conf["report"]["elasticsearch"]["url"]
-            .as_str()
-            .ok_or(err!("conf", "missing report.mongodb.url"))
-    }
-
-    fn action_config(&self) -> Option<&Value> {
+    fn action(&self) -> Option<&Value> {
         self.conf.get("action")
     }
 }

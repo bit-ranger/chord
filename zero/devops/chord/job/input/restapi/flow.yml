@@ -19,7 +19,7 @@ stage:
     
             crt_inx:
                 action: restapi
-                args:
+                args: |
                     url: "{{def.es.url}}/article"
                     method: PUT
                     body:

@@ -6,7 +6,7 @@ use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
-use chord::value::{from_str, Map, Number};
+use chord::value::{Map, Number};
 
 pub struct RestapiFactory {}
 
@@ -38,7 +38,7 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
 }
 
 async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
-    let args = arg.render_value(arg.args())?;
+    let args = arg.args();
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("101", format!("invalid url: {}", url))))?;
@@ -78,15 +78,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
 
     let body = args["body"].borrow();
     if !body.is_null() {
-        match body {
-            Value::String(txt) => {
-                let body: Value = from_str(txt.as_str())?;
-                rb = rb.body(Body::from(body));
-            }
-            _ => {
-                rb = rb.body(Body::from(body.clone()));
-            }
-        }
+        rb = rb.body(Body::from(body.clone()));
     }
 
     let mut res: Response = rb.send().await?;

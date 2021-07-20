@@ -31,35 +31,30 @@ impl Action for Mongodb {
 async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     let url = arg.args()["url"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("100", "missing url"))??;
+        .ok_or(err!("100", "missing url"))?;
     let database = arg.args()["database"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("101", "missing database"))??;
+        .ok_or(err!("101", "missing database"))?;
     let collection = arg.args()["collection"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("102", "missing collection"))??;
+        .ok_or(err!("102", "missing collection"))?;
     let op = arg.args()["operation"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("103", "missing operation"))??;
+        .ok_or(err!("103", "missing operation"))?;
     let op_arg = arg.args()["arg"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("104", "missing arg"))??;
+        .ok_or(err!("104", "missing arg"))?;
 
     // Parse a connection string into an options struct.
-    let client_options = ClientOptions::parse(url.as_str()).await?;
+    let client_options = ClientOptions::parse(url).await?;
     // Get a handle to the deployment.
     let client = Client::with_options(client_options)?;
-    let db = client.database(database.as_str());
-    let collection = db.collection::<Document>(collection.as_str());
+    let db = client.database(database);
+    let collection = db.collection::<Document>(collection);
 
-    match op.as_str() {
+    match op {
         "insert_many" => {
-            let arg_json: Value = from_str(op_arg.as_str())?;
+            let arg_json: Value = from_str(op_arg)?;
             match arg_json {
                 Value::Array(arr) => {
                     let doc_vec: Vec<Document> =

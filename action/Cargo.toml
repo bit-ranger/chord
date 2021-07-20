@@ -30,6 +30,7 @@ dynamic_reload = { version = "0.4.0", optional = true }
 futures = { version = "0.3.13", optional = true }
 rm_rf = { version = "0.6.1", optional = true }
 rlua = { version = "0.17.0", optional = true }
+rlua_serde  = { version = "0.4", optional = true }
 
 
 [target.'cfg(linux)'.dependencies]
@@ -48,7 +49,7 @@ act_mongodb = ["mongodb"]
 act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
 act_docker = ["surf", "futures"]
-act_lua = ["rlua"]
+act_lua = ["rlua", "rlua_serde"]
 act_fstore = []
 
 

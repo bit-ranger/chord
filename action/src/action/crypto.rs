@@ -29,8 +29,7 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
 
     let from = arg.args()["from"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("101", "missing from"))??;
+        .ok_or(err!("101", "missing from"))?;
 
     return match by {
         "md5" => {

@@ -14,8 +14,9 @@ stage:
         step:
             example:
                 action: echo
-                args: |
-                    update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
+                args:
+                    content: |-
+                        update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
                 assert: |
                     (all
                       (str_start_with def.arg.arg1 "12")
@@ -38,8 +39,9 @@ stage:
         step:
             example2:
                 action: echo
-                args: |
-                    update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
+                args:
+                    content: |-
+                        update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
                 assert: |
                     (all
                       (str_start_with def.arg.arg1 "12")

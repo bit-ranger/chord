@@ -43,8 +43,7 @@ impl Action for Redis {
             None => {
                 let url = arg.args()["url"]
                     .as_str()
-                    .map(|s| arg.render_str(s))
-                    .ok_or(err!("101", "missing url"))??;
+                    .ok_or(err!("101", "missing url"))?;
 
                 let client = redis::Client::open(url)?;
                 run0(arg, &client).await
@@ -56,13 +55,12 @@ impl Action for Redis {
 async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error> {
     let cmd = arg.args()["cmd"]
         .as_str()
-        .map(|s| arg.render_str(s))
-        .ok_or(err!("102", "missing cmd"))??;
+        .ok_or(err!("102", "missing cmd"))?;
 
     let mut con = client.get_async_connection().await?;
 
-    let mut command = redis::cmd(cmd.as_str());
-    let args_opt = arg.render_value(&arg.args()["args"])?;
+    let mut command = redis::cmd(cmd);
+    let args_opt = &arg.args()["args"];
 
     if let Some(arg_vec) = args_opt.as_array() {
         for a in arg_vec {

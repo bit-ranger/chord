@@ -6,6 +6,7 @@ use crate::case::CaseId;
 use crate::task::TaskId;
 pub use crate::value::Value;
 pub use crate::Error;
+use std::time::Duration;
 
 pub mod prelude {
     pub use crate::cause;
@@ -30,9 +31,7 @@ pub trait RunArg: Sync + Send {
 
     fn args(&self) -> &Value;
 
-    fn render_str(&self, text: &str) -> Result<String, Error>;
-
-    fn render_value(&self, text: &Value) -> Result<Value, Error>;
+    fn timeout(&self) -> Duration;
 }
 
 pub trait CreateArg: Sync + Send {

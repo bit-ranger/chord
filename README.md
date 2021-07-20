@@ -24,8 +24,7 @@ chord - async 并行任务处理框架
 
     cargo run --package  chord-cmd --bin chord-cmd  -- \ 
         -c$(pwd)/zero/devops/chord/conf/application.yml \ 
-        -i$(pwd)/zero/devops/chord/job/input \ 
-        -o$(pwd)/zero/devops/chord/job/output
+        -i$(pwd)/zero/devops/chord/job/input \
 
 ### help
 
@@ -45,7 +44,6 @@ chord - async 并行任务处理框架
     OPTIONS:
         -c, --config <config>    config file path [default: /data/chord/conf/application.yml]
         -i, --input <input>      input dir
-        -o, --output <output>    output dir
         -t, --task <task>...     task list
 
 ### example

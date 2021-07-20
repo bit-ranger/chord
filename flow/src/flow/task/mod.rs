@@ -9,7 +9,7 @@ use chord::case::{CaseAssess, CaseState};
 use chord::collection::TailDropVec;
 use chord::flow::Flow;
 use chord::input::CaseLoad;
-use chord::output::AssessReport;
+use chord::output::Report;
 use chord::output::Utc;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
@@ -39,7 +39,7 @@ pub struct TaskRunner {
     pre_step_vec: Option<Arc<TailDropVec<(String, Box<dyn Action>)>>>,
 
     task_state: TaskState,
-    assess_report: Box<dyn AssessReport>,
+    assess_report: Box<dyn Report>,
     case_load: Box<dyn CaseLoad>,
     id: Arc<TaskIdSimple>,
     flow_ctx: Arc<dyn Context>,
@@ -49,7 +49,7 @@ pub struct TaskRunner {
 impl TaskRunner {
     pub async fn new(
         case_load: Box<dyn CaseLoad>,
-        assess_report: Box<dyn AssessReport>,
+        assess_report: Box<dyn Report>,
         flow_ctx: Arc<dyn Context>,
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
@@ -120,7 +120,7 @@ impl TaskRunner {
     pub async fn run(&mut self) -> Result<Box<dyn TaskAssess>, Error> {
         trace!("task start {}", self.id);
         let start = Utc::now();
-        self.assess_report.start(start).await?;
+        self.assess_report.start(start, self.flow.clone()).await?;
         let result = self.start_run().await;
 
         let task_assess = if let Err(e) = result {
@@ -225,12 +225,17 @@ impl TaskRunner {
         stage_id: &str,
         concurrency: usize,
     ) -> Result<(), Error> {
+        let mut load_times = 0;
         loop {
             let case_data_vec: Vec<(String, Value)> =
                 self.stage_data_vec_load(stage_id, concurrency).await?;
-
+            load_times = load_times + 1;
             if case_data_vec.len() == 0 {
-                return Ok(());
+                if load_times == 1 {
+                    return Err(err!("011", "no case provided"));
+                } else {
+                    return Ok(());
+                }
             }
 
             trace!("task load data {}, {}", self.id, case_data_vec.len());

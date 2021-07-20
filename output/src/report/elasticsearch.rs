@@ -7,15 +7,41 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
+use crate::report::Factory;
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
+use chord::flow::Flow;
 use chord::output::async_trait;
-use chord::output::AssessReport;
+use chord::output::Report;
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::{json, to_string, Value};
 use chord::value::{Deserialize, Serialize};
 use chord::Error;
+
+pub struct ReportFactory {
+    es_url: String,
+    es_index: String,
+}
+
+#[async_trait]
+impl Factory for ReportFactory {
+    async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Box<dyn Report>, Error> {
+        let reporter = ReportFactory::create(self, task_id).await?;
+        Ok(Box::new(reporter))
+    }
+}
+
+impl ReportFactory {
+    pub async fn new(es_url: String, es_index: String) -> Result<ReportFactory, Error> {
+        index_create(es_url.as_str(), es_index.as_str()).await?;
+        Ok(ReportFactory { es_url, es_index })
+    }
+
+    pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
+        Reporter::new(self.es_url.clone(), self.es_index.clone(), task_id).await
+    }
+}
 
 pub struct Reporter {
     es_url: String,
@@ -24,8 +50,8 @@ pub struct Reporter {
 }
 
 #[async_trait]
-impl AssessReport for Reporter {
-    async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error> {
+impl Report for Reporter {
+    async fn start(&mut self, time: DateTime<Utc>, _: Arc<Flow>) -> Result<(), Error> {
         let task_data = ta_doc_init(self.task_id.as_ref(), time);
         data_send(self.es_url.as_str(), self.es_index.as_str(), task_data).await?;
         Ok(())
@@ -64,7 +90,7 @@ impl AssessReport for Reporter {
 }
 
 impl Reporter {
-    pub async fn new(
+    async fn new(
         es_url: String,
         es_index: String,
         task_id: Arc<dyn TaskId>,
@@ -74,10 +100,6 @@ impl Reporter {
             es_index,
             task_id,
         })
-    }
-
-    pub async fn close(self) -> Result<(), Error> {
-        Ok(())
     }
 }
 
@@ -101,21 +123,24 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
         layer: "task".to_owned(),
         start,
         end,
-        elapse: (Utc::now() - start).num_microseconds().unwrap_or(-1) as usize,
+        elapse: (end - start).num_milliseconds() as usize,
         state: match ts {
             TaskState::Ok => "O",
             TaskState::Fail => "F",
             TaskState::Err(_) => "E",
         }
         .to_owned(),
-        value: match ts {
-            TaskState::Ok => Value::Null,
-            TaskState::Fail => Value::Null,
-            TaskState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
-        },
+        value: Value::String(
+            match ts {
+                TaskState::Ok => Value::Null,
+                TaskState::Fail => Value::Null,
+                TaskState::Err(e) => json!({
+                    "code": e.code(),
+                    "message": e.message()
+                }),
+            }
+            .to_string(),
+        ),
     }
 }
 
@@ -126,21 +151,24 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
         layer: "case".to_owned(),
         start: ca.start(),
         end: ca.end(),
-        elapse: (ca.end() - ca.start()).num_microseconds().unwrap_or(-1) as usize,
+        elapse: (ca.end() - ca.start()).num_milliseconds() as usize,
         state: match ca.state() {
             CaseState::Ok(_) => "O",
             CaseState::Fail(_) => "F",
             CaseState::Err(_) => "E",
         }
         .to_owned(),
-        value: match ca.state() {
-            CaseState::Ok(_) => Value::Null,
-            CaseState::Fail(_) => Value::Null,
-            CaseState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
-        },
+        value: Value::String(
+            match ca.state() {
+                CaseState::Ok(_) => Value::Null,
+                CaseState::Fail(_) => Value::Null,
+                CaseState::Err(e) => json!({
+                    "code": e.code(),
+                    "message": e.message()
+                }),
+            }
+            .to_string(),
+        ),
     }
 }
 
@@ -151,36 +179,39 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         layer: "step".to_owned(),
         start: sa.start(),
         end: sa.end(),
-        elapse: (sa.end() - sa.start()).num_microseconds().unwrap_or(-1) as usize,
+        elapse: (sa.end() - sa.start()).num_milliseconds() as usize,
         state: match sa.state() {
             StepState::Ok(_) => "O",
             StepState::Fail(_) => "F",
             StepState::Err(_) => "E",
         }
         .to_owned(),
-        value: match sa.state() {
-            StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().clone(),
-            StepState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
-        },
+        value: Value::String(
+            match sa.state() {
+                StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().clone(),
+                StepState::Err(e) => json!({
+                    "code": e.code(),
+                    "message": e.message()
+                }),
+            }
+            .to_string(),
+        ),
     }
 }
 
 async fn data_send_all(es_url: &str, es_index: &str, data: Vec<Data>) -> Result<(), Error> {
     let path = format!("{}/{}/_doc/_bulk", es_url, es_index);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
-    data_send_all_0(rb, data).await.map_err(|e| e.0)
+    data_send_all_0(es_index, rb, data).await.map_err(|e| e.0)
 }
 
 async fn data_send(es_url: &str, es_index: &str, data: Data) -> Result<(), Error> {
     let path = format!("{}/{}/_doc/{}", es_url, es_index, data.id);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
-    data_send_0(rb, data).await.map_err(|e| e.0)
+    data_send_0(es_index, rb, data).await.map_err(|e| e.0)
 }
 
-pub async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
+async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
     let path = format!("{}/{}", es_url, index_name);
     let rb = RequestBuilder::new(Method::Get, Url::from_str(path.as_str())?);
     let res = empty_send_0(rb).await.map_err(|e| e.0)?;
@@ -189,24 +220,25 @@ pub async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
         return Ok(());
     }
 
-    info!("index creating [{}]", index_name);
+    info!("index_create [{}]", index_name);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
     index_create_0(rb).await.map_err(|e| e.0)
 }
 
-async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), ElasticError> {
+async fn data_send_0(index: &str, rb: RequestBuilder, data: Data) -> Result<(), ElasticError> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
     );
 
+    trace!("data_send: {}, {}", index, to_string(&data)?.escape_debug());
     rb = rb.body(Body::from_json(&data)?);
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
         let body: Value = res.body_json().await?;
         warn!(
-            "data_send_0 failure: {}, {}",
+            "data_send failure: {}, {}",
             to_string(&data)?,
             to_string(&body)?
         )
@@ -214,7 +246,11 @@ async fn data_send_0(rb: RequestBuilder, data: Data) -> Result<(), ElasticError>
     Ok(())
 }
 
-async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), ElasticError> {
+async fn data_send_all_0(
+    index: &str,
+    rb: RequestBuilder,
+    data: Vec<Data>,
+) -> Result<(), ElasticError> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -231,13 +267,13 @@ async fn data_send_all_0(rb: RequestBuilder, data: Vec<Data>) -> Result<(), Elas
         body.push_str("\n");
     }
 
-    trace!("data_send_all_0: {}", body.escape_debug());
+    trace!("data_send_all: {}, {}", index, body.escape_debug());
     rb = rb.body(Body::from_string(body));
 
     let mut res: Response = rb.send().await?;
     if !res.status().is_success() {
         let body: Value = res.body_json().await?;
-        warn!("data_send_all_0 failure: {}", to_string(&body)?)
+        warn!("data_send_all failure: {}", to_string(&body)?)
     }
     Ok(())
 }
@@ -269,7 +305,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), ElasticError> {
   "mappings": {
     "properties": {
       "id": {
-        "type": "text"
+        "type": "keyword"
       },
       "id_in_layer": {
         "type": "keyword"
@@ -290,7 +326,7 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), ElasticError> {
         "type": "keyword"
       },
       "value": {
-        "type": "object"
+        "type": "text"
       }
     }
   }

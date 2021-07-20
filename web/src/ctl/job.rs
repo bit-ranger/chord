@@ -20,6 +20,8 @@ use chord_flow::Context;
 use crate::app::conf::Config;
 use crate::biz;
 use crate::util::yaml::load;
+use chord::value::Value;
+use chord_input::load::flow::yml::YmlFlowParser;
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
@@ -61,9 +63,10 @@ impl CtlImpl {
         Ok(CtlImpl {
             input_dir: Path::new(config.job_input_path()).to_path_buf(),
             ssh_key_private: config.ssh_key_private_path().into(),
-            flow_ctx: chord_flow::context_create(Box::new(
-                FactoryComposite::new(config.action_config().map(|c| c.clone())).await?,
-            ))
+            flow_ctx: chord_flow::context_create(
+                Box::new(FactoryComposite::new(config.action().map(|c| c.clone())).await?),
+                Box::new(YmlFlowParser::new()),
+            )
             .await,
             config,
         })
@@ -86,6 +89,7 @@ impl Ctl for CtlImpl {
             .to_string();
         let input = self.input_dir.clone();
         let ssh_key_pri = self.ssh_key_private.clone();
+        let report = self.config.report().map(|c| c.clone());
         let app_ctx_0 = self.flow_ctx.clone();
         let exec_id_0 = exec_id.clone();
         spawn(checkout_run(
@@ -94,7 +98,7 @@ impl Ctl for CtlImpl {
             ssh_key_pri,
             req,
             exec_id_0,
-            self.config.report_elasticsearch_url()?.to_owned(),
+            report,
         ));
         return Ok(Rep { exec_id });
     }
@@ -106,7 +110,7 @@ async fn checkout_run(
     ssh_key_pri: PathBuf,
     req: Req,
     exec_id: String,
-    es_url: String,
+    report: Option<Value>,
 ) {
     let req_text = format!("{:?}", req);
     trace!("checkout_run start {}", req_text);
@@ -124,7 +128,7 @@ async fn checkout_run(
         ssh_key_pri,
         req,
         exec_id,
-        es_url,
+        report,
         checkout_path.clone(),
         job_name,
     )
@@ -140,7 +144,7 @@ async fn checkout_run_0(
     ssh_key_pri: PathBuf,
     req: Req,
     exec_id: String,
-    es_url: String,
+    report: Option<Value>,
     checkout_path: PathBuf,
     job_name: String,
 ) -> Result<Repository, Error> {
@@ -175,7 +179,7 @@ async fn checkout_run_0(
     }
     let job_path = &job_path[2..];
     let job_path = repo_root.join(job_path);
-    job_run(app_ctx, job_path, job_name, exec_id, es_url).await;
+    job_run(app_ctx, job_path, job_name, exec_id, report).await;
     return Ok(repo);
 }
 
@@ -244,9 +248,9 @@ async fn job_run(
     job_path: PathBuf,
     job_name: String,
     exec_id: String,
-    es_url: String,
+    report: Option<Value>,
 ) {
-    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, es_url).await;
+    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, report.as_ref()).await;
     if let Err(e) = job_result {
         warn!("job run error {}", e);
     }

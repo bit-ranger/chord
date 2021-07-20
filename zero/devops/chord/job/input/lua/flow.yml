@@ -12,7 +12,7 @@ stage:
                             n = math.random(100)
                             print("hello lua: " .. tostring(n));
                         end
-    
+                        
                         return
                         {
                              {
@@ -28,7 +28,23 @@ stage:
                     (all
                         (eq curr.value.2.bar (num case.bar))
                     )
-                    
-
-
+            
+            step2:
+                action: lua
+                args:
+                    global:
+                        arr1: [ "a", "b" ]
+                        arr2: {
+                            "foo": "bar"
+                        }
+                    code: |
+                        table.insert(arr1, "c");
+                        table.insert(arr1, arr2);
+                        return arr1;
+                assert: |
+                    (all
+                        (eq curr.value.2 "b")
+                        (eq curr.value.3 "c")
+                        (eq curr.value.4.foo "bar")
+                    )
 

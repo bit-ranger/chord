@@ -1,31 +1,82 @@
-use std::fs::File;
-
 use async_std::fs::rename;
 use async_std::path::{Path, PathBuf};
+use async_std::stream::StreamExt;
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 
+use crate::report::Factory;
+use async_std::fs::remove_file;
+use async_std::fs::{create_dir_all, read_dir};
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
 use chord::flow::Flow;
 use chord::output::async_trait;
-use chord::output::AssessReport;
+use chord::output::Report;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::to_string;
 use chord::Error;
 
+pub struct ReportFactory {
+    dir: PathBuf,
+}
+
+#[async_trait]
+impl Factory for ReportFactory {
+    async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Box<dyn Report>, Error> {
+        let factory = ReportFactory::create(self, task_id).await?;
+        Ok(Box::new(factory))
+    }
+}
+
+impl ReportFactory {
+    pub async fn new<P: AsRef<Path>>(report_dir: P, name: String) -> Result<ReportFactory, Error> {
+        let dir = report_dir.as_ref().join(name);
+
+        if !dir.exists().await {
+            create_dir_all(dir.as_path()).await?;
+        }
+
+        let mut job_dir = read_dir(dir.as_path()).await.unwrap();
+        loop {
+            let de = job_dir.next().await;
+            if de.is_none() {
+                break;
+            }
+            let de = de.unwrap()?;
+            if de.path().is_file().await {
+                remove_file(de.path()).await?;
+            }
+        }
+
+        Ok(ReportFactory {
+            dir: dir.to_path_buf(),
+        })
+    }
+
+    pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
+        Reporter::new(self.dir.clone(), task_id).await
+    }
+}
+
 pub struct Reporter {
-    writer: Writer<File>,
+    writer: Writer<std::fs::File>,
     step_id_vec: Vec<String>,
     report_dir: PathBuf,
     task_id: Arc<dyn TaskId>,
 }
 
 #[async_trait]
-impl AssessReport for Reporter {
-    async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
+impl Report for Reporter {
+    async fn start(&mut self, _: DateTime<Utc>, flow: Arc<Flow>) -> Result<(), Error> {
+        let step_id_vec: Vec<String> = flow
+            .stage_id_vec()
+            .iter()
+            .flat_map(|s| flow.stage_step_id_vec(s))
+            .map(|s| s.to_owned())
+            .collect();
+        self.step_id_vec = step_id_vec;
         prepare(&mut self.writer, &self.step_id_vec).await?;
         Ok(())
     }
@@ -57,22 +108,14 @@ impl AssessReport for Reporter {
 impl Reporter {
     pub async fn new<P: AsRef<Path>>(
         report_dir: P,
-        flow: &Flow,
         task_id: Arc<dyn TaskId>,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task()));
 
-        let step_id_vec: Vec<String> = flow
-            .stage_id_vec()
-            .iter()
-            .flat_map(|s| flow.stage_step_id_vec(s))
-            .map(|s| s.to_owned())
-            .collect();
-
         let report = Reporter {
             writer: from_path(report_file).await?,
-            step_id_vec,
+            step_id_vec: vec![],
             report_dir,
             task_id,
         };
@@ -80,7 +123,7 @@ impl Reporter {
     }
 }
 
-async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<File>, Error> {
+async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<std::fs::File>, Error> {
     csv::WriterBuilder::new()
         .from_path(path.as_ref().to_str().ok_or(err!("010", "invalid path"))?)
         .map_err(|e| err!("csv", e.to_string()))
@@ -202,17 +245,20 @@ fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
         }
     }
 
-    match pa_vec.last().unwrap().state() {
-        StepState::Fail(scope) | StepState::Ok(scope) => {
-            let json = scope.as_value();
-            if json.is_string() {
-                value_vec[head_len - 1] = json.as_str().map_or(json.to_string(), |j| j.to_owned());
-            } else {
-                value_vec[head_len - 1] = to_string(json).unwrap_or_else(|j| j.to_string());
+    if let Some(last) = pa_vec.last() {
+        match last.state() {
+            StepState::Fail(scope) | StepState::Ok(scope) => {
+                let json = scope.as_value();
+                if json.is_string() {
+                    value_vec[head_len - 1] =
+                        json.as_str().map_or(json.to_string(), |j| j.to_owned());
+                } else {
+                    value_vec[head_len - 1] = to_string(json).unwrap_or_else(|j| j.to_string());
+                }
             }
-        }
-        StepState::Err(e) => {
-            value_vec[head_len - 1] = e.to_string();
+            StepState::Err(e) => {
+                value_vec[head_len - 1] = e.to_string();
+            }
         }
     }
 

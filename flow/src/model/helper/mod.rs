@@ -4,6 +4,7 @@ use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderEr
 
 mod array;
 mod boolean;
+mod json;
 mod number;
 mod string;
 
@@ -26,6 +27,9 @@ pub fn register(handlebars: &mut Handlebars) {
             literal: "}".into(),
         }),
     );
+
+    //json
+    handlebars.register_helper("json", Box::new(crate::model::helper::json::JSON_HELPER));
 
     //number
     handlebars.register_helper("num", Box::new(crate::model::helper::number::NUM_HELPER));

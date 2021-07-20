@@ -69,15 +69,36 @@ fn to_value(lua_value: &rlua::Value) -> Result<Value, Error> {
             Ok(Number::from_f64(v.clone()).map_or(Value::Null, |v| Value::Number(v)))
         }
         rlua::Value::Table(v) => {
-            let mut map = Map::new();
-            for pair in v.clone().pairs::<String, rlua::Value>() {
-                let (k, v) = pair?;
-                let v = to_value(&v)?;
-                map.insert(k, v);
+            if is_array(v)? {
+                let mut vec = vec![];
+                for pair in v.clone().pairs::<usize, rlua::Value>() {
+                    let (_, v) = pair?;
+                    let v = to_value(&v)?;
+                    vec.push(v);
+                }
+                Ok(Value::Array(vec))
+            } else {
+                let mut map = Map::new();
+                for pair in v.clone().pairs::<String, rlua::Value>() {
+                    let (k, v) = pair?;
+                    let v = to_value(&v)?;
+                    map.insert(k, v);
+                }
+                Ok(Value::Object(map))
             }
-            Ok(Value::Object(map))
         }
 
         _ => Err(err!("102", "invalid value")),
     }
+}
+
+fn is_array(table: &rlua::Table) -> Result<bool, Error> {
+    for pair in table.clone().pairs::<rlua::Value, rlua::Value>() {
+        let (k, _) = pair?;
+        match k {
+            rlua::Value::Integer(_) => return Ok(true),
+            _ => continue,
+        }
+    }
+    return Ok(false);
 }

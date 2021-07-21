@@ -16,17 +16,15 @@ impl DatabaseFactory {
 #[async_trait]
 impl Factory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let url = arg.args()["url"]
-            .as_str()
-            .ok_or(err!("100", "missing url"))?;
-
-        if !arg.is_shared(url) {
-            return Ok(Box::new(Database { rb: None }));
+        if let Some(url) = arg.args()["url"].as_str() {
+            if arg.is_shared(url) {
+                let url = arg.render_str(url)?;
+                let rb = create_rb(url.as_str()).await?;
+                return Ok(Box::new(Database { rb: Some(rb) }));
+            }
         }
 
-        let url = arg.render_str(url)?;
-        let rb = create_rb(url.as_str()).await?;
-        return Ok(Box::new(Database { rb: Some(rb) }));
+        return Ok(Box::new(Database { rb: None }));
     }
 }
 

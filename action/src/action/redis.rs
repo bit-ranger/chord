@@ -14,20 +14,16 @@ impl RedisFactory {
 #[async_trait]
 impl Factory for RedisFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let url = arg.args()["url"]
-            .as_str()
-            .map(|s| arg.render_str(s))
-            .ok_or(err!("100", "missing url"))??;
-
-        if !arg.is_shared(url.as_str()) {
-            return Ok(Box::new(Redis { client: None }));
+        if let Some(url) = arg.args()["url"].as_str() {
+            if arg.is_shared(url) {
+                let url = arg.render_str(url)?;
+                let client = redis::Client::open(url)?;
+                return Ok(Box::new(Redis {
+                    client: Some(client),
+                }));
+            }
         }
-
-        let client = redis::Client::open(url)?;
-
-        Ok(Box::new(Redis {
-            client: Some(client),
-        }))
+        return Ok(Box::new(Redis { client: None }));
     }
 }
 

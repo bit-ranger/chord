@@ -5,7 +5,7 @@ use chord::action::RunArg;
 use chord::case::CaseState;
 use chord::collection::TailDropVec;
 use chord::step::{StepAssess, StepState};
-use chord::value::{json, Value};
+use chord::value::{json, to_string_pretty, Value};
 use res::CaseAssessStruct;
 
 use crate::flow::case::arg::CaseArgStruct;
@@ -69,10 +69,12 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
             } else {
                 if let StepState::Fail(scope) = &step_assess.state {
                     info!(
-                        "step Fail {} - {}\n<<<\n{}",
+                        "step Fail {}\n{}\n<<<\n{}",
                         step_arg_id,
-                        scope.as_value(),
-                        step_arg_args
+                        to_string_pretty(scope.as_value())
+                            .unwrap_or_else(|_| scope.as_value().to_string()),
+                        to_string_pretty(&step_arg_args)
+                            .unwrap_or_else(|_| step_arg_args.to_string()),
                     );
                 }
 
@@ -109,10 +111,12 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 } else {
                     if let StepState::Fail(scope) = &step_assess.state {
                         info!(
-                            "step Fail {} - {}\n<<<\n{}",
+                            "step Fail {}\n{}\n<<<\n{}",
                             step_arg_id,
-                            scope.as_value(),
-                            step_arg_args
+                            to_string_pretty(scope.as_value())
+                                .unwrap_or_else(|_| scope.as_value().to_string()),
+                            to_string_pretty(&step_arg_args)
+                                .unwrap_or_else(|_| step_arg_args.to_string()),
                         );
                     }
 

@@ -195,7 +195,10 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
         if let Value::String(txt) = value {
             let value_str = swallow_quotation(txt);
             let value_str = self.render_str(value_str.as_str())?;
-            let value = self.flow_parse.parse_str(value_str.as_str())?;
+            let value = self
+                .flow_parse
+                .parse_str(value_str.as_str())
+                .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
             if value.is_object() {
                 return Ok(value);
             } else {
@@ -205,7 +208,8 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
             let value_str = to_string(map)?;
             let value_str = swallow_quotation(value_str.as_str());
             let value_str = self.render_str(value_str.as_str())?;
-            let value: Map = from_str(value_str.as_str())?;
+            let value: Map = from_str(value_str.as_str())
+                .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
             return Ok(Value::Object(value));
         } else {
             return Err(err!("001", "invalid args"));

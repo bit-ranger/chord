@@ -23,10 +23,10 @@ stage:
                       (str_end_with def.arg.arg1 "23")
                       (str_contains def.arg.arg1 "2")
                       (eq
-                        (str_substring def.arg.arg1 1) "23"
+                        (str_sub def.arg.arg1 1) "23"
                       )
                       (eq
-                        (str_substring def.arg.arg1 1 2)
+                        (str_sub def.arg.arg1 1 2)
                         "2"
                       )
                     )
@@ -48,10 +48,10 @@ stage:
                       (str_end_with def.arg.arg1 "23")
                       (str_contains def.arg.arg1 "2")
                       (eq
-                        (str_substring def.arg.arg1 1) "23"
+                        (str_sub def.arg.arg1 1) "23"
                       )
                       (eq
-                        (str_substring def.arg.arg1 1 2)
+                        (str_sub def.arg.arg1 1 2)
                         "2"
                       )
                     )

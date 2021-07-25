@@ -2,7 +2,7 @@ use chord::value::{Number, Value};
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 use std::str::FromStr;
 
-pub static NUM_HELPER: NumHelper = NumHelper {};
+pub static NUM: NumHelper = NumHelper {};
 
 #[derive(Clone, Copy)]
 pub struct NumHelper;

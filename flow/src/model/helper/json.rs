@@ -1,6 +1,6 @@
 use handlebars::{Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError};
 
-pub static JSON_HELPER: JsonHelper = JsonHelper {};
+pub static JSON: JsonHelper = JsonHelper {};
 
 #[derive(Clone, Copy)]
 pub struct JsonHelper {}

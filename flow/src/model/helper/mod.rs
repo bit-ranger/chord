@@ -1,4 +1,4 @@
-use crate::model::helper::boolean::{ALL_HELPER, ANY_HELPER, BOOL_HELPER};
+use crate::model::helper::boolean::{ALL, ANY, BOOL};
 use chord::value::Value;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
@@ -10,38 +10,41 @@ mod string;
 
 pub fn register(handlebars: &mut Handlebars) {
     //handlebars-3.5.4/src/registry.rs:118
-    handlebars.register_helper("all", Box::new(ALL_HELPER));
-    handlebars.register_helper("any", Box::new(ANY_HELPER));
-    handlebars.register_helper("bool", Box::new(BOOL_HELPER));
+    handlebars.register_helper("all", Box::new(ALL));
+    handlebars.register_helper("any", Box::new(ANY));
+    handlebars.register_helper("bool", Box::new(BOOL));
 
     //literal
     handlebars.register_helper(
-        "lbrace",
+        "bl",
         Box::new(LiteralHelper {
             literal: "{".into(),
         }),
     );
     handlebars.register_helper(
-        "rbrace",
+        "br",
         Box::new(LiteralHelper {
             literal: "}".into(),
         }),
     );
 
     //json
-    handlebars.register_helper("json", Box::new(crate::model::helper::json::JSON_HELPER));
+    handlebars.register_helper("json", Box::new(crate::model::helper::json::JSON));
 
     //number
-    handlebars.register_helper("num", Box::new(crate::model::helper::number::NUM_HELPER));
+    handlebars.register_helper("num", Box::new(crate::model::helper::number::NUM));
 
     //array
     handlebars.register_helper(
         "arr_contains",
         Box::new(crate::model::helper::array::contains),
     );
+    handlebars.register_helper("arr_sub", Box::new(crate::model::helper::array::SUB));
+    handlebars.register_helper("arr_len", Box::new(crate::model::helper::array::LEN));
+    handlebars.register_helper("arr_get", Box::new(crate::model::helper::array::GET));
 
     //string
-    handlebars.register_helper("str", Box::new(crate::model::helper::string::STR_HELPER));
+    handlebars.register_helper("str", Box::new(crate::model::helper::string::STR));
     handlebars.register_helper(
         "str_contains",
         Box::new(crate::model::helper::string::contains),
@@ -54,9 +57,12 @@ pub fn register(handlebars: &mut Handlebars) {
         "str_end_with",
         Box::new(crate::model::helper::string::end_with),
     );
+    handlebars.register_helper("str_sub", Box::new(crate::model::helper::string::SUB));
+    handlebars.register_helper("str_len", Box::new(crate::model::helper::string::LEN));
+    handlebars.register_helper("str_escape", Box::new(crate::model::helper::string::ESCAPE));
     handlebars.register_helper(
-        "str_substring",
-        Box::new(crate::model::helper::string::SUBSTRING_HELPER),
+        "str_unescape",
+        Box::new(crate::model::helper::string::UNESCAPE),
     );
 }
 

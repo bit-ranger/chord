@@ -726,7 +726,6 @@ dependencies = [
  "itertools",
  "lazy_static",
  "log",
- "snailquote",
 ]
 
 [[package]]
@@ -3310,16 +3309,6 @@ name = "smallvec"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
-
-[[package]]
-name = "snailquote"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f34b729d802f52194598858ac852c3fb3b33f6e026cd03195072ccb7bf3fc810"
-dependencies = [
- "thiserror",
- "unicode_categories",
-]
 
 [[package]]
 name = "socket2"

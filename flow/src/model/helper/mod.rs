@@ -4,7 +4,6 @@ use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderEr
 
 mod array;
 mod boolean;
-mod json;
 mod number;
 mod string;
 
@@ -28,9 +27,6 @@ pub fn register(handlebars: &mut Handlebars) {
         }),
     );
 
-    //json
-    handlebars.register_helper("json", Box::new(crate::model::helper::json::JSON));
-
     //number
     handlebars.register_helper("num", Box::new(crate::model::helper::number::NUM));
 
@@ -46,6 +42,10 @@ pub fn register(handlebars: &mut Handlebars) {
     //string
     handlebars.register_helper("str", Box::new(crate::model::helper::string::STR));
     handlebars.register_helper(
+        "str_parse_json",
+        Box::new(crate::model::helper::string::PARSE_JSON),
+    );
+    handlebars.register_helper(
         "str_contains",
         Box::new(crate::model::helper::string::contains),
     );
@@ -60,10 +60,6 @@ pub fn register(handlebars: &mut Handlebars) {
     handlebars.register_helper("str_sub", Box::new(crate::model::helper::string::SUB));
     handlebars.register_helper("str_len", Box::new(crate::model::helper::string::LEN));
     handlebars.register_helper("str_escape", Box::new(crate::model::helper::string::ESCAPE));
-    handlebars.register_helper(
-        "str_unescape",
-        Box::new(crate::model::helper::string::UNESCAPE),
-    );
 }
 
 pub struct LiteralHelper {

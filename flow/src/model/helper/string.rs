@@ -1,7 +1,8 @@
-use chord::value::{Number, Value};
+use chord::value::{from_str, Number, Value};
 use handlebars::handlebars_helper;
-use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
-use snailquote::unescape;
+use handlebars::{
+    Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError, ScopedJson,
+};
 
 handlebars_helper!(start_with: |x: Json, y: Json|
     x.is_string() && y.is_string() && x.as_str().unwrap().starts_with(y.as_str().unwrap())
@@ -19,25 +20,27 @@ pub static STR: StrHelper = StrHelper {};
 pub static LEN: LenHelper = LenHelper {};
 pub static SUB: SubHelper = SubHelper {};
 pub static ESCAPE: EscapeHelper = EscapeHelper {};
-pub static UNESCAPE: UnescapeHelper = UnescapeHelper {};
+pub static PARSE_JSON: ParseJsonHelper = ParseJsonHelper {};
 
 #[derive(Clone, Copy)]
 pub struct StrHelper;
 
 impl HelperDef for StrHelper {
-    fn call_inner<'reg: 'rc, 'rc>(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"str\""))?;
 
-        let param = param.value();
-        Ok(Some(ScopedJson::Derived(Value::String(param.to_string()))))
+        let json = param.value().to_string();
+        out.write(json.as_ref())?;
+        Ok(())
     }
 }
 
@@ -111,27 +114,6 @@ impl HelperDef for EscapeHelper {
 }
 
 #[derive(Clone, Copy)]
-pub struct UnescapeHelper;
-
-impl HelperDef for UnescapeHelper {
-    fn call_inner<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper<'reg, 'rc>,
-        _: &'reg Handlebars<'reg>,
-        _: &'rc Context,
-        _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        let param = h.params();
-        let str = param[0].value().as_str().ok_or(RenderError::new(
-            "Param invalid for helper \"str_unescape\"",
-        ))?;
-        let txt = unescape(str)
-            .map_err(|_| RenderError::new("Param invalid for helper \"str_unescape\""))?;
-        return Ok(Some(ScopedJson::Derived(Value::String(txt))));
-    }
-}
-
-#[derive(Clone, Copy)]
 pub struct LenHelper {}
 
 impl HelperDef for LenHelper {
@@ -151,6 +133,30 @@ impl HelperDef for LenHelper {
                 txt.len(),
             ))))),
             _ => Err(RenderError::new("Param invalid for helper \"str_len\"")),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct ParseJsonHelper {}
+
+impl HelperDef for ParseJsonHelper {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        _: &'reg Handlebars<'reg>,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg, 'rc>,
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+        let param = h
+            .param(0)
+            .ok_or_else(|| RenderError::new("Param not found for helper \"str_parse_json\""))?;
+
+        match param.value() {
+            Value::String(txt) => Ok(Some(ScopedJson::Derived(from_str(txt)?))),
+            _ => Err(RenderError::new(
+                "Param invalid for helper \"str_parse_json\"",
+            )),
         }
     }
 }

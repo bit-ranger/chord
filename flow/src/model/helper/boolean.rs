@@ -2,9 +2,9 @@ use chord::value::Value;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 use std::str::FromStr;
 
-pub static BOOL_HELPER: BoolHelper = BoolHelper {};
-pub static ALL_HELPER: AllHelper = AllHelper {};
-pub static ANY_HELPER: AnyHelper = AnyHelper {};
+pub static BOOL: BoolHelper = BoolHelper {};
+pub static ALL: AllHelper = AllHelper {};
+pub static ANY: AnyHelper = AnyHelper {};
 
 #[derive(Clone, Copy)]
 pub struct BoolHelper;

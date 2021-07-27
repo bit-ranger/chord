@@ -26,7 +26,7 @@ stage:
                 
                 assert: |
                     (all
-                        (eq curr.value.2.bar (num case.bar))
+                        (eq curr.value.1.bar (num case.bar))
                     )
             
             step2:
@@ -43,8 +43,8 @@ stage:
                         return arr1;
                 assert: |
                     (all
-                        (eq curr.value.2 "b")
-                        (eq curr.value.3 "c")
-                        (eq curr.value.4.foo "bar")
+                        (eq curr.value.1 "b")
+                        (eq curr.value.2 "c")
+                        (eq curr.value.3.foo "bar")
                     )
 

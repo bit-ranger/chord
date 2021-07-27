@@ -1,11 +1,11 @@
 use chrono::Utc;
-use log::{debug, info, trace, warn};
+use log::{debug, info, trace};
 
 use chord::action::RunArg;
 use chord::case::CaseState;
 use chord::collection::TailDropVec;
 use chord::step::{StepAssess, StepState};
-use chord::value::{json, Value};
+use chord::value::{json, to_string_pretty, Value};
 use res::CaseAssessStruct;
 
 use crate::flow::case::arg::CaseArgStruct;
@@ -27,11 +27,13 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
 
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if let Err(e) = step_arg {
+            info!("step Err {}\n{}", step_id, e);
+
             let step_run_id = RunIdStruct::new(step_id.to_string(), arg.id());
             let step_assess =
                 StepAssessStruct::new(step_run_id, Utc::now(), Utc::now(), StepState::Err(e));
             step_assess_vec.push(Box::new(step_assess));
-            warn!("case Fail {}", arg.id());
+            info!("case Fail {}", arg.id());
             return CaseAssessStruct::new(
                 arg.id().clone(),
                 start,
@@ -69,10 +71,12 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
             } else {
                 if let StepState::Fail(scope) = &step_assess.state {
                     info!(
-                        "step Fail {} - {}\n<<<\n{}",
+                        "step Fail {}\n{}\n<<<\n{}",
                         step_arg_id,
-                        scope.as_value(),
-                        step_arg_args
+                        to_string_pretty(scope.as_value())
+                            .unwrap_or_else(|_| scope.as_value().to_string()),
+                        to_string_pretty(&step_arg_args)
+                            .unwrap_or_else(|_| step_arg_args.to_string()),
                     );
                 }
 
@@ -88,7 +92,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
             }
         } else if step_assess.state.is_err() {
             if !step_arg_catch_err {
-                debug!("step Err  {}", step_arg_id);
+                info!("step Err {}", step_id);
                 step_assess_vec.push(Box::new(step_assess));
                 info!("case Fail {}", arg.id());
                 return CaseAssessStruct::new(
@@ -109,10 +113,12 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
                 } else {
                     if let StepState::Fail(scope) = &step_assess.state {
                         info!(
-                            "step Fail {} - {}\n<<<\n{}",
+                            "step Fail {}\n{}\n<<<\n{}",
                             step_arg_id,
-                            scope.as_value(),
-                            step_arg_args
+                            to_string_pretty(scope.as_value())
+                                .unwrap_or_else(|_| scope.as_value().to_string()),
+                            to_string_pretty(&step_arg_args)
+                                .unwrap_or_else(|_| step_arg_args.to_string()),
                         );
                     }
 

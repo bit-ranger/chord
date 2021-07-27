@@ -11,7 +11,7 @@ use chord::value::{to_string, Map, Value};
 use chord::Error;
 
 pub struct Loader {
-    offset: usize,
+    row_num: usize,
     path: PathBuf,
     reader: Reader<File>,
 }
@@ -19,7 +19,7 @@ pub struct Loader {
 impl Loader {
     pub async fn new<P: AsRef<Path>>(path: P) -> Result<Loader, Error> {
         let loader = Loader {
-            offset: 0,
+            row_num: 1,
             path: path.as_ref().to_path_buf(),
             reader: from_path(path.as_ref()).await?,
         };
@@ -37,14 +37,14 @@ impl CaseLoad for Loader {
         let dv = load(&mut self.reader, size).await?;
         let mut result: Vec<(String, Value)> = vec![];
         for d in dv {
-            self.offset = self.offset + 1;
-            result.push((self.offset.to_string(), d));
+            self.row_num = self.row_num + 1;
+            result.push((self.row_num.to_string(), d));
         }
         Ok(result)
     }
 
     async fn reset(&mut self) -> Result<(), Error> {
-        self.offset = 0;
+        self.row_num = 0;
         self.reader = from_path(&self.path).await?;
         Ok(())
     }

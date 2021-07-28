@@ -14,7 +14,7 @@ stage:
                 args:
                     url: "{{def.database.url}}"
                     sql: |+
-                        select * from  user where user = '{{case.user}}'
+                        SELECT * FROM user WHERE user = '{{case.user}}'
                 assert:
                     (eq curr.value.records.0.User case.user)
     

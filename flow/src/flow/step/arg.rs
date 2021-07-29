@@ -209,7 +209,12 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
             let value: Value = from_str(value_str.as_str())
                 .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
             if value.is_object() {
-                self.render_ref(&value, self.render_context.data())
+                let value = self.render_ref(&value, self.render_context.data())?;
+                if value.is_object() {
+                    Ok(value)
+                } else {
+                    Err(err!("001", "invalid args"))
+                }
             } else {
                 Err(err!("001", "invalid args"))
             }

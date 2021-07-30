@@ -136,7 +136,7 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
         }
     }
 
-    debug!("case Ok {}", arg.id());
+    debug!("case Ok   {}", arg.id());
     return CaseAssessStruct::new(
         arg.id().clone(),
         start,

@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
+use async_std::sync::Arc;
 use chord::action::prelude::*;
 use chord::err;
 
 mod count;
 mod echo;
+mod iter;
 mod log;
 mod sleep;
 
@@ -34,7 +36,7 @@ mod restapi;
 mod url;
 
 pub struct FactoryComposite {
-    table: HashMap<String, Box<dyn Factory>>,
+    table: HashMap<String, Arc<dyn Factory>>,
 }
 
 macro_rules! register {
@@ -42,7 +44,7 @@ macro_rules! register {
         if enable($config_ref, $name, $enable) {
             $table.insert(
                 $name.into(),
-                Box::new($module($config_ref.map(|c| c[$name].clone())).await?),
+                Arc::new($module($config_ref.map(|c| c[$name].clone())).await?),
             );
         }
     };
@@ -50,7 +52,7 @@ macro_rules! register {
 
 impl FactoryComposite {
     pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Error> {
-        let mut table: HashMap<String, Box<dyn Factory>> = HashMap::new();
+        let mut table: HashMap<String, Arc<dyn Factory>> = HashMap::new();
 
         let config_ref = config.as_ref();
 
@@ -129,6 +131,14 @@ impl FactoryComposite {
             "fstore",
             fstore::FstoreFactory::new,
             false
+        );
+
+        table.insert(
+            "iter_map".into(),
+            Arc::new(
+                iter::map::IterMapFactory::new(config_ref.map(|c| c["map"].clone()), table.clone())
+                    .await?,
+            ),
         );
 
         Ok(FactoryComposite { table })

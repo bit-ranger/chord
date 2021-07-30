@@ -5,29 +5,43 @@ use std::path::PathBuf;
 use csv::{Reader, ReaderBuilder};
 
 use chord::err;
-use chord::input::async_trait;
 use chord::input::CaseLoad;
+use chord::input::{async_trait, CaseStore};
 use chord::value::{to_string, Map, Value};
 use chord::Error;
 
-pub struct Loader {
-    row_num: usize,
+pub struct Store {
     path: PathBuf,
+}
+
+impl Store {
+    pub async fn new<P: AsRef<Path>>(path: P) -> Result<Store, Error> {
+        Ok(Store {
+            path: path.as_ref().to_path_buf(),
+        })
+    }
+}
+
+#[async_trait]
+impl CaseStore for Store {
+    async fn create(&self, name: &str) -> Result<Box<dyn CaseLoad>, Error> {
+        let loader = Loader::new(self.path.join(format!("{}.csv", name))).await?;
+        Ok(Box::new(loader))
+    }
+}
+
+struct Loader {
+    row_num: usize,
     reader: Reader<File>,
 }
 
 impl Loader {
-    pub async fn new<P: AsRef<Path>>(path: P) -> Result<Loader, Error> {
+    async fn new<P: AsRef<Path>>(path: P) -> Result<Loader, Error> {
         let loader = Loader {
             row_num: 1,
-            path: path.as_ref().to_path_buf(),
             reader: from_path(path.as_ref()).await?,
         };
         Ok(loader)
-    }
-
-    pub async fn close(self) -> Result<(), Error> {
-        Ok(())
     }
 }
 
@@ -41,12 +55,6 @@ impl CaseLoad for Loader {
             result.push((self.row_num.to_string(), d));
         }
         Ok(result)
-    }
-
-    async fn reset(&mut self) -> Result<(), Error> {
-        self.row_num = 0;
-        self.reader = from_path(&self.path).await?;
-        Ok(())
     }
 }
 

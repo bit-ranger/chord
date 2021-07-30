@@ -8,13 +8,24 @@ def:
 
 stage:
     benchmark1:
-    
-        case:
-            filter: |
-                (eq case.tag "tag1")
                 
         step:
             example:
+                action: echo
+                args:
+                    content:
+                        - hello
+                        -   hello: world
+                        -   $ref: def.arg.arg2
+        
+                assert: |
+                    (all
+                        (eq curr.value.0 "hello")
+                        (eq curr.value.1.hello "world")
+                        (eq curr.value.2.1 "b")
+                    )
+            
+            example2:
                 action: echo
                 args:
                     content: |-
@@ -33,32 +44,17 @@ stage:
                       )
                     )
                     
-            example2:
-                action: echo
-                args:
-                    content:
-                        - hello
-                        - hello: world
-                        - $ref: def.arg.arg2
-                        
-                assert: |
-                    (all
-                        (eq curr.value.0 "hello")
-                        (eq curr.value.1.hello "world")
-                        (eq curr.value.2.1 "b")
-                    )
+
         
     benchmark2:
-    
         case:
-            filter: |
-                (eq case.tag "tag2")
+            name: case2
         step:
             example3:
                 action: echo
                 args:
                     content: |-
-                        update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
+                        update bas set a = '{{case.foo}}' where b = "{{case.bar}}"
                 assert: |
                     (all
                       (str_start_with def.arg.arg1 "12")

@@ -109,15 +109,14 @@ async fn task_run0<P: AsRef<Path>>(
     let flow = Flow::new(flow)?;
 
     //read
-    let data_file_path = task_path.clone().join("case.csv");
-    let data_loader = Box::new(chord_input::load::data::csv::Loader::new(data_file_path).await?);
+    let case_store = Box::new(chord_input::load::data::csv::Store::new(task_path.clone()).await?);
 
     //write
     let assess_reporter = report_factory.create(task_id.clone()).await?;
 
     //runner
     let mut runner = chord_flow::TaskRunner::new(
-        data_loader,
+        case_store,
         assess_reporter,
         app_ctx,
         Arc::new(flow),

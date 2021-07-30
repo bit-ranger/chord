@@ -1,0 +1,25 @@
+version: "0.0.1"
+
+def:
+    iter: [ 1, 2, 3 ]
+
+
+stage:
+    stage1:
+        step:
+            step1:
+                action: iter_map
+                args:
+                    iter:
+                        $ref: def.iter
+                    map:
+                        action: echo
+                        args:
+                            content: |-
+                                hello world
+    
+            step2:
+                action: log
+                args:
+                    content:
+                        $ref: step.step1.value

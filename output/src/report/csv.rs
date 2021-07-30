@@ -81,8 +81,12 @@ impl Report for Reporter {
         Ok(())
     }
 
-    async fn report(&mut self, _: &str, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
-        report(&mut self.writer, ca_vec, &self.step_id_vec).await
+    async fn report(
+        &mut self,
+        stage_id: &str,
+        ca_vec: &Vec<Box<dyn CaseAssess>>,
+    ) -> Result<(), Error> {
+        report(&mut self.writer, stage_id, ca_vec, &self.step_id_vec).await
     }
 
     async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
@@ -163,6 +167,7 @@ fn create_head(sid_vec: &Vec<String>) -> Vec<String> {
 
 async fn report<W: std::io::Write>(
     writer: &mut Writer<W>,
+    stage_id: &str,
     ca_vec: &Vec<Box<dyn CaseAssess>>,
     sid_vec: &Vec<String>,
 ) -> Result<(), Error> {
@@ -170,19 +175,22 @@ async fn report<W: std::io::Write>(
         return Ok(());
     }
 
-    for sv in ca_vec.iter().map(|ca| to_value_vec(ca.as_ref(), sid_vec)) {
+    for sv in ca_vec
+        .iter()
+        .map(|ca| to_value_vec(stage_id, ca.as_ref(), sid_vec))
+    {
         writer.write_record(&sv)?
     }
     writer.flush()?;
     return Ok(());
 }
 
-fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
+fn to_value_vec(stage_id: &str, ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
     let head_len = 5 + sid_vec.len() * 3 + 1;
     let value_vec: Vec<&str> = vec![""; head_len];
     let mut value_vec: Vec<String> = value_vec.into_iter().map(|v| v.to_owned()).collect();
 
-    value_vec[0] = ca.id().case().into();
+    value_vec[0] = format!("{}@{}", ca.id().case(), stage_id);
     match ca.state() {
         CaseState::Ok(_) => {
             value_vec[1] = String::from("O");

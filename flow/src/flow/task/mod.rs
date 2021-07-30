@@ -8,7 +8,7 @@ use chord::action::Action;
 use chord::case::{CaseAssess, CaseState};
 use chord::collection::TailDropVec;
 use chord::flow::Flow;
-use chord::input::CaseLoad;
+use chord::input::CaseStore;
 use chord::output::Report;
 use chord::output::Utc;
 use chord::step::StepState;
@@ -40,7 +40,7 @@ pub struct TaskRunner {
 
     task_state: TaskState,
     assess_report: Box<dyn Report>,
-    case_load: Box<dyn CaseLoad>,
+    case_factory: Box<dyn CaseStore>,
     id: Arc<TaskIdSimple>,
     flow_ctx: Arc<dyn Context>,
     flow: Arc<Flow>,
@@ -48,7 +48,7 @@ pub struct TaskRunner {
 
 impl TaskRunner {
     pub async fn new(
-        case_load: Box<dyn CaseLoad>,
+        case_factory: Box<dyn CaseStore>,
         assess_report: Box<dyn Report>,
         flow_ctx: Arc<dyn Context>,
         flow: Arc<Flow>,
@@ -82,7 +82,7 @@ impl TaskRunner {
                 pre_step_vec: None,
 
                 assess_report,
-                case_load,
+                case_factory,
                 id,
                 flow_ctx,
                 flow,
@@ -104,7 +104,7 @@ impl TaskRunner {
                 pre_step_vec: Some(pre_step_vec),
 
                 assess_report,
-                case_load,
+                case_factory,
                 id,
                 flow_ctx,
                 flow,
@@ -211,7 +211,6 @@ impl TaskRunner {
             self.case_exec_id = Arc::new(format!("{}_{}", stage_id, round_count + 1));
             self.stage_data_vec_run_remaining(stage_id, concurrency)
                 .await?;
-            self.case_load.reset().await?;
             round_count += 1;
             if round_count >= round_max {
                 break;
@@ -225,10 +224,15 @@ impl TaskRunner {
         stage_id: &str,
         concurrency: usize,
     ) -> Result<(), Error> {
+        let case_name = self.flow.stage_case_name(stage_id);
+        let mut data_load = self
+            .case_factory
+            .create(case_name)
+            .await
+            .map_err(|_| err!("013", format!("invalid case name: {}", case_name)))?;
         let mut load_times = 0;
         loop {
-            let case_data_vec: Vec<(String, Value)> =
-                self.stage_data_vec_load(stage_id, concurrency).await?;
+            let case_data_vec: Vec<(String, Value)> = data_load.load(concurrency).await?;
             load_times = load_times + 1;
             if case_data_vec.len() == 0 {
                 if load_times == 1 {
@@ -250,47 +254,6 @@ impl TaskRunner {
                 .report(stage_id, &case_assess_vec)
                 .await?;
         }
-    }
-
-    async fn stage_data_vec_load(
-        &mut self,
-        stage_id: &str,
-        size: usize,
-    ) -> Result<Vec<(String, Value)>, Error> {
-        let case_data_vec: Vec<(String, Value)> = match self.flow.stage_case_filter(stage_id) {
-            Some(filter) => {
-                let mut ccdv: Vec<(String, Value)> = vec![];
-                loop {
-                    let cdv = self.case_load.load(size - ccdv.len()).await?;
-                    if cdv.len() == 0 {
-                        break;
-                    }
-
-                    for (cid, cd) in cdv {
-                        let mut ctx =
-                            render_context_create(self.flow.clone(), self.pre_ctx.clone());
-
-                        if let Value::Object(d) = ctx.data_mut() {
-                            d.insert("case".into(), cd.clone());
-                            let filter_ok =
-                                crate::flow::assert(self.flow_ctx.get_handlebars(), &ctx, filter)
-                                    .await;
-                            if filter_ok {
-                                ccdv.push((cid, cd));
-                            }
-                        }
-                    }
-
-                    if ccdv.len() >= size {
-                        break;
-                    }
-                }
-                ccdv
-            }
-            None => self.case_load.load(size).await?,
-        };
-
-        return Ok(case_data_vec);
     }
 
     async fn case_data_vec_run(

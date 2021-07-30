@@ -4,6 +4,7 @@ version: "0.0.1"
 def:
     arg:
         arg1: "123"
+        arg2: ["a", "b", "c"]
 
 stage:
     benchmark1:
@@ -11,6 +12,7 @@ stage:
         case:
             filter: |
                 (eq case.tag "tag1")
+                
         step:
             example:
                 action: echo
@@ -30,6 +32,21 @@ stage:
                         "2"
                       )
                     )
+                    
+            example2:
+                action: echo
+                args:
+                    content:
+                        - hello
+                        - hello: world
+                        - $ref: def.arg.arg2
+                        
+                assert: |
+                    (all
+                        (eq curr.value.0 "hello")
+                        (eq curr.value.1.hello "world")
+                        (eq curr.value.2.1 "b")
+                    )
         
     benchmark2:
     
@@ -37,7 +54,7 @@ stage:
             filter: |
                 (eq case.tag "tag2")
         step:
-            example2:
+            example3:
                 action: echo
                 args:
                     content: |-

@@ -192,35 +192,70 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
         if value.is_null() {
             return Ok(Value::Null);
         }
-        if let Value::String(txt) = value {
-            let value_str = swallow_quotation(txt);
-            let value_str = self.render_str(value_str.as_str())?;
+        return if let Value::String(txt) = value {
+            let value_str = self.render_str(txt.as_str())?;
             let value = self
                 .flow_parse
                 .parse_str(value_str.as_str())
                 .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
             if value.is_object() {
-                return Ok(value);
+                Ok(value)
             } else {
-                return Err(err!("001", "invalid args"));
+                Err(err!("001", "invalid args"))
             }
         } else if let Value::Object(map) = value {
             let value_str = to_string(map)?;
-            let value_str = swallow_quotation(value_str.as_str());
             let value_str = self.render_str(value_str.as_str())?;
-            let value: Map = from_str(value_str.as_str())
+            let value: Value = from_str(value_str.as_str())
                 .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
-            return Ok(Value::Object(value));
+            if value.is_object() {
+                let value = self.render_ref(&value, self.render_context.data())?;
+                if value.is_object() {
+                    Ok(value)
+                } else {
+                    Err(err!("001", "invalid args"))
+                }
+            } else {
+                Err(err!("001", "invalid args"))
+            }
         } else {
-            return Err(err!("001", "invalid args"));
-        }
+            Err(err!("001", "invalid args"))
+        };
     }
-}
 
-fn swallow_quotation(txt: &str) -> String {
-    let txt = txt.replace("\"${", "{");
-    let txt = txt.replace("}$\"", "}");
-    return txt;
+    fn render_ref(&self, val: &Value, ref_from: &Value) -> Result<Value, Error> {
+        return match val {
+            Value::Object(map) => {
+                if map.contains_key("$ref") {
+                    if map["$ref"].is_string() {
+                        let ref_path = map["$ref"].as_str().unwrap();
+                        let path: Vec<&str> = ref_path.split(".").collect();
+                        let mut ref_val = ref_from;
+                        for p in path {
+                            ref_val = &ref_val[p];
+                        }
+                        Ok(ref_val.clone())
+                    } else {
+                        Err(err!("001", "invalid args $ref"))
+                    }
+                } else {
+                    let mut render_val = Map::new();
+                    for (k, v) in map {
+                        render_val.insert(k.to_string(), self.render_ref(v, ref_from)?);
+                    }
+                    Ok(Value::Object(render_val))
+                }
+            }
+            Value::Array(arr) => {
+                let mut arr_val: Vec<Value> = Vec::with_capacity(arr.len());
+                for a in arr {
+                    arr_val.push(self.render_ref(a, ref_from)?);
+                }
+                Ok(Value::Array(arr_val))
+            }
+            _ => Ok(val.clone()),
+        };
+    }
 }
 
 impl<'f, 'h, 'reg, 'r, 'p> RunArg for RunArgStruct<'f, 'h, 'reg, 'r, 'p> {

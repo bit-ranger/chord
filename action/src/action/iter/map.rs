@@ -1,6 +1,6 @@
 use async_std::sync::Arc;
 use chord::action::prelude::*;
-use chord::action::{CreateId, RunId};
+use chord::action::{Context, CreateId, RunId};
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -61,18 +61,37 @@ impl<'a, 'i> RunArg for MapRunArg<'a, 'i> {
         self.iter_arg.id()
     }
 
-    fn args(&self, ctx: Option<Map>) -> Result<Value, Error> {
-        let mut ctx = ctx.unwrap_or(Map::new());
-        ctx.insert(
-            self.index_name.clone(),
-            Value::Number(Number::from(self.index)),
-        );
-        ctx.insert(self.item_name.clone(), self.item.clone());
-        Ok(self.iter_arg.args(Some(ctx))?["map"]["args"].clone())
+    fn args(&self, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
+        let map_ctx = MapContext {
+            prev_ctx: ctx,
+            index: self.index,
+            index_name: self.index_name.clone(),
+            item: self.item.clone(),
+            item_name: self.item_name.clone(),
+        };
+        Ok(self.iter_arg.args(Some(Box::new(map_ctx)))?["map"]["args"].clone())
     }
 
     fn timeout(&self) -> Duration {
         self.iter_arg.timeout()
+    }
+}
+
+struct MapContext {
+    prev_ctx: Option<Box<dyn Context>>,
+    index: usize,
+    index_name: String,
+    item: Value,
+    item_name: String,
+}
+
+impl Context for MapContext {
+    fn update(&self, value: &mut Value) {
+        if let Some(ctx) = self.prev_ctx.as_ref() {
+            ctx.update(value);
+        }
+        value[self.index_name.as_str()] = Value::Number(Number::from(self.index));
+        value[self.item_name.as_str()] = self.item.clone();
     }
 }
 

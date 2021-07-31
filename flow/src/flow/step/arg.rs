@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use handlebars::Handlebars;
 
-use chord::action::RunId;
+use chord::action::{Context, RunId};
 use chord::action::{CreateArg, CreateId, RunArg};
 use chord::case::CaseId;
 use chord::flow::Flow;
@@ -221,18 +221,14 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
         }
     }
 
-    fn render_args(&self, args_raw: &Value, ctx: Option<Map>) -> Result<Value, Error> {
+    fn render_args(&self, args_raw: &Value, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
         if args_raw.is_null() {
             return Ok(Value::Null);
         }
         return if ctx.is_some() {
             let ctx = ctx.unwrap();
             let mut render_context = self.render_context.clone();
-            if let Value::Object(map) = render_context.data_mut() {
-                for (k, v) in ctx {
-                    map.insert(k, v);
-                }
-            }
+            ctx.update(render_context.data_mut());
             self.render_args_with(args_raw, &render_context)
         } else {
             self.render_args_with(args_raw, self.render_context)
@@ -279,7 +275,7 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArg for RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
         &self.id
     }
 
-    fn args(&self, ctx: Option<Map>) -> Result<Value, Error> {
+    fn args(&self, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
         let args_raw = self.flow.step_args(self.id().step());
         return self.render_args(args_raw, ctx);
     }

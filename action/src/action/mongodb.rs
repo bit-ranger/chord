@@ -29,21 +29,18 @@ impl Action for Mongodb {
 }
 
 async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-    let url = arg.args()["url"]
-        .as_str()
-        .ok_or(err!("100", "missing url"))?;
-    let database = arg.args()["database"]
+    let args = arg.args(None)?;
+    let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
+    let database = args["database"]
         .as_str()
         .ok_or(err!("101", "missing database"))?;
-    let collection = arg.args()["collection"]
+    let collection = args["collection"]
         .as_str()
         .ok_or(err!("102", "missing collection"))?;
-    let op = arg.args()["operation"]
+    let op = args["operation"]
         .as_str()
         .ok_or(err!("103", "missing operation"))?;
-    let op_arg = arg.args()["arg"]
-        .as_str()
-        .ok_or(err!("104", "missing arg"))?;
+    let op_arg = args["arg"].as_str().ok_or(err!("104", "missing arg"))?;
 
     // Parse a connection string into an options struct.
     let client_options = ClientOptions::parse(url).await?;

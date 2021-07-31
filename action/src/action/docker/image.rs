@@ -18,7 +18,8 @@ pub struct Image {
 #[async_trait]
 impl Action for Image {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let cmd = &arg.args()["cmd"];
+        let args = arg.args(None)?;
+        let cmd = &args["cmd"];
 
         let mut container = Container::new(
             self.engine.clone(),
@@ -30,7 +31,7 @@ impl Action for Image {
         container.start().await?;
         container.wait().await?;
 
-        let tail = arg.args()["tail"].as_u64().unwrap_or(1) as usize;
+        let tail = args["tail"].as_u64().unwrap_or(1) as usize;
         let tail_log = container.tail(tail).await?;
         let tail_log: Vec<String> = tail_log
             .into_iter()

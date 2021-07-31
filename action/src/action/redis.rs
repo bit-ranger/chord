@@ -14,7 +14,7 @@ impl RedisFactory {
 #[async_trait]
 impl Factory for RedisFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        if let Some(url) = arg.args()["url"].as_str() {
+        if let Some(url) = arg.args_raw()["url"].as_str() {
             if arg.is_shared(url) {
                 let url = arg.render_str(url)?;
                 let client = redis::Client::open(url)?;
@@ -37,9 +37,8 @@ impl Action for Redis {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
-                let url = arg.args()["url"]
-                    .as_str()
-                    .ok_or(err!("101", "missing url"))?;
+                let args = arg.args(None)?;
+                let url = args["url"].as_str().ok_or(err!("101", "missing url"))?;
 
                 let client = redis::Client::open(url)?;
                 run0(arg, &client).await
@@ -49,14 +48,13 @@ impl Action for Redis {
 }
 
 async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error> {
-    let cmd = arg.args()["cmd"]
-        .as_str()
-        .ok_or(err!("102", "missing cmd"))?;
+    let args = arg.args(None)?;
+    let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 
     let mut con = client.get_async_connection().await?;
 
     let mut command = redis::cmd(cmd);
-    let args_opt = &arg.args()["args"];
+    let args_opt = &args["args"];
 
     if let Some(arg_vec) = args_opt.as_array() {
         for a in arg_vec {

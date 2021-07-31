@@ -28,7 +28,7 @@ impl Action for Lua {
         );
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {
-            let args = arg.args();
+            let args = arg.args(None)?;
 
             if let Some(globals) = args["global"].as_object() {
                 for (k, v) in globals {
@@ -37,9 +37,7 @@ impl Action for Lua {
                 }
             }
 
-            let code = arg.args()["code"]
-                .as_str()
-                .ok_or(err!("100", "missing code"))?;
+            let code = args["code"].as_str().ok_or(err!("100", "missing code"))?;
 
             self.eval(lua, code.to_string())
         })

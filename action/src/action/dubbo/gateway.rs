@@ -135,8 +135,9 @@ struct Dubbo {
 
 #[async_trait]
 impl Action for Dubbo {
-    async fn run(&self, run_arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let method_long = run_arg.args()["method"]
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+        let args = arg.args(None)?;
+        let method_long = args["method"]
             .as_str()
             .ok_or(err!("109", "missing method"))?;
         let parts = method_long
@@ -148,7 +149,7 @@ impl Action for Dubbo {
             return Err(err!("110", "invalid method"));
         }
 
-        let args = run_arg.args()["args"]
+        let args = args["args"]
             .as_array()
             .ok_or(err!("111", "args must be array"))?;
 
@@ -162,7 +163,7 @@ impl Action for Dubbo {
                     address: self.registry_address.clone(),
                 },
                 interface: parts[0].to_owned(),
-                timeout: run_arg.timeout().as_millis() as usize,
+                timeout: arg.timeout().as_millis() as usize,
             },
 
             method: parts[1].to_owned(),

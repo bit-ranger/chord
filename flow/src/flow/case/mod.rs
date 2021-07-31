@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use log::{debug, info, trace};
 
 use chord::action::RunArg;
@@ -13,6 +13,7 @@ use crate::flow::step::arg::RunIdStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::flow::{assert, step};
 use crate::model::app::{Context, RenderContext};
+use chord::Error;
 
 pub mod arg;
 pub mod res;
@@ -27,26 +28,17 @@ pub async fn run(flow_ctx: &dyn Context, arg: CaseArgStruct) -> CaseAssessStruct
 
         let step_arg = arg.step_arg_create(step_id, flow_ctx, &render_context);
         if let Err(e) = step_arg {
-            info!("step Err {}\n{}", step_id, e);
-
-            let step_run_id = RunIdStruct::new(step_id.to_string(), arg.id());
-            let step_assess =
-                StepAssessStruct::new(step_run_id, Utc::now(), Utc::now(), StepState::Err(e));
-            step_assess_vec.push(Box::new(step_assess));
-            info!("case Fail {}", arg.id());
-            return CaseAssessStruct::new(
-                arg.id().clone(),
-                start,
-                Utc::now(),
-                arg.take_data(),
-                CaseState::Fail(TailDropVec::from(step_assess_vec)),
-            );
+            return case_fail_step_err(step_id, arg, e, step_assess_vec, start);
         }
         let step_arg = step_arg.unwrap();
         let step_assess = step::run(flow_ctx, &step_arg, action.as_ref()).await;
 
         let step_arg_id = step_arg.id().clone();
-        let step_arg_args = step_arg.args().clone();
+        let step_arg_args = step_arg.args(None);
+        if let Err(e) = step_arg_args {
+            return case_fail_step_err(step_id, arg, e, step_assess_vec, start);
+        }
+        let step_arg_args = step_arg_args.unwrap();
         let step_arg_assert = step_arg.assert().map(|s| s.to_owned());
         let step_arg_catch_err = step_arg.catch_err();
 
@@ -275,4 +267,26 @@ pub async fn curr_reset(render_context: &mut RenderContext) {
     if let Value::Object(reg) = render_context.data_mut() {
         reg["curr"] = Value::Null;
     }
+}
+
+fn case_fail_step_err(
+    step_id: &str,
+    arg: CaseArgStruct,
+    e: Error,
+    mut step_assess_vec: Vec<Box<dyn StepAssess>>,
+    start: DateTime<Utc>,
+) -> CaseAssessStruct {
+    info!("step Err {}\n{}", step_id, e);
+
+    let step_run_id = RunIdStruct::new(step_id.to_string(), arg.id());
+    let step_assess = StepAssessStruct::new(step_run_id, Utc::now(), Utc::now(), StepState::Err(e));
+    step_assess_vec.push(Box::new(step_assess));
+    info!("case Fail {}", arg.id());
+    return CaseAssessStruct::new(
+        arg.id().clone(),
+        start,
+        Utc::now(),
+        arg.take_data(),
+        CaseState::Fail(TailDropVec::from(step_assess_vec)),
+    );
 }

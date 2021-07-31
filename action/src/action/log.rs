@@ -22,7 +22,8 @@ struct Log {}
 #[async_trait]
 impl Action for Log {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let content = &arg.args()["content"];
+        let args = arg.args(None)?;
+        let content = &args["content"];
         debug!("{}", content.to_string().trim());
         return Ok(Box::new(Value::Null));
     }

@@ -13,8 +13,8 @@ impl CountFactory {
 #[async_trait]
 impl Factory for CountFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let init = arg.args()["init"].as_u64().unwrap_or(1);
-        let incr = arg.args()["incr"].as_u64().unwrap_or(1);
+        let init = arg.args_raw()["init"].as_u64().unwrap_or(1);
+        let incr = arg.args_raw()["incr"].as_u64().unwrap_or(1);
         Ok(Box::new(Count {
             num: AtomicU64::new(init),
             incr,

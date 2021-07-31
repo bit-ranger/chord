@@ -25,11 +25,10 @@ impl Action for Crypto {
 }
 
 async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-    let by = arg.args()["by"].as_str().ok_or(err!("100", "missing by"))?;
+    let args = arg.args(None)?;
+    let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 
-    let from = arg.args()["from"]
-        .as_str()
-        .ok_or(err!("101", "missing from"))?;
+    let from = args["from"].as_str().ok_or(err!("101", "missing from"))?;
 
     return match by {
         "md5" => {

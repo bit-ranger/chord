@@ -16,7 +16,7 @@ impl DylibFactory {
 #[async_trait]
 impl Factory for DylibFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let dir = arg.args()["dir"]
+        let dir = arg.args_raw()["dir"]
             .as_str()
             .ok_or(err!("100", "missing dir"))?;
 
@@ -27,7 +27,7 @@ impl Factory for DylibFactory {
         let action_create: Symbol<fn(&str, &str) -> Result<(), Error>> =
             unsafe { lib.lib.get(b"init")? };
 
-        let config_str = to_string(arg.args())?;
+        let config_str = to_string(arg.args_raw())?;
         let config_str = arg.render_str(config_str.as_str())?;
         action_create(arg.id().to_string().as_str(), config_str.as_str())?;
 
@@ -45,7 +45,8 @@ impl Action for Dylib {
         let action_run: Symbol<fn(&str, &str) -> Result<Box<dyn Scope>, Error>> =
             unsafe { self.lib.lib.get(b"run")? };
 
-        let config_str = to_string(arg.args())?;
+        let args = arg.args(None)?;
+        let config_str = to_string(&args)?;
         action_run(arg.id().to_string().as_str(), config_str.as_str())
     }
 }

@@ -1,25 +1,46 @@
 version: "0.0.1"
 
 def:
-    iter: [ 1, 2, 3 ]
+    iter: [ a, b, c ]
 
 
 stage:
-    stage1:
+    sg1:
         step:
-            step1:
+            sp1:
                 action: iter_map
                 args:
                     iter:
-                        $ref: def.iter
+                        arr:
+                            $ref: def.iter
+                        enum: idx,item
+                    
                     map:
                         action: echo
                         args:
-                            content: |-
-                                hello world
-    
-            step2:
-                action: log
+                            content:
+                                idx: "{{idx}}"
+                                item: "{{item}}"
+                
+                assert: |
+                    (all
+                        (eq step.sp1.value.2.item "c")
+                    )
+            
+            sp2:
+                action: iter_map
                 args:
-                    content:
-                        $ref: step.step1.value
+                    iter:
+                        arr:
+                            $ref: step.sp1.value
+                        enum: idx,item
+                    
+                    map:
+                        action: log
+                        args:
+                            content:
+                                idx: "{{idx}}"
+                                item:
+                                    $ref: item
+                    
+        

@@ -4,6 +4,7 @@ pub use async_trait::async_trait;
 
 use crate::case::CaseId;
 use crate::task::TaskId;
+use crate::value::Map;
 pub use crate::value::Value;
 pub use crate::Error;
 use std::time::Duration;
@@ -29,7 +30,7 @@ pub trait Scope: Sync + Send {
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &dyn RunId;
 
-    fn args(&self) -> &Value;
+    fn args(&self, ctx: Option<Map>) -> Result<Value, Error>;
 
     fn timeout(&self) -> Duration;
 }
@@ -39,7 +40,7 @@ pub trait CreateArg: Sync + Send {
 
     fn action(&self) -> &str;
 
-    fn args(&self) -> &Value;
+    fn args_raw(&self) -> &Value;
 
     fn render_str(&self, text: &str) -> Result<String, Error>;
 

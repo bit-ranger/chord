@@ -46,7 +46,7 @@ impl Action for Dubbo {
             .await
             .map_err(|e| err!("connection error", format!("{}", e)))?;
 
-        let method_long = arg.args()["method"]
+        let method_long = args["method"]
             .as_str()
             .ok_or(err!("010", "missing method"))?;
         let parts = method_long
@@ -58,7 +58,7 @@ impl Action for Dubbo {
             return Err(err!("010", "invalid method"));
         }
 
-        let args_raw = &arg.args()["args"];
+        let args_raw = &args["args"];
         let args: Vec<Value> = match args_raw {
             Value::Array(aw_vec) => {
                 let mut ar_vec: Vec<Value> = vec![];

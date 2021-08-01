@@ -16,31 +16,34 @@ stage:
                         enum: idx,item
                     
                     map:
-                        action: echo
-                        args:
-                            content:
-                                idx: "{{idx}}"
-                                item: "{{item}}"
+                        m1:
+                            action: echo
+                            args:
+                                content:
+                                    -   idx: "0-{{idx}}"
+                                        item: "0-{{item}}"
+                                    
+                                    -   idx: "1-{{idx}}"
+                                        item: "1-{{item}}"
+                        
+                        m2:
+                            action: iter_map
+                            args:
+                                iter:
+                                    arr:
+                                        $ref: map.m1.value
+                                    enum: idx,item
+                                
+                                map:
+                                    m3:
+                                        action: log
+                                        args:
+                                            content:
+                                                idx: "{{idx}}"
+                                                item:
+                                                    $ref: item
                 
-                assert: |
-                    (all
-                        (eq step.sp1.value.2.item "c")
-                    )
             
-            sp2:
-                action: iter_map
-                args:
-                    iter:
-                        arr:
-                            $ref: step.sp1.value
-                        enum: idx,item
-                    
-                    map:
-                        action: log
-                        args:
-                            content:
-                                idx: "{{idx}}"
-                                item:
-                                    $ref: item
+            
                     
         

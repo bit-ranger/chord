@@ -1,7 +1,9 @@
 use async_std::sync::Arc;
 use chord::action::prelude::*;
 use chord::action::{Context, CreateId, RunId};
+use chord::collection::TailDropVec;
 use itertools::Itertools;
+use log::trace;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -19,6 +21,7 @@ impl IterMapFactory {
 }
 
 struct MapCreateArg<'a> {
+    step_id: String,
     iter_arg: &'a dyn CreateArg,
 }
 
@@ -32,7 +35,7 @@ impl<'a> CreateArg for MapCreateArg<'a> {
     }
 
     fn args_raw(&self) -> &Value {
-        &self.iter_arg.args_raw()["map"]["args"]
+        &self.iter_arg.args_raw()["map"][self.step_id.as_str()]["args"]
     }
 
     fn render_str(&self, text: &str) -> Result<String, Error> {
@@ -45,31 +48,37 @@ impl<'a> CreateArg for MapCreateArg<'a> {
 }
 
 struct IterMap {
-    action: Box<dyn Action>,
+    step_vec: TailDropVec<(String, Box<dyn Action>)>,
 }
 
-struct MapRunArg<'a, 'i> {
+struct MapRunArg<'a, 'i, 'r> {
+    step_id: String,
     iter_arg: &'a dyn RunArg,
     index: usize,
     index_name: String,
     item: &'i Value,
     item_name: String,
+    step_value: &'r Map,
 }
 
-impl<'a, 'i> RunArg for MapRunArg<'a, 'i> {
+impl<'a, 'i, 'r> RunArg for MapRunArg<'a, 'i, 'r> {
     fn id(&self) -> &dyn RunId {
         self.iter_arg.id()
     }
 
     fn args(&self, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
         let map_ctx = MapContext {
-            prev_ctx: ctx,
+            upper_ctx: ctx,
             index: self.index,
             index_name: self.index_name.clone(),
             item: self.item.clone(),
             item_name: self.item_name.clone(),
+            step_value: self.step_value.clone(),
         };
-        Ok(self.iter_arg.args(Some(Box::new(map_ctx)))?["map"]["args"].clone())
+        Ok(
+            self.iter_arg.args(Some(Box::new(map_ctx)))?["map"][self.step_id.as_str()]["args"]
+                .clone(),
+        )
     }
 
     fn timeout(&self) -> Duration {
@@ -78,37 +87,60 @@ impl<'a, 'i> RunArg for MapRunArg<'a, 'i> {
 }
 
 struct MapContext {
-    prev_ctx: Option<Box<dyn Context>>,
+    upper_ctx: Option<Box<dyn Context>>,
     index: usize,
     index_name: String,
     item: Value,
     item_name: String,
+    step_value: Map,
 }
 
 impl Context for MapContext {
     fn update(&self, value: &mut Value) {
-        if let Some(ctx) = self.prev_ctx.as_ref() {
-            ctx.update(value);
-        }
         value[self.index_name.as_str()] = Value::Number(Number::from(self.index));
         value[self.item_name.as_str()] = self.item.clone();
+        for (step_id, step_val) in self.step_value.iter() {
+            value["map"][step_id]["value"] = step_val.clone();
+        }
+        if let Some(ctx) = self.upper_ctx.as_ref() {
+            ctx.update(value);
+        }
     }
 }
 
 #[async_trait]
 impl Factory for IterMapFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let action = arg.args_raw()["map"]["action"]
-            .as_str()
-            .ok_or(err!("101", "missing action"))?;
-        let factory = self
-            .table
-            .get(action)
-            .ok_or(err!("102", "unsupported action"))?;
-        let map_create_arg = MapCreateArg { iter_arg: arg };
+        let map = arg.args_raw()["map"]
+            .as_object()
+            .ok_or(err!("101", "missing map"))?;
 
-        let map_action = factory.create(&map_create_arg).await?;
-        Ok(Box::new(IterMap { action: map_action }))
+        let mut step_vec = Vec::with_capacity(map.len());
+        for (step_id, step_obj) in map.iter() {
+            let action = step_obj["action"]
+                .as_str()
+                .ok_or(err!("102", "missing action"))?;
+            let factory = match action {
+                "iter_map" => self as &dyn Factory,
+                _ => self
+                    .table
+                    .get(action)
+                    .ok_or(err!("102", format!("unsupported action {}", action)))?
+                    .as_ref(),
+            };
+
+            let map_create_arg = MapCreateArg {
+                iter_arg: arg,
+                step_id: step_id.clone(),
+            };
+
+            let step_action = factory.create(&map_create_arg).await?;
+            step_vec.push((step_id.clone(), step_action))
+        }
+
+        Ok(Box::new(IterMap {
+            step_vec: TailDropVec::from(step_vec),
+        }))
     }
 }
 
@@ -116,6 +148,7 @@ impl Factory for IterMapFactory {
 impl Action for IterMap {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args(None)?;
+        trace!("{}", args);
         let array = args["iter"]["arr"]
             .as_array()
             .ok_or(err!("103", "missing iter.arr"))?;
@@ -127,18 +160,22 @@ impl Action for IterMap {
             .collect_tuple()
             .ok_or(err!("105", "invalid iter.enum"))?;
 
-        let mut iter_val = Vec::with_capacity(array.len());
         for (index, item) in array.iter().enumerate() {
-            let mra = MapRunArg {
-                iter_arg: arg,
-                index,
-                index_name: index_name.to_string(),
-                item,
-                item_name: item_name.to_string(),
-            };
-            let val = self.action.run(&mra).await?;
-            iter_val.push(val.as_value().clone());
+            let mut step_value = Map::new();
+            for (step_id, step_action) in self.step_vec.iter() {
+                let mra = MapRunArg {
+                    step_id: step_id.to_string(),
+                    iter_arg: arg,
+                    index,
+                    index_name: index_name.to_string(),
+                    item,
+                    item_name: item_name.to_string(),
+                    step_value: &step_value,
+                };
+                let val = step_action.run(&mra).await?;
+                step_value.insert(step_id.to_string(), val.as_value().clone());
+            }
         }
-        Ok(Box::new(Value::Array(iter_val)))
+        Ok(Box::new(Value::Null))
     }
 }

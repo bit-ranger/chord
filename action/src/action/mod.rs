@@ -134,10 +134,10 @@ impl FactoryComposite {
         );
 
         table.insert(
-            "iter_map".into(),
+            "iter_each".into(),
             Arc::new(
-                iter::map::IterMapFactory::new(
-                    config_ref.map(|c| c["iter_map"].clone()),
+                iter::each::IterEachFactory::new(
+                    config_ref.map(|c| c["iter_each"].clone()),
                     table.clone(),
                 )
                 .await?,

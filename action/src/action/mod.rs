@@ -141,10 +141,10 @@ impl FactoryComposite {
         );
 
         table.insert(
-            "iter_each".into(),
+            "iter_consume".into(),
             Arc::new(
-                iter::each::IterEachFactory::new(
-                    config_ref.map(|c| c["iter_each"].clone()),
+                iter::each::IterConsumeFactory::new(
+                    config_ref.map(|c| c["iter_consume"].clone()),
                     table.clone(),
                 )
                 .await?,

@@ -8,14 +8,14 @@ stage:
   sg1:
     step:
       sp1:
-        action: iter_each
+        action: iter_consume
         args:
           iter:
             arr:
               $ref: def.iter
             enum: idx,item
-          
-          each:
+
+          consume:
             m1:
               action: echo
               args:
@@ -27,14 +27,14 @@ stage:
                     item: "1-{{item}}"
             
             m2:
-              action: iter_each
+              action: iter_consume
               args:
                 iter:
                   arr:
-                    $ref: each.m1.value
+                    $ref: consume.m1.value
                   enum: idx,item
-                
-                each:
+
+                consume:
                   m3:
                     action: log
                     args:

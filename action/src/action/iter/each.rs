@@ -7,25 +7,25 @@ use log::trace;
 use std::collections::HashMap;
 use std::time::Duration;
 
-pub struct IterEachFactory {
+pub struct IterConsumeFactory {
     table: HashMap<String, Arc<dyn Factory>>,
 }
 
-impl IterEachFactory {
+impl IterConsumeFactory {
     pub async fn new(
         _: Option<Value>,
         table: HashMap<String, Arc<dyn Factory>>,
-    ) -> Result<IterEachFactory, Error> {
-        Ok(IterEachFactory { table })
+    ) -> Result<IterConsumeFactory, Error> {
+        Ok(IterConsumeFactory { table })
     }
 }
 
-struct EachCreateArg<'a> {
+struct ConsumeCreateArg<'a> {
     step_id: String,
     iter_arg: &'a dyn CreateArg,
 }
 
-impl<'a> CreateArg for EachCreateArg<'a> {
+impl<'a> CreateArg for ConsumeCreateArg<'a> {
     fn id(&self) -> &dyn CreateId {
         self.iter_arg.id()
     }
@@ -35,7 +35,7 @@ impl<'a> CreateArg for EachCreateArg<'a> {
     }
 
     fn args_raw(&self) -> &Value {
-        &self.iter_arg.args_raw()["each"][self.step_id.as_str()]["args"]
+        &self.iter_arg.args_raw()["consume"][self.step_id.as_str()]["args"]
     }
 
     fn render_str(&self, text: &str) -> Result<String, Error> {
@@ -47,11 +47,11 @@ impl<'a> CreateArg for EachCreateArg<'a> {
     }
 }
 
-struct IterEach {
+struct IterConsume {
     step_vec: TailDropVec<(String, Box<dyn Action>)>,
 }
 
-struct EachRunArg<'a, 'i, 'r> {
+struct ConsumeRunArg<'a, 'i, 'r> {
     step_id: String,
     iter_arg: &'a dyn RunArg,
     index: usize,
@@ -61,13 +61,13 @@ struct EachRunArg<'a, 'i, 'r> {
     step_value: &'r Map,
 }
 
-impl<'a, 'i, 'r> RunArg for EachRunArg<'a, 'i, 'r> {
+impl<'a, 'i, 'r> RunArg for ConsumeRunArg<'a, 'i, 'r> {
     fn id(&self) -> &dyn RunId {
         self.iter_arg.id()
     }
 
     fn args(&self, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
-        let map_ctx = EachContext {
+        let map_ctx = ConsumeContext {
             upper_ctx: ctx,
             index: self.index,
             index_name: self.index_name.clone(),
@@ -76,7 +76,7 @@ impl<'a, 'i, 'r> RunArg for EachRunArg<'a, 'i, 'r> {
             step_value: self.step_value.clone(),
         };
         Ok(
-            self.iter_arg.args(Some(Box::new(map_ctx)))?["each"][self.step_id.as_str()]["args"]
+            self.iter_arg.args(Some(Box::new(map_ctx)))?["consume"][self.step_id.as_str()]["args"]
                 .clone(),
         )
     }
@@ -86,7 +86,7 @@ impl<'a, 'i, 'r> RunArg for EachRunArg<'a, 'i, 'r> {
     }
 }
 
-struct EachContext {
+struct ConsumeContext {
     upper_ctx: Option<Box<dyn Context>>,
     index: usize,
     index_name: String,
@@ -95,12 +95,12 @@ struct EachContext {
     step_value: Map,
 }
 
-impl Context for EachContext {
+impl Context for ConsumeContext {
     fn update(&self, value: &mut Value) {
         value[self.index_name.as_str()] = Value::Number(Number::from(self.index));
         value[self.item_name.as_str()] = self.item.clone();
         for (step_id, step_val) in self.step_value.iter() {
-            value["each"][step_id]["value"] = step_val.clone();
+            value["consume"][step_id]["value"] = step_val.clone();
         }
         if let Some(ctx) = self.upper_ctx.as_ref() {
             ctx.update(value);
@@ -109,9 +109,9 @@ impl Context for EachContext {
 }
 
 #[async_trait]
-impl Factory for IterEachFactory {
+impl Factory for IterConsumeFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let map = arg.args_raw()["each"]
+        let map = arg.args_raw()["consume"]
             .as_object()
             .ok_or(err!("101", "missing map"))?;
 
@@ -121,7 +121,7 @@ impl Factory for IterEachFactory {
                 .as_str()
                 .ok_or(err!("102", "missing action"))?;
             let factory = match action {
-                "iter_each" => self as &dyn Factory,
+                "iter_consume" => self as &dyn Factory,
                 _ => self
                     .table
                     .get(action)
@@ -129,7 +129,7 @@ impl Factory for IterEachFactory {
                     .as_ref(),
             };
 
-            let map_create_arg = EachCreateArg {
+            let map_create_arg = ConsumeCreateArg {
                 iter_arg: arg,
                 step_id: step_id.clone(),
             };
@@ -138,14 +138,14 @@ impl Factory for IterEachFactory {
             step_vec.push((step_id.clone(), step_action))
         }
 
-        Ok(Box::new(IterEach {
+        Ok(Box::new(IterConsume {
             step_vec: TailDropVec::from(step_vec),
         }))
     }
 }
 
 #[async_trait]
-impl Action for IterEach {
+impl Action for IterConsume {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args(None)?;
         trace!("{}", args);
@@ -163,7 +163,7 @@ impl Action for IterEach {
         for (index, item) in array.iter().enumerate() {
             let mut step_value = Map::new();
             for (step_id, step_action) in self.step_vec.iter() {
-                let mra = EachRunArg {
+                let mra = ConsumeRunArg {
                     step_id: step_id.to_string(),
                     iter_arg: arg,
                     index,

@@ -171,11 +171,11 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
     }
 
     pub fn timeout(&self) -> Duration {
-        self.flow.step_timeout(self.id().step())
+        self.flow.step_spec_timeout(self.id().step())
     }
 
     pub fn catch_err(&self) -> bool {
-        self.flow.step_catch_err(self.id().step())
+        self.flow.step_spec_catch_err(self.id().step())
     }
 
     fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<String, Error> {

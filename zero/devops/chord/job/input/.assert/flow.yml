@@ -6,7 +6,8 @@ stage:
         step:
             assert1:
                 action: assert
-                timeout: 1
+                spec:
+                    timeout: 10
                 args: |
                     (eq case.foo case.bar)
 

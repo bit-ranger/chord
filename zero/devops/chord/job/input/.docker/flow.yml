@@ -6,7 +6,8 @@ stage:
         step:
             docker1:
                 action: docker
-                timeout: 10
+                spec:
+                    timeout: 10
                 args:
                     image: "curlimages/curl"
                     cmd:

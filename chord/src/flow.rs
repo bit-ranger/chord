@@ -69,7 +69,7 @@ impl Flow {
                 .ok_or_else(|| err!("step", format!("invalid step {}", sid)))?;
 
             let _ = flow._step_action(sid)?;
-            let _ = flow._step_timeout(sid)?;
+            let _ = flow._step_spec_timeout(sid)?;
         }
 
         return Ok(flow);
@@ -120,12 +120,14 @@ impl Flow {
         self.step(step_id)["assert"].as_str()
     }
 
-    pub fn step_timeout(&self, step_id: &str) -> Duration {
-        self._step_timeout(step_id).unwrap()
+    pub fn step_spec_timeout(&self, step_id: &str) -> Duration {
+        self._step_spec_timeout(step_id).unwrap()
     }
 
-    pub fn step_catch_err(&self, step_id: &str) -> bool {
-        self.step(step_id)["catch_err"].as_bool().unwrap_or(false)
+    pub fn step_spec_catch_err(&self, step_id: &str) -> bool {
+        self.step(step_id)["spec"]["catch_err"]
+            .as_bool()
+            .unwrap_or(false)
     }
 
     pub fn stage_id_vec(&self) -> Vec<&str> {
@@ -183,8 +185,8 @@ impl Flow {
             .ok_or(err!("step", "missing action"))
     }
 
-    fn _step_timeout(&self, step_id: &str) -> Result<Duration, Error> {
-        let s = self.step(step_id)["timeout"].as_u64();
+    fn _step_spec_timeout(&self, step_id: &str) -> Result<Duration, Error> {
+        let s = self.step(step_id)["spec"]["timeout"].as_u64();
         if s.is_none() {
             return Ok(Duration::from_secs(10));
         }

@@ -57,7 +57,8 @@ stage:
     
             insert:
                 action: restapi
-                timeout: 5
+                spec:
+                    timeout: 10
                 args:
                     url: "{{def.es.url}}/article/_doc/1"
                     method: PUT
@@ -81,7 +82,8 @@ stage:
     
             search:
                 action: restapi
-                timeout: 5
+                spec:
+                    timeout: 10
                 args:
                     url: "{{def.es.url}}/article/_search"
                     method: GET

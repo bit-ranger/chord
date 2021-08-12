@@ -27,12 +27,16 @@ async fn main() -> Result<(), Error> {
         panic!("input is not a dir {}", input_dir.to_str().unwrap());
     }
 
-    let exec_id = (SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
-        - 1622476800000)
-        .to_string();
+    let exec_id: &Option<String> = &opt.exec_id;
+    let exec_id: String = match exec_id {
+        Some(id) => id.clone(),
+        None => (SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
+            - 1622476800000)
+            .to_string(),
+    };
 
     let conf_data = load_conf(&opt.config).await?;
     let config = Config::new(conf_data);
@@ -85,8 +89,13 @@ async fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
 #[derive(StructOpt, Debug)]
 #[structopt(name = "chord")]
 struct Opt {
+    /// job name
     #[structopt(short, long, default_value = "chord_cmd")]
     job_name: String,
+
+    /// exec id
+    #[structopt(short, long)]
+    exec_id: Option<String>,
 
     /// input dir
     #[structopt(short, long, parse(from_os_str))]

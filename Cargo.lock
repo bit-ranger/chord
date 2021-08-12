@@ -679,6 +679,7 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "chord",
+ "chord-util",
  "dynamic_reload",
  "futures",
  "itertools",
@@ -753,6 +754,17 @@ dependencies = [
  "itertools",
  "log",
  "serde",
+ "surf",
+]
+
+[[package]]
+name = "chord-util"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "chord",
+ "futures",
+ "log",
  "surf",
 ]
 

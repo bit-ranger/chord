@@ -6,8 +6,8 @@ use surf::http::Method;
 use chord::value::{json, Value};
 use chord::Error;
 
-use crate::action::docker::engine::Engine;
-use crate::action::docker::image::Image;
+use crate::docker::engine::Engine;
+use crate::docker::image::Image;
 
 pub struct Container {
     engine: Arc<Engine>,

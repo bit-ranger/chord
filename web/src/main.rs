@@ -8,7 +8,6 @@ use chord::Error;
 mod ctl;
 
 mod app;
-mod biz;
 mod util;
 
 #[async_std::main]

@@ -3,11 +3,56 @@ use futures::executor::block_on;
 use log::{trace, warn};
 use surf::http::Method;
 
-use chord::value::{json, Value};
+use chord::value::{Map, Value};
 use chord::Error;
 
 use crate::docker::engine::Engine;
-use crate::docker::image::Image;
+use serde::Serialize;
+
+#[derive(Serialize, Default)]
+pub struct Arg {
+    image: String,
+    volumes: Option<Map>,
+    env: Option<Map>,
+    cmd: Option<Vec<Value>>,
+}
+
+impl Arg {
+    pub fn image(mut self, image: String) -> Arg {
+        self.image = image;
+        self
+    }
+
+    pub fn volumes(mut self, volumes: Map) -> Arg {
+        self.volumes = Some(volumes);
+        self
+    }
+
+    pub fn env(mut self, env: Map) -> Arg {
+        self.env = Some(env);
+        self
+    }
+
+    pub fn cmd(mut self, cmd: Vec<Value>) -> Arg {
+        self.cmd = Some(cmd);
+        self
+    }
+
+    fn into_value(self) -> Value {
+        let mut v = Map::new();
+        v.insert("Image".to_string(), Value::String(self.image));
+        if let Some(a) = self.volumes {
+            v.insert("Volumes".to_string(), Value::Object(a));
+        }
+        if let Some(a) = self.env {
+            v.insert("Env".to_string(), Value::Object(a));
+        }
+        if let Some(a) = self.cmd {
+            v.insert("Cmd".to_string(), Value::Array(a));
+        }
+        Value::Object(v)
+    }
+}
 
 pub struct Container {
     engine: Arc<Engine>,
@@ -15,20 +60,14 @@ pub struct Container {
 }
 
 impl Container {
-    pub async fn new(
-        docker: Arc<Engine>,
-        image: &Image,
-        name: &str,
-        cmd: Value,
-    ) -> Result<Container, Error> {
-        trace!("container create {}, {}", name, cmd);
+    pub async fn new(docker: Arc<Engine>, name: &str, arg: Arg) -> Result<Container, Error> {
+        let arg = arg.into_value();
+        trace!("container create {}, {}", name, arg);
         docker
             .call(
                 format!("containers/create?name={}", name).as_str(),
                 Method::Post,
-                Some(json!({ "Image": image.name(),
-                                    "Cmd": cmd
-                })),
+                Some(arg),
                 1,
             )
             .await

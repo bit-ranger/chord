@@ -765,6 +765,7 @@ dependencies = [
  "chord",
  "futures",
  "log",
+ "serde",
  "surf",
 ]
 
@@ -780,6 +781,7 @@ dependencies = [
  "chord-flow",
  "chord-input",
  "chord-output",
+ "chord-util",
  "flume 0.10.5",
  "futures",
  "git2",

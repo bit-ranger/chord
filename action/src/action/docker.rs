@@ -1,5 +1,6 @@
 use async_std::sync::Arc;
 use chord::action::prelude::*;
+use chord_util::docker::container::Arg;
 use chord_util::docker::engine::Engine;
 use chord_util::docker::image::Image;
 
@@ -39,9 +40,15 @@ impl Action for ImageWrapper {
         let args = arg.args(None)?;
         let cmd = &args["cmd"];
 
+        let mut ca = Arg::default();
+        if cmd.is_array() {
+            let cmd_vec = cmd.as_array().unwrap().iter().map(|c| c.clone()).collect();
+            ca = ca.cmd(cmd_vec)
+        }
+
         let mut container = self
             .0
-            .container_create(arg.id().to_string().as_str(), cmd.clone())
+            .container_create(arg.id().to_string().as_str(), ca)
             .await?;
         container.start().await?;
         container.wait().await?;

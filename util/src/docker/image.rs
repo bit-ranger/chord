@@ -3,9 +3,8 @@ use futures::executor::block_on;
 use log::{trace, warn};
 use surf::http::Method;
 
-use crate::docker::container::Container;
+use crate::docker::container::{Arg, Container};
 use crate::docker::engine::Engine;
-use chord::value::Value;
 use chord::Error;
 
 pub struct Image {
@@ -37,8 +36,9 @@ impl Image {
             .map(|_| Image { engine, name })
     }
 
-    pub async fn container_create(&self, name: &str, cmd: Value) -> Result<Container, Error> {
-        return Container::new(self.engine.clone(), &self, name, cmd).await;
+    pub async fn container_create(&self, name: &str, arg: Arg) -> Result<Container, Error> {
+        let arg = arg.image(self.name.clone());
+        return Container::new(self.engine.clone(), name, arg).await;
     }
 }
 

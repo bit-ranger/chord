@@ -82,31 +82,7 @@ jobs:
             -   name: cmd-test
                 run: |
                     ./target/release/chord-cmd  -i/data/chord/job/input
-    
-    
-            -   name: web-boot
-                run: |
-                    ./target/release/chord-web > web.out &
-                    sleep 10
-    
-    
-            -   name: web-test
-                run: |
-                    curl -X POST --location "http://127.0.0.1:9999/job/exec" \
-                        -H "Content-Type: application/json" \
-                        -d "{
-                                \"git_url\": \"git@github.com:bit-ranger/chord.git\",
-                                \"branch\": \"master\"
-                            }"
-                    sleep 30
-                    tail -2000 web.out
-                    echo "------------------------------------------------" 
-                    tail -2000 /data/chord/job/output/web.log
-            
-            
-            -   name: web-report
-                run: |
-                    find /data/chord/job/output
+
             
             -   name: upload
                 uses: actions/upload-artifact@v2

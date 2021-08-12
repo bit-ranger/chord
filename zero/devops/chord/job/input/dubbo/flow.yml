@@ -1,18 +1,18 @@
 version: "0.0.1"
 
 stage:
-    stage1:
-        step:
-            step1:
-                action: dubbo
-                args:
-                    method: |-
-                        com.bitranger.dubbo.provider.service.EchoService#echo(java.lang.String)
-                    args: [ "{{case.content}}" ]
-                assert: |+
-                    (all
-                        (eq curr.value.code "0")
-                        (eq curr.value.data case.content)
-                    )
+  stage1:
+    step:
+      step1:
+        action: dubbo
+        args:
+          method: |-
+            com.bitranger.dubbo.provider.service.EchoService#echo(java.lang.String)
+          args: [ "{{case.content}}" ]
+        assert: |+
+          (all
+              (eq curr.value.code "0")
+              (eq curr.value.data case.content)
+          )
 
 

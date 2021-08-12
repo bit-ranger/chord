@@ -144,6 +144,17 @@ impl FactoryComposite {
             ),
         );
 
+        table.insert(
+            "iter_map".into(),
+            Arc::new(
+                iter::map::IterMapFactory::new(
+                    config_ref.map(|c| c["iter_map"].clone()),
+                    table.clone(),
+                )
+                .await?,
+            ),
+        );
+
         Ok(FactoryComposite { table })
     }
 }

@@ -2,14 +2,14 @@ version: "0.0.1"
 
 
 stage:
-    stage1:
+  stage1:
     
-        step:
-            step1:
-                action: log
-                args:
-                    content: |-
-                        dml >>> update some_table set column1 = '{{data.orgin_lon}}' where column2 = '{{data.origin_lat}}'
+    step:
+      step1:
+        action: log
+        args:
+          content: |-
+            dml >>> update some_table set column1 = '{{data.orgin_lon}}' where column2 = '{{data.origin_lat}}'
     
               
 

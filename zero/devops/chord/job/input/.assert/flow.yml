@@ -1,14 +1,14 @@
 version: "0.0.1"
 
 stage:
-    stage1:
+  stage1:
     
-        step:
-            assert1:
-                action: assert
-                spec:
-                    timeout: 10
-                args: |
-                    (eq case.foo case.bar)
+    step:
+      assert1:
+        action: assert
+        spec:
+          timeout: 10
+        args: |
+          (eq case.foo case.bar)
 
 

@@ -2,23 +2,23 @@ version: "0.0.1"
 
 
 stage:
-    stage1:
-        
-        step:
-            step1:
-                action: download
-                args:
-                    url: "{{case.url}}"
-            
-            
-            step2:
-                action: fstore
-                args:
-                    path:
-                        - "{{step.step1.value.path.0}}"
-                        - "{{step.step1.value.path.1}}"
-                assert: |
-                    (eq step.step1.value.size step.step2.value.size)
+  stage1:
+    
+    step:
+      step1:
+        action: download
+        args:
+          url: "{{case.url}}"
+      
+      
+      step2:
+        action: fstore
+        args:
+          path:
+            - "{{step.step1.value.path.0}}"
+            - "{{step.step1.value.path.1}}"
+        assert: |
+          (eq step.step1.value.size step.step2.value.size)
                 
                     
                 

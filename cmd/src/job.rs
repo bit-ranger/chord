@@ -15,6 +15,7 @@ use chord_flow::{Context, TaskIdSimple};
 use chord_output::report::{Factory, ReportFactory};
 
 pub async fn run<P: AsRef<Path>>(
+    job_name: String,
     job_path: P,
     task_vec: Option<Vec<String>>,
     exec_id: String,
@@ -26,7 +27,7 @@ pub async fn run<P: AsRef<Path>>(
     trace!("job start {}", job_path_str);
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
 
-    let report_factory = ReportFactory::new(conf.report(), "chord_cmd").await?;
+    let report_factory = ReportFactory::new(conf.report(), job_name.as_str()).await?;
     let report_factory = Arc::new(report_factory);
 
     let mut futures = Vec::new();

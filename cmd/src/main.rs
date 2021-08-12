@@ -45,7 +45,15 @@ async fn main() -> Result<(), Error> {
         Box::new(YmlFlowParser::new()),
     )
     .await;
-    let task_state_vec = job::run(input_dir, opt.task, exec_id, flow_ctx, &config).await?;
+    let task_state_vec = job::run(
+        opt.job_name.clone(),
+        input_dir,
+        opt.task,
+        exec_id,
+        flow_ctx,
+        &config,
+    )
+    .await?;
     logger::terminal(log_handler).await?;
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
     return match et {
@@ -77,6 +85,9 @@ async fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
 #[derive(StructOpt, Debug)]
 #[structopt(name = "chord")]
 struct Opt {
+    #[structopt(short, long, default_value = "chord_cmd")]
+    job_name: String,
+
     /// input dir
     #[structopt(short, long, parse(from_os_str))]
     input: PathBuf,

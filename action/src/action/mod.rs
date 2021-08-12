@@ -60,6 +60,13 @@ impl FactoryComposite {
         register!(table, config_ref, "sleep", sleep::SleepFactory::new, true);
         register!(table, config_ref, "log", log::LogFactory::new, true);
         register!(table, config_ref, "count", count::CountFactory::new, true);
+        register!(
+            table,
+            config_ref,
+            "iter_flatten",
+            iter::flatten::IterFlattenFactory::new,
+            true
+        );
 
         #[cfg(feature = "act_restapi")]
         register!(

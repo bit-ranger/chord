@@ -84,7 +84,7 @@ jobs:
     
             -   name: cmd-test
                 run: |
-                    ./target/release/chord-cmd  -i.chord/job
+                    ./target/release/chord-cmd  -i$PWD/.chord/job
 
             
             -   name: upload

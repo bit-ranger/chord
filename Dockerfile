@@ -5,7 +5,8 @@ ENV CARGO_HTTP_MULTIPLEXING false
 COPY zero/devops/apt /etc/apt
 COPY zero/devops/cargo /usr/local/cargo
 
-RUN apt-get update && apt-get install -y openjdk-8-jdk
+RUN apt-get update
+RUN apt-get install -y openjdk-8-jdk
 
 
 COPY chord src/chord

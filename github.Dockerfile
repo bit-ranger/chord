@@ -1,5 +1,5 @@
 # 基础镜像 
-FROM rust:latest
+FROM rust:1.53.0
 
 COPY chord-web-worker.sh /usr/bin/chord-web-worker.s
 COPY chord src/chord

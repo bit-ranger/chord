@@ -20,7 +20,7 @@ action:
     fstore:
         enable: true
         workdir: /data/chord/workdir
-    
+
     lua:
         enable: true
     

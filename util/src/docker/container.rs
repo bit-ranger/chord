@@ -11,7 +11,7 @@ use crate::docker::engine::Engine;
 #[derive(Default)]
 pub struct Arg {
     image: String,
-    volumes: Option<Map>,
+    host_config: Option<Map>,
     env: Option<Vec<String>>,
     cmd: Option<Vec<String>>,
 }
@@ -19,11 +19,6 @@ pub struct Arg {
 impl Arg {
     pub fn image(mut self, image: String) -> Arg {
         self.image = image;
-        self
-    }
-
-    pub fn volumes(mut self, volumes: Map) -> Arg {
-        self.volumes = Some(volumes);
         self
     }
 
@@ -37,11 +32,16 @@ impl Arg {
         self
     }
 
+    pub fn host_config(mut self, host_config: Map) -> Arg {
+        self.host_config = Some(host_config);
+        self
+    }
+
     fn into_value(self) -> Value {
         let mut v = Map::new();
         v.insert("Image".to_string(), Value::String(self.image));
-        if let Some(a) = self.volumes {
-            v.insert("Volumes".to_string(), Value::Object(a));
+        if let Some(a) = self.host_config {
+            v.insert("HostConfig".to_string(), Value::Object(a));
         }
         if let Some(a) = self.env {
             v.insert(

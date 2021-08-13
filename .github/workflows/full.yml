@@ -28,6 +28,7 @@ jobs:
             -   name: init
                 run: |
                     sudo chmod 777 /data/
+                    mkdir -p /data/chord/conf
                     cp -r $PWD/zero/devops/chord/conf /data/chord/conf
                     chmod 777 -R /data/chord/
                     cp ~/.ssh/id_rsa /data/chord/conf/id_rsa

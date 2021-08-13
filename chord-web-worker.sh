@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ssh-add /data/chord/conf/ssh_key.pri
+ssh-add /data/chord/conf/id_rsa
 git clone "$chord_git_url" job_repo
 cd job_repo || exit
 git checkout "$chord_git_branch"

@@ -107,7 +107,7 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
     volumes.insert(
         conf.worker_key_path().to_string(),
         json!({
-                "Target": "/data/chord/conf/ssh_key.pri" ,
+                "Target": "/data/chord/conf/id_rsa" ,
                 "Source": "volume1" ,
                 "Type": "volume",
                 "ReadOnly": false
@@ -125,7 +125,7 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
     volumes.insert(
         conf.cmd_conf_path().to_string(),
         json!({
-                "Target": "/data/chord/conf/application.yml" ,
+                "Target": "/data/chord/conf/cmd.yml" ,
                 "Source": "volume3" ,
                 "Type": "volume",
                 "ReadOnly": false

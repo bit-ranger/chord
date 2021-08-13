@@ -1,21 +1,26 @@
 # 基础镜像 
-FROM bitranger/chord:latest
+FROM rust:latest
 
-ENTRYPOINT ["chord-web-worker.sh"]
+COPY chord-web-worker.sh /usr/bin/chord-web-worker.s
+COPY chord src/chord
+COPY cmd src/cmd
+COPY flow src/flow
+COPY input src/input
+COPY output src/output
+COPY action src/action
+COPY util src/util
+COPY web src/web
+COPY Cargo.toml src/Cargo.toml
+COPY Cargo.lock src/Cargo.lock
 
-COPY chord-web-worker.sh chord-web-worker.s
-COPY chord chord
-COPY cmd cmd
-COPY flow flow
-COPY input input
-COPY output output
-COPY action action
-COPY web web
-COPY Cargo.toml Cargo.toml
-COPY Cargo.lock Cargo.lock
+ENTRYPOINT ["src/chord-worker.sh"]
 
-RUN cargo test --release --verbose \
+RUN cd src \
 && cargo build --release --verbose \
-&& mv ./target/release/chord-cmd ./chord-cmd \
+&& cargo test --release --verbose \
+&& mv ./target/release/chord-cmd /usr/bin/chord \
+&& chmod 755 /usr/bin/chord \
 && cargo clean \
-&& rm -rf /usr/local/cargo/registry
+&& rm -rf /usr/local/cargo/registry \
+&& cd ..
+

@@ -28,10 +28,12 @@ jobs:
             -   name: init
                 run: |
                     sudo chmod 777 /data/
-                    cp -r $PWD/zero/devops/chord /data/
+                    cp -r $PWD/zero/devops/chord/conf /data/chord/conf
                     chmod 777 -R /data/chord/
                     cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
-                    find /data/chord/
+                    mkdir -p /data/chord/bin
+                    mkdir -p /data/chord/job/output
+                    find /data/chord
                     echo "------------------------------------------------"
                     sudo apt-get update
                     sudo apt-get install curl
@@ -81,7 +83,7 @@ jobs:
     
             -   name: cmd-test
                 run: |
-                    ./target/release/chord-cmd  -i/data/chord/job/input
+                    ./target/release/chord-cmd  -i.chord/job
 
             
             -   name: upload

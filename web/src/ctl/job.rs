@@ -83,7 +83,7 @@ impl Ctl for CtlImpl {
     }
 }
 
-async fn job_run(req: Req, exec_id: String, _: Arc<dyn Config>, image: Arc<Image>) {
+async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Image>) {
     let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
     let host = git_url_splits[1];
@@ -111,10 +111,15 @@ async fn job_run(req: Req, exec_id: String, _: Arc<dyn Config>, image: Arc<Image
 
     let mut volumes = Map::new();
     volumes.insert(
-        "/data/chord".to_string(),
-        Value::String("/data/chord".to_string()),
+        conf.cmd_conf_path().to_string(),
+        Value::String("/data/chord/conf/application.yml".to_string()),
     );
-    let ca = ca.env(env).volumes(volumes);
+    volumes.insert(
+        conf.ssh_key_private_path().to_string(),
+        Value::String("/data/chord/conf/ssh_key.pri".to_string()),
+    );
+    let cmd = vec![Value::String("chord-web-worker".to_string())];
+    let ca = ca.env(env).volumes(volumes).cmd(cmd);
     if let Err(e) = job_run_0(image, ca, job_name.clone(), exec_id.clone()).await {
         warn!("job Err: {}, {}, {}", job_name, exec_id, e)
     }

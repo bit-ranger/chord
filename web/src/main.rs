@@ -26,7 +26,7 @@ struct Opt {
         short,
         long,
         parse(from_os_str),
-        default_value = "/data/chord/conf/application.yml"
+        default_value = "/data/chord/conf/web.yml"
     )]
     config: PathBuf,
 }

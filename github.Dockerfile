@@ -21,3 +21,5 @@ RUN cd src \
 && rm -rf /usr/local/cargo/registry \
 && cd ..
 
+COPY chord-web-worker.sh /usr/bin/chord-web-worker.sh
+RUN chmod 755 /usr/bin/chord-web-worker.s

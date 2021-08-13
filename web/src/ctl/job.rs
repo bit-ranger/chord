@@ -114,15 +114,6 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
         }),
     );
     volumes.insert(
-        conf.worker_shell_path().to_string(),
-        json!({
-                "Target": "/usr/bin/chord-web-worker.sh" ,
-                "Source": "volume2" ,
-                "Type": "volume",
-                "ReadOnly": false
-        }),
-    );
-    volumes.insert(
         conf.cmd_conf_path().to_string(),
         json!({
                 "Target": "/data/chord/conf/cmd.yml" ,
@@ -141,7 +132,7 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
         }),
     );
 
-    let cmd = vec!["chord_server_worker.sh".to_string()];
+    let cmd = vec!["/usr/bin/chord-web-worker.sh".to_string()];
 
     let ca = ca.env(env).volumes(volumes).cmd(cmd);
     if let Err(e) = job_run_0(image, container_name, ca).await {

@@ -7,8 +7,6 @@ pub trait Config: Sync + Send {
 
     fn server_port(&self) -> usize;
 
-    fn worker_shell_path(&self) -> &str;
-
     fn worker_key_path(&self) -> &str;
 
     fn docker_address(&self) -> &str;
@@ -46,12 +44,6 @@ impl Config for ConfigImpl {
         self.conf["server"]["port"].as_u64().unwrap_or(9999) as usize
     }
 
-    fn worker_shell_path(&self) -> &str {
-        self.conf["worker"]["shell"]["path"]
-            .as_str()
-            .unwrap_or("/data/chord/conf/chord_server_worker.sh")
-    }
-
     fn worker_key_path(&self) -> &str {
         self.conf["worker"]["key"]["path"]
             .as_str()
@@ -73,7 +65,7 @@ impl Config for ConfigImpl {
     fn cmd_conf_path(&self) -> &str {
         self.conf["cmd"]["conf"]["path"]
             .as_str()
-            .unwrap_or("/data/chord/conf/application.yml")
+            .unwrap_or("/data/chord/conf/cmd.yml")
     }
 
     fn log_path(&self) -> &str {

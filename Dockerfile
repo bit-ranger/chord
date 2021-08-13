@@ -24,7 +24,7 @@ RUN cd src \
 && cargo build --release --verbose \
 && cargo test --release --verbose \
 && mv ./target/release/chord-cmd /usr/bin/chord-cmd \
-&& chmod 755 /usr/bin/chord \
+&& chmod 755 /usr/bin/chord-cmd \
 && chmod 755 /usr/bin/chord-web-worker.sh \
 && cargo clean \
 && rm -rf /usr/local/cargo/registry \

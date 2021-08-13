@@ -42,7 +42,12 @@ impl Action for ImageWrapper {
 
         let mut ca = Arg::default();
         if cmd.is_array() {
-            let cmd_vec = cmd.as_array().unwrap().iter().map(|c| c.clone()).collect();
+            let cmd_vec = cmd
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c.to_string())
+                .collect();
             ca = ca.cmd(cmd_vec)
         }
 

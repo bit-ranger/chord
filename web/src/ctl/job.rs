@@ -9,10 +9,11 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use chord::value::json;
 use chord::Error;
 
 use crate::app::conf::Config;
-use chord::value::{Map, Value};
+use chord::value::Map;
 use chord_util::docker::container::Arg;
 use chord_util::docker::engine::Engine;
 use chord_util::docker::image::Image;
@@ -93,37 +94,46 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
     let repo_name = &repo_name.to_owned()[..last_point_idx];
     let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
 
-    let container_name = format!("{}-{}", job_name, exec_id);
+    let container_name = format!("chord-web-{}", exec_id);
     let ca = Arg::default();
-    let mut env = Map::new();
-    env.insert("chord.exec_id".to_string(), Value::String(exec_id.clone()));
-    env.insert(
-        "chord.job_name".to_string(),
-        Value::String(job_name.clone()),
-    );
-    env.insert(
-        "chord.git_url".to_string(),
-        Value::String(req.git_url.clone()),
-    );
-    env.insert(
-        "chord.git_branch".to_string(),
-        Value::String(req.git_branch.unwrap().clone()),
-    );
+    let env: Vec<String> = vec![
+        format!("chord_exec_id={}", exec_id),
+        format!("chord_job_name={}", job_name),
+        format!("chord_git_url={}", req.git_url),
+        format!("chord_git_branch={}", req.git_branch.unwrap()),
+    ];
 
     let mut volumes = Map::new();
     volumes.insert(
         conf.ssh_key_private_path().to_string(),
-        Value::String("/data/chord/conf/ssh_key.pri".to_string()),
+        json!({
+                "Target": "/data/chord/conf/ssh_key.pri" ,
+                "Source": "volume1" ,
+                "Type": "volume",
+                "ReadOnly": false
+        }),
     );
     volumes.insert(
         conf.cmd_conf_path().to_string(),
-        Value::String("/data/chord/conf/application.yml".to_string()),
+        json!({
+                "Target": "/data/chord/conf/application.yml" ,
+                "Source": "volume2" ,
+                "Type": "volume",
+                "ReadOnly": false
+        }),
     );
     volumes.insert(
         "/data/chord/job/output".to_string(),
-        Value::String("/data/chord/job/output".to_string()),
+        json!({
+                "Target": "/data/chord/job/output" ,
+                "Source": "volume3" ,
+                "Type": "volume",
+                "ReadOnly": false
+        }),
     );
-    let cmd = vec![Value::String("chord-web-worker.sh".to_string())];
+
+    let cmd = vec!["chord-web-worker.sh".to_string()];
+
     let ca = ca.env(env).volumes(volumes).cmd(cmd);
     if let Err(e) = job_run_0(image, container_name, ca).await {
         warn!("job Err: {}, {}, {}", job_name, exec_id, e)
@@ -134,6 +144,7 @@ async fn job_run_0(image: Arc<Image>, container_name: String, ca: Arg) -> Result
     let mut container = image.container_create(container_name.as_str(), ca).await?;
     let _ = container.start().await?;
     let _ = container.wait().await?;
+    let _ = container.tail(100).await?;
     Ok(())
 }
 

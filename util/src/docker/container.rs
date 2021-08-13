@@ -7,14 +7,13 @@ use chord::value::{Map, Value};
 use chord::Error;
 
 use crate::docker::engine::Engine;
-use serde::Serialize;
 
-#[derive(Serialize, Default)]
+#[derive(Default)]
 pub struct Arg {
     image: String,
     volumes: Option<Map>,
-    env: Option<Map>,
-    cmd: Option<Vec<Value>>,
+    env: Option<Vec<String>>,
+    cmd: Option<Vec<String>>,
 }
 
 impl Arg {
@@ -28,12 +27,12 @@ impl Arg {
         self
     }
 
-    pub fn env(mut self, env: Map) -> Arg {
+    pub fn env(mut self, env: Vec<String>) -> Arg {
         self.env = Some(env);
         self
     }
 
-    pub fn cmd(mut self, cmd: Vec<Value>) -> Arg {
+    pub fn cmd(mut self, cmd: Vec<String>) -> Arg {
         self.cmd = Some(cmd);
         self
     }
@@ -45,10 +44,16 @@ impl Arg {
             v.insert("Volumes".to_string(), Value::Object(a));
         }
         if let Some(a) = self.env {
-            v.insert("Env".to_string(), Value::Object(a));
+            v.insert(
+                "Env".to_string(),
+                Value::Array(a.into_iter().map(|b| Value::String(b)).collect()),
+            );
         }
         if let Some(a) = self.cmd {
-            v.insert("Cmd".to_string(), Value::Array(a));
+            v.insert(
+                "Cmd".to_string(),
+                Value::Array(a.into_iter().map(|b| Value::String(b)).collect()),
+            );
         }
         Value::Object(v)
     }

@@ -93,6 +93,7 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
     let repo_name = &repo_name.to_owned()[..last_point_idx];
     let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
 
+    let container_name = format!("{}-{}", job_name, exec_id);
     let ca = Arg::default();
     let mut env = Map::new();
     env.insert("chord.exec_id".to_string(), Value::String(exec_id.clone()));
@@ -111,29 +112,26 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
 
     let mut volumes = Map::new();
     volumes.insert(
+        conf.ssh_key_private_path().to_string(),
+        Value::String("/data/chord/conf/ssh_key.pri".to_string()),
+    );
+    volumes.insert(
         conf.cmd_conf_path().to_string(),
         Value::String("/data/chord/conf/application.yml".to_string()),
     );
     volumes.insert(
-        conf.ssh_key_private_path().to_string(),
-        Value::String("/data/chord/conf/ssh_key.pri".to_string()),
+        "/data/chord/job/output".to_string(),
+        Value::String("/data/chord/job/output".to_string()),
     );
-    let cmd = vec![Value::String("chord-web-worker".to_string())];
+    let cmd = vec![Value::String("chord-web-worker.sh".to_string())];
     let ca = ca.env(env).volumes(volumes).cmd(cmd);
-    if let Err(e) = job_run_0(image, ca, job_name.clone(), exec_id.clone()).await {
+    if let Err(e) = job_run_0(image, container_name, ca).await {
         warn!("job Err: {}, {}, {}", job_name, exec_id, e)
     }
 }
 
-async fn job_run_0(
-    image: Arc<Image>,
-    ca: Arg,
-    job_name: String,
-    exec_id: String,
-) -> Result<(), Error> {
-    let mut container = image
-        .container_create(format!("{}-{}", job_name, exec_id).as_str(), ca)
-        .await?;
+async fn job_run_0(image: Arc<Image>, container_name: String, ca: Arg) -> Result<(), Error> {
+    let mut container = image.container_create(container_name.as_str(), ca).await?;
     let _ = container.start().await?;
     let _ = container.wait().await?;
     Ok(())

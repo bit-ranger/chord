@@ -1,7 +1,7 @@
 # 基础镜像 
 FROM rust:1.53.0
 
-COPY chord-web-worker.sh /usr/bin/chord-web-worker.s
+COPY chord-web-worker.sh /usr/bin/chord-web-worker.sh
 COPY chord src/chord
 COPY cmd src/cmd
 COPY flow src/flow
@@ -20,6 +20,7 @@ RUN cd src \
 && cargo test --release --verbose \
 && mv ./target/release/chord-cmd /usr/bin/chord \
 && chmod 755 /usr/bin/chord \
+&& chmod 755 /usr/bin/chord-web-worker.sh \
 && cargo clean \
 && rm -rf /usr/local/cargo/registry \
 && cd ..

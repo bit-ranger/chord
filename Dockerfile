@@ -26,11 +26,6 @@ RUN cd src \
 && cargo test --release --verbose \
 && mv ./target/release/chord-cmd /usr/bin/chord-cmd \
 && chmod 755 /usr/bin/chord-cmd \
-
 && cargo clean \
 && rm -rf /usr/local/cargo/registry \
 && cd ..
-
-COPY chord-web-worker.sh /usr/bin/chord-web-worker.sh
-
-RUN chmod 755 /usr/bin/chord-web-worker.sh

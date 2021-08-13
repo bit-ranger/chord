@@ -1,6 +1,9 @@
 # 基础镜像 
 FROM rust:1.53.0
 
+RUN apt-get update
+RUN apt-get install -y openjdk-8-jdk
+
 COPY chord src/chord
 COPY cmd src/cmd
 COPY flow src/flow
@@ -20,6 +23,3 @@ RUN cd src \
 && cargo clean \
 && rm -rf /usr/local/cargo/registry \
 && cd ..
-
-COPY chord-web-worker.sh /usr/bin/chord-web-worker.sh
-RUN chmod 755 /usr/bin/chord-web-worker.s

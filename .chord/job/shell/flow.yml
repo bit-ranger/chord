@@ -10,10 +10,4 @@ stage:
           code: |-
             ls /
             echo "hello world"
-            
-        
-        assert: |
-          (all
-              (eq curr.value.1.bar (num case.bar))
-          )
 

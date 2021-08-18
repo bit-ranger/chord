@@ -63,9 +63,8 @@ impl Action for Shell {
             .open(&shell_path)
             .await?;
         file.write_all(code.as_bytes()).await?;
-        let mut perm = async_std::fs::metadata(&shell_path).await?.permissions();
-        // perm.set_mode(0o777);
-        // async_std::fs::set_permissions(shell_path.clone(), perm).await?;
+        let perm = std::os::unix::fs::PermissionsExt::from_mode(0o777);
+        async_std::fs::set_permissions(shell_path.clone(), perm).await?;
         let mut command = Command::new(shell_path);
 
         let child = command

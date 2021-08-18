@@ -13,16 +13,17 @@ report:
 
 
 action:
-    download:
-        enable: true
-        workdir: /data/chord/workdir
-    
-    fstore:
-        enable: true
-        workdir: /data/chord/workdir
-
     lua:
         enable: true
+    download:
+        enable: true
+        workdir: /data/chord/workdir/download_fstore
+    fstore:
+        enable: true
+        workdir: /data/chord/workdir/download_fstore
+    shell:
+        enable: true
+        workdir: /data/chord/workdir/shell
     
     dubbo:
         enable: true

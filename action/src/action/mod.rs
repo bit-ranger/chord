@@ -32,7 +32,7 @@ mod mongodb;
 mod redis;
 #[cfg(feature = "act_restapi")]
 mod restapi;
-#[cfg(feature = "act_shell")]
+#[cfg(all(feature = "act_shell", linux))]
 mod shell;
 #[cfg(feature = "act_url")]
 mod url;
@@ -142,7 +142,7 @@ impl FactoryComposite {
             false
         );
 
-        #[cfg(feature = "act_shell")]
+        #[cfg(all(feature = "act_shell", linux))]
         register!(table, config_ref, "shell", shell::ShellFactory::new, false);
 
         table.insert(

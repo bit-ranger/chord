@@ -8,6 +8,6 @@ stage:
         action: shell
         args:
           code: |-
-            ls /
-            echo "hello world"
+            ls / \
+            && echo "hello world"
 

@@ -64,7 +64,7 @@ async fn call0(
         let size = res
             .read_line(&mut line)
             .await
-            .or_else(|e| Err(cause!("docker", "read fail", e)))?;
+            .or_else(|e| Err(cause!("021", "read fail", e)))?;
         if size > 0 {
             if res.content_type().is_some()
                 && res.content_type().unwrap().to_string() == "application/octet-stream"
@@ -83,7 +83,7 @@ async fn call0(
         }
     }
     return if !res.status().is_success() {
-        Err(err!("101", res.status().to_string()))?
+        Err(err!("020", res.status().to_string()))?
     } else {
         Ok(tail.into())
     };

@@ -59,7 +59,7 @@ impl Action for ImageWrapper {
         container.wait().await?;
 
         let tail = args["tail"].as_u64().unwrap_or(1) as usize;
-        let tail_log = container.tail(tail).await?;
+        let tail_log = container.tail(false, tail).await?;
         let tail_log: Vec<String> = tail_log
             .into_iter()
             .map(|row| row.trim().to_string())

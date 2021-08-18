@@ -3,6 +3,7 @@ use futures::executor::block_on;
 use log::{trace, warn};
 use surf::http::Method;
 
+use chord::err;
 use chord::value::{Map, Value};
 use chord::Error;
 
@@ -96,30 +97,43 @@ impl Container {
 
     pub async fn wait(&self) -> Result<Vec<String>, Error> {
         trace!("container wait {}", self.name);
-        self.engine
+        let res = self
+            .engine
             .call(
                 format!("containers/{}/wait", self.name).as_str(),
                 Method::Post,
                 None,
                 1,
             )
-            .await
+            .await?;
+        if res.len() == 1 && res[0].contains("\"StatusCode\":0") {
+            return Ok(res);
+        } else {
+            return Err(err!("docker", "wait fail"));
+        }
     }
 
-    pub async fn tail(&self, tail: usize) -> Result<Vec<String>, Error> {
+    pub async fn tail(&self, stderr: bool, tail: usize) -> Result<Vec<String>, Error> {
         trace!("container log {}", self.name);
-        self.engine
-            .call(
-                format!(
-                    "containers/{}/logs?stdout=true&stderr=true&tail={}",
-                    self.name, tail
+        if stderr {
+            self.engine
+                .call(
+                    format!("containers/{}/logs?stderr=true&tail={}", self.name, tail).as_str(),
+                    Method::Get,
+                    None,
+                    tail,
                 )
-                .as_str(),
-                Method::Get,
-                None,
-                tail,
-            )
-            .await
+                .await
+        } else {
+            self.engine
+                .call(
+                    format!("containers/{}/logs?stdout=true&tail={}", self.name, tail).as_str(),
+                    Method::Get,
+                    None,
+                    tail,
+                )
+                .await
+        }
     }
 }
 

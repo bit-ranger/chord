@@ -126,8 +126,15 @@ async fn job_run(req: Req, exec_id: String, _: Arc<dyn Config>, image: Arc<Image
 async fn job_run_0(image: Arc<Image>, container_name: String, ca: Arg) -> Result<(), Error> {
     let mut container = image.container_create(container_name.as_str(), ca).await?;
     let _ = container.start().await?;
-    let _ = container.wait().await?;
-    let _ = container.tail(100).await?;
+    let wait_res = container.wait().await;
+    match wait_res {
+        Ok(_) => {
+            let _ = container.tail(false, 100).await?;
+        }
+        Err(_) => {
+            let _ = container.tail(true, 100).await?;
+        }
+    }
     Ok(())
 }
 

@@ -32,6 +32,8 @@ mod mongodb;
 mod redis;
 #[cfg(feature = "act_restapi")]
 mod restapi;
+#[cfg(feature = "act_shell")]
+mod shell;
 #[cfg(feature = "act_url")]
 mod url;
 
@@ -139,6 +141,9 @@ impl FactoryComposite {
             fstore::FstoreFactory::new,
             false
         );
+
+        #[cfg(feature = "act_shell")]
+        register!(table, config_ref, "shell", shell::ShellFactory::new, false);
 
         table.insert(
             "iter_consume".into(),

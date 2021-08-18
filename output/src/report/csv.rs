@@ -1,13 +1,12 @@
 use async_std::fs::rename;
 use async_std::path::{Path, PathBuf};
-use async_std::stream::StreamExt;
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 
 use crate::report::Factory;
+use async_std::fs::create_dir_all;
 use async_std::fs::remove_file;
-use async_std::fs::{create_dir_all, read_dir};
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
 use chord::flow::Flow;
@@ -45,19 +44,6 @@ impl ReportFactory {
 
     pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
         let report_dir = self.dir.join(task_id.exec_id());
-        if report_dir.exists().await && report_dir.is_dir().await {
-            let mut rd = read_dir(report_dir.clone()).await.unwrap();
-            loop {
-                let de = rd.next().await;
-                if de.is_none() {
-                    break;
-                }
-                let de = de.unwrap()?;
-                if de.path().is_file().await {
-                    remove_file(de.path()).await?;
-                }
-            }
-        }
         Reporter::new(report_dir, task_id).await
     }
 }
@@ -122,6 +108,10 @@ impl Reporter {
         }
 
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task()));
+
+        if report_file.exists().await && report_file.is_file().await {
+            remove_file(report_file.clone()).await?;
+        }
 
         let report = Reporter {
             writer: from_path(report_file).await?,

@@ -1,4 +1,4 @@
-use async_std::io::{BufReader, BufWriter};
+use async_std::io::BufReader;
 use async_std::process::{Command, Stdio};
 use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
 use log::trace;

@@ -38,25 +38,27 @@ impl ReportFactory {
             create_dir_all(dir.as_path()).await?;
         }
 
-        let mut job_dir = read_dir(dir.as_path()).await.unwrap();
-        loop {
-            let de = job_dir.next().await;
-            if de.is_none() {
-                break;
-            }
-            let de = de.unwrap()?;
-            if de.path().is_file().await {
-                remove_file(de.path()).await?;
-            }
-        }
-
         Ok(ReportFactory {
             dir: dir.to_path_buf(),
         })
     }
 
     pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
-        Reporter::new(self.dir.clone(), task_id).await
+        let report_dir = self.dir.join(task_id.exec_id());
+        if report_dir.exists().await && report_dir.is_dir().await {
+            let mut rd = read_dir(report_dir.clone()).await.unwrap();
+            loop {
+                let de = rd.next().await;
+                if de.is_none() {
+                    break;
+                }
+                let de = de.unwrap()?;
+                if de.path().is_file().await {
+                    remove_file(de.path()).await?;
+                }
+            }
+        }
+        Reporter::new(report_dir, task_id).await
     }
 }
 
@@ -115,6 +117,10 @@ impl Reporter {
         task_id: Arc<dyn TaskId>,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
+        if !report_dir.exists().await {
+            create_dir_all(report_dir.as_path()).await?;
+        }
+
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task()));
 
         let report = Reporter {

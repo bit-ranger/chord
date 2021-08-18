@@ -1,5 +1,3 @@
-use std::time::SystemTime;
-
 use async_std::fs::File;
 use async_std::path::{Path, PathBuf};
 use futures::AsyncReadExt;
@@ -27,16 +25,7 @@ async fn main() -> Result<(), Error> {
         panic!("input is not a dir {}", input_dir.to_str().unwrap());
     }
 
-    let exec_id: &Option<String> = &opt.exec_id;
-    let exec_id: String = match exec_id {
-        Some(id) => id.clone(),
-        None => (SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_millis()
-            - 1622476800000)
-            .to_string(),
-    };
+    let exec_id: String = opt.exec_id.clone();
 
     let conf_data = load_conf(&opt.config).await?;
     let config = Config::new(conf_data);
@@ -94,8 +83,8 @@ struct Opt {
     job_name: String,
 
     /// exec id
-    #[structopt(short, long)]
-    exec_id: Option<String>,
+    #[structopt(short, long, default_value = "1")]
+    exec_id: String,
 
     /// input dir
     #[structopt(short, long, parse(from_os_str))]

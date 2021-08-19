@@ -75,7 +75,8 @@ impl Action for Shell {
         async_std::fs::set_permissions(shell_path.clone(), perm)
             .await
             .map_err(|e| cause!("104", "set_permissions err", e))?;
-        let mut command = Command::new(shell_path);
+        let mut command = Command::new("sh");
+        command.arg(shell_path);
 
         let child = command
             .stdout(Stdio::piped())

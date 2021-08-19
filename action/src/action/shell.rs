@@ -59,10 +59,11 @@ impl Action for Shell {
         let mut file = async_std::fs::OpenOptions::new()
             .create(true)
             .write(true)
-            .append(true)
+            .append(false)
             .open(&shell_path)
             .await?;
         file.write_all(code.as_bytes()).await?;
+        file.close().await?;
         let perm = std::os::unix::fs::PermissionsExt::from_mode(0o777);
         async_std::fs::set_permissions(shell_path.clone(), perm).await?;
         let mut command = Command::new(shell_path);

@@ -62,16 +62,26 @@ impl Action for Shell {
             .append(false)
             .open(&shell_path)
             .await?;
-        file.write_all(code.as_bytes()).await?;
-        file.close().await?;
+        file.write_all(code.as_bytes())
+            .await
+            .map_err(|e| cause!("102", "write_all err", e))?;
+        file.flush()
+            .await
+            .map_err(|e| cause!("103", "flush err", e))?;
+        file.close()
+            .await
+            .map_err(|e| cause!("104", "close err", e))?;
         let perm = std::os::unix::fs::PermissionsExt::from_mode(0o777);
-        async_std::fs::set_permissions(shell_path.clone(), perm).await?;
+        async_std::fs::set_permissions(shell_path.clone(), perm)
+            .await
+            .map_err(|e| cause!("104", "set_permissions err", e))?;
         let mut command = Command::new(shell_path);
 
         let child = command
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .spawn()?;
+            .spawn()
+            .map_err(|e| cause!("105", "command err", e))?;
 
         let std_out = child.stdout.ok_or(err!("107", "missing stdout"))?;
         let std_out = BufReader::new(std_out);

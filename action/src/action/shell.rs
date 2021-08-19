@@ -91,7 +91,8 @@ impl Action for Shell {
         loop {
             let line = lines.next().await;
             if line.is_none() {
-                let value: Value = from_str(last_line.as_str())?;
+                let value: Value = from_str(last_line.as_str())
+                    .map_err(|e| cause!("106", "last line invalid", e))?;
                 return Ok(Box::new(value));
             }
             let line = line.unwrap()?;

@@ -10,4 +10,4 @@ stage:
           code: |-
             #!/bin/bash
             ls /
-            echo "hello world"
+            echo "\"hello world\""

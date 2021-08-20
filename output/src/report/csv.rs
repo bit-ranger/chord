@@ -1,12 +1,13 @@
+use async_std::fs::create_dir_all;
+use async_std::fs::read_dir;
+use async_std::fs::remove_file;
 use async_std::fs::rename;
 use async_std::path::{Path, PathBuf};
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
+use futures::StreamExt;
 
-use crate::report::Factory;
-use async_std::fs::create_dir_all;
-use async_std::fs::remove_file;
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
 use chord::flow::Flow;
@@ -16,6 +17,8 @@ use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::to_string;
 use chord::Error;
+
+use crate::report::Factory;
 
 pub struct ReportFactory {
     dir: PathBuf,
@@ -30,21 +33,35 @@ impl Factory for ReportFactory {
 }
 
 impl ReportFactory {
-    pub async fn new<P: AsRef<Path>>(report_dir: P, name: String) -> Result<ReportFactory, Error> {
-        let dir = report_dir.as_ref().join(name);
-
-        if !dir.exists().await {
-            create_dir_all(dir.as_path()).await?;
+    pub async fn new<P: AsRef<Path>>(
+        report_dir: P,
+        name: String,
+        exec_id: String,
+    ) -> Result<ReportFactory, Error> {
+        let report_dir = report_dir.as_ref().join(name).join(exec_id);
+        if !report_dir.exists().await {
+            create_dir_all(report_dir.as_path()).await?;
+        } else {
+            let mut rd = read_dir(report_dir.clone()).await?;
+            loop {
+                let rf = rd.next().await;
+                if rf.is_none() {
+                    break;
+                }
+                let rf = rf.unwrap()?;
+                if rf.path().is_file().await {
+                    remove_file(rf.path()).await?;
+                }
+            }
         }
 
         Ok(ReportFactory {
-            dir: dir.to_path_buf(),
+            dir: report_dir.clone(),
         })
     }
 
     pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
-        let report_dir = self.dir.join(task_id.exec_id());
-        Reporter::new(report_dir, task_id).await
+        Reporter::new(self.dir.clone(), task_id).await
     }
 }
 
@@ -103,15 +120,8 @@ impl Reporter {
         task_id: Arc<dyn TaskId>,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
-        if !report_dir.exists().await {
-            create_dir_all(report_dir.as_path()).await?;
-        }
 
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task()));
-
-        if report_file.exists().await && report_file.is_file().await {
-            remove_file(report_file.clone()).await?;
-        }
 
         let report = Reporter {
             writer: from_path(report_file).await?,

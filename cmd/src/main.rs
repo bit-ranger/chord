@@ -11,6 +11,8 @@ use chord_action::FactoryComposite;
 use chord_input::load::flow::yml::YmlFlowParser;
 
 use crate::conf::Config;
+use async_std::sync::Arc;
+use chord_output::report::ReportFactory;
 
 mod conf;
 mod job;
@@ -31,6 +33,10 @@ async fn main() -> Result<(), Error> {
     let conf_data = load_conf(&opt.config).await?;
     let config = Config::new(conf_data);
 
+    let report_factory =
+        ReportFactory::new(config.report(), job_name.as_str(), exec_id.as_str()).await?;
+    let report_factory = Arc::new(report_factory);
+
     let log_file_path = Path::new(config.log_dir())
         .join(job_name.clone())
         .join(exec_id.clone())
@@ -43,12 +49,11 @@ async fn main() -> Result<(), Error> {
     )
     .await;
     let task_state_vec = job::run(
-        job_name.clone(),
+        report_factory,
         input_dir,
         opt.task,
         exec_id.clone(),
         flow_ctx,
-        &config,
     )
     .await?;
     logger::terminal(log_handler).await?;

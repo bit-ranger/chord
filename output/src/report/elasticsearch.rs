@@ -33,7 +33,7 @@ impl Factory for ReportFactory {
 }
 
 impl ReportFactory {
-    pub async fn new(es_url: String, es_index: String) -> Result<ReportFactory, Error> {
+    pub async fn new(es_url: String, es_index: String, _: String) -> Result<ReportFactory, Error> {
         index_create(es_url.as_str(), es_index.as_str()).await?;
         Ok(ReportFactory { es_url, es_index })
     }

@@ -748,6 +748,7 @@ dependencies = [
  "chord",
  "chrono",
  "csv",
+ "futures",
  "itertools",
  "log",
  "serde",

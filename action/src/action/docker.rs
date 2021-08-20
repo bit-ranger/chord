@@ -46,7 +46,13 @@ impl Action for ImageWrapper {
                 .as_array()
                 .unwrap()
                 .iter()
-                .map(|c| c.to_string())
+                .map(|c| {
+                    if c.is_string() {
+                        c.as_str().unwrap().to_string()
+                    } else {
+                        c.to_string()
+                    }
+                })
                 .collect();
             ca = ca.cmd(cmd_vec)
         }
@@ -56,10 +62,12 @@ impl Action for ImageWrapper {
             .container_create(arg.id().to_string().as_str(), ca)
             .await?;
         container.start().await?;
-        container.wait().await?;
-
+        let wait_res = container.wait().await;
         let tail = args["tail"].as_u64().unwrap_or(1) as usize;
-        let tail_log = container.tail(false, tail).await?;
+        let tail_log = match wait_res {
+            Ok(_) => container.tail(false, tail).await?,
+            Err(_) => container.tail(true, tail).await?,
+        };
         let tail_log: Vec<String> = tail_log
             .into_iter()
             .map(|row| row.trim().to_string())

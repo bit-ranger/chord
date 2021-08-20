@@ -1,7 +1,3 @@
-server:
-  port: 9999
-
-
 log:
   level:
     root: warn

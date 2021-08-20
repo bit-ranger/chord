@@ -101,7 +101,7 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v2
         with:
-          name: linux-release
+          name: x86_64-unknown-linux-musl
           retention-days: 1
           if-no-files-found: error
           path: |
@@ -130,7 +130,7 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v2
         with:
-          name: windows-release
+          name: x86_64-pc-windows-msvc
           retention-days: 1
           if-no-files-found: error
           path: |
@@ -158,7 +158,7 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v2
         with:
-          name: macos-release
+          name: x86_64-apple-darwin
           retention-days: 1
           if-no-files-found: error
           path: |

@@ -26,11 +26,15 @@ async fn main() -> Result<(), Error> {
     }
 
     let exec_id: String = opt.exec_id.clone();
+    let job_name = opt.job_name.clone();
 
     let conf_data = load_conf(&opt.config).await?;
     let config = Config::new(conf_data);
 
-    let log_file_path = Path::new(config.log_path());
+    let log_file_path = Path::new(config.log_dir())
+        .join(job_name.clone())
+        .join(exec_id.clone())
+        .join("cmd.log");
     let log_handler = logger::init(config.log_level(), &log_file_path).await?;
 
     let flow_ctx = chord_flow::context_create(
@@ -39,10 +43,10 @@ async fn main() -> Result<(), Error> {
     )
     .await;
     let task_state_vec = job::run(
-        opt.job_name.clone(),
+        job_name.clone(),
         input_dir,
         opt.task,
-        exec_id,
+        exec_id.clone(),
         flow_ctx,
         &config,
     )

@@ -10,7 +10,7 @@ pub struct Config {
 impl Config {
     pub fn new(conf: Value) -> Config {
         let report_default = json!({ "csv": {
-            "dir": "/data/chord/job/output"
+            "dir": "/data/chord/output"
         } });
         Config {
             conf,
@@ -20,10 +20,10 @@ impl Config {
 }
 
 impl Config {
-    pub fn log_path(&self) -> &str {
-        self.conf["log"]["path"]
+    pub fn log_dir(&self) -> &str {
+        self.conf["log"]["dir"]
             .as_str()
-            .unwrap_or("/data/chord/job/output/cmd.log")
+            .unwrap_or("/data/chord/output")
     }
 
     pub fn log_level(&self) -> Vec<(String, String)> {

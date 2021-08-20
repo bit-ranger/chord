@@ -39,25 +39,10 @@ chord - async 并行任务处理框架
 
     cargo run --package  chord-cmd --bin chord-cmd -- --help
 
-##### 
-
-    chord 0.1.0
-
-    USAGE:
-        chord-cmd [OPTIONS] --input <input> --output <output>
-
-    FLAGS:
-        -h, --help       Prints help information
-        -V, --version    Prints version information
-
-    OPTIONS:
-        -c, --config <config>    config file path [default: /data/chord/conf/application.yml]
-        -i, --input <input>      input dir
-        -t, --task <task>...     task list
 
 ### example
 
-[example](https://github.com/bit-ranger/chord/tree/master/zero/devops/chord/job/input)
+[example](https://github.com/bit-ranger/chord/tree/master/.chord/job)
 
 ### workflow
 

@@ -15,15 +15,22 @@ report:
 action:
     lua:
         enable: true
+    
     download:
         enable: true
         workdir: /data/chord/workdir/download_fstore
+    
     fstore:
         enable: true
         workdir: /data/chord/workdir/download_fstore
+    
     shell:
         enable: true
         workdir: /data/chord/workdir/shell
+    
+    docker:
+        enable: true
+        
     
     dubbo:
         enable: true

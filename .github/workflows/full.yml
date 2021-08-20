@@ -1,165 +1,166 @@
 name: full
 
 on:
-    pull_request:
-        branches: [ master ]
-        
-    push:
-        branches: [ dev ]
+  pull_request:
+    branches: [ master ]
+  
+  push:
+    branches: [ dev ]
 
 jobs:
-    linux:
+  linux:
     
-        runs-on: ubuntu-latest
-        
-        steps:
-            -   name: checkout
-                uses: actions/checkout@v2
+    runs-on: ubuntu-latest
     
-            -   name: sshkey-install
-                uses: shimataro/ssh-key-action@v2
-                with:
-                    key: ${{ secrets.RSA_ACTIONS_PRI }}
-                    name: id_rsa
-                    known_hosts: ${{ secrets.KNOWN_HOSTS }}
-                    config: ${{ secrets.CONFIG }}
-                    if_key_exists: fail
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      
+      - name: sshkey-install
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.RSA_ACTIONS_PRI }}
+          name: id_rsa
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+          config: ${{ secrets.CONFIG }}
+          if_key_exists: fail
+      
+      - name: init
+        run: |
+          systemctl status docker
+          echo "------------------------------------------------"
+          sudo rm /etc/docker/daemon.json
+          sudo cp .github/docker/daemon.json /etc/docker/daemon.json
+          sudo mkdir -p /etc/systemd/system/docker.service.d
+          sudo cp .github/docker/override.conf /etc/systemd/system/docker.service.d/override.conf
+          sudo systemctl daemon-reload
+          echo "------------------------------------------------"
+          sudo systemctl restart docker.service
+          sleep 5
+          docker info
+          echo "------------------------------------------------"
+          sudo chmod 777 /data/
+          mkdir -p /data/chord
+          cp -r $PWD/zero/devops/chord/conf /data/chord/
+          chmod 777 -R /data/chord/
+          cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
+          mkdir -p /data/chord/job/output
+          find /data/chord
+          echo "------------------------------------------------"
+          sudo apt-get update
+          sudo apt-get install curl
+      
+      
+      - name: cache-target
+        uses: actions/cache@v2
+        with:
+          key: build-target-linux-musl-${{ hashFiles('Cargo.lock') }}
+          path: |
+            ./target
+      
+      - name: build
+        run: |
+          chmod -R 777 $PWD
+          docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo --version
+          docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo build --verbose --release
+          docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo test  --verbose --release
+      
+      
+      - name: compose-boot
+        run: |
+          docker-compose -f docker-compose.yml up -d
+          sleep 30
+      
+      
+      - name: compose-test
+        run: |
+          curl -X GET "http://127.0.0.1:9200/_cat/indices?v"
+      
+      - name: dubbo
+        run: |
+          cd action/src/action/dubbo/generic-gateway
+          mvn package
+          cp target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar /data/chord/conf/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
+          cd ../../../../..
+          pwd
+          echo "------------------------------------------------"
+          cd zero/action/dubbo
+          mvn package
+          java -jar target/dubbo-provider-0.0.1-SNAPSHOT.jar &
+          sleep 10
+          cd ../../..
+          pwd
+          echo "------------------------------------------------"
+      
+      
+      - name: cmd-test
+        run: |
+          ./target/release/chord-cmd  -i$PWD/.chord/job
+      
+      
+      - name: upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux-release
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            target/release/chord-cmd
+            target/release/chord-web
+  
+  
+  windows:
+    needs: linux
+    runs-on: windows-latest
     
-            -   name: init
-                run: |
-                    systemctl status docker
-                    sudo rm /etc/docker/daemon.json
-                    sudo cp .github/docker/daemon.json /etc/docker/daemon.json
-                    sudo mkdir -p /etc/systemd/system/docker.service.d
-                    sudo cp .github/docker/override.conf /etc/systemd/system/docker.service.d/override.conf
-                    sudo systemctl daemon-reload
-                    sudo systemctl restart docker.service
-                    sleep 5
-                    docker info
-                    curl -X POST http://127.0.0.1:2375/images/create\?fromImage\=alpine:3.13
-                    echo "------------------------------------------------"
-                    sudo chmod 777 /data/
-                    mkdir -p /data/chord
-                    cp -r $PWD/zero/devops/chord/conf /data/chord/
-                    chmod 777 -R /data/chord/
-                    cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
-                    mkdir -p /data/chord/job/output
-                    find /data/chord
-                    echo "------------------------------------------------"
-                    sudo apt-get update
-                    sudo apt-get install curl
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      
+      - name: cache-target
+        uses: actions/cache@v2
+        with:
+          key: build-target-windows-msvc-${{ hashFiles('Cargo.lock') }}
+          path: |
+            ./target
+      
+      - name: build
+        run: cargo build --verbose --release
+      
+      - name: upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-release
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            target/release/chord-cmd.exe
+            target/release/chord-web.exe
+  
+  macos:
+    needs: linux
+    runs-on: macos-latest
     
-    
-#            -   name: cache-target
-#                uses: actions/cache@v2
-#                with:
-#                    key: build-target-linux-musl-${{ hashFiles('Cargo.lock') }}
-#                    path: |
-#                        ./target
-#
-#            -   name: build
-#                run: |
-#                    chmod -R 777 $PWD
-#                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo --version
-#                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo build --verbose --release
-#                    docker run --rm -v "$(pwd)":/home/rust/src -v ~/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo test  --verbose --release
-#
-#
-#            -   name: compose-boot
-#                run: |
-#                    docker-compose -f docker-compose.yml up -d
-#                    sleep 30
-#
-#
-#            -   name: compose-test
-#                run: |
-#                    curl -X GET "http://127.0.0.1:9200/_cat/indices?v"
-#
-#            -   name: dubbo
-#                run: |
-#                    cd action/src/action/dubbo/generic-gateway
-#                    mvn package
-#                    cp target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar /data/chord/conf/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
-#                    cd ../../../../..
-#                    pwd
-#                    echo "------------------------------------------------"
-#                    cd zero/action/dubbo
-#                    mvn package
-#                    java -jar target/dubbo-provider-0.0.1-SNAPSHOT.jar &
-#                    sleep 10
-#                    cd ../../..
-#                    pwd
-#                    echo "------------------------------------------------"
-#
-#
-#            -   name: cmd-test
-#                run: |
-#                    ./target/release/chord-cmd  -i$PWD/.chord/job
-#
-#
-#            -   name: upload
-#                uses: actions/upload-artifact@v2
-#                with:
-#                    name: linux-release
-#                    retention-days: 1
-#                    if-no-files-found: error
-#                    path: |
-#                        target/release/chord-cmd
-#                        target/release/chord-web
-#
-#
-#    windows:
-#        needs: linux
-#        runs-on: windows-latest
-#
-#        steps:
-#            -   name: checkout
-#                uses: actions/checkout@v2
-#
-#            -   name: cache-target
-#                uses: actions/cache@v2
-#                with:
-#                    key: build-target-windows-msvc-${{ hashFiles('Cargo.lock') }}
-#                    path: |
-#                        ./target
-#
-#            -   name: build
-#                run: cargo build --verbose --release
-#
-#            -   name: upload
-#                uses: actions/upload-artifact@v2
-#                with:
-#                    name: windows-release
-#                    retention-days: 1
-#                    if-no-files-found: error
-#                    path: |
-#                        target/release/chord-cmd.exe
-#                        target/release/chord-web.exe
-#
-#    macos:
-#        needs: linux
-#        runs-on: macos-latest
-#
-#        steps:
-#            -   name: checkout
-#                uses: actions/checkout@v2
-#
-#            -   name: cache-target
-#                uses: actions/cache@v2
-#                with:
-#                    key: build-target-apple-darwin--${{ hashFiles('Cargo.lock') }}
-#                    path: |
-#                        ./target
-#
-#            -   name: build
-#                run: cargo build --verbose --release
-#
-#            -   name: upload
-#                uses: actions/upload-artifact@v2
-#                with:
-#                    name: macos-release
-#                    retention-days: 1
-#                    if-no-files-found: error
-#                    path: |
-#                        target/release/chord-cmd
-#                        target/release/chord-web
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      
+      - name: cache-target
+        uses: actions/cache@v2
+        with:
+          key: build-target-apple-darwin--${{ hashFiles('Cargo.lock') }}
+          path: |
+            ./target
+      
+      - name: build
+        run: cargo build --verbose --release
+      
+      - name: upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos-release
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            target/release/chord-cmd
+            target/release/chord-web

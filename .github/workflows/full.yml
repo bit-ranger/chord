@@ -27,6 +27,10 @@ jobs:
     
             -   name: init
                 run: |
+                    tail -200 /etc/docker/daemon.json
+                    echo "------------------------------------------------"
+                    tail -200 ~/.bashrc
+                    echo "------------------------------------------------"
                     sudo chmod 777 /data/
                     mkdir -p /data/chord
                     cp -r $PWD/zero/devops/chord/conf /data/chord/

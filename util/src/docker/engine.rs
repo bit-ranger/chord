@@ -58,19 +58,22 @@ async fn call0(
     let mut res: Response = rb.send().await?;
 
     let mut tail: VecDeque<String> = VecDeque::with_capacity(tail_size);
-    let mut line = String::new();
+    let mut line_buf = vec![];
     loop {
-        line.clear();
+        line_buf.clear();
         let size = res
-            .read_line(&mut line)
+            .read_until(b'\n', &mut line_buf)
             .await
             .or_else(|e| Err(cause!("021", "read fail", e)))?;
         if size > 0 {
-            if res.content_type().is_some()
+            let line = if res.content_type().is_some()
                 && res.content_type().unwrap().to_string() == "application/octet-stream"
             {
-                line = String::from_utf8_lossy(&line.as_bytes()[8..]).to_string();
-            }
+                String::from_utf8_lossy(&line_buf[8..]).to_string()
+            } else {
+                String::from_utf8_lossy(&line_buf).to_string()
+            };
+            let line = format!("{}\n", line);
 
             trace!("{}", line);
 

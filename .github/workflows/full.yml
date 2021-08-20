@@ -27,8 +27,10 @@ jobs:
     
             -   name: init
                 run: |
+                    systemctl status docker
                     sudo rm /etc/docker/daemon.json
                     sudo cp .github/docker/daemon.json /etc/docker/daemon.json
+                    sudo mkdir -p /etc/systemd/system/docker.service.d
                     sudo cp .github/docker/override.conf /etc/systemd/system/docker.service.d/override.conf
                     systemctl daemon-reload
                     systemctl restart docker.service

@@ -1,0 +1,41 @@
+log:
+  level:
+    root: warn
+    chord: trace
+
+report:
+  csv:
+    dir: /data/chord/job/output
+
+
+action:
+  lua:
+    enable: true
+  
+  download:
+    enable: true
+    workdir: /data/chord/workdir/download_fstore
+  
+  fstore:
+    enable: true
+    workdir: /data/chord/workdir/download_fstore
+  
+  shell:
+    enable: true
+    workdir: /data/chord/workdir/shell
+  
+  docker:
+    enable: true
+  
+  dubbo:
+    enable: true
+    mode: gateway
+    gateway:
+      registry:
+        protocol: zookeeper
+        address: zookeeper://127.0.0.1:2181
+      args:
+        - "-Ddubbo.application.qos.enable=false"
+        - "-jar"
+        - /data/chord/conf/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
+        - "--server.port=8085"

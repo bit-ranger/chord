@@ -1,0 +1,13 @@
+version: "0.0.1"
+
+stage:
+  stage1:
+    
+    step:
+      step1:
+        action: shell
+        args:
+          code: |-
+            #!/bin/bash
+            ls /
+            echo "\"hello world\""

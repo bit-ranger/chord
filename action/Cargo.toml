@@ -17,7 +17,9 @@ repository = "https://github.com/bit-ranger/chord"
 
 [dependencies]
 chord = { path = "../chord" }
+chord-util = { path = "../util", optional = true}
 serde = { version = "1.0" }
+itertools = "0.10.1"
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 log = { version = "0.4.14", features = ["std"] }
 surf = { version = "2.1.0", optional = true }
@@ -48,8 +50,9 @@ act_download = ['futures', 'rm_rf', 'surf']
 act_mongodb = ["mongodb"]
 act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
-act_docker = ["surf", "futures"]
+act_docker = ["chord-util"]
 act_lua = ["rlua", "rlua_serde"]
 act_fstore = []
+act_shell = []
 
 

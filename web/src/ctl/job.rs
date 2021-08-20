@@ -1,27 +1,22 @@
 use std::time::SystemTime;
 
-use async_std::path::{Path, PathBuf};
 use async_std::sync::Arc;
-use async_std::task::{spawn, spawn_blocking};
+use async_std::task::spawn;
 use async_trait::async_trait;
-use git2::build::RepoBuilder;
-use git2::Repository;
 use lazy_static::lazy_static;
-use log::{error, trace, warn};
+use log::warn;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use chord::err;
+use chord::value::Value;
 use chord::Error;
-use chord_action::FactoryComposite;
-use chord_flow::Context;
 
 use crate::app::conf::Config;
-use crate::biz;
-use crate::util::yaml::load;
-use chord::value::Value;
-use chord_input::load::flow::yml::YmlFlowParser;
+use chord::value::Map;
+use chord_util::docker::container::Arg;
+use chord_util::docker::engine::Engine;
+use chord_util::docker::image::Image;
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();
@@ -38,7 +33,7 @@ pub struct Req {
     git_url: String,
 
     #[validate(length(min = 1))]
-    branch: Option<String>,
+    git_branch: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,24 +47,15 @@ pub trait Ctl {
 }
 
 pub struct CtlImpl {
-    input_dir: PathBuf,
-    ssh_key_private: PathBuf,
-    flow_ctx: Arc<dyn Context>,
+    image: Arc<Image>,
     config: Arc<dyn Config>,
 }
 
 impl CtlImpl {
     pub async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {
-        Ok(CtlImpl {
-            input_dir: Path::new(config.job_input_path()).to_path_buf(),
-            ssh_key_private: config.ssh_key_private_path().into(),
-            flow_ctx: chord_flow::context_create(
-                Box::new(FactoryComposite::new(config.action().map(|c| c.clone())).await?),
-                Box::new(YmlFlowParser::new()),
-            )
-            .await,
-            config,
-        })
+        let engine = Arc::new(Engine::new(config.docker_address().to_string()).await?);
+        let image = Arc::new(Image::new(engine, config.docker_image()).await?);
+        Ok(CtlImpl { image, config })
     }
 }
 
@@ -78,7 +64,7 @@ impl Ctl for CtlImpl {
     async fn exec(&self, req: Req) -> Result<Rep, Error> {
         let req = Req {
             git_url: req.git_url,
-            branch: Some(req.branch.unwrap_or("master".to_owned())),
+            git_branch: Some(req.git_branch.unwrap_or("master".to_owned())),
         };
 
         let exec_id = (SystemTime::now()
@@ -87,33 +73,18 @@ impl Ctl for CtlImpl {
             .as_millis()
             - 1622476800000)
             .to_string();
-        let input = self.input_dir.clone();
-        let ssh_key_pri = self.ssh_key_private.clone();
-        let report = self.config.report().map(|c| c.clone());
-        let app_ctx_0 = self.flow_ctx.clone();
         let exec_id_0 = exec_id.clone();
-        spawn(checkout_run(
-            app_ctx_0,
-            input,
-            ssh_key_pri,
+        spawn(job_run(
             req,
             exec_id_0,
-            report,
+            self.config.clone(),
+            self.image.clone(),
         ));
         return Ok(Rep { exec_id });
     }
 }
 
-async fn checkout_run(
-    app_ctx: Arc<dyn Context>,
-    input: PathBuf,
-    ssh_key_pri: PathBuf,
-    req: Req,
-    exec_id: String,
-    report: Option<Value>,
-) {
-    let req_text = format!("{:?}", req);
-    trace!("checkout_run start {}", req_text);
+async fn job_run(req: Req, exec_id: String, _: Arc<dyn Config>, image: Arc<Image>) {
     let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
     let host = git_url_splits[1];
@@ -121,76 +92,50 @@ async fn checkout_run(
     let repo_name = git_url_splits[3];
     let last_point_idx = repo_name.len() - 4;
     let repo_name = &repo_name.to_owned()[..last_point_idx];
-    let checkout_path = input.clone().join(host).join(group_name).join(repo_name);
     let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
-    if let Err(e) = checkout_run_0(
-        app_ctx,
-        ssh_key_pri,
-        req,
-        exec_id,
-        report,
-        checkout_path.clone(),
-        job_name,
-    )
-    .await
-    {
-        warn!("checkout_run err {}, {}", req_text, e.to_string())
-    };
-    clear(checkout_path.as_path()).await;
+
+    let container_name = format!("chord-web-{}", exec_id);
+    let ca = Arg::default();
+    let env: Vec<String> = vec![
+        format!("chord_exec_id={}", exec_id),
+        format!("chord_job_name={}", job_name),
+        format!("chord_git_url={}", req.git_url),
+        format!("chord_git_branch={}", req.git_branch.unwrap()),
+    ];
+
+    let mut host_config = Map::new();
+    host_config.insert(
+        "Binds".to_string(),
+        Value::Array(vec![Value::String(
+            "/data/chord/docker:/data/chord".to_string(),
+        )]),
+    );
+
+    let cmd = vec![
+        "/bin/bash".to_string(),
+        "-c".to_string(),
+        "/data/chord/conf/chord-web-worker.sh".to_string(),
+    ];
+
+    let ca = ca.env(env).host_config(host_config).cmd(cmd);
+    if let Err(e) = job_run_0(image, container_name, ca).await {
+        warn!("job Err: {}, {}, {}", job_name, exec_id, e)
+    }
 }
 
-async fn checkout_run_0(
-    app_ctx: Arc<dyn Context>,
-    ssh_key_pri: PathBuf,
-    req: Req,
-    exec_id: String,
-    report: Option<Value>,
-    checkout_path: PathBuf,
-    job_name: String,
-) -> Result<Repository, Error> {
-    if checkout_path.exists().await {
-        clear(checkout_path.as_path()).await;
-    } else {
-        async_std::fs::create_dir_all(checkout_path.clone()).await?
+async fn job_run_0(image: Arc<Image>, container_name: String, ca: Arg) -> Result<(), Error> {
+    let mut container = image.container_create(container_name.as_str(), ca).await?;
+    let _ = container.start().await?;
+    let wait_res = container.wait().await;
+    match wait_res {
+        Ok(_) => {
+            let _ = container.tail(false, 100).await?;
+        }
+        Err(_) => {
+            let _ = container.tail(true, 100).await?;
+        }
     }
-
-    let repo = checkout(
-        ssh_key_pri.as_path(),
-        req.git_url.as_str(),
-        checkout_path.as_path(),
-        req.branch.as_ref().unwrap().as_str(),
-    )
-    .await?;
-
-    let repo_root = repo
-        .path()
-        .parent()
-        .ok_or(err!("012", "invalid repo root"))?;
-    let repo_root = Path::new(repo_root.as_os_str());
-
-    let repo_yml = repo_root.join("chord.yml");
-
-    let repo_conf = load(repo_yml).await?;
-    let job_path = repo_conf["task"]["group"]["path"]
-        .as_str()
-        .ok_or(err!("020", "missing task.group.path"))?;
-    if !job_path.starts_with("./") {
-        return Err(err!("020", "invalid task.group.path"));
-    }
-    let job_path = &job_path[2..];
-    let job_path = repo_root.join(job_path);
-    job_run(app_ctx, job_path, job_name, exec_id, report).await;
-    return Ok(repo);
-}
-
-async fn clear(dir: &Path) {
-    let path = dir.to_owned();
-    let result = spawn_blocking(move || rm_rf::ensure_removed(path)).await;
-
-    match result {
-        Ok(()) => trace!("remove dir {}", dir.to_str().unwrap()),
-        Err(e) => error!("remove dir {}, {}", dir.to_str().unwrap(), e),
-    }
+    Ok(())
 }
 
 fn split(is_delimiter: fn(char) -> bool, text: &str) -> Vec<&str> {
@@ -204,54 +149,4 @@ fn split(is_delimiter: fn(char) -> bool, text: &str) -> Vec<&str> {
     }
     result.push(&text[li..]);
     return result;
-}
-
-fn credentials_callback(
-    ssh_key_private: &Path,
-    cred_types_allowed: git2::CredentialType,
-) -> Result<git2::Cred, git2::Error> {
-    return if cred_types_allowed.contains(git2::CredentialType::SSH_KEY) {
-        git2::Cred::ssh_key(
-            "git",
-            None,
-            std::path::Path::new(ssh_key_private.as_os_str()),
-            None,
-        )
-        .map_err(|e| {
-            error!("ssh_key error {}", e);
-            e
-        })
-    } else {
-        git2::Cred::default()
-    };
-}
-
-async fn checkout(
-    ssh_key_private: &Path,
-    git_url: &str,
-    into: &Path,
-    branch: &str,
-) -> Result<Repository, git2::Error> {
-    let mut callbacks = git2::RemoteCallbacks::new();
-    callbacks.credentials(|_, _, allowed| credentials_callback(ssh_key_private, allowed));
-
-    let mut fetch_opts = git2::FetchOptions::new();
-    fetch_opts.remote_callbacks(callbacks);
-    RepoBuilder::new()
-        .branch(branch)
-        .fetch_options(fetch_opts)
-        .clone(git_url, std::path::Path::new(into.as_os_str()))
-}
-
-async fn job_run(
-    app_ctx: Arc<dyn Context>,
-    job_path: PathBuf,
-    job_name: String,
-    exec_id: String,
-    report: Option<Value>,
-) {
-    let job_result = biz::job::run(job_path, job_name, exec_id, app_ctx, report.as_ref()).await;
-    if let Err(e) = job_result {
-        warn!("job run error {}", e);
-    }
 }

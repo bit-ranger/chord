@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use handlebars::Handlebars;
 
-use chord::action::RunId;
+use chord::action::{Context, RunId};
 use chord::action::{CreateArg, CreateId, RunArg};
 use chord::case::CaseId;
 use chord::flow::Flow;
@@ -108,7 +108,7 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
         self.action.as_str()
     }
 
-    fn args(&self) -> &Value {
+    fn args_raw(&self) -> &Value {
         self.flow.step_args(self.id.step())
     }
 
@@ -136,7 +136,6 @@ pub struct RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
     render_context: &'r RenderContext,
     flow_parse: &'p dyn FlowParse,
     id: RunIdStruct,
-    args: Value,
 }
 
 impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
@@ -153,18 +152,13 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
             step: step_id,
         };
 
-        let mut run_arg = RunArgStruct {
+        let run_arg = RunArgStruct {
             flow,
             handlebars,
             render_context,
             flow_parse,
             id,
-            args: Value::Null,
         };
-
-        let args = run_arg.flow.step_args(run_arg.id().step());
-        let args = run_arg.render_args(args)?;
-        run_arg.args = args;
         return Ok(run_arg);
     }
 
@@ -177,23 +171,27 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
     }
 
     pub fn timeout(&self) -> Duration {
-        self.flow.step_timeout(self.id().step())
+        self.flow.step_spec_timeout(self.id().step())
     }
 
     pub fn catch_err(&self) -> bool {
-        self.flow.step_catch_err(self.id().step())
+        self.flow.step_spec_catch_err(self.id().step())
     }
 
-    fn render_str(&self, txt: &str) -> Result<String, Error> {
-        return flow::render(self.handlebars, self.render_context, txt);
+    fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<String, Error> {
+        return flow::render(self.handlebars, render_context, txt);
     }
 
-    fn render_args(&self, value: &Value) -> Result<Value, Error> {
-        if value.is_null() {
+    fn render_args_with(
+        &self,
+        args_raw: &Value,
+        render_context: &RenderContext,
+    ) -> Result<Value, Error> {
+        if args_raw.is_null() {
             return Ok(Value::Null);
         }
-        return if let Value::String(txt) = value {
-            let value_str = self.render_str(txt.as_str())?;
+        if let Value::String(txt) = args_raw {
+            let value_str = self.render_str_with(txt.as_str(), render_context)?;
             let value = self
                 .flow_parse
                 .parse_str(value_str.as_str())
@@ -203,13 +201,13 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
             } else {
                 Err(err!("001", "invalid args"))
             }
-        } else if let Value::Object(map) = value {
+        } else if let Value::Object(map) = args_raw {
             let value_str = to_string(map)?;
-            let value_str = self.render_str(value_str.as_str())?;
+            let value_str = self.render_str_with(value_str.as_str(), render_context)?;
             let value: Value = from_str(value_str.as_str())
                 .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
             if value.is_object() {
-                let value = self.render_ref(&value, self.render_context.data())?;
+                let value = self.render_ref(&value, render_context.data())?;
                 if value.is_object() {
                     Ok(value)
                 } else {
@@ -220,6 +218,20 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
             }
         } else {
             Err(err!("001", "invalid args"))
+        }
+    }
+
+    fn render_args(&self, args_raw: &Value, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
+        if args_raw.is_null() {
+            return Ok(Value::Null);
+        }
+        return if ctx.is_some() {
+            let ctx = ctx.unwrap();
+            let mut render_context = self.render_context.clone();
+            ctx.update(render_context.data_mut());
+            self.render_args_with(args_raw, &render_context)
+        } else {
+            self.render_args_with(args_raw, self.render_context)
         };
     }
 
@@ -263,8 +275,9 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArg for RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
         &self.id
     }
 
-    fn args(&self) -> &Value {
-        &self.args
+    fn args(&self, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
+        let args_raw = self.flow.step_args(self.id().step());
+        return self.render_args(args_raw, ctx);
     }
 
     fn timeout(&self) -> Duration {

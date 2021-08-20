@@ -642,9 +642,6 @@ name = "cc"
 version = "1.0.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3c69b077ad434294d3ce9f1f6143a2a4b89a8a2d54ef813d85003a4fd1137fd"
-dependencies = [
- "jobserver",
-]
 
 [[package]]
 name = "cfg-if"
@@ -679,8 +676,10 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "chord",
+ "chord-util",
  "dynamic_reload",
  "futures",
+ "itertools",
  "log",
  "md5",
  "mongodb",
@@ -756,6 +755,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "chord-util"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "chord",
+ "futures",
+ "log",
+ "serde",
+ "surf",
+]
+
+[[package]]
 name = "chord-web"
 version = "0.1.0"
 dependencies = [
@@ -767,14 +778,13 @@ dependencies = [
  "chord-flow",
  "chord-input",
  "chord-output",
+ "chord-util",
  "flume 0.10.5",
  "futures",
- "git2",
  "itertools",
  "lazy_static",
  "log",
  "regex",
- "rm_rf",
  "serde",
  "serde_yaml",
  "structopt",
@@ -1486,21 +1496,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6503fe142514ca4799d4c26297c4248239fe8838d827db6bd6065c6ed29a6ce"
 
 [[package]]
-name = "git2"
-version = "0.13.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b483c6c2145421099df1b4efd50e0f6205479a072199460eff852fa15e5603c7"
-dependencies = [
- "bitflags",
- "libc",
- "libgit2-sys",
- "log",
- "openssl-probe",
- "openssl-sys",
- "url",
-]
-
-[[package]]
 name = "gloo-timers"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1799,9 +1794,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37d572918e350e82412fe766d24b15e6682fb2ed2bbe018280caa810397cb319"
+checksum = "69ddb889f9d0d08a67338271fa9b62996bc788c7796a5c18cf057420aaed5eaf"
 dependencies = [
  "either",
 ]
@@ -1811,15 +1806,6 @@ name = "itoa"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd25036021b0de88a0aff6b850051563c6516d0bf53f8638938edbb9de732736"
-
-[[package]]
-name = "jobserver"
-version = "0.1.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "972f5ae5d1cb9c6ae417789196c803205313edde988685da5e3aae0827b9e7fd"
-dependencies = [
- "libc",
-]
 
 [[package]]
 name = "js-sys"
@@ -1884,20 +1870,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9385f66bf6105b241aa65a61cb923ef20efc665cb9f9bb50ac2f0c4b7f378d41"
 
 [[package]]
-name = "libgit2-sys"
-version = "0.12.19+1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f322155d574c8b9ebe991a04f6908bb49e68a79463338d24a43d6274cb6443e6"
-dependencies = [
- "cc",
- "libc",
- "libssh2-sys",
- "libz-sys",
- "openssl-sys",
- "pkg-config",
-]
-
-[[package]]
 name = "libloading"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1930,20 +1902,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290b64917f8b0cb885d9de0f9959fe1f775d7fa12f1da2db9001c1c8ab60f89d"
 dependencies = [
  "cc",
- "pkg-config",
- "vcpkg",
-]
-
-[[package]]
-name = "libssh2-sys"
-version = "0.2.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0186af0d8f171ae6b9c4c90ec51898bad5d08a2d5e470903a50d9ad8959cbee"
-dependencies = [
- "cc",
- "libc",
- "libz-sys",
- "openssl-sys",
  "pkg-config",
  "vcpkg",
 ]

@@ -68,7 +68,7 @@ async fn run0(
     download: &Download,
     arg: &dyn RunArg,
 ) -> std::result::Result<DownloadFile, DownloadError> {
-    let args = arg.args();
+    let args = arg.args(None)?;
     let url = args["url"].as_str().ok_or(err!("102", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("103", format!("invalid url: {}", url))))?;
 

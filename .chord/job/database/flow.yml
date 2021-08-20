@@ -1,0 +1,23 @@
+version: "0.0.1"
+
+
+def:
+  database:
+    url: mysql://root:example@127.0.0.1:3306/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+
+stage:
+  bm1:
+    
+    step:
+      select:
+        action: database
+        args:
+          url: "{{def.database.url}}"
+          sql: |+
+            SELECT * FROM user WHERE user = '{{case.user}}'
+        assert:
+          (eq curr.value.records.0.User case.user)
+    
+
+      
+

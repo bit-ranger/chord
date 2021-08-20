@@ -29,9 +29,13 @@ pub trait Scope: Sync + Send {
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &dyn RunId;
 
-    fn args(&self) -> &Value;
+    fn args(&self, context: Option<Box<dyn Context>>) -> Result<Value, Error>;
 
     fn timeout(&self) -> Duration;
+}
+
+pub trait Context: Sync + Send {
+    fn update(&self, value: &mut Value);
 }
 
 pub trait CreateArg: Sync + Send {
@@ -39,7 +43,7 @@ pub trait CreateArg: Sync + Send {
 
     fn action(&self) -> &str;
 
-    fn args(&self) -> &Value;
+    fn args_raw(&self) -> &Value;
 
     fn render_str(&self, text: &str) -> Result<String, Error>;
 

@@ -15,6 +15,7 @@ use chord_flow::{Context, TaskIdSimple};
 use chord_output::report::{Factory, ReportFactory};
 
 pub async fn run<P: AsRef<Path>>(
+    job_name: String,
     job_path: P,
     task_vec: Option<Vec<String>>,
     exec_id: String,
@@ -26,7 +27,7 @@ pub async fn run<P: AsRef<Path>>(
     trace!("job start {}", job_path_str);
     let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
 
-    let report_factory = ReportFactory::new(conf.report(), "chord_cmd").await?;
+    let report_factory = ReportFactory::new(conf.report(), job_name.as_str()).await?;
     let report_factory = Arc::new(report_factory);
 
     let mut futures = Vec::new();
@@ -109,15 +110,14 @@ async fn task_run0<P: AsRef<Path>>(
     let flow = Flow::new(flow)?;
 
     //read
-    let data_file_path = task_path.clone().join("case.csv");
-    let data_loader = Box::new(chord_input::load::data::csv::Loader::new(data_file_path).await?);
+    let case_store = Box::new(chord_input::load::data::csv::Store::new(task_path.clone()).await?);
 
     //write
     let assess_reporter = report_factory.create(task_id.clone()).await?;
 
     //runner
     let mut runner = chord_flow::TaskRunner::new(
-        data_loader,
+        case_store,
         assess_reporter,
         app_ctx,
         Arc::new(flow),

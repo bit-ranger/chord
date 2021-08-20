@@ -1,0 +1,49 @@
+version: "0.0.1"
+
+def:
+  iter: [ a, b, c ]
+
+
+stage:
+  sg1:
+    step:
+      sp1:
+        action: iter_consume
+        args:
+          iter:
+            arr:
+              $ref: def.iter
+            enum: idx,item
+
+          consume:
+            m1:
+              action: echo
+              args:
+                content:
+                  - idx: "0-{{idx}}"
+                    item: "0-{{item}}"
+                  
+                  - idx: "1-{{idx}}"
+                    item: "1-{{item}}"
+            
+            m2:
+              action: iter_consume
+              args:
+                iter:
+                  arr:
+                    $ref: consume.m1.value
+                  enum: idx,item
+
+                consume:
+                  m3:
+                    action: log
+                    args:
+                      content:
+                        idx: "{{idx}}"
+                        item:
+                          $ref: item
+                
+            
+            
+                    
+        

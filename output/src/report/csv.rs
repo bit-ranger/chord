@@ -1,13 +1,12 @@
 use async_std::fs::rename;
 use async_std::path::{Path, PathBuf};
-use async_std::stream::StreamExt;
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 
 use crate::report::Factory;
+use async_std::fs::create_dir_all;
 use async_std::fs::remove_file;
-use async_std::fs::{create_dir_all, read_dir};
 use chord::case::{CaseAssess, CaseState};
 use chord::err;
 use chord::flow::Flow;
@@ -38,25 +37,14 @@ impl ReportFactory {
             create_dir_all(dir.as_path()).await?;
         }
 
-        let mut job_dir = read_dir(dir.as_path()).await.unwrap();
-        loop {
-            let de = job_dir.next().await;
-            if de.is_none() {
-                break;
-            }
-            let de = de.unwrap()?;
-            if de.path().is_file().await {
-                remove_file(de.path()).await?;
-            }
-        }
-
         Ok(ReportFactory {
             dir: dir.to_path_buf(),
         })
     }
 
     pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
-        Reporter::new(self.dir.clone(), task_id).await
+        let report_dir = self.dir.join(task_id.exec_id());
+        Reporter::new(report_dir, task_id).await
     }
 }
 
@@ -81,8 +69,12 @@ impl Report for Reporter {
         Ok(())
     }
 
-    async fn report(&mut self, _: &str, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
-        report(&mut self.writer, ca_vec, &self.step_id_vec).await
+    async fn report(
+        &mut self,
+        stage_id: &str,
+        ca_vec: &Vec<Box<dyn CaseAssess>>,
+    ) -> Result<(), Error> {
+        report(&mut self.writer, stage_id, ca_vec, &self.step_id_vec).await
     }
 
     async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
@@ -111,7 +103,15 @@ impl Reporter {
         task_id: Arc<dyn TaskId>,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
+        if !report_dir.exists().await {
+            create_dir_all(report_dir.as_path()).await?;
+        }
+
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task()));
+
+        if report_file.exists().await && report_file.is_file().await {
+            remove_file(report_file.clone()).await?;
+        }
 
         let report = Reporter {
             writer: from_path(report_file).await?,
@@ -163,6 +163,7 @@ fn create_head(sid_vec: &Vec<String>) -> Vec<String> {
 
 async fn report<W: std::io::Write>(
     writer: &mut Writer<W>,
+    stage_id: &str,
     ca_vec: &Vec<Box<dyn CaseAssess>>,
     sid_vec: &Vec<String>,
 ) -> Result<(), Error> {
@@ -170,19 +171,22 @@ async fn report<W: std::io::Write>(
         return Ok(());
     }
 
-    for sv in ca_vec.iter().map(|ca| to_value_vec(ca.as_ref(), sid_vec)) {
+    for sv in ca_vec
+        .iter()
+        .map(|ca| to_value_vec(stage_id, ca.as_ref(), sid_vec))
+    {
         writer.write_record(&sv)?
     }
     writer.flush()?;
     return Ok(());
 }
 
-fn to_value_vec(ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
+fn to_value_vec(stage_id: &str, ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
     let head_len = 5 + sid_vec.len() * 3 + 1;
     let value_vec: Vec<&str> = vec![""; head_len];
     let mut value_vec: Vec<String> = value_vec.into_iter().map(|v| v.to_owned()).collect();
 
-    value_vec[0] = ca.id().case().into();
+    value_vec[0] = format!("{}@{}", ca.id().case(), stage_id);
     match ca.state() {
         CaseState::Ok(_) => {
             value_vec[1] = String::from("O");

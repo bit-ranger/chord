@@ -67,19 +67,12 @@ impl Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.write_str(
-            json!({
-                "code": self.code.clone(),
-                "message": self.message.clone()
-            })
-            .to_string()
-            .as_str(),
-        )
+        Debug::fmt(&self, f)
     }
 }
 
 impl Debug for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_str(
             json!({
                 "code": self.code.clone(),

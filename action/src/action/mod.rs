@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
+use async_std::sync::Arc;
 use chord::action::prelude::*;
 use chord::err;
 
 mod count;
 mod echo;
+mod iter;
 mod log;
 mod sleep;
 
@@ -30,11 +32,13 @@ mod mongodb;
 mod redis;
 #[cfg(feature = "act_restapi")]
 mod restapi;
+#[cfg(all(feature = "act_shell", target_os = "linux"))]
+mod shell;
 #[cfg(feature = "act_url")]
 mod url;
 
 pub struct FactoryComposite {
-    table: HashMap<String, Box<dyn Factory>>,
+    table: HashMap<String, Arc<dyn Factory>>,
 }
 
 macro_rules! register {
@@ -42,7 +46,7 @@ macro_rules! register {
         if enable($config_ref, $name, $enable) {
             $table.insert(
                 $name.into(),
-                Box::new($module($config_ref.map(|c| c[$name].clone())).await?),
+                Arc::new($module($config_ref.map(|c| c[$name].clone())).await?),
             );
         }
     };
@@ -50,7 +54,7 @@ macro_rules! register {
 
 impl FactoryComposite {
     pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Error> {
-        let mut table: HashMap<String, Box<dyn Factory>> = HashMap::new();
+        let mut table: HashMap<String, Arc<dyn Factory>> = HashMap::new();
 
         let config_ref = config.as_ref();
 
@@ -58,6 +62,13 @@ impl FactoryComposite {
         register!(table, config_ref, "sleep", sleep::SleepFactory::new, true);
         register!(table, config_ref, "log", log::LogFactory::new, true);
         register!(table, config_ref, "count", count::CountFactory::new, true);
+        register!(
+            table,
+            config_ref,
+            "iter_flatten",
+            iter::flatten::IterFlattenFactory::new,
+            true
+        );
 
         #[cfg(feature = "act_restapi")]
         register!(
@@ -129,6 +140,31 @@ impl FactoryComposite {
             "fstore",
             fstore::FstoreFactory::new,
             false
+        );
+
+        #[cfg(all(feature = "act_shell", target_os = "linux"))]
+        register!(table, config_ref, "shell", shell::ShellFactory::new, false);
+
+        table.insert(
+            "iter_consume".into(),
+            Arc::new(
+                iter::each::IterConsumeFactory::new(
+                    config_ref.map(|c| c["iter_consume"].clone()),
+                    table.clone(),
+                )
+                .await?,
+            ),
+        );
+
+        table.insert(
+            "iter_map".into(),
+            Arc::new(
+                iter::map::IterMapFactory::new(
+                    config_ref.map(|c| c["iter_map"].clone()),
+                    table.clone(),
+                )
+                .await?,
+            ),
         );
 
         Ok(FactoryComposite { table })

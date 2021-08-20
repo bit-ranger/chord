@@ -21,6 +21,7 @@ chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "a
 chord-flow = { path = "../flow" }
 chord-input = { path = "../input" }
 chord-output = { path = "../output", features = ["report_csv", "report_elasticsearch"] }
+chord-util = { path = "../util"}
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 time = "0.1.42"
 futures = "0.3.13"
@@ -31,10 +32,8 @@ tide = "0.16.0"
 validator = { version = "0.13", features = ["derive"] }
 lazy_static = "1.4.0"
 serde_yaml = "0.8"
-git2 = "0.13.18"
 url = "2.2.1"
 regex = "1.4.6"
-rm_rf = "0.6.1"
 structopt = "0.3"
 async-trait = "0.1.50"
 bean = "0.1.4"

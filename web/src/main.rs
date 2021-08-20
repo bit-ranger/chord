@@ -8,7 +8,6 @@ use chord::Error;
 mod ctl;
 
 mod app;
-mod biz;
 mod util;
 
 #[async_std::main]
@@ -27,7 +26,7 @@ struct Opt {
         short,
         long,
         parse(from_os_str),
-        default_value = "/data/chord/conf/application.yml"
+        default_value = "/data/chord/conf/web.yml"
     )]
     config: PathBuf,
 }

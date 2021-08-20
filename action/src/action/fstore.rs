@@ -60,7 +60,7 @@ impl Action for Fstore {
 }
 
 async fn run0(fstore: &Fstore, arg: &dyn RunArg) -> std::result::Result<Value, Error> {
-    let args = arg.args();
+    let args = arg.args(None)?;
     let pav: Vec<String> = args["path"]
         .as_array()
         .ok_or(err!("102", "missing path"))?

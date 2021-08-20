@@ -1,5 +1,3 @@
-use std::time::SystemTime;
-
 use async_std::fs::File;
 use async_std::path::{Path, PathBuf};
 use futures::AsyncReadExt;
@@ -27,12 +25,7 @@ async fn main() -> Result<(), Error> {
         panic!("input is not a dir {}", input_dir.to_str().unwrap());
     }
 
-    let exec_id = (SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
-        - 1622476800000)
-        .to_string();
+    let exec_id: String = opt.exec_id.clone();
 
     let conf_data = load_conf(&opt.config).await?;
     let config = Config::new(conf_data);
@@ -45,7 +38,15 @@ async fn main() -> Result<(), Error> {
         Box::new(YmlFlowParser::new()),
     )
     .await;
-    let task_state_vec = job::run(input_dir, opt.task, exec_id, flow_ctx, &config).await?;
+    let task_state_vec = job::run(
+        opt.job_name.clone(),
+        input_dir,
+        opt.task,
+        exec_id,
+        flow_ctx,
+        &config,
+    )
+    .await?;
     logger::terminal(log_handler).await?;
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
     return match et {
@@ -77,6 +78,14 @@ async fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
 #[derive(StructOpt, Debug)]
 #[structopt(name = "chord")]
 struct Opt {
+    /// job name
+    #[structopt(short, long, default_value = "chord_cmd")]
+    job_name: String,
+
+    /// exec id
+    #[structopt(short, long, default_value = "1")]
+    exec_id: String,
+
     /// input dir
     #[structopt(short, long, parse(from_os_str))]
     input: PathBuf,
@@ -90,7 +99,7 @@ struct Opt {
         short,
         long,
         parse(from_os_str),
-        default_value = "/data/chord/conf/application.yml"
+        default_value = "/data/chord/conf/cmd.yml"
     )]
     config: PathBuf,
 }

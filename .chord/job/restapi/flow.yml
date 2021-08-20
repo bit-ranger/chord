@@ -1,0 +1,116 @@
+version: "0.0.1"
+
+def:
+  es:
+    url: http://127.0.0.1:9200
+
+
+stage:
+  benchmark1:
+    
+    round: 1
+    duration: 30
+    step:
+      del_idx:
+        action: restapi
+        args:
+          url: "{{def.es.url}}/article"
+          method: DELETE
+      
+      crt_inx:
+        action: restapi
+        args: |
+          url: "{{def.es.url}}/article"
+          method: PUT
+          body:
+            {
+                "settings": {
+                    "index": {
+                        "analysis.analyzer.default.type": "ik_max_word"
+                    }
+                },
+                "mappings": {
+                    "properties": {
+                        "user": {
+                            "type": "text",
+                            "analyzer": "ik_max_word",
+                            "search_analyzer": "ik_max_word"
+                        },
+                        "title": {
+                            "type": "text",
+                            "analyzer": "ik_max_word",
+                            "search_analyzer": "ik_max_word"
+                        },
+                        "desc": {
+                            "type": "text",
+                            "analyzer": "ik_max_word",
+                            "search_analyzer": "ik_max_word"
+                        }
+                    }
+                }
+            }
+        assert: |+
+          (all
+            (eq curr.value.status 200)
+            (eq curr.value.body.acknowledged true)
+          )
+      
+      insert:
+        action: restapi
+        spec:
+          timeout: 10
+        args:
+          url: "{{def.es.url}}/article/_doc/1"
+          method: PUT
+          body:
+            {
+              "author": "{{case.author}}",
+              "title": "{{case.title}}",
+              "desc": "{{case.desc}}"
+            }
+        
+        assert: |+
+          (all
+            (eq curr.value.status 201)
+            (eq curr.value.body.result "created")
+          )
+      
+      wait:
+        action: sleep
+        args:
+          duration: 9
+      
+      search:
+        action: restapi
+        spec:
+          timeout: 10
+        args:
+          url: "{{def.es.url}}/article/_search"
+          method: GET
+          body:
+            {
+              "size": 10,
+              "from": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                    {
+                      "match": {
+                        "desc": "{{case.match}}"
+                      }
+                    },
+                    {
+                      "term": {
+                        "author": "{{case.term}}"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+        
+        assert: |+
+          (all
+            (eq curr.value.status 200)
+            (eq curr.value.body.hits.total.value 1)
+          )

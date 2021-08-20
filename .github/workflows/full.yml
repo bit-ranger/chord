@@ -27,11 +27,16 @@ jobs:
     
             -   name: init
                 run: |
+                    sudo rm /etc/docker/daemon.json
+                    sudo cp .github/docker/daemon.json /etc/docker/daemon.json
+                    tail -200 /etc/systemd/system/docker.service.d/override.conf
+                    sudo systemctl daemon-reload
+                    sudo systemctl restart docker.service
                     docker info
                     echo "------------------------------------------------"
                     sudo chmod 777 /data/
                     mkdir -p /data/chord
-                    cp -r $PWD/zero/devops/chord/SameCitySinglePackagePlanServiceconf /data/chord/
+                    cp -r $PWD/zero/devops/chord/conf /data/chord/
                     chmod 777 -R /data/chord/
                     cp ~/.ssh/id_rsa /data/chord/conf/id_rsa
                     mkdir -p /data/chord/job/output

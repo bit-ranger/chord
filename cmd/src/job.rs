@@ -7,7 +7,6 @@ use futures::StreamExt;
 use log::info;
 use log::trace;
 
-use crate::conf::Config;
 use chord::flow::{Flow, ID_PATTERN};
 use chord::task::TaskState;
 use chord::Error;
@@ -15,20 +14,16 @@ use chord_flow::{Context, TaskIdSimple};
 use chord_output::report::{Factory, ReportFactory};
 
 pub async fn run<P: AsRef<Path>>(
-    job_name: String,
+    report_factory: Arc<ReportFactory>,
     job_path: P,
     task_vec: Option<Vec<String>>,
     exec_id: String,
     app_ctx: Arc<dyn Context>,
-    conf: &Config,
 ) -> Result<Vec<TaskState>, Error> {
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
     trace!("job start {}", job_path_str);
-    let mut job_dir = read_dir(job_path.as_ref()).await.unwrap();
-
-    let report_factory = ReportFactory::new(conf.report(), job_name.as_str()).await?;
-    let report_factory = Arc::new(report_factory);
+    let mut job_dir = read_dir(job_path.as_ref()).await?;
 
     let mut futures = Vec::new();
     loop {
@@ -36,11 +31,7 @@ pub async fn run<P: AsRef<Path>>(
         if task_dir.is_none() {
             break;
         }
-        let task_dir = task_dir.unwrap();
-        if task_dir.is_err() {
-            continue;
-        }
-        let task_dir = task_dir.unwrap();
+        let task_dir = task_dir.unwrap()?;
         if !task_dir.path().is_dir().await {
             continue;
         }

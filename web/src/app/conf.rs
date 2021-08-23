@@ -13,7 +13,7 @@ pub trait Config: Sync + Send {
 
     fn docker_image(&self) -> &str;
 
-    fn log_path(&self) -> &str;
+    fn log_dir(&self) -> &str;
 
     fn log_level(&self) -> Vec<(String, String)>;
 }
@@ -60,10 +60,10 @@ impl Config for ConfigImpl {
             .unwrap_or("bitranger/chord:latest")
     }
 
-    fn log_path(&self) -> &str {
-        self.conf["log"]["path"]
+    fn log_dir(&self) -> &str {
+        self.conf["log"]["dir"]
             .as_str()
-            .unwrap_or("/data/chord/job/output/web.log")
+            .unwrap_or("/data/chord/output")
     }
 
     fn log_level(&self) -> Vec<(String, String)> {

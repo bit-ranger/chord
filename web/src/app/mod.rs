@@ -87,7 +87,7 @@ container!(Web {ConfigImpl, job::CtlImpl});
 pub async fn init(data: Value) -> Result<(), Error> {
     let config = Arc::new(ConfigImpl::new(data));
 
-    let log_file_path = Path::new(config.log_path());
+    let log_file_path = Path::new(config.log_dir()).join("web.log");
     let _log_handler = logger::init(config.log_level(), &log_file_path).await?;
 
     let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);

@@ -112,8 +112,7 @@ async fn job_run(req: Req, exec_id: String, _: Arc<dyn Config>, image: Arc<Image
     );
 
     let cmd = vec![
-        "/bin/bash".to_string(),
-        "-c".to_string(),
+        "sh".to_string(),
         "/data/chord/conf/chord-web-worker.sh".to_string(),
     ];
 

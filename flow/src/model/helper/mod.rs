@@ -1,6 +1,7 @@
 use crate::model::helper::boolean::{ALL, ANY, BOOL};
 use chord::value::Value;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+use jsonpath::Selector;
 
 mod array;
 mod boolean;
@@ -77,5 +78,36 @@ impl HelperDef for LiteralHelper {
         Ok(Some(ScopedJson::Derived(Value::String(
             self.literal.to_string(),
         ))))
+    }
+}
+
+pub struct JsonpathHelper {}
+
+impl HelperDef for JsonpathHelper {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        _: &'reg Handlebars<'reg>,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg, 'rc>,
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+        let params = h.params();
+        if params.len() != 2 {
+            return Err(RenderError::new("Param invalid for helper \"jsonpath\""));
+        }
+
+        let path = params[0]
+            .value()
+            .as_str()
+            .ok_or(RenderError::new("Param invalid for helper \"jsonpath\""))?;
+
+        let value = params[1].value();
+
+        let selector = Selector::new(path)
+            .map_err(|_| RenderError::new("Param invalid for helper \"jsonpath\""))?;
+
+        let vec: Vec<Value> = selector.find(value).map(|v| v.clone()).collect();
+
+        Ok(Some(ScopedJson::Derived(Value::Array(vec))))
     }
 }

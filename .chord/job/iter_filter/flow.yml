@@ -12,9 +12,9 @@ stage:
         action: echo
         args: |
           content:
-            {{str (jsonpath "$[?(@.c=='d')]" def.iter)}}
+            {{str (jsonpath "$[?(@.c=='d')].c" def.iter)}}
         assert: |
-          (eq curr.value.0.c "d")
+          (eq curr.value.0 "d")
       
       sp4:
         action: log

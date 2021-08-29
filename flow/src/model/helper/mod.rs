@@ -1,7 +1,9 @@
-use crate::model::helper::boolean::{ALL, ANY, BOOL};
-use chord::value::Value;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
-use jsonpath::Selector;
+use jsonpath_rust::JsonPathFinder;
+
+use chord::value::Value;
+
+use crate::model::helper::boolean::{ALL, ANY, BOOL};
 
 mod array;
 mod boolean;
@@ -105,10 +107,12 @@ impl HelperDef for JsonpathHelper {
 
         let value = params[1].value();
 
-        let selector = Selector::new(path)
-            .map_err(|_| RenderError::new("Param invalid for helper \"jsonpath\""))?;
+        let mut finder = JsonPathFinder::from_str("null", path).map_err(|e| {
+            RenderError::new(format!("Param invalid for helper \"jsonpath\": {}", e))
+        })?;
+        finder.set_json(value.clone());
 
-        let vec: Vec<Value> = selector.find(value).map(|v| v.clone()).collect();
+        let vec: Vec<Value> = finder.find().into_iter().map(|v| v.clone()).collect();
 
         Ok(Some(ScopedJson::Derived(Value::Array(vec))))
     }

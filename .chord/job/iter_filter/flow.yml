@@ -58,7 +58,7 @@ stage:
         action: echo
         args: |
           content:
-            {{str (jsonpath "$[?(@.d=='e')].d" def.iter)}}
+            {{str (jsonpath "$[?(@.d ~= '^e$')].d" def.iter)}}
         assert: |
           (eq curr.value.0 "e")
           

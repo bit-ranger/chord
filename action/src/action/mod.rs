@@ -69,6 +69,13 @@ impl FactoryComposite {
             iter::flatten::IterFlattenFactory::new,
             true
         );
+        register!(
+            table,
+            config_ref,
+            "iter_filter",
+            iter::filter::IterFilterFactory::new,
+            true
+        );
 
         #[cfg(feature = "act_restapi")]
         register!(
@@ -148,7 +155,7 @@ impl FactoryComposite {
         table.insert(
             "iter_consume".into(),
             Arc::new(
-                iter::each::IterConsumeFactory::new(
+                iter::consume::IterConsumeFactory::new(
                     config_ref.map(|c| c["iter_consume"].clone()),
                     table.clone(),
                 )

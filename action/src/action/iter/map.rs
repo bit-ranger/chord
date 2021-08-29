@@ -36,8 +36,8 @@ impl<'a> CreateArg for MapCreateArg<'a> {
         &self.iter_arg.args_raw()["map"]["args"]
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
-        self.iter_arg.render_str(text)
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+        self.iter_arg.render_str(text, ctx)
     }
 
     fn is_shared(&self, text: &str) -> bool {
@@ -75,6 +75,10 @@ impl<'a, 'i> RunArg for MapRunArg<'a, 'i> {
 
     fn timeout(&self) -> Duration {
         self.iter_arg.timeout()
+    }
+
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+        self.iter_arg.render_str(text, ctx)
     }
 }
 

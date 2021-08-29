@@ -97,6 +97,21 @@ impl<'f, 'h, 'reg, 'r, 'p> CreateArgStruct<'f, 'h, 'reg, 'r> {
 
         return context;
     }
+
+    fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<String, Error> {
+        return flow::render(self.handlebars, render_context, txt);
+    }
+
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+        if ctx.is_some() {
+            let ctx = ctx.unwrap();
+            let mut render_context = self.render_context.clone();
+            ctx.update(render_context.data_mut());
+            self.render_str_with(text, &render_context)
+        } else {
+            self.render_str_with(text, self.render_context)
+        }
+    }
 }
 
 impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
@@ -112,8 +127,8 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
         self.flow.step_args(self.id.step())
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
-        flow::render(self.handlebars, self.render_context, text)
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+        self.render_str(&text, ctx)
     }
 
     fn is_shared(&self, text: &str) -> bool {
@@ -268,6 +283,17 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
             _ => Ok(val.clone()),
         };
     }
+
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+        if ctx.is_some() {
+            let ctx = ctx.unwrap();
+            let mut render_context = self.render_context.clone();
+            ctx.update(render_context.data_mut());
+            self.render_str_with(text, &render_context)
+        } else {
+            self.render_str_with(text, self.render_context)
+        }
+    }
 }
 
 impl<'f, 'h, 'reg, 'r, 'p> RunArg for RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
@@ -282,5 +308,9 @@ impl<'f, 'h, 'reg, 'r, 'p> RunArg for RunArgStruct<'f, 'h, 'reg, 'r, 'p> {
 
     fn timeout(&self) -> Duration {
         self.timeout()
+    }
+
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+        self.render_str(&text, ctx)
     }
 }

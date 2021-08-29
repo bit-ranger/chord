@@ -33,7 +33,7 @@ pub trait RunArg: Sync + Send {
 
     fn timeout(&self) -> Duration;
 
-    fn render_str(&self, raw: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error>;
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error>;
 }
 
 pub trait Context: Sync + Send {

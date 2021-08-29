@@ -51,7 +51,7 @@ pub async fn assert(
         condition = condition
     );
 
-    let result = render(handlebars, render_context, &template);
+    let result = render(handlebars, render_context, template.as_str());
     match result {
         Ok(result) => {
             if result.eq("true") {

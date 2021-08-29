@@ -38,8 +38,8 @@ impl<'a> CreateArg for ConsumeCreateArg<'a> {
         &self.iter_arg.args_raw()["consume"][self.step_id.as_str()]["args"]
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
-        self.iter_arg.render_str(text)
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+        self.iter_arg.render_str(text, ctx)
     }
 
     fn is_shared(&self, text: &str) -> bool {
@@ -83,6 +83,10 @@ impl<'a, 'i, 'r> RunArg for ConsumeRunArg<'a, 'i, 'r> {
 
     fn timeout(&self) -> Duration {
         self.iter_arg.timeout()
+    }
+
+    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+        self.iter_arg.render_str(text, ctx)
     }
 }
 

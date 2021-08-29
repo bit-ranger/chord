@@ -723,6 +723,7 @@ dependencies = [
  "futures",
  "handlebars",
  "itertools",
+ "jsonpath-rust",
  "lazy_static",
  "log",
 ]
@@ -748,6 +749,7 @@ dependencies = [
  "chord",
  "chrono",
  "csv",
+ "futures",
  "itertools",
  "log",
  "serde",
@@ -1814,6 +1816,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d99f9e3e84b8f67f846ef5b4cbbc3b1c29f6c759fcbce6f01aa0e73d932a24c"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "jsonpath-rust"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea3ca3e0b0e4932d0fa1da3824af4b37ffa092f5532cce01abb4c677acdb17a4"
+dependencies = [
+ "pest",
+ "pest_derive",
+ "regex",
+ "serde_json",
 ]
 
 [[package]]

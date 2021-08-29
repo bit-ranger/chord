@@ -28,7 +28,7 @@ impl Factory for DylibFactory {
             unsafe { lib.lib.get(b"init")? };
 
         let config_str = to_string(arg.args_raw())?;
-        let config_str = arg.render_str(config_str.as_str())?;
+        let config_str = arg.render_str(config_str.as_str(), None)?;
         action_create(arg.id().to_string().as_str(), config_str.as_str())?;
 
         Ok(Box::new(Dylib { lib }))

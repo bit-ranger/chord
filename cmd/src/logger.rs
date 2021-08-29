@@ -128,6 +128,14 @@ pub async fn init(
     target_level: Vec<(String, String)>,
     log_file_path: &Path,
 ) -> Result<LogHandler, Error> {
+    let log_file_parent_path = log_file_path.parent();
+    if log_file_parent_path.is_some() {
+        let log_file_parent_path = log_file_parent_path.unwrap();
+        if !log_file_parent_path.exists().await {
+            async_std::fs::create_dir_all(log_file_parent_path).await?;
+        }
+    }
+
     let (sender, receiver) = bounded(999999);
 
     log::set_max_level(LevelFilter::Trace);

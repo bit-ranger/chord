@@ -1,58 +1,27 @@
 version: "0.0.1"
 
 def:
-  iter: [ a, b, c ]
+  iter: [ a, b, { "c": "d" } ]
 
 
 stage:
   sg1:
     step:
+      
       sp1:
-        action: iter_map
-        args:
-          iter:
-            arr:
-              $ref: def.iter
-            enum: idx,item
-          map:
-            action: echo
-            args:
-              content:
-                - idx: "0-{{idx}}"
-                  item: "0-{{item}}"
-                
-                - idx: "1-{{idx}}"
-                  item: "1-{{item}}"
+        action: echo
+        args: |
+          content:
+            {{str (jsonpath "$[?(@.c=='d')]" def.iter)}}
         assert: |
-          (all
-            (eq curr.state "Ok")
-            (eq curr.value.2.1.item "1-c")
-          )
+          (eq curr.value.0.c "d")
       
-      sp2:
-        action: iter_filter
-        args:
-          iter:
-            arr:
-              $ref: step.sp1.value
-          filter: |
-            (all
-              (eq item.1.idx "1-2")
-            )
-          
-        assert: |
-          (all
-            (eq curr.state "Ok")
-            (eq curr.value.0.1.idx "1-2")
-            (eq curr.value.0.1.item "1-c")
-          )
-      
-      
-      sp3:
+      sp4:
         action: log
         args:
           content:
-            $ref: step.sp2.value
+            $ref: step.sp1.value
+            
             
             
             

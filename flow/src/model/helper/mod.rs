@@ -28,6 +28,8 @@ pub fn register(handlebars: &mut Handlebars) {
         }),
     );
 
+    handlebars.register_helper("jsonpath", Box::new(JsonpathHelper {}));
+
     //number
     handlebars.register_helper("num", Box::new(crate::model::helper::number::NUM));
 

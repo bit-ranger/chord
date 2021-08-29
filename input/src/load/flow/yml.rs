@@ -41,11 +41,11 @@ impl FlowParse for YmlFlowParser {
     fn parse_str(&self, txt: &str) -> Result<Value, Error> {
         match from_str(txt) {
             Err(e) => {
-                debug!("parse_str Err {}\n<<<\n{}", e, txt);
+                debug!("parse_str Err\n{}\n<<<\n{}", e, txt);
                 Err(e)
             }
             Ok(r) => {
-                trace!("parse_str Ok  {}\n<<<\n{}", r, txt);
+                trace!("parse_str Ok\n{}\n<<<\n{}", r, txt);
                 Ok(r)
             }
         }

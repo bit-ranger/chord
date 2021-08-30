@@ -17,7 +17,7 @@ impl DatabaseFactory {
 impl Factory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         if let Some(url) = arg.args_raw()["url"].as_str() {
-            if arg.is_shared(url) {
+            if arg.is_static(url) {
                 let url = arg.render_str(url, None)?;
                 let rb = create_rb(url.as_str()).await?;
                 return Ok(Box::new(Database { rb: Some(rb) }));

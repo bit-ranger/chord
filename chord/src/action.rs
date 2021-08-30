@@ -50,7 +50,7 @@ pub trait CreateArg: Sync + Send {
     fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error>;
 
     /// shared in whole action
-    fn is_shared(&self, text: &str) -> bool;
+    fn is_static(&self, text: &str) -> bool;
 }
 
 #[async_trait]

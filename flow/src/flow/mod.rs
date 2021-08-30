@@ -3,7 +3,6 @@ use std::cell::RefCell;
 use async_std::sync::Arc;
 use async_std::task_local;
 use handlebars::Handlebars;
-use log::info;
 
 use chord::action::Factory;
 use chord::err;
@@ -12,7 +11,8 @@ use chord::Error;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
-use crate::model::app::{Context, FlowContextStruct, RenderContext};
+use crate::model::app::{FlowApp, FlowAppStruct, RenderContext};
+use chord::value::{Map, Value};
 
 mod case;
 mod step;
@@ -25,44 +25,52 @@ task_local! {
 pub async fn context_create(
     action_factory: Box<dyn Factory>,
     flow_parse: Box<dyn FlowParse>,
-) -> Arc<dyn Context> {
-    Arc::new(FlowContextStruct::<'_>::new(action_factory, flow_parse))
+) -> Arc<dyn FlowApp> {
+    Arc::new(FlowAppStruct::<'_>::new(action_factory, flow_parse))
 }
 
-pub fn render(
+fn render(
     handlebars: &Handlebars<'_>,
-    render_context: &RenderContext,
+    render_ctx: &RenderContext,
     text: &str,
 ) -> Result<String, Error> {
-    let render = handlebars.render_template_with_context(text, render_context);
+    let render = handlebars.render_template_with_context(text, render_ctx);
     return match render {
         Ok(r) => Ok(r),
         Err(e) => Err(err!("tpl", format!("{}", e))),
     };
 }
 
-pub async fn assert(
-    handlebars: &Handlebars<'_>,
-    render_context: &RenderContext,
-    condition: &str,
-) -> bool {
-    let template = format!(
-        "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
-        condition = condition
-    );
-
-    let result = render(handlebars, render_context, template.as_str());
-    match result {
-        Ok(result) => {
-            if result.eq("true") {
-                true
+fn render_ref(val: &Value, ref_from: &Value) -> Result<Value, Error> {
+    return match val {
+        Value::Object(map) => {
+            if map.contains_key("$ref") {
+                if map["$ref"].is_string() {
+                    let ref_path = map["$ref"].as_str().unwrap();
+                    let path: Vec<&str> = ref_path.split(".").collect();
+                    let mut ref_val = ref_from;
+                    for p in path {
+                        ref_val = &ref_val[p];
+                    }
+                    Ok(ref_val.clone())
+                } else {
+                    Err(err!("001", "invalid args $ref"))
+                }
             } else {
-                false
+                let mut render_val = Map::new();
+                for (k, v) in map {
+                    render_val.insert(k.to_string(), render_ref(v, ref_from)?);
+                }
+                Ok(Value::Object(render_val))
             }
         }
-        Err(e) => {
-            info!("assert failure: {} >>> {}", condition, e);
-            false
+        Value::Array(arr) => {
+            let mut arr_val: Vec<Value> = Vec::with_capacity(arr.len());
+            for a in arr {
+                arr_val.push(render_ref(a, ref_from)?);
+            }
+            Ok(Value::Array(arr_val))
         }
-    }
+        _ => Ok(val.clone()),
+    };
 }

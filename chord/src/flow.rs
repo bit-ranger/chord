@@ -79,6 +79,10 @@ impl Flow {
         self._version().unwrap()
     }
 
+    pub fn def(&self) -> Option<&Map> {
+        self.flow["def"].as_object()
+    }
+
     pub fn stage_step_id_vec(&self, stage_id: &str) -> Vec<&str> {
         self._stage_step_id_vec(stage_id).unwrap()
     }
@@ -104,16 +108,16 @@ impl Flow {
         return self.flow["pre"]["step"][step_id].borrow();
     }
 
-    pub fn step_args(&self, step_id: &str) -> &Value {
-        self.step(step_id)["args"].borrow()
+    pub fn step_let(&self, step_id: &str) -> &Value {
+        self.step(step_id)["let"].borrow()
     }
 
-    pub fn def(&self) -> Option<&Map> {
-        self.flow["def"].as_object()
-    }
-
-    pub fn step_action(&self, step_id: &str) -> &str {
+    pub fn step_exec_action(&self, step_id: &str) -> &str {
         self._step_action(step_id).unwrap()
+    }
+
+    pub fn step_exec_args(&self, step_id: &str) -> &Value {
+        self.step(step_id)["exec"]["args"].borrow()
     }
 
     pub fn step_assert(&self, step_id: &str) -> Option<&str> {
@@ -180,9 +184,9 @@ impl Flow {
     }
 
     fn _step_action(&self, step_id: &str) -> Result<&str, Error> {
-        self.step(step_id)["action"]
+        self.step(step_id)["exec"]["action"]
             .as_str()
-            .ok_or(err!("step", "missing action"))
+            .ok_or(err!("step", "missing exec.action"))
     }
 
     fn _step_spec_timeout(&self, step_id: &str) -> Result<Duration, Error> {

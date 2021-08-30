@@ -40,8 +40,8 @@ impl<'a> CreateArg for MapCreateArg<'a> {
         self.iter_arg.render_str(text, ctx)
     }
 
-    fn is_shared(&self, text: &str) -> bool {
-        self.iter_arg.is_shared(text)
+    fn is_static(&self, text: &str) -> bool {
+        self.iter_arg.is_static(text)
     }
 }
 

@@ -21,7 +21,7 @@ use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step::arg::CreateArgStruct;
 use crate::flow::task::arg::TaskIdSimple;
-use crate::model::app::{Context, RenderContext};
+use crate::model::app::{FlowApp, RenderContext};
 use crate::CTX_ID;
 
 pub mod arg;
@@ -42,7 +42,7 @@ pub struct TaskRunner {
     assess_report: Box<dyn Report>,
     case_factory: Box<dyn CaseStore>,
     id: Arc<TaskIdSimple>,
-    flow_ctx: Arc<dyn Context>,
+    flow_ctx: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
 }
 
@@ -50,7 +50,7 @@ impl TaskRunner {
     pub async fn new(
         case_factory: Box<dyn CaseStore>,
         assess_report: Box<dyn Report>,
-        flow_ctx: Arc<dyn Context>,
+        flow_ctx: Arc<dyn FlowApp>,
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
     ) -> Result<TaskRunner, Error> {
@@ -339,7 +339,7 @@ async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
 }
 
 async fn step_vec_create(
-    flow_ctx: Arc<dyn Context>,
+    flow_ctx: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
     pre_ctx: Option<Arc<Value>>,
     step_id_vec: Vec<String>,
@@ -379,17 +379,17 @@ fn render_context_create(flow: Arc<Flow>, pre_ctx: Option<Arc<Value>>) -> Render
 }
 
 async fn step_create(
-    flow_ctx: &dyn Context,
+    flow_ctx: &dyn FlowApp,
     flow: &Flow,
-    render_context: &RenderContext,
+    render_ctx: &RenderContext,
     task_id: Arc<TaskIdSimple>,
     step_id: String,
 ) -> Result<Box<dyn Action>, Error> {
-    let action = flow.step_action(step_id.as_ref());
+    let action = flow.step_exec_action(step_id.as_ref());
     let create_arg = CreateArgStruct::new(
         flow,
         flow_ctx.get_handlebars(),
-        render_context,
+        render_ctx,
         task_id,
         action.into(),
         step_id,
@@ -398,12 +398,12 @@ async fn step_create(
     flow_ctx.get_action_factory().create(&create_arg).await
 }
 
-async fn case_run(flow_ctx: &dyn Context, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run(flow_ctx: &dyn FlowApp, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     Box::new(case::run(flow_ctx, case_arg).await)
 }
 
 fn case_spawn(
-    flow_ctx: Arc<dyn Context>,
+    flow_ctx: Arc<dyn FlowApp>,
     case_arg: CaseArgStruct,
 ) -> JoinHandle<Box<dyn CaseAssess>> {
     let builder = Builder::new()
@@ -412,7 +412,7 @@ fn case_spawn(
     return builder.unwrap();
 }
 
-async fn case_run_arc(flow_ctx: Arc<dyn Context>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run_arc(flow_ctx: Arc<dyn FlowApp>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     CTX_ID.with(|cid| cid.replace(case_arg.id().to_string()));
     case_run(flow_ctx.as_ref(), case_arg).await
 }

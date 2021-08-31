@@ -5,9 +5,12 @@ stage:
     
     step:
       example:
-        action: sleep
-        args:
+        let:
           duration: "{{case.seconds}}"
+        exec:
+          action: sleep
+          args:
+            duration: "{{duration}}"
         assert: |+
           (all
              (eq 1 1)

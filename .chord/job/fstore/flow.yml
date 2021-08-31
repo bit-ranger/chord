@@ -6,19 +6,29 @@ stage:
     
     step:
       step1:
-        action: download
-        args:
+        let:
           url: "{{case.url}}"
+        exec:
+          action: download
+          args:
+            url: "{{url}}"
       
       
       step2:
-        action: fstore
-        args:
+        let:
+          step1_size: "{{step.step1.value.size}}"
+          step2_size: "{{step.step2.value.size}}"
           path:
             - "{{step.step1.value.path.0}}"
             - "{{step.step1.value.path.1}}"
+        exec:
+          action: fstore
+          args:
+            path:
+              $ref: path
+        
         assert: |
-          (eq step.step1.value.size step.step2.value.size)
+          (eq  step1_size step2_size)
                 
                     
                 

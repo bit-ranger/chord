@@ -12,43 +12,49 @@ stage:
     duration: 30
     step:
       del_idx:
-        action: restapi
-        args:
-          url: "{{def.es.url}}/article"
-          method: DELETE
+        let:
+          url: {{def.es.url}}
+        exec:
+          action: restapi
+          args:
+            url: "{{url}}/article"
+            method: DELETE
       
       crt_inx:
-        action: restapi
-        args: |
-          url: "{{def.es.url}}/article"
-          method: PUT
-          body:
-            {
-                "settings": {
-                    "index": {
-                        "analysis.analyzer.default.type": "ik_max_word"
-                    }
-                },
-                "mappings": {
-                    "properties": {
-                        "user": {
-                            "type": "text",
-                            "analyzer": "ik_max_word",
-                            "search_analyzer": "ik_max_word"
-                        },
-                        "title": {
-                            "type": "text",
-                            "analyzer": "ik_max_word",
-                            "search_analyzer": "ik_max_word"
-                        },
-                        "desc": {
-                            "type": "text",
-                            "analyzer": "ik_max_word",
-                            "search_analyzer": "ik_max_word"
-                        }
-                    }
-                }
-            }
+        let:
+          url: {{def.es.url}}
+        exec:
+          action: restapi
+          args:
+            url: "{{url}}/article"
+            method: PUT
+            body:
+              {
+                  "settings": {
+                      "index": {
+                          "analysis.analyzer.default.type": "ik_max_word"
+                      }
+                  },
+                  "mappings": {
+                      "properties": {
+                          "user": {
+                              "type": "text",
+                              "analyzer": "ik_max_word",
+                              "search_analyzer": "ik_max_word"
+                          },
+                          "title": {
+                              "type": "text",
+                              "analyzer": "ik_max_word",
+                              "search_analyzer": "ik_max_word"
+                          },
+                          "desc": {
+                              "type": "text",
+                              "analyzer": "ik_max_word",
+                              "search_analyzer": "ik_max_word"
+                          }
+                      }
+                  }
+              }
         assert: |+
           (all
             (eq curr.value.status 200)
@@ -56,18 +62,24 @@ stage:
           )
       
       insert:
-        action: restapi
-        spec:
-          timeout: 10
-        args:
-          url: "{{def.es.url}}/article/_doc/1"
-          method: PUT
-          body:
-            {
-              "author": "{{case.author}}",
-              "title": "{{case.title}}",
-              "desc": "{{case.desc}}"
-            }
+        let:
+          url: {{def.es.url}}
+          author: {{case.author}}
+          title: {{case.title}}
+          desc: {{case.desc}}
+        exec:
+          action: restapi
+          spec:
+            timeout: 10
+          args:
+            url: "{{url}}/article/_doc/1"
+            method: PUT
+            body:
+              {
+                "author": "{{author}}",
+                "title": "{{title}}",
+                "desc": "{{desc}}"
+              }
         
         assert: |+
           (all
@@ -81,33 +93,38 @@ stage:
           duration: 9
       
       search:
-        action: restapi
-        spec:
-          timeout: 10
-        args:
-          url: "{{def.es.url}}/article/_search"
-          method: GET
-          body:
-            {
-              "size": 10,
-              "from": 0,
-              "query": {
-                "bool": {
-                  "must": [
-                    {
-                      "match": {
-                        "desc": "{{case.match}}"
+        let:
+          url: {{def.es.url}}
+          match: {{case.match}}
+          term: {{case.term}}
+        exec:
+          action: restapi
+          spec:
+            timeout: 10
+          args:
+            url: "{{url}}/article/_search"
+            method: GET
+            body:
+              {
+                "size": 10,
+                "from": 0,
+                "query": {
+                  "bool": {
+                    "must": [
+                      {
+                        "match": {
+                          "desc": "{{match}}"
+                        }
+                      },
+                      {
+                        "term": {
+                          "author": "{{term}}"
+                        }
                       }
-                    },
-                    {
-                      "term": {
-                        "author": "{{case.term}}"
-                      }
-                    }
-                  ]
+                    ]
+                  }
                 }
               }
-            }
         
         assert: |+
           (all

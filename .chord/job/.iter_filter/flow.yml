@@ -1,0 +1,84 @@
+version: "0.0.1"
+
+def:
+  iter: [ a, b, c, { "d": "e" } ]
+
+
+stage:
+  sg1:
+    step:
+      sp1:
+        let:
+          arr:
+            $ref: def.iter
+        exec:
+          action: iter_map
+          args:
+            iter:
+              arr:
+                $ref: arr
+              enum: idx,item
+            map:
+              action: echo
+              args:
+                content:
+                  - idx: "0-{{idx}}"
+                    item: "0-{{item}}"
+                  
+                  - idx: "1-{{idx}}"
+                    item: "1-{{item}}"
+        assert: |
+          (all
+            (eq state "Ok")
+            (eq value.2.1.item "1-c")
+          )
+      
+      sp2:
+        let:
+          arr:
+            $ref: step.sp1.value
+        exec:
+          action: iter_filter
+          args:
+            iter:
+              arr:
+                $ref: arr
+            filter: |
+              (all
+                (eq item.1.idx "1-2")
+              )
+        
+        assert: |
+          (all
+            (eq state "Ok")
+            (eq value.0.1.idx "1-2")
+            (eq value.0.1.item "1-c")
+          )
+      
+      sp3:
+        let:
+          content:
+            $ref: step.sp2.value
+        exec:
+          action: log
+          args:
+            content:
+              $ref: content
+      
+      sp4:
+        let:
+          path: $[?(@.d ~= '^e$')].d
+          data:
+            $ref: def.iter
+        exec:
+          action: echo
+          args: |
+            content:
+              {{jsonpath path data}}
+        assert: |
+          (eq value.0 "e")
+          
+          
+          
+          
+        

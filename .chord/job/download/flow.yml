@@ -3,26 +3,33 @@ version: "0.0.1"
 
 stage:
   stage1:
-    
     step:
       step1:
-        action: download
-        args:
+        let:
           url: "{{case.url}}"
+        exec:
+          action: download
+          args:
+            url: "{{url}}"
       
       
       step2:
-        action: download
-        args:
-          header:
-            abc: [ "a", "b", "c" ]
+        let:
           url: "{{case.url}}"
+        exec:
+          action: download
+          args:
+            header:
+              abc: [ "a", "b", "c" ]
+            url: "{{url}}"
       
       setp3:
-        action: log
-        args:
-          content: |
-            {{str step.step1.value.header.content-length.0}}
+        let:
+          step1_len: "{{step.step1.value.header.content-length.0}}"
+        exec:
+          action: log
+          args:
+            content: "{{step1_len}}"
                     
                 
     

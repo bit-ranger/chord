@@ -6,13 +6,14 @@ stage:
     
     step:
       step1:
-        action: count
-        args:
-          init: 10
-          incr: 2
+        exec:
+          action: count
+          args:
+            init: 10
+            incr: 2
         assert: |
           (all
-            (gt curr.value 9)
+            (gt value 9)
           )
     
 

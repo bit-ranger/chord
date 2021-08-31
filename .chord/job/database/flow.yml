@@ -10,13 +10,17 @@ stage:
     
     step:
       select:
-        action: database
-        args:
+        let:
           url: "{{def.database.url}}"
-          sql: |+
-            SELECT * FROM user WHERE user = '{{case.user}}'
+          user: "{{case.user}}"
+        exec:
+          action: database
+          args:
+            url: "{{url}}"
+            sql: |-
+              SELECT * FROM user WHERE user = '{{user}}'
         assert:
-          (eq curr.value.records.0.User case.user)
+          (eq value.records.0.User user)
     
 
       

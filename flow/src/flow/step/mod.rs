@@ -45,7 +45,7 @@ fn assert_assess(
     return match action_value {
         Ok(scope) => {
             if let Some(condition) = arg.assert() {
-                if assert(arg, condition, "value", scope.as_value()) {
+                if assert(arg, condition, Ok(scope.as_value())) {
                     debug!("step Ok   {}", arg.id());
                     StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Ok(scope))
                 } else {
@@ -76,7 +76,7 @@ fn assert_assess(
             if arg.catch_err() {
                 trace!("step catch {}", arg.id());
                 if let Some(condition) = arg.assert() {
-                    if assert(arg, condition, "error", &error) {
+                    if assert(arg, condition, Err(&error)) {
                         debug!("step Ok   {}", arg.id());
                         StepAssessStruct::new(
                             arg.id().clone(),
@@ -122,24 +122,35 @@ fn assert_assess(
     };
 }
 
-fn assert(arg: &RunArgStruct<'_, '_, '_>, condition: &str, name: &str, value: &Value) -> bool {
+fn assert(arg: &RunArgStruct<'_, '_, '_>, condition: &str, value: Result<&Value, &Value>) -> bool {
     let assert_tpl = format!(
         "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
         condition = condition
     );
+
     let assert_result = arg
         .render_str(
             assert_tpl.as_str(),
-            Some(Box::new(AssertContext {
-                name: name.to_string(),
-                value: value.clone(),
-            })),
+            match value {
+                Ok(value) => Some(Box::new(AssertContext {
+                    state: "Ok".to_string(),
+                    name: "value".to_string(),
+                    value: value.clone(),
+                })),
+                Err(value) => Some(Box::new(AssertContext {
+                    state: "Err".to_string(),
+                    name: "error".to_string(),
+                    value: value.clone(),
+                })),
+            },
         )
         .unwrap_or("false".to_string());
+
     assert_result == "true"
 }
 
 struct AssertContext {
+    state: String,
     name: String,
     value: Value,
 }
@@ -147,6 +158,7 @@ struct AssertContext {
 impl Context for AssertContext {
     fn update(&self, value: &mut Value) {
         if let Value::Object(map) = value {
+            map.insert("state".to_string(), Value::String(self.state.clone()));
             map.insert(self.name.clone(), self.value.clone());
         }
     }

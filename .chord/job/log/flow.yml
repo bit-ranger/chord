@@ -7,7 +7,7 @@ stage:
     step:
       step1:
         let:
-          lon: "{{case.orgin_lon}}"
+          lon: "{{case.origin_lon}}"
           lat: "{{case.origin_lat}}"
         exec:
           action: log

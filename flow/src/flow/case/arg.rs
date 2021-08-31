@@ -7,7 +7,7 @@ use chord::case::CaseId;
 use chord::collection::TailDropVec;
 use chord::flow::Flow;
 use chord::task::TaskId;
-use chord::value::{json, to_value, Map};
+use chord::value::{to_value, Map};
 
 use crate::flow;
 use crate::flow::render_ref;
@@ -135,29 +135,14 @@ impl CaseArgStruct {
         self.data
     }
 
-    pub async fn step_result_register(&mut self, sid: &str, state: &StepState) {
+    pub async fn step_ok_register(&mut self, sid: &str, state: &StepState) {
         match state {
             StepState::Ok(scope) => {
                 if let Value::Object(reg) = self.render_ctx.data_mut() {
-                    reg["step"][sid]["state"] = Value::String("Ok".to_owned());
                     reg["step"][sid]["value"] = scope.as_value().clone();
                 }
             }
-            StepState::Err(e) => {
-                if let Value::Object(reg) = self.render_ctx.data_mut() {
-                    reg["step"][sid]["state"] = Value::String("Err".to_owned());
-                    reg["step"][sid]["error"] = json!({
-                        "code": e.code(),
-                        "message": e.message()
-                    });
-                }
-            }
-            StepState::Fail(scope) => {
-                if let Value::Object(reg) = self.render_ctx.data_mut() {
-                    reg["step"][sid]["state"] = Value::String("Fail".to_owned());
-                    reg["step"][sid]["value"] = scope.as_value().clone();
-                }
-            }
+            _ => {}
         }
     }
 }

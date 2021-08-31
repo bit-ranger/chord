@@ -4,15 +4,18 @@ stage:
   stage1:
     step:
       step1:
-        action: dubbo
-        args:
-          method: |-
-            com.bitranger.dubbo.provider.service.EchoService#echo(java.lang.String)
-          args: [ "{{case.content}}" ]
+        let:
+          content: "{{case.content}}"
+        exec:
+          action: dubbo
+          args:
+            method: |-
+              com.bitranger.dubbo.provider.service.EchoService#echo(java.lang.String)
+            args: [ "{{content}}" ]
         assert: |+
           (all
-              (eq curr.value.code "0")
-              (eq curr.value.data case.content)
+              (eq value.code "0")
+              (eq value.data case.content)
           )
 
 

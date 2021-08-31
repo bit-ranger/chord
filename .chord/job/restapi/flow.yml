@@ -88,9 +88,10 @@ stage:
           )
       
       wait:
-        action: sleep
-        args:
-          duration: 9
+        exec:
+          action: sleep
+          args:
+            duration: 9
       
       search:
         let:

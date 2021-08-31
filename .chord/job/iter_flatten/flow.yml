@@ -1,7 +1,7 @@
 version: "0.0.1"
 
 def:
-  iter: [ a, b, c, { "d": "e" } ]
+  iter: [ a, b, c ]
 
 
 stage:
@@ -14,10 +14,8 @@ stage:
         exec:
           action: iter_map
           args:
-            iter:
-              arr:
-                $ref: arr
-              enum: idx,item
+            arr:
+              $ref: arr
             map:
               action: echo
               args:
@@ -38,22 +36,17 @@ stage:
           arr:
             $ref: step.sp1.value
         exec:
-          action: iter_filter
+          action: iter_flatten
           args:
-            iter:
-              arr:
-                $ref: arr
-            filter: |
-              (all
-                (eq item.1.idx "1-2")
-              )
-        
+            arr:
+              $ref: arr
         assert: |
           (all
             (eq state "Ok")
-            (eq value.0.1.idx "1-2")
-            (eq value.0.1.item "1-c")
+            (eq value.5.idx "1-2")
+            (eq value.5.item "1-c")
           )
+      
       
       sp3:
         let:
@@ -64,21 +57,9 @@ stage:
           args:
             content:
               $ref: content
-      
-      sp4:
-        let:
-          path: $[?(@.d ~= '^e$')].d
-          data:
-            $ref: def.iter
-        exec:
-          action: echo
-          args: |
-            content:
-              {{jsonpath path data}}
-        assert: |
-          (eq value.0 "e")
-          
-          
-          
-          
+              
+            
+            
+            
+                    
         

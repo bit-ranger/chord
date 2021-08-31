@@ -1,0 +1,47 @@
+version: "0.0.1"
+
+def:
+  iter: [ a, b, c ]
+
+
+stage:
+  sg1:
+    step:
+      sp1:
+        let:
+          arr:
+            $ref: def.iter
+        exec:
+          action: iter_map
+          args:
+            arr:
+              $ref: arr
+            map:
+              action: echo
+              args:
+                content:
+                  - idx: "0-{{idx}}"
+                    item: "0-{{item}}"
+                  
+                  - idx: "1-{{idx}}"
+                    item: "1-{{item}}"
+        assert: |
+          (all
+            (eq state "Ok")
+            (eq value.2.1.item "1-c")
+          )
+      
+      sp2:
+        let:
+          contnet:
+            $ref: step.sp1.value
+        exec:
+          action: log
+          args:
+            content:
+              $ref: contnet
+                
+            
+            
+                    
+        

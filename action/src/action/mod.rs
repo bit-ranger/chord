@@ -153,17 +153,6 @@ impl FactoryComposite {
         register!(table, config_ref, "shell", shell::ShellFactory::new, false);
 
         table.insert(
-            "iter_consume".into(),
-            Arc::new(
-                iter::consume::IterConsumeFactory::new(
-                    config_ref.map(|c| c["iter_consume"].clone()),
-                    table.clone(),
-                )
-                .await?,
-            ),
-        );
-
-        table.insert(
             "iter_map".into(),
             Arc::new(
                 iter::map::IterMapFactory::new(

@@ -23,15 +23,11 @@ impl Action for IterFlatten {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args(None)?;
         trace!("{}", args);
-        let array = args["iter"]["arr"]
-            .as_array()
-            .ok_or(err!("103", "missing iter.arr"))?;
+        let array = args["arr"].as_array().ok_or(err!("103", "missing .arr"))?;
 
         let mut vec_vec = Vec::with_capacity(array.len());
         for arr in array {
-            let vec = arr
-                .as_array()
-                .ok_or(err!("103", "invalid item in iter.arr"))?;
+            let vec = arr.as_array().ok_or(err!("103", "invalid item in arr"))?;
             vec_vec.push(vec.clone());
         }
 

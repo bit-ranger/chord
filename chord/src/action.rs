@@ -29,14 +29,18 @@ pub trait Scope: Sync + Send {
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &dyn RunId;
 
-    fn args(&self, ctx: Option<Box<dyn Context>>) -> Result<Value, Error>;
+    fn args(&self, ctx: Option<Box<dyn RenderContextUpdate>>) -> Result<Value, Error>;
 
     fn timeout(&self) -> Duration;
 
-    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error>;
+    fn render_str(
+        &self,
+        text: &str,
+        ctx: Option<Box<dyn RenderContextUpdate>>,
+    ) -> Result<String, Error>;
 }
 
-pub trait Context: Sync + Send {
+pub trait RenderContextUpdate: Sync + Send {
     fn update(&self, value: &mut Value);
 }
 
@@ -47,7 +51,11 @@ pub trait CreateArg: Sync + Send {
 
     fn args_raw(&self) -> &Value;
 
-    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error>;
+    fn render_str(
+        &self,
+        text: &str,
+        ctx: Option<Box<dyn RenderContextUpdate>>,
+    ) -> Result<String, Error>;
 
     /// shared in whole action
     fn is_static(&self, text: &str) -> bool;

@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use futures::FutureExt;
 use log::{debug, info, trace};
 
-use chord::action::{Action, Context, RunArg, Scope};
+use chord::action::{Action, RenderContextUpdate, RunArg, Scope};
 use chord::step::StepState;
 use chord::Error;
 use res::StepAssessStruct;
@@ -155,7 +155,7 @@ struct AssertContext {
     value: Value,
 }
 
-impl Context for AssertContext {
+impl RenderContextUpdate for AssertContext {
     fn update(&self, value: &mut Value) {
         if let Value::Object(map) = value {
             map.insert("state".to_string(), Value::String(self.state.clone()));

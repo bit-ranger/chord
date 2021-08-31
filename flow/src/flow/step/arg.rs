@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use handlebars::Handlebars;
 
-use chord::action::{Context, RunId};
 use chord::action::{CreateArg, CreateId, RunArg};
+use chord::action::{RenderContextUpdate, RunId};
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::task::TaskId;
@@ -98,7 +98,11 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
         return context;
     }
 
-    fn render_str(&self, text: &str, _: Option<Box<dyn Context>>) -> Result<String, Error> {
+    fn render_str(
+        &self,
+        text: &str,
+        _: Option<Box<dyn RenderContextUpdate>>,
+    ) -> Result<String, Error> {
         Ok(text.to_string())
     }
 }
@@ -116,7 +120,11 @@ impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
         self.flow.step_exec_args(self.id.step())
     }
 
-    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+    fn render_str(
+        &self,
+        text: &str,
+        ctx: Option<Box<dyn RenderContextUpdate>>,
+    ) -> Result<String, Error> {
         self.render_str(&text, ctx)
     }
 
@@ -209,7 +217,11 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         }
     }
 
-    fn render_args(&self, args_raw: &Value, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
+    fn render_args(
+        &self,
+        args_raw: &Value,
+        ctx: Option<Box<dyn RenderContextUpdate>>,
+    ) -> Result<Value, Error> {
         if args_raw.is_null() {
             return Ok(Value::Null);
         }
@@ -223,7 +235,11 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         };
     }
 
-    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+    fn render_str(
+        &self,
+        text: &str,
+        ctx: Option<Box<dyn RenderContextUpdate>>,
+    ) -> Result<String, Error> {
         if ctx.is_some() {
             let ctx = ctx.unwrap();
             let mut render_context = self.render_context.clone();
@@ -240,7 +256,7 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
         &self.id
     }
 
-    fn args(&self, ctx: Option<Box<dyn Context>>) -> Result<Value, Error> {
+    fn args(&self, ctx: Option<Box<dyn RenderContextUpdate>>) -> Result<Value, Error> {
         let args_raw = self.flow.step_exec_args(self.id().step());
         return self.render_args(args_raw, ctx);
     }
@@ -249,7 +265,11 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
         self.timeout()
     }
 
-    fn render_str(&self, text: &str, ctx: Option<Box<dyn Context>>) -> Result<String, Error> {
+    fn render_str(
+        &self,
+        text: &str,
+        ctx: Option<Box<dyn RenderContextUpdate>>,
+    ) -> Result<String, Error> {
         self.render_str(&text, ctx)
     }
 }

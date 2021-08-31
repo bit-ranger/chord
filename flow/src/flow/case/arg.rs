@@ -117,11 +117,10 @@ impl CaseArgStruct {
             let_raw,
         )?;
 
-        let render_ctx = RenderContext::wraps(let_value)?;
         RunArgStruct::new(
             self.flow.as_ref(),
             flow_app.get_handlebars(),
-            render_ctx,
+            let_value,
             self.id.clone(),
             step_id.to_owned(),
         )

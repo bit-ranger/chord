@@ -9,7 +9,7 @@ use chord::action::{CreateArg, CreateId, RunArg};
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::task::TaskId;
-use chord::value::{from_str, to_string, Value};
+use chord::value::{from_str, to_string, Map, Value};
 use chord::{err, Error};
 
 use crate::flow;
@@ -139,7 +139,7 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
     pub fn new(
         flow: &'f Flow,
         handlebars: &'h Handlebars<'reg>,
-        render_context: RenderContext,
+        let_value: Value,
         case_id: Arc<dyn CaseId>,
         step_id: String,
     ) -> Result<RunArgStruct<'f, 'h, 'reg>, Error> {
@@ -147,7 +147,11 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
             case_id,
             step: step_id,
         };
-
+        let render_context = if let_value.is_null() {
+            RenderContext::wraps(Value::Object(Map::new()))
+        } else {
+            RenderContext::wraps(let_value)
+        }?;
         let run_arg = RunArgStruct {
             flow,
             handlebars,

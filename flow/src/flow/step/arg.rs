@@ -66,34 +66,26 @@ impl Display for CreateIdStruct {
     }
 }
 
-pub struct CreateArgStruct<'f, 'h, 'reg, 'r> {
+pub struct CreateArgStruct<'f> {
     flow: &'f Flow,
-    handlebars: &'h Handlebars<'reg>,
-    render_ctx: &'r RenderContext,
     action: String,
     id: CreateIdStruct,
 }
 
-impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
+impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f> {
     pub fn new(
         flow: &'f Flow,
-        handlebars: &'h Handlebars<'reg>,
-        render_ctx: &'r RenderContext,
+        _: &'h Handlebars<'reg>,
+        _: &'r RenderContext,
         task_id: Arc<dyn TaskId>,
         action: String,
         step_id: String,
-    ) -> CreateArgStruct<'f, 'h, 'reg, 'r> {
+    ) -> CreateArgStruct<'f> {
         let id = CreateIdStruct {
             task_id,
             step: step_id,
         };
-        let context = CreateArgStruct {
-            flow,
-            handlebars,
-            render_ctx,
-            action,
-            id,
-        };
+        let context = CreateArgStruct { flow, action, id };
 
         return context;
     }
@@ -107,7 +99,7 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f, 'h, 'reg, 'r> {
     }
 }
 
-impl<'f, 'h, 'reg, 'r> CreateArg for CreateArgStruct<'f, 'h, 'reg, 'r> {
+impl<'f> CreateArg for CreateArgStruct<'f> {
     fn id(&self) -> &dyn CreateId {
         &self.id
     }

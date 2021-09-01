@@ -1,7 +1,6 @@
 use async_std::sync::Arc;
 use chord::action::prelude::*;
 use chord::action::{CreateId, RenderContextUpdate, RunId};
-use itertools::Itertools;
 use log::trace;
 use std::collections::HashMap;
 use std::time::Duration;

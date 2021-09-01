@@ -73,7 +73,7 @@ stage:
               $ref: path_val
         
         assert: |
-          (eq value.0 "e")
+          (eq value "e")
           
           
           

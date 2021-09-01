@@ -15,7 +15,7 @@ stage:
         assert: |+
           (all
               (eq value.code "0")
-              (eq value.data case.content)
+              (eq value.data content)
           )
 
 

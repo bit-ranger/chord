@@ -17,7 +17,6 @@ stage:
       step2:
         let:
           step1_size: "{{step.step1.value.size}}"
-          step2_size: "{{step.step2.value.size}}"
           path:
             - "{{step.step1.value.path.0}}"
             - "{{step.step1.value.path.1}}"
@@ -26,9 +25,8 @@ stage:
           args:
             path:
               $ref: path
-        
         assert: |
-          (eq  step1_size step2_size)
+          (eq (num step1_size) value.size)
                 
                     
                 

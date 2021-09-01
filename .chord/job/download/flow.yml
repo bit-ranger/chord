@@ -11,7 +11,8 @@ stage:
           action: download
           args:
             url: "{{url}}"
-      
+        assert: |
+          (eq state "Ok")
       
       step2:
         let:
@@ -25,11 +26,11 @@ stage:
       
       setp3:
         let:
-          step1_len: "{{step.step1.value.header.content-length.0}}"
+          step1_size: "{{step.step1.value.size}}"
         exec:
           action: log
           args:
-            content: "{{step1_len}}"
+            content: "{{step1_size}}"
                     
                 
     

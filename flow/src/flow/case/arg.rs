@@ -23,14 +23,21 @@ use handlebars::Handlebars;
 #[derive(Clone)]
 pub struct CaseIdStruct {
     task_id: Arc<dyn TaskId>,
+    stage_id: Arc<String>,
     exec_id: Arc<String>,
     case: String,
 }
 
 impl CaseIdStruct {
-    pub fn new(task_id: Arc<dyn TaskId>, case_id: String, exec_id: Arc<String>) -> CaseIdStruct {
+    pub fn new(
+        task_id: Arc<dyn TaskId>,
+        stage_id: Arc<String>,
+        exec_id: Arc<String>,
+        case_id: String,
+    ) -> CaseIdStruct {
         CaseIdStruct {
             task_id,
+            stage_id,
             exec_id,
             case: case_id,
         }
@@ -53,7 +60,13 @@ impl CaseId for CaseIdStruct {
 
 impl Display for CaseIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}-{}", self.task_id, self.exec_id, self.case).as_str())
+        f.write_str(
+            format!(
+                "{}-{}-{}-{}",
+                self.task_id, self.stage_id, self.exec_id, self.case
+            )
+            .as_str(),
+        )
     }
 }
 
@@ -72,10 +85,11 @@ impl CaseArgStruct {
         data: Value,
         pre_ctx: Option<Arc<Value>>,
         task_id: Arc<dyn TaskId>,
-        case_id: String,
+        stage_id: Arc<String>,
         case_exec_id: Arc<String>,
+        case_id: String,
     ) -> CaseArgStruct {
-        let id = Arc::new(CaseIdStruct::new(task_id, case_id, case_exec_id));
+        let id = Arc::new(CaseIdStruct::new(task_id, stage_id, case_exec_id, case_id));
 
         let mut render_data: Map = Map::new();
         if let Some(def) = flow.def() {

@@ -29,7 +29,8 @@ pub mod res;
 
 pub struct TaskRunner {
     step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
-    case_exec_id: Arc<String>,
+    stage_round_no: usize,
+    stage_id: Arc<String>,
     stage_state: TaskState,
 
     pre_ctx: Option<Arc<Value>>,
@@ -72,8 +73,8 @@ impl TaskRunner {
         return if pre_step_vec.is_empty() {
             let runner = TaskRunner {
                 step_vec: Arc::new(TailDropVec::from(vec![])),
-
-                case_exec_id: Arc::new("".into()),
+                stage_id: Arc::new("".into()),
+                stage_round_no: 0,
                 task_state: TaskState::Ok,
                 stage_state: TaskState::Ok,
 
@@ -94,8 +95,8 @@ impl TaskRunner {
             let pre_ctx = pre_ctx_create(pre_assess.as_ref()).await?;
             let runner = TaskRunner {
                 step_vec: Arc::new(TailDropVec::from(vec![])),
-
-                case_exec_id: Arc::new("".into()),
+                stage_id: Arc::new("".into()),
+                stage_round_no: 0,
                 task_state: TaskState::Ok,
                 stage_state: TaskState::Ok,
 
@@ -177,6 +178,7 @@ impl TaskRunner {
     }
 
     async fn stage_run(&mut self, stage_id: &str) -> Result<(), Error> {
+        self.stage_id = Arc::new(stage_id.to_string());
         self.stage_state = TaskState::Ok;
         let step_id_vec: Vec<String> = self
             .flow
@@ -208,7 +210,7 @@ impl TaskRunner {
         let round_max = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
-            self.case_exec_id = Arc::new(format!("{}_{}", stage_id, round_count + 1));
+            self.stage_round_no = round_count;
             self.stage_data_vec_run_remaining(stage_id, concurrency)
                 .await?;
             round_count += 1;
@@ -250,9 +252,7 @@ impl TaskRunner {
                 self.stage_state = TaskState::Fail;
                 self.task_state = TaskState::Fail;
             }
-            self.assess_report
-                .report(stage_id, &case_assess_vec)
-                .await?;
+            self.assess_report.report(&case_assess_vec).await?;
         }
     }
 
@@ -290,8 +290,9 @@ impl TaskRunner {
                     d,
                     self.pre_ctx.clone(),
                     self.id.clone(),
+                    self.stage_id.clone(),
+                    Arc::new(self.stage_round_no.to_string()),
                     id,
-                    self.case_exec_id.clone(),
                 )
             })
             .collect();
@@ -310,8 +311,9 @@ async fn pre_arg(
         Value::Null,
         None,
         task_id.clone(),
-        "pre".into(),
         Arc::new("pre".into()),
+        Arc::new("pre".into()),
+        "pre".into(),
     ))
 }
 

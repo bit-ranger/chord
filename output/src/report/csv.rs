@@ -15,7 +15,6 @@ use chord::output::async_trait;
 use chord::output::Report;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::to_string;
 use chord::Error;
 
 use crate::report::Factory;
@@ -67,31 +66,19 @@ impl ReportFactory {
 
 pub struct Reporter {
     writer: Writer<std::fs::File>,
-    step_id_vec: Vec<String>,
     report_dir: PathBuf,
     task_id: Arc<dyn TaskId>,
 }
 
 #[async_trait]
 impl Report for Reporter {
-    async fn start(&mut self, _: DateTime<Utc>, flow: Arc<Flow>) -> Result<(), Error> {
-        let step_id_vec: Vec<String> = flow
-            .stage_id_vec()
-            .iter()
-            .flat_map(|s| flow.stage_step_id_vec(s))
-            .map(|s| s.to_owned())
-            .collect();
-        self.step_id_vec = step_id_vec;
-        prepare(&mut self.writer, &self.step_id_vec).await?;
+    async fn start(&mut self, _: DateTime<Utc>, _: Arc<Flow>) -> Result<(), Error> {
+        prepare(&mut self.writer).await?;
         Ok(())
     }
 
-    async fn report(
-        &mut self,
-        stage_id: &str,
-        ca_vec: &Vec<Box<dyn CaseAssess>>,
-    ) -> Result<(), Error> {
-        report(&mut self.writer, stage_id, ca_vec, &self.step_id_vec).await
+    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
+        report(&mut self.writer, ca_vec).await
     }
 
     async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
@@ -125,7 +112,6 @@ impl Reporter {
 
         let report = Reporter {
             writer: from_path(report_file).await?,
-            step_id_vec: vec![],
             report_dir,
             task_id,
         };
@@ -139,81 +125,42 @@ async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<std::fs::File>, Err
         .map_err(|e| err!("csv", e.to_string()))
 }
 
-async fn prepare<W: std::io::Write>(
-    writer: &mut Writer<W>,
-    sid_vec: &Vec<String>,
-) -> Result<(), Error> {
+async fn prepare<W: std::io::Write>(writer: &mut Writer<W>) -> Result<(), Error> {
     writer
-        .write_record(create_head(sid_vec))
+        .write_record(create_head())
         .map_err(|e| err!("csv", e.to_string()))
 }
 
-fn create_head(sid_vec: &Vec<String>) -> Vec<String> {
+fn create_head() -> Vec<String> {
     let mut vec: Vec<String> = vec![];
-    vec.push(String::from("case_id"));
-    vec.push(String::from("case_state"));
-    vec.push(String::from("case_info"));
-    vec.push(String::from("case_start"));
-    vec.push(String::from("case_end"));
-
-    let ph_vec: Vec<String> = sid_vec
-        .iter()
-        .flat_map(|sid| {
-            vec![
-                format!("{}_state", sid),
-                format!("{}_start", sid),
-                format!("{}_end", sid),
-            ]
-        })
-        .collect();
-    vec.extend(ph_vec);
-    vec.push(String::from("last_step_info"));
+    vec.push(String::from("id"));
+    vec.push(String::from("layer"));
+    vec.push(String::from("state"));
+    vec.push(String::from("info"));
+    vec.push(String::from("start"));
+    vec.push(String::from("end"));
     vec
 }
 
 async fn report<W: std::io::Write>(
     writer: &mut Writer<W>,
-    stage_id: &str,
     ca_vec: &Vec<Box<dyn CaseAssess>>,
-    sid_vec: &Vec<String>,
 ) -> Result<(), Error> {
     if ca_vec.len() == 0 {
         return Ok(());
     }
 
-    for sv in ca_vec
-        .iter()
-        .map(|ca| to_value_vec(stage_id, ca.as_ref(), sid_vec))
-    {
-        writer.write_record(&sv)?
+    for sv in ca_vec.iter().map(|ca| to_value_vec(ca.as_ref())) {
+        for v in sv {
+            writer.write_record(&v)?
+        }
     }
     writer.flush()?;
     return Ok(());
 }
 
-fn to_value_vec(stage_id: &str, ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> Vec<String> {
-    let head_len = 5 + sid_vec.len() * 3 + 1;
-    let value_vec: Vec<&str> = vec![""; head_len];
-    let mut value_vec: Vec<String> = value_vec.into_iter().map(|v| v.to_owned()).collect();
-
-    value_vec[0] = format!("{}@{}", ca.id().case(), stage_id);
-    match ca.state() {
-        CaseState::Ok(_) => {
-            value_vec[1] = String::from("O");
-            value_vec[2] = String::from("");
-        }
-        CaseState::Err(e) => {
-            value_vec[1] = String::from("E");
-            value_vec[2] = String::from(format!("{}", e));
-        }
-        CaseState::Fail(_) => {
-            value_vec[1] = String::from("F");
-            value_vec[2] = String::from("");
-        }
-    }
-    value_vec[3] = ca.start().format("%T").to_string();
-    value_vec[4] = ca.end().format("%T").to_string();
-
+fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
+    let mut value_vec = Vec::new();
     let empty = &vec![];
     let pa_vec = match ca.state() {
         CaseState::Ok(pa_vec) => pa_vec,
@@ -223,58 +170,49 @@ fn to_value_vec(stage_id: &str, ca: &dyn CaseAssess, sid_vec: &Vec<String>) -> V
 
     if !pa_vec.is_empty() {
         for pa in pa_vec.iter() {
-            let pv: Vec<String> = match pa.state() {
-                StepState::Ok(_) => {
-                    vec![
-                        String::from("O"),
-                        pa.start().format("%T").to_string(),
-                        pa.end().format("%T").to_string(),
-                    ]
+            let mut step_value = Vec::with_capacity(6);
+            step_value.push(pa.id().to_string());
+            step_value.push("step".to_string());
+            match pa.state() {
+                StepState::Ok(v) => {
+                    step_value.push(String::from("O"));
+                    step_value.push(v.as_value().to_string());
                 }
-                StepState::Err(_) => {
-                    vec![
-                        String::from("E"),
-                        pa.start().format("%T").to_string(),
-                        pa.end().format("%T").to_string(),
-                    ]
+                StepState::Err(e) => {
+                    step_value.push(String::from("E"));
+                    step_value.push(String::from(format!("{}", e)));
                 }
-                StepState::Fail(_) => {
-                    vec![
-                        String::from("F"),
-                        pa.start().format("%T").to_string(),
-                        pa.end().format("%T").to_string(),
-                    ]
+                StepState::Fail(v) => {
+                    step_value.push(String::from("F"));
+                    step_value.push(v.as_value().to_string());
                 }
-            };
-
-            let pai = sid_vec
-                .iter()
-                .position(|sid| sid == pa.id().step())
-                .unwrap();
-            let pos = 5 + pai * 3;
-
-            for (pvi, pve) in pv.into_iter().enumerate() {
-                value_vec[pos + pvi] = pve;
             }
+            step_value.push(pa.start().format("%T").to_string());
+            step_value.push(pa.end().format("%T").to_string());
+            value_vec.push(step_value);
         }
     }
 
-    if let Some(last) = pa_vec.last() {
-        match last.state() {
-            StepState::Fail(scope) | StepState::Ok(scope) => {
-                let json = scope.as_value();
-                if json.is_string() {
-                    value_vec[head_len - 1] =
-                        json.as_str().map_or(json.to_string(), |j| j.to_owned());
-                } else {
-                    value_vec[head_len - 1] = to_string(json).unwrap_or_else(|j| j.to_string());
-                }
-            }
-            StepState::Err(e) => {
-                value_vec[head_len - 1] = e.to_string();
-            }
+    let mut case_value = Vec::with_capacity(6);
+    case_value.push(ca.id().to_string());
+    case_value.push("case".to_string());
+    match ca.state() {
+        CaseState::Ok(_) => {
+            case_value.push(String::from("O"));
+            case_value.push(String::from(""));
+        }
+        CaseState::Err(e) => {
+            case_value.push(String::from("E"));
+            case_value.push(String::from(format!("{}", e)));
+        }
+        CaseState::Fail(_) => {
+            case_value.push(String::from("F"));
+            case_value.push(String::from(""));
         }
     }
+    case_value.push(ca.start().format("%T").to_string());
+    case_value.push(ca.end().format("%T").to_string());
 
+    value_vec.push(case_value);
     value_vec
 }

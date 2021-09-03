@@ -10,7 +10,7 @@ use log::trace;
 use chord::flow::{Flow, ID_PATTERN};
 use chord::task::TaskState;
 use chord::Error;
-use chord_flow::{Context, TaskIdSimple};
+use chord_flow::{FlowApp, TaskIdSimple};
 use chord_output::report::{Factory, ReportFactory};
 
 pub async fn run<P: AsRef<Path>>(
@@ -18,7 +18,7 @@ pub async fn run<P: AsRef<Path>>(
     job_path: P,
     task_vec: Option<Vec<String>>,
     exec_id: String,
-    app_ctx: Arc<dyn Context>,
+    app_ctx: Arc<dyn FlowApp>,
 ) -> Result<Vec<TaskState>, Error> {
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
@@ -68,7 +68,7 @@ pub async fn run<P: AsRef<Path>>(
 async fn task_run<P: AsRef<Path>>(
     task_path: P,
     exec_id: String,
-    app_ctx: Arc<dyn Context>,
+    app_ctx: Arc<dyn FlowApp>,
     report_factory: Arc<ReportFactory>,
 ) -> TaskState {
     let task_path = Path::new(task_path.as_ref());
@@ -86,7 +86,7 @@ async fn task_run<P: AsRef<Path>>(
 async fn task_run0<P: AsRef<Path>>(
     task_path: P,
     exec_id: String,
-    app_ctx: Arc<dyn Context>,
+    app_ctx: Arc<dyn FlowApp>,
     report_factory: Arc<ReportFactory>,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());

@@ -21,7 +21,7 @@ use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step::arg::CreateArgStruct;
 use crate::flow::task::arg::TaskIdSimple;
-use crate::model::app::{Context, RenderContext};
+use crate::model::app::{FlowApp, RenderContext};
 use crate::CTX_ID;
 
 pub mod arg;
@@ -29,7 +29,8 @@ pub mod res;
 
 pub struct TaskRunner {
     step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
-    case_exec_id: Arc<String>,
+    stage_round_no: usize,
+    stage_id: Arc<String>,
     stage_state: TaskState,
 
     pre_ctx: Option<Arc<Value>>,
@@ -42,7 +43,7 @@ pub struct TaskRunner {
     assess_report: Box<dyn Report>,
     case_factory: Box<dyn CaseStore>,
     id: Arc<TaskIdSimple>,
-    flow_ctx: Arc<dyn Context>,
+    flow_ctx: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
 }
 
@@ -50,7 +51,7 @@ impl TaskRunner {
     pub async fn new(
         case_factory: Box<dyn CaseStore>,
         assess_report: Box<dyn Report>,
-        flow_ctx: Arc<dyn Context>,
+        flow_ctx: Arc<dyn FlowApp>,
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
     ) -> Result<TaskRunner, Error> {
@@ -72,8 +73,8 @@ impl TaskRunner {
         return if pre_step_vec.is_empty() {
             let runner = TaskRunner {
                 step_vec: Arc::new(TailDropVec::from(vec![])),
-
-                case_exec_id: Arc::new("".into()),
+                stage_id: Arc::new("".into()),
+                stage_round_no: 0,
                 task_state: TaskState::Ok,
                 stage_state: TaskState::Ok,
 
@@ -94,8 +95,8 @@ impl TaskRunner {
             let pre_ctx = pre_ctx_create(pre_assess.as_ref()).await?;
             let runner = TaskRunner {
                 step_vec: Arc::new(TailDropVec::from(vec![])),
-
-                case_exec_id: Arc::new("".into()),
+                stage_id: Arc::new("".into()),
+                stage_round_no: 0,
                 task_state: TaskState::Ok,
                 stage_state: TaskState::Ok,
 
@@ -177,6 +178,7 @@ impl TaskRunner {
     }
 
     async fn stage_run(&mut self, stage_id: &str) -> Result<(), Error> {
+        self.stage_id = Arc::new(stage_id.to_string());
         self.stage_state = TaskState::Ok;
         let step_id_vec: Vec<String> = self
             .flow
@@ -208,7 +210,7 @@ impl TaskRunner {
         let round_max = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
-            self.case_exec_id = Arc::new(format!("{}_{}", stage_id, round_count + 1));
+            self.stage_round_no = round_count;
             self.stage_data_vec_run_remaining(stage_id, concurrency)
                 .await?;
             round_count += 1;
@@ -250,9 +252,7 @@ impl TaskRunner {
                 self.stage_state = TaskState::Fail;
                 self.task_state = TaskState::Fail;
             }
-            self.assess_report
-                .report(stage_id, &case_assess_vec)
-                .await?;
+            self.assess_report.report(&case_assess_vec).await?;
         }
     }
 
@@ -290,8 +290,9 @@ impl TaskRunner {
                     d,
                     self.pre_ctx.clone(),
                     self.id.clone(),
+                    self.stage_id.clone(),
+                    Arc::new(self.stage_round_no.to_string()),
                     id,
-                    self.case_exec_id.clone(),
                 )
             })
             .collect();
@@ -310,8 +311,9 @@ async fn pre_arg(
         Value::Null,
         None,
         task_id.clone(),
-        "pre".into(),
         Arc::new("pre".into()),
+        Arc::new("pre".into()),
+        "pre".into(),
     ))
 }
 
@@ -339,7 +341,7 @@ async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
 }
 
 async fn step_vec_create(
-    flow_ctx: Arc<dyn Context>,
+    flow_ctx: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
     pre_ctx: Option<Arc<Value>>,
     step_id_vec: Vec<String>,
@@ -379,17 +381,17 @@ fn render_context_create(flow: Arc<Flow>, pre_ctx: Option<Arc<Value>>) -> Render
 }
 
 async fn step_create(
-    flow_ctx: &dyn Context,
+    flow_ctx: &dyn FlowApp,
     flow: &Flow,
-    render_context: &RenderContext,
+    render_ctx: &RenderContext,
     task_id: Arc<TaskIdSimple>,
     step_id: String,
 ) -> Result<Box<dyn Action>, Error> {
-    let action = flow.step_action(step_id.as_ref());
+    let action = flow.step_exec_action(step_id.as_ref());
     let create_arg = CreateArgStruct::new(
         flow,
         flow_ctx.get_handlebars(),
-        render_context,
+        render_ctx,
         task_id,
         action.into(),
         step_id,
@@ -398,12 +400,12 @@ async fn step_create(
     flow_ctx.get_action_factory().create(&create_arg).await
 }
 
-async fn case_run(flow_ctx: &dyn Context, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run(flow_ctx: &dyn FlowApp, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     Box::new(case::run(flow_ctx, case_arg).await)
 }
 
 fn case_spawn(
-    flow_ctx: Arc<dyn Context>,
+    flow_ctx: Arc<dyn FlowApp>,
     case_arg: CaseArgStruct,
 ) -> JoinHandle<Box<dyn CaseAssess>> {
     let builder = Builder::new()
@@ -412,7 +414,7 @@ fn case_spawn(
     return builder.unwrap();
 }
 
-async fn case_run_arc(flow_ctx: Arc<dyn Context>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run_arc(flow_ctx: Arc<dyn FlowApp>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     CTX_ID.with(|cid| cid.replace(case_arg.id().to_string()));
     case_run(flow_ctx.as_ref(), case_arg).await
 }

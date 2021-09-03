@@ -15,7 +15,7 @@ impl RedisFactory {
 impl Factory for RedisFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         if let Some(url) = arg.args_raw()["url"].as_str() {
-            if arg.is_shared(url) {
+            if arg.is_static(url) {
                 let url = arg.render_str(url, None)?;
                 let client = redis::Client::open(url)?;
                 return Ok(Box::new(Redis {

@@ -10,35 +10,45 @@ stage:
   bm1:
     step:
       example:
-        action: echo
-        args:
-          content:
-            - hello
-            - hello: world
-            - $ref: def.arg.arg2
+        let:
+          arg2:
+            $ref: def.arg.arg2
+        exec:
+          action: echo
+          args:
+            content:
+              - hello
+              - hello: world
+              - $ref: arg2
         
         assert: |
           (all
-              (eq curr.value.0 "hello")
-              (eq curr.value.1.hello "world")
-              (eq curr.value.2.1 "b")
+              (eq value.0 "hello")
+              (eq value.1.hello "world")
+              (eq value.2.1 "b")
           )
       
       example2:
-        action: echo
-        args:
-          content: |-
-            update bas set a = '{{case.origin_lon}}' where b = "{{case.origin_lon}}"
+        let:
+          arg1:
+            $ref: def.arg.arg1
+          lon: "{{case.origin_lon}}"
+          lat: "{{case.origin_lat}}"
+        exec:
+          action: echo
+          args:
+            content: |-
+              update bas set a = '{{lon}}' where b = "{{lat}}"
         assert: |
           (all
-            (str_start_with def.arg.arg1 "12")
-            (str_end_with def.arg.arg1 "23")
-            (str_contains def.arg.arg1 "2")
+            (str_start_with arg1 "12")
+            (str_end_with arg1 "23")
+            (str_contains arg1 "2")
             (eq
-              (str_sub def.arg.arg1 1) "23"
+              (str_sub arg1 1) "23"
             )
             (eq
-              (str_sub def.arg.arg1 1 2)
+              (str_sub arg1 1 2)
               "2"
             )
           )
@@ -48,20 +58,26 @@ stage:
       name: case2
     step:
       example3:
-        action: echo
-        args:
-          content: |-
-            update bas set a = '{{case.foo}}' where b = "{{case.bar}}"
+        let:
+          arg1:
+            $ref: def.arg.arg1
+          foo: "{{case.foo}}"
+          bar: "{{case.bar}}"
+        exec:
+          action: echo
+          args:
+            content: |-
+              update bas set a = '{{foo}}' where b = "{{bar}}"
         assert: |
           (all
-            (str_start_with def.arg.arg1 "12")
-            (str_end_with def.arg.arg1 "23")
-            (str_contains def.arg.arg1 "2")
+            (str_start_with arg1 "12")
+            (str_end_with arg1 "23")
+            (str_contains arg1 "2")
             (eq
-              (str_sub def.arg.arg1 1) "23"
+              (str_sub arg1 1) "23"
             )
             (eq
-              (str_sub def.arg.arg1 1 2)
+              (str_sub arg1 1 2)
               "2"
             )
           )

@@ -2,21 +2,21 @@ version: "0.0.1"
 
 stage:
   benchmark1:
-    
     step:
       docker1:
-        action: docker
         spec:
           timeout: 10
-        args:
-          image: "ubuntu:20.04"
-          cmd:
-            - echo
-            - |-
-              {    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}
-          tail: 200
+        exec:
+          action: docker
+          args:
+            image: "ubuntu:20.04"
+            cmd:
+              - echo
+              - |-
+                {    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}
+            tail: 200
         assert: |+
-          (eq curr.value.size 100)
+          (eq value.size 100)
                 
 
 

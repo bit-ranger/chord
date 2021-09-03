@@ -9,20 +9,28 @@ stage:
     
     step:
       set_redis:
-        action: redis
-        args:
+        let:
           url: "{{def.redis.url}}"
-          cmd: SET
-          args: [ "CHORD:TEST:0123456789", "{{case.arg0}}" ]
-      
+          arg0: "{{case.arg0}}"
+        exec:
+          action: redis
+          args:
+            url: "{{url}}"
+            cmd: SET
+            args: [ "CHORD:TEST:0123456789", "{{arg0}}" ]
+        
       get_redis:
-        action: redis
-        args:
+        let:
           url: "{{def.redis.url}}"
-          cmd: GET
-          args: [ "CHORD:TEST:0123456789" ]
+          arg0: "{{case.arg0}}"
+        exec:
+          action: redis
+          args:
+            url: "{{url}}"
+            cmd: GET
+            args: [ "CHORD:TEST:0123456789" ]
         assert: |+
-          (eq curr.value case.arg0)
+          (eq value arg0)
 
       
 

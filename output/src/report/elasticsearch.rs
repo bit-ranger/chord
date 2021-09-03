@@ -57,7 +57,7 @@ impl Report for Reporter {
         Ok(())
     }
 
-    async fn report(&mut self, _: &str, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
+    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
         let mut data_vec: Vec<Data> = vec![];
         for ca in ca_vec {
             let ca_data = ca_doc(ca.as_ref());

@@ -5,9 +5,10 @@ stage:
     
     step:
       step1:
-        action: shell
-        args:
-          code: |-
-            #!/bin/bash
-            ls /
-            echo "\"hello world\""
+        exec:
+          action: shell
+          args:
+            code: |-
+              #!/bin/bash
+              ls /
+              echo "\"hello world\""

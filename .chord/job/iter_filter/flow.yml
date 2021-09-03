@@ -1,66 +1,79 @@
 version: "0.0.1"
 
 def:
-  iter: [ a, b, c, {"d": "e"} ]
+  iter: [ a, b, c, { "d": "e" } ]
 
 
 stage:
   sg1:
     step:
       sp1:
-        action: iter_map
-        args:
-          iter:
+        let:
+          arr:
+            $ref: def.iter
+        exec:
+          action: iter_map
+          args:
             arr:
-              $ref: def.iter
+              $ref: arr
             enum: idx,item
-          map:
-            action: echo
-            args:
-              content:
-                - idx: "0-{{idx}}"
-                  item: "0-{{item}}"
-                
-                - idx: "1-{{idx}}"
-                  item: "1-{{item}}"
+            map:
+              action: echo
+              args:
+                content:
+                  - idx: "0-{{idx}}"
+                    item: "0-{{item}}"
+                  
+                  - idx: "1-{{idx}}"
+                    item: "1-{{item}}"
         assert: |
           (all
-            (eq curr.state "Ok")
-            (eq curr.value.2.1.item "1-c")
+            (eq state "Ok")
+            (eq value.2.1.item "1-c")
           )
       
       sp2:
-        action: iter_filter
-        args:
-          iter:
+        let:
+          arr:
+            $ref: step.sp1.value
+        exec:
+          action: iter_filter
+          args:
             arr:
-              $ref: step.sp1.value
-          filter: |
-            (all
-              (eq item.1.idx "1-2")
-            )
+              $ref: arr
+            filter: |
+              (all
+                (eq item.1.idx "1-2")
+              )
         
         assert: |
           (all
-            (eq curr.state "Ok")
-            (eq curr.value.0.1.idx "1-2")
-            (eq curr.value.0.1.item "1-c")
+            (eq state "Ok")
+            (eq value.0.1.idx "1-2")
+            (eq value.0.1.item "1-c")
           )
       
-      
       sp3:
-        action: log
-        args:
+        let:
           content:
             $ref: step.sp2.value
-            
+        exec:
+          action: log
+          args:
+            content:
+              $ref: content
+      
       sp4:
-        action: echo
-        args: |
-          content:
-            {{str (jsonpath "$[?(@.d ~= '^e$')].d" def.iter)}}
+        let: |
+          path_val: {{jsonpath def.iter  "$[?(@.d ~= '^e$')].d"}}
+        exec:
+          action: echo
+          args:
+            content:
+              $ref: path_val
+        
         assert: |
-          (eq curr.value.0 "e")
+          (eq value "e")
           
           
           

@@ -6,10 +6,14 @@ stage:
     
     step:
       step1:
-        action: log
-        args:
-          content: |-
-            dml >>> update some_table set column1 = '{{data.orgin_lon}}' where column2 = '{{data.origin_lat}}'
+        let:
+          lon: "{{case.origin_lon}}"
+          lat: "{{case.origin_lat}}"
+        exec:
+          action: log
+          args:
+            content: |-
+              dml >>> update some_table set column1 = '{{lon}}' where column2 = '{{lat}}'
     
               
 

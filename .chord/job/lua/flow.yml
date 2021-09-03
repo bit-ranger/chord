@@ -5,46 +5,50 @@ stage:
     
     step:
       step1:
-        action: lua
-        args:
-          code: |
-            for i = 1, 5 do
-                n = math.random(100)
-                print("hello lua: " .. tostring(n));
-            end
-            
-            return
-            {
-                 {
-                    ['foo'] = {{case.foo}}
-                }
-                ,
-                {
-                    ['bar'] = {{case.bar}}
-                }
-            }
+        let:
+          foo: "{{case.foo}}"
+          bar: "{{case.bar}}"
+        exec:
+          action: lua
+          args:
+            code: |
+              for i = 1, 5 do
+                  n = math.random(100)
+                  print("hello lua: " .. tostring(n));
+              end
+              
+              return
+              {
+                   {
+                      ['foo'] = {{foo}}
+                  }
+                  ,
+                  {
+                      ['bar'] = {{bar}}
+                  }
+              }
         
         assert: |
           (all
-              (eq curr.value.1.bar (num case.bar))
+              (eq value.1.bar (num bar))
           )
       
       step2:
-        action: lua
-        args:
-          global:
-            arr1: [ "a", "b" ]
-            arr2: {
-              "foo": "bar"
-            }
-          code: |
-            table.insert(arr1, "c");
-            table.insert(arr1, arr2);
-            return arr1;
+        exec:
+          action: lua
+          args:
+            global:
+              arr1: [ "a", "b" ]
+              arr2: {
+                "foo": "bar"
+              }
+            code: |
+              table.insert(arr1, "c");
+              table.insert(arr1, arr2);
+              return arr1;
         assert: |
           (all
-              (eq curr.value.1 "b")
-              (eq curr.value.2 "c")
-              (eq curr.value.3.foo "bar")
+              (eq value.1 "b")
+              (eq value.2 "c")
+              (eq value.3.foo "bar")
           )
-

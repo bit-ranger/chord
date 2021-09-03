@@ -100,20 +100,27 @@ impl HelperDef for JsonpathHelper {
             return Err(RenderError::new("Param invalid for helper \"jsonpath\""));
         }
 
-        let path = params[0]
+        let value = params[0].value();
+
+        let path = params[1]
             .value()
             .as_str()
             .ok_or(RenderError::new("Param invalid for helper \"jsonpath\""))?;
-
-        let value = params[1].value();
 
         let mut finder = JsonPathFinder::from_str("null", path).map_err(|e| {
             RenderError::new(format!("Param invalid for helper \"jsonpath\": {}", e))
         })?;
         finder.set_json(value.clone());
 
-        let vec: Vec<Value> = finder.find().into_iter().map(|v| v.clone()).collect();
+        let mut vec: Vec<Value> = finder.find().into_iter().map(|v| v.clone()).collect();
 
-        Ok(Some(ScopedJson::Derived(Value::Array(vec))))
+        let result = if vec.len() == 0 {
+            Value::Null
+        } else if vec.len() == 1 {
+            vec.pop().unwrap()
+        } else {
+            Value::Array(vec)
+        };
+        Ok(Some(ScopedJson::Derived(result)))
     }
 }

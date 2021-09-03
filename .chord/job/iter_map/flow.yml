@@ -8,33 +8,38 @@ stage:
   sg1:
     step:
       sp1:
-        action: iter_map
-        args:
-          iter:
+        let:
+          arr:
+            $ref: def.iter
+        exec:
+          action: iter_map
+          args:
             arr:
-              $ref: def.iter
-            enum: idx,item
-          
-          map:
-            action: echo
-            args:
-              content:
-                - idx: "0-{{idx}}"
-                  item: "0-{{item}}"
-                
-                - idx: "1-{{idx}}"
-                  item: "1-{{item}}"
+              $ref: arr
+            map:
+              action: echo
+              args:
+                content:
+                  - idx: "0-{{idx}}"
+                    item: "0-{{item}}"
+                  
+                  - idx: "1-{{idx}}"
+                    item: "1-{{item}}"
         assert: |
           (all
-            (eq curr.state "Ok")
-            (eq curr.value.2.1.item "1-c")
+            (eq state "Ok")
+            (eq value.2.1.item "1-c")
           )
       
       sp2:
-        action: log
-        args:
-          content:
+        let:
+          contnet:
             $ref: step.sp1.value
+        exec:
+          action: log
+          args:
+            content:
+              $ref: contnet
                 
             
             

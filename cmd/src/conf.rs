@@ -1,29 +1,43 @@
+use async_std::path::{Path, PathBuf};
 use chord::value::json;
 use chord::value::Value;
+use dirs;
 
 #[derive(Debug, Clone)]
 pub struct Config {
     conf: Value,
+    home_dir: PathBuf,
+    log_dir: PathBuf,
     report_default: Value,
 }
 
 impl Config {
     pub fn new(conf: Value) -> Config {
+        let home_dir = dirs::home_dir()
+            .map(|p| PathBuf::from(p).join(".chord"))
+            .unwrap_or_else(|| Path::new("/").join("data").join("chord"));
+
         let report_default = json!({ "csv": {
-            "dir": "/data/chord/output"
+            "dir": home_dir.join("output").to_str().unwrap().to_string()
         } });
+
+        let log_dir = match conf["log"]["dir"].as_str() {
+            Some(p) => Path::new(p).to_path_buf(),
+            None => home_dir.join("output"),
+        };
+
         Config {
             conf,
+            home_dir: home_dir.clone(),
+            log_dir,
             report_default,
         }
     }
 }
 
 impl Config {
-    pub fn log_dir(&self) -> &str {
-        self.conf["log"]["dir"]
-            .as_str()
-            .unwrap_or("/data/chord/output")
+    pub fn log_dir(&self) -> &Path {
+        self.log_dir.as_path()
     }
 
     pub fn log_level(&self) -> Vec<(String, String)> {

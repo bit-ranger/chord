@@ -704,6 +704,7 @@ dependencies = [
  "chord-flow",
  "chord-input",
  "chord-output",
+ "dirs",
  "flume 0.10.5",
  "futures",
  "itertools",

@@ -62,20 +62,6 @@ impl FactoryComposite {
         register!(table, config_ref, "sleep", sleep::SleepFactory::new, true);
         register!(table, config_ref, "log", log::LogFactory::new, true);
         register!(table, config_ref, "count", count::CountFactory::new, true);
-        register!(
-            table,
-            config_ref,
-            "iter_flatten",
-            iter::flatten::IterFlattenFactory::new,
-            true
-        );
-        register!(
-            table,
-            config_ref,
-            "iter_filter",
-            iter::filter::IterFilterFactory::new,
-            true
-        );
 
         #[cfg(feature = "act_restapi")]
         register!(
@@ -119,6 +105,9 @@ impl FactoryComposite {
             true
         );
 
+        #[cfg(feature = "act_lua")]
+        register!(table, config_ref, "lua", lua::LuaFactory::new, true);
+
         #[cfg(feature = "act_dubbo")]
         register!(table, config_ref, "dubbo", dubbo::DubboFactory::new, false);
 
@@ -127,9 +116,6 @@ impl FactoryComposite {
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new, false);
-
-        #[cfg(feature = "act_lua")]
-        register!(table, config_ref, "lua", lua::LuaFactory::new, false);
 
         #[cfg(feature = "act_download")]
         register!(
@@ -151,6 +137,22 @@ impl FactoryComposite {
 
         #[cfg(all(feature = "act_shell", target_os = "linux"))]
         register!(table, config_ref, "shell", shell::ShellFactory::new, false);
+
+        register!(
+            table,
+            config_ref,
+            "iter_filter",
+            iter::filter::IterFilterFactory::new,
+            true
+        );
+
+        register!(
+            table,
+            config_ref,
+            "iter_flatten",
+            iter::flatten::IterFlattenFactory::new,
+            true
+        );
 
         table.insert(
             "iter_map".into(),

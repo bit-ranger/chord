@@ -28,6 +28,7 @@ itertools = "0.10.0"
 flume = "0.10.5"
 structopt = "0.3"
 serde_yaml = "0.8"
+dirs = "3.0.2"
 
 [target.'cfg(linux)'.dependencies]
 chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_dylib", "act_docker", "act_download", "act_lua", "act_fstore", "act_shell"] }

@@ -13,6 +13,7 @@ use chord_input::load::flow::yml::YmlFlowParser;
 use crate::conf::Config;
 use async_std::sync::Arc;
 use chord_output::report::ReportFactory;
+use dirs;
 
 mod conf;
 mod job;
@@ -30,18 +31,32 @@ async fn main() -> Result<(), Error> {
     let exec_id: String = opt.exec_id.clone();
     let job_name = opt.job_name.clone();
 
-    let conf_data = load_conf(&opt.config).await?;
+    let conf_path = opt
+        .config
+        .clone()
+        .map(|p| PathBuf::from(p))
+        .unwrap_or_else(|| {
+            PathBuf::from(
+                dirs::home_dir()
+                    .unwrap()
+                    .join(".chord")
+                    .join("conf")
+                    .join("cmd.yml"),
+            )
+        });
+    let conf_data = load_conf(conf_path).await?;
     let config = Config::new(conf_data);
 
     let report_factory =
         ReportFactory::new(config.report(), job_name.as_str(), exec_id.as_str()).await?;
     let report_factory = Arc::new(report_factory);
 
-    let log_file_path = Path::new(config.log_dir())
+    let log_file_path = config
+        .log_dir()
         .join(job_name.clone())
         .join(exec_id.clone())
         .join("cmd.log");
-    let log_handler = logger::init(config.log_level(), &log_file_path).await?;
+    let log_handler = logger::init(config.log_level(), log_file_path.as_path()).await?;
 
     let flow_ctx = chord_flow::context_create(
         Box::new(FactoryComposite::new(config.action().map(|c| c.clone())).await?),
@@ -104,11 +119,6 @@ struct Opt {
     task: Option<Vec<String>>,
 
     /// config file path
-    #[structopt(
-        short,
-        long,
-        parse(from_os_str),
-        default_value = "/data/chord/conf/cmd.yml"
-    )]
-    config: PathBuf,
+    #[structopt(short, long, parse(from_os_str))]
+    config: Option<PathBuf>,
 }

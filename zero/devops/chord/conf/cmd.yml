@@ -9,9 +9,6 @@ report:
 
 
 action:
-  lua:
-    enable: true
-  
   download:
     enable: true
     workdir: /home/runner/.chord/workdir/download_fstore
@@ -22,11 +19,12 @@ action:
   
   shell:
     enable: true
-    workdir: /home/runner/.chord/workdir/shell
+    workdir: /home/runner/.chord/workdir/shell1
   
   docker:
     enable: true
-  
+    address: 127.0.0.1:2375
+    
   dubbo:
     enable: true
     mode: gateway

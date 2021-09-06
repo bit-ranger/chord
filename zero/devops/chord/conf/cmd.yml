@@ -1,4 +1,5 @@
 log:
+  dir: /home/runner/.chord/output
   level:
     root: warn
     chord: trace

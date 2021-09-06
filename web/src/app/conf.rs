@@ -1,5 +1,5 @@
 use async_std::path::{Path, PathBuf};
-use chord::value::{Map, Value};
+use chord::value::Value;
 
 use dirs;
 

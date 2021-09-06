@@ -28,6 +28,8 @@ mod fstore;
 mod lua;
 #[cfg(feature = "act_mongodb")]
 mod mongodb;
+#[cfg(feature = "act_program")]
+mod program;
 #[cfg(feature = "act_redis")]
 mod redis;
 #[cfg(feature = "act_restapi")]
@@ -107,6 +109,15 @@ impl FactoryComposite {
 
         #[cfg(feature = "act_lua")]
         register!(table, config_ref, "lua", lua::LuaFactory::new, true);
+
+        #[cfg(feature = "act_program")]
+        register!(
+            table,
+            config_ref,
+            "program",
+            program::ProgramFactory::new,
+            true
+        );
 
         #[cfg(feature = "act_dubbo")]
         register!(table, config_ref, "dubbo", dubbo::DubboFactory::new, false);

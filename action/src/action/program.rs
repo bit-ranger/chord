@@ -1,10 +1,6 @@
-use async_std::io::BufReader;
-use async_std::process::{Child, ChildStdout, Command, Stdio};
-use async_std::task::Builder;
+use async_std::process::Command;
 use chord::action::prelude::*;
-use futures::io::Lines;
-use futures::{AsyncBufReadExt, StreamExt};
-use log::{debug, info, trace};
+use log::trace;
 
 pub struct ProgramFactory {}
 
@@ -46,32 +42,27 @@ impl Action for Program {
 
         trace!("command {:?}", command);
 
-        let mut child = command
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+        let output = command.output().await?;
 
-        let std_out = child.stdout.ok_or(err!("107", "missing stdout"))?;
-        let std_out = BufReader::new(std_out);
-        let mut is_result_line = false;
-        let mut result_lines = Vec::new();
-        let mut lines = std_out.lines();
-        loop {
-            let line = lines.next().await;
-            if line.is_none() {
-                break;
-            }
-            let line = line.unwrap()?;
-            if line == "----program-result----" {
-                is_result_line = true;
-            }
-            if is_result_line {
-                result_lines.push(line);
-            }
+        let std_out = String::from_utf8_lossy(&output.stdout).to_string();
+        let std_err = String::from_utf8_lossy(&output.stderr).to_string();
+        trace!("{}", std_out);
+        trace!("{}", std_err);
+
+        if !output.status.success() {
+            return Err(err!(
+                "104",
+                format!("program exit with code {}", output.status.to_string())
+            ));
         }
 
-        let result_text: String = result_lines.join("");
-        let result: Value = from_str(result_text.as_str())?;
-        Ok(Box::new(result))
+        let out = format!("{}{}", std_out, std_err);
+        if args["value_as_json"].as_bool().unwrap_or(true) {
+            let value: Value = from_str(out.as_str())?;
+            Ok(Box::new(value))
+        } else {
+            let value: Value = Value::String(out);
+            Ok(Box::new(value))
+        }
     }
 }

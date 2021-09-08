@@ -14,7 +14,6 @@ stage:
               - echo
               - |-
                 {    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}
-            tail: 200
         assert: |+
           (eq value.size 100)
                 

@@ -63,7 +63,7 @@ impl Action for ImageWrapper {
             .await?;
         container.start().await?;
         let wait_res = container.wait().await;
-        let tail = args["tail"].as_u64().unwrap_or(1) as usize;
+        let tail = 1;
         let tail_lines = match wait_res {
             Ok(_) => container.tail(false, tail).await?,
             Err(_) => container.tail(true, tail).await?,

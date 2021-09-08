@@ -57,12 +57,19 @@ impl Action for Program {
         }
 
         let out = format!("{}{}", std_out, std_err);
-        if args["value_as_json"].as_bool().unwrap_or(true) {
-            let value: Value = from_str(out.as_str())?;
-            Ok(Box::new(value))
-        } else {
-            let value: Value = Value::String(out);
-            Ok(Box::new(value))
+        let last_line = out.lines().last();
+
+        match last_line {
+            None => Ok(Box::new(Value::Null)),
+            Some(last_line) => {
+                if args["value_as_json"].as_bool().unwrap_or(true) {
+                    let value: Value = from_str(last_line)?;
+                    Ok(Box::new(value))
+                } else {
+                    let value: Value = Value::String(last_line.to_string());
+                    Ok(Box::new(value))
+                }
+            }
         }
     }
 }

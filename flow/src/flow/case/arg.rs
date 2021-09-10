@@ -180,17 +180,20 @@ fn render_let_with(
             Err(err!("001", "invalid let"))
         }
     } else if let Value::Object(map) = let_raw {
-        let value_str = to_string(map)?;
-        let value_str = flow::render(handlebars, render_ctx, value_str.as_str())?;
-        let value: Value = from_str(value_str.as_str())
-            .map_err(|_| err!("001", format!("invalid let {}", value_str)))?;
-        if value.is_object() {
-            let value = render_ref(&value, render_ctx.data())?;
-            if value.is_object() {
-                Ok(value)
-            } else {
-                Err(err!("001", "invalid let"))
+        let mut let_ctx = render_ctx.clone();
+        for (k,v) in map.iter() {
+            let v_str = to_string(v)?;
+            let v_str = flow::render(handlebars, &let_ctx, v_str.as_str())?;
+            let v: Value = from_str(v_str.as_str())
+                .map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
+            if let Value::Object(m) = let_ctx.data_mut() {
+                m.insert(k.clone(), v);
             }
+        }
+
+        let value = render_ref(let_ctx.data(), let_ctx.data())?;
+        if value.is_object() {
+            Ok(value)
         } else {
             Err(err!("001", "invalid let"))
         }
@@ -198,3 +201,4 @@ fn render_let_with(
         Err(err!("001", "invalid let"))
     }
 }
+

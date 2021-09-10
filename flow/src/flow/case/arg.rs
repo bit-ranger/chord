@@ -186,17 +186,13 @@ fn render_let_with(
             let v_str = flow::render(handlebars, &let_ctx, v_str.as_str())?;
             let v: Value = from_str(v_str.as_str())
                 .map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
+            let v = render_ref(&v, let_ctx.data())?;
             if let Value::Object(m) = let_ctx.data_mut() {
                 m.insert(k.clone(), v);
             }
         }
 
-        let value = render_ref(let_ctx.data(), let_ctx.data())?;
-        if value.is_object() {
-            Ok(value)
-        } else {
-            Err(err!("001", "invalid let"))
-        }
+        Ok(let_ctx.data().clone())
     } else {
         Err(err!("001", "invalid let"))
     }

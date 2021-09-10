@@ -9,11 +9,12 @@ stage:
         let:
           lon: "{{case.origin_lon}}"
           lat: "{{case.origin_lat}}"
+          lon_lat: "{{lon}},{{lat}}"
         exec:
           action: log
           args:
             content: |-
-              dml >>> update some_table set column1 = '{{lon}}' where column2 = '{{lat}}'
+              dml >>> update some_table set column1 = '{{lon_lat}}' where id = 1'
     
               
 

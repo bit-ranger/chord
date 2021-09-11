@@ -72,8 +72,6 @@ stage:
           args:
             echo:
               $num: "{{path_val}}"
-
-        
         assert: |
           (all
             (eq value 5)

@@ -1,7 +1,7 @@
 version: "0.0.1"
 
 def:
-  iter: [ a, b, c, { "d": "e" } ]
+  iter: [ a, b, c, { "d": "5" } ]
 
 
 stage:
@@ -65,17 +65,19 @@ stage:
       
       sp4:
         let:
-          _path: $[?(@.d ~= '^e$')].d
+          _path: $[?(@.d ~= '^5$')].d
           path_val: "{{jsonpath def.iter _path}}"
         exec:
           action: echo
           args:
             echo:
-              $ref: path_val
+              $num: "{{path_val}}"
+
         
         assert: |
-          (eq value "e")
-          
+          (all
+            (eq value 5)
+          )
           
           
           

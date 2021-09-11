@@ -9,14 +9,14 @@ stage:
     step:
       s1:
         let:
-          arg2:
-            $ref: def.arg.arg2
+          arg1:
+            $ref: def.a
         exec:
           action: echo
           args:
             echo:
               ref:
-                $ref: def.a
+                $ref: arg1
               str:
                 $str: abc
               num1:
@@ -45,7 +45,7 @@ stage:
               
         assert: |
           (all
-              (eq value.ref def.a)
+              (eq value.ref arg1)
               (eq value.str "abc")
               (eq value.num1 456)
               (eq value.num2 456)

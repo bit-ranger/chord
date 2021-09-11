@@ -123,7 +123,7 @@ impl CaseArgStruct {
         'app: 'reg,
     {
         let let_raw = self.flow.step_let(step_id);
-        let let_value = render_let_with(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
+        let let_value = render_let(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
 
         RunArgStruct::new(
             self.flow.as_ref(),
@@ -154,7 +154,7 @@ impl CaseArgStruct {
     }
 }
 
-fn render_let_with(
+fn render_let(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
     let_raw: &Value,
@@ -163,19 +163,21 @@ fn render_let_with(
         return Ok(Value::Null);
     }
     if let Value::Object(map) = let_raw {
-        let mut let_ctx = render_ctx.clone();
+        let mut let_render_ctx = render_ctx.clone();
+        let mut let_value = Map::new();
         for (k, v) in map.iter() {
             let v_str = to_string(v)?;
-            let v_str = flow::render(handlebars, &let_ctx, v_str.as_str())?;
+            let v_str = flow::render(handlebars, &let_render_ctx, v_str.as_str())?;
             let v: Value = from_str(v_str.as_str())
                 .map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
-            let v = render_dollar(&v, let_ctx.data())?;
-            if let Value::Object(m) = let_ctx.data_mut() {
-                m.insert(k.clone(), v);
+            let v = render_dollar(&v, let_render_ctx.data())?;
+            if let Value::Object(m) = let_render_ctx.data_mut() {
+                m.insert(k.clone(), v.clone());
             }
+            let_value.insert(k.clone(), v);
         }
 
-        Ok(let_ctx.data().clone())
+        Ok(Value::Object(let_value))
     } else {
         Err(err!("001", "invalid let"))
     }

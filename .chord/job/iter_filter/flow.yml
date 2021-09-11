@@ -60,7 +60,7 @@ stage:
         exec:
           action: log
           args:
-            content:
+            log:
               $ref: content
       
       sp4:

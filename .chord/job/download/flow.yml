@@ -30,7 +30,7 @@ stage:
         exec:
           action: log
           args:
-            content: "{{step1_size}}"
+            log: "{{step1_size}}"
                     
                 
     

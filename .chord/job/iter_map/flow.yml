@@ -38,7 +38,7 @@ stage:
         exec:
           action: log
           args:
-            content:
+            log:
               $ref: contnet
                 
             

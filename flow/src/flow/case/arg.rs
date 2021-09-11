@@ -14,7 +14,6 @@ use crate::flow::render_dollar;
 use crate::flow::step::arg::RunArgStruct;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
-use chord::input::FlowParse;
 use chord::step::StepState;
 use chord::value::{from_str, to_string, Value};
 use chord::{err, Error};
@@ -124,12 +123,7 @@ impl CaseArgStruct {
         'app: 'reg,
     {
         let let_raw = self.flow.step_let(step_id);
-        let let_value = render_let_with(
-            flow_app.get_handlebars(),
-            flow_app.get_flow_parse(),
-            &self.render_ctx,
-            let_raw,
-        )?;
+        let let_value = render_let_with(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
 
         RunArgStruct::new(
             self.flow.as_ref(),
@@ -162,24 +156,13 @@ impl CaseArgStruct {
 
 fn render_let_with(
     handlebars: &Handlebars,
-    flow_parse: &dyn FlowParse,
     render_ctx: &RenderContext,
     let_raw: &Value,
 ) -> Result<Value, Error> {
     if let_raw.is_null() {
         return Ok(Value::Null);
     }
-    if let Value::String(txt) = let_raw {
-        let value_str = flow::render(handlebars, render_ctx, txt.as_str())?;
-        let value = flow_parse
-            .parse_str(value_str.as_str())
-            .map_err(|_| err!("001", format!("invalid let {}", value_str)))?;
-        if value.is_object() {
-            Ok(value)
-        } else {
-            Err(err!("001", "invalid let"))
-        }
-    } else if let Value::Object(map) = let_raw {
+    if let Value::Object(map) = let_raw {
         let mut let_ctx = render_ctx.clone();
         for (k, v) in map.iter() {
             let v_str = to_string(v)?;

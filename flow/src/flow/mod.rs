@@ -6,7 +6,6 @@ use handlebars::Handlebars;
 
 use chord::action::Factory;
 use chord::err;
-use chord::input::FlowParse;
 use chord::Error;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
@@ -23,11 +22,8 @@ task_local! {
     pub static CTX_ID: RefCell<String> = RefCell::new(String::new());
 }
 
-pub async fn context_create(
-    action_factory: Box<dyn Factory>,
-    flow_parse: Box<dyn FlowParse>,
-) -> Arc<dyn FlowApp> {
-    Arc::new(FlowAppStruct::<'_>::new(action_factory, flow_parse))
+pub async fn context_create(action_factory: Box<dyn Factory>) -> Arc<dyn FlowApp> {
+    Arc::new(FlowAppStruct::<'_>::new(action_factory))
 }
 
 fn render(

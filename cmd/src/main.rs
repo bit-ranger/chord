@@ -8,7 +8,6 @@ use chord::task::TaskState;
 use chord::value::Value;
 use chord::Error;
 use chord_action::FactoryComposite;
-use chord_input::load::flow::yml::YmlFlowParser;
 
 use crate::conf::Config;
 use async_std::sync::Arc;
@@ -58,10 +57,9 @@ async fn main() -> Result<(), Error> {
         .join("cmd.log");
     let log_handler = logger::init(config.log_level(), log_file_path.as_path()).await?;
 
-    let flow_ctx = chord_flow::context_create(
-        Box::new(FactoryComposite::new(config.action().map(|c| c.clone())).await?),
-        Box::new(YmlFlowParser::new()),
-    )
+    let flow_ctx = chord_flow::context_create(Box::new(
+        FactoryComposite::new(config.action().map(|c| c.clone())).await?,
+    ))
     .await;
     let task_state_vec = job::run(
         report_factory,

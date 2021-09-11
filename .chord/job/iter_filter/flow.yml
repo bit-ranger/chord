@@ -65,8 +65,8 @@ stage:
       
       sp4:
         let:
-          path: $[?(@.d ~= '^e$')].d
-          path_val: "{{jsonpath def.iter path}}"
+          _path: $[?(@.d ~= '^e$')].d
+          path_val: "{{jsonpath def.iter _path}}"
         exec:
           action: echo
           args:

@@ -13,7 +13,7 @@ use chord::value::{from_str, to_string, Map, Value};
 use chord::{err, Error};
 
 use crate::flow;
-use crate::flow::render_ref;
+use crate::flow::render_dollar;
 use crate::model::app::RenderContext;
 
 #[derive(Clone)]
@@ -195,7 +195,7 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
             let value: Value = from_str(value_str.as_str())
                 .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
             if value.is_object() {
-                let value = render_ref(&value, render_context.data())?;
+                let value = render_dollar(&value, render_context.data())?;
                 if value.is_object() {
                     Ok(value)
                 } else {

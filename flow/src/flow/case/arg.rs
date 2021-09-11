@@ -10,7 +10,7 @@ use chord::task::TaskId;
 use chord::value::{to_value, Map};
 
 use crate::flow;
-use crate::flow::render_ref;
+use crate::flow::render_dollar;
 use crate::flow::step::arg::RunArgStruct;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
@@ -181,12 +181,12 @@ fn render_let_with(
         }
     } else if let Value::Object(map) = let_raw {
         let mut let_ctx = render_ctx.clone();
-        for (k,v) in map.iter() {
+        for (k, v) in map.iter() {
             let v_str = to_string(v)?;
             let v_str = flow::render(handlebars, &let_ctx, v_str.as_str())?;
             let v: Value = from_str(v_str.as_str())
                 .map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
-            let v = render_ref(&v, let_ctx.data())?;
+            let v = render_dollar(&v, let_ctx.data())?;
             if let Value::Object(m) = let_ctx.data_mut() {
                 m.insert(k.clone(), v);
             }
@@ -197,4 +197,3 @@ fn render_let_with(
         Err(err!("001", "invalid let"))
     }
 }
-

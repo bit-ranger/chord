@@ -20,7 +20,7 @@ stage:
             map:
               action: echo
               args:
-                content:
+                echo:
                   - idx: "0-{{idx}}"
                     item: "0-{{item}}"
                   
@@ -69,7 +69,7 @@ stage:
         exec:
           action: echo
           args:
-            content:
+            echo:
               $ref: path_val
         
         assert: |

@@ -19,7 +19,7 @@ stage:
             map:
               action: echo
               args:
-                content:
+                echo:
                   - idx: "0-{{idx}}"
                     item: "0-{{item}}"
                   

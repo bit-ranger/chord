@@ -21,6 +21,6 @@ struct Echo {}
 impl Action for Echo {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args(None)?;
-        return Ok(Box::new(args["content"].clone()));
+        return Ok(Box::new(args["echo"].clone()));
     }
 }

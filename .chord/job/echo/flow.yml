@@ -16,7 +16,7 @@ stage:
         exec:
           action: echo
           args:
-            content:
+            echo:
               - hello
               - hello: world
               - $ref: arg2
@@ -37,7 +37,7 @@ stage:
         exec:
           action: echo
           args:
-            content: |-
+            echo: |-
               update bas set a = '{{lon}}' where b = "{{lat}}"
         assert: |
           (all
@@ -66,7 +66,7 @@ stage:
         exec:
           action: echo
           args:
-            content: |-
+            echo: |-
               update bas set a = '{{foo}}' where b = "{{bar}}"
         assert: |
           (all

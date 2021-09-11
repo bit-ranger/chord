@@ -28,11 +28,7 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
         let step_arg = step_arg.unwrap();
         let step_assess = step::run(flow_ctx, &step_arg, action.as_ref()).await;
 
-        if step_assess.state.is_ok() {
-            arg.step_ok_register(step_assess.id().step(), step_assess.state())
-                .await;
-            step_assess_vec.push(Box::new(step_assess));
-        } else {
+        if !step_assess.state.is_ok() {
             step_assess_vec.push(Box::new(step_assess));
             debug!("case Fail  {}", arg.id());
             return CaseAssessStruct::new(
@@ -42,6 +38,10 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
                 arg.take_data(),
                 CaseState::Fail(TailDropVec::from(step_assess_vec)),
             );
+        } else {
+            arg.step_ok_register(step_assess.id().step(), step_assess.state())
+                .await;
+            step_assess_vec.push(Box::new(step_assess));
         }
     }
 

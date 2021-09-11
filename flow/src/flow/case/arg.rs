@@ -96,6 +96,7 @@ impl CaseArgStruct {
         }
         render_data.insert(String::from("case"), data.clone());
         render_data.insert(String::from("step"), Value::Object(Map::new()));
+        render_data.insert(String::from("reg"), Value::Object(Map::new()));
         if let Some(pre_ctx) = pre_ctx.as_ref() {
             render_data.insert(String::from("pre"), pre_ctx.as_ref().clone());
         }
@@ -114,7 +115,7 @@ impl CaseArgStruct {
     }
 
     pub fn step_arg_create<'app, 'h, 'reg>(
-        self: &CaseArgStruct,
+        self: &mut CaseArgStruct,
         step_id: &str,
         flow_app: &'app dyn FlowApp,
     ) -> Result<RunArgStruct<'_, 'h, 'reg>, Error>
@@ -123,7 +124,7 @@ impl CaseArgStruct {
         'app: 'reg,
     {
         let let_raw = self.flow.step_let(step_id);
-        let let_value = render_let(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
+        let let_value = render_let(flow_app.get_handlebars(), &mut self.render_ctx, let_raw)?;
 
         RunArgStruct::new(
             self.flow.as_ref(),
@@ -156,7 +157,7 @@ impl CaseArgStruct {
 
 fn render_let(
     handlebars: &Handlebars,
-    render_ctx: &RenderContext,
+    render_ctx: &mut RenderContext,
     let_raw: &Value,
 ) -> Result<Value, Error> {
     if let_raw.is_null() {
@@ -170,7 +171,7 @@ fn render_let(
             let v_str = flow::render(handlebars, &let_render_ctx, v_str.as_str())?;
             let v: Value = from_str(v_str.as_str())
                 .map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
-            let v = render_dollar(&v, let_render_ctx.data())?;
+            let v = render_dollar_mut(k, &v, let_render_ctx.data(), render_ctx.data_mut())?;
             if let Value::Object(m) = let_render_ctx.data_mut() {
                 m.insert(k.clone(), v.clone());
             }
@@ -181,4 +182,28 @@ fn render_let(
     } else {
         Err(err!("001", "invalid let"))
     }
+}
+
+fn render_dollar_mut(
+    key: &str,
+    val: &Value,
+    ref_from: &Value,
+    mut_from: &mut Value,
+) -> Result<Value, Error> {
+    return match val {
+        Value::Object(map) => {
+            if map.contains_key("$reg") {
+                if map.len() != 1 {
+                    return Err(err!("001", "invalid args $reg"));
+                }
+                let v = &map["$reg"];
+                let v = render_dollar(v, ref_from)?;
+                mut_from["reg"][key] = v.clone();
+                Ok(v)
+            } else {
+                render_dollar(val, ref_from)
+            }
+        }
+        _ => render_dollar(val, ref_from),
+    };
 }

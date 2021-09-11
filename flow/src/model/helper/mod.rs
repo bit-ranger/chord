@@ -34,6 +34,7 @@ pub fn register(handlebars: &mut Handlebars) {
 
     //number
     handlebars.register_helper("num", Box::new(crate::model::helper::number::NUM));
+    handlebars.register_helper("num_add", Box::new(crate::model::helper::number::NUM_ADD));
 
     //array
     handlebars.register_helper(

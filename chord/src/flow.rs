@@ -64,7 +64,7 @@ impl Flow {
         }
 
         for sid in step_id_checked.iter() {
-            flow.step(sid)
+            flow._step(sid)
                 .as_object()
                 .ok_or_else(|| err!("flow", format!("step {} invalid content", sid)))?;
 
@@ -123,19 +123,8 @@ impl Flow {
         self._stage_break_on(stage_id).unwrap()
     }
 
-    pub fn step(&self, step_id: &str) -> &Value {
-        for stage_id in self.stage_id_vec() {
-            let step = self.flow["stage"][stage_id]["step"][step_id].borrow();
-            if !step.is_null() {
-                return step;
-            }
-        }
-
-        return self.flow["pre"]["step"][step_id].borrow();
-    }
-
     pub fn step_let(&self, step_id: &str) -> &Value {
-        self.step(step_id)["let"].borrow()
+        self._step(step_id)["let"].borrow()
     }
 
     pub fn step_exec_action(&self, step_id: &str) -> &str {
@@ -143,7 +132,7 @@ impl Flow {
     }
 
     pub fn step_exec_args(&self, step_id: &str) -> &Value {
-        self.step(step_id)["exec"]["args"].borrow()
+        self._step(step_id)["exec"]["args"].borrow()
     }
 
     pub fn step_spec_timeout(&self, step_id: &str) -> Duration {
@@ -151,13 +140,17 @@ impl Flow {
     }
 
     pub fn step_spec_catch_err(&self, step_id: &str) -> bool {
-        self.step(step_id)["spec"]["catch_err"]
+        self._step(step_id)["spec"]["catch_err"]
             .as_bool()
             .unwrap_or(false)
     }
 
     pub fn step_assert(&self, step_id: &str) -> Option<&str> {
-        self.step(step_id)["assert"].as_str()
+        self._step(step_id)["assert"].as_str()
+    }
+
+    pub fn step_then_goto(&self, step_id: &str) -> Option<&Map> {
+        self._step(step_id)["then"]["goto"].as_object()
     }
 
     // -----------------------------------------------
@@ -183,15 +176,26 @@ impl Flow {
         return Ok(sid_vec);
     }
 
+    fn _step(&self, step_id: &str) -> &Value {
+        for stage_id in self.stage_id_vec() {
+            let step = self.flow["stage"][stage_id]["step"][step_id].borrow();
+            if !step.is_null() {
+                return step;
+            }
+        }
+
+        return self.flow["pre"]["step"][step_id].borrow();
+    }
+
     fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
-        self.step(step_id)["exec"]["action"].as_str().ok_or(err!(
+        self._step(step_id)["exec"]["action"].as_str().ok_or(err!(
             "flow",
             format!("step {} missing exec.action", step_id)
         ))
     }
 
     fn _step_spec_timeout(&self, step_id: &str) -> Result<Duration, Error> {
-        let s = self.step(step_id)["spec"]["timeout"].as_u64();
+        let s = self._step(step_id)["spec"]["timeout"].as_u64();
         if s.is_none() {
             return Ok(Duration::from_secs(10));
         }

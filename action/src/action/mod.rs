@@ -8,6 +8,7 @@ mod count;
 mod echo;
 mod iter;
 mod log;
+mod nop;
 mod sleep;
 
 #[cfg(feature = "act_crypto")]
@@ -60,6 +61,7 @@ impl FactoryComposite {
 
         let config_ref = config.as_ref();
 
+        register!(table, config_ref, "nop", nop::NopFactory::new, true);
         register!(table, config_ref, "echo", echo::EchoFactory::new, true);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new, true);
         register!(table, config_ref, "log", log::LogFactory::new, true);

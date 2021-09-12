@@ -11,16 +11,21 @@ stage:
     step:
       s1:
         let:
-          s2_loop_idx:
+          s3_loop_idx:
             $reg: 0
         exec:
           action: nop
       
       s2:
         let:
-          s2_loop_idx:
+          s3_loop_idx:
             $reg:
-              $num: "{{num_add reg.s2_loop_idx 1}}"
+              $num: "{{num_add reg.s3_loop_idx 1}}"
+        exec:
+          action: nop
+      
+      s3:
+        let:
           arg2:
             $ref: def.arg.arg2
         exec:
@@ -37,9 +42,16 @@ stage:
               (eq value.1.hello "world")
               (eq value.2.1 "b")
           )
+      
+      s4:
+        let:
+          s3_loop_idx:
+            $num: "{{reg.s3_loop_idx}}"
+        exec:
+          action: nop
         then:
           goto:
-            s2: (lt s2_loop_idx 3)
+            s2: (lt s3_loop_idx 3)
             
             
               

@@ -6,10 +6,11 @@ use chord::step::{StepAssess, StepState};
 use crate::flow::step::arg::RunIdStruct;
 
 pub struct StepAssessStruct {
-    pub id: RunIdStruct,
-    pub start: DateTime<Utc>,
-    pub end: DateTime<Utc>,
-    pub state: StepState,
+    id: RunIdStruct,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    state: StepState,
+    goto: Option<String>,
 }
 
 impl StepAssessStruct {
@@ -18,13 +19,19 @@ impl StepAssessStruct {
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         state: StepState,
+        goto: Option<String>,
     ) -> StepAssessStruct {
         StepAssessStruct {
             id,
             start,
             end,
             state,
+            goto,
         }
+    }
+
+    pub fn get_goto(&self) -> Option<&str> {
+        self.goto.as_ref().map(|g| g.as_str())
     }
 }
 

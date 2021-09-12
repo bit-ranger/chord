@@ -27,17 +27,17 @@ pub async fn run(
     let future = AssertUnwindSafe(action.run(arg)).catch_unwind();
     let timeout_value = timeout(arg.timeout(), future).await;
     if let Err(_) = timeout_value {
-        return assert_assess(arg, start, Err(Error::new("timeout", "timeout")));
+        return assess_create(arg, start, Err(Error::new("timeout", "timeout")));
     }
     let unwind_value = timeout_value.unwrap();
     if let Err(_) = unwind_value {
-        return assert_assess(arg, start, Err(Error::new("unwind", "unwind")));
+        return assess_create(arg, start, Err(Error::new("unwind", "unwind")));
     }
     let action_value = unwind_value.unwrap();
-    return assert_assess(arg, start, action_value);
+    return assess_create(arg, start, action_value);
 }
 
-fn assert_assess(
+fn assess_create(
     arg: &RunArgStruct<'_, '_, '_>,
     start: DateTime<Utc>,
     action_value: Result<Box<dyn Scope>, Error>,
@@ -47,7 +47,14 @@ fn assert_assess(
             if let Some(condition) = arg.assert() {
                 if assert(arg, condition, Ok(scope.as_value())) {
                     debug!("step Ok   {}", arg.id());
-                    StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Ok(scope))
+                    let goto_step = choose_goto(arg, Ok(scope.as_value()));
+                    StepAssessStruct::new(
+                        arg.id().clone(),
+                        start,
+                        Utc::now(),
+                        StepState::Ok(scope),
+                        goto_step,
+                    )
                 } else {
                     info!(
                         "step Fail {}\n{}\n<<<\n{}",
@@ -61,11 +68,19 @@ fn assert_assess(
                         start,
                         Utc::now(),
                         StepState::Fail(scope),
+                        None,
                     )
                 }
             } else {
                 debug!("step Ok   {}", arg.id());
-                StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Ok(scope))
+                let goto_step = choose_goto(arg, Ok(scope.as_value()));
+                StepAssessStruct::new(
+                    arg.id().clone(),
+                    start,
+                    Utc::now(),
+                    StepState::Ok(scope),
+                    goto_step,
+                )
             }
         }
         Err(e) => {
@@ -78,11 +93,13 @@ fn assert_assess(
                 if let Some(condition) = arg.assert() {
                     if assert(arg, condition, Err(&error)) {
                         debug!("step Ok   {}", arg.id());
+                        let goto_step = choose_goto(arg, Err(&error));
                         StepAssessStruct::new(
                             arg.id().clone(),
                             start,
                             Utc::now(),
                             StepState::Ok(Box::new(error)),
+                            goto_step,
                         )
                     } else {
                         info!(
@@ -97,15 +114,18 @@ fn assert_assess(
                             start,
                             Utc::now(),
                             StepState::Fail(Box::new(error)),
+                            None,
                         )
                     }
                 } else {
                     debug!("step Ok   {}", arg.id());
+                    let goto_step = choose_goto(arg, Err(&error));
                     StepAssessStruct::new(
                         arg.id().clone(),
                         start,
                         Utc::now(),
                         StepState::Ok(Box::new(error)),
+                        goto_step,
                     )
                 }
             } else {
@@ -116,10 +136,29 @@ fn assert_assess(
                     to_string_pretty(&arg.args(None).unwrap_or(Value::Null))
                         .unwrap_or("".to_string()),
                 );
-                StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e))
+                StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e), None)
             }
         }
     };
+}
+
+fn choose_goto(arg: &RunArgStruct<'_, '_, '_>, value: Result<&Value, &Value>) -> Option<String> {
+    let goto_map = arg.then_goto();
+    if goto_map.is_none() {
+        return None;
+    }
+    let goto_map = goto_map.unwrap();
+    for (step_id, cond) in goto_map {
+        if cond.is_string() {
+            let cond = cond.as_str().unwrap();
+            if assert(arg, cond, value) {
+                trace!("step goto  {} > {}", arg.id(), step_id);
+                return Some(step_id.to_string());
+            }
+        }
+    }
+
+    return None;
 }
 
 fn assert(arg: &RunArgStruct<'_, '_, '_>, condition: &str, value: Result<&Value, &Value>) -> bool {

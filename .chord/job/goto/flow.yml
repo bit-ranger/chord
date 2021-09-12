@@ -11,16 +11,16 @@ stage:
     step:
       s1:
         let:
-          idx:
+          s2_loop_idx:
             $reg: 0
         exec:
           action: nop
       
       s2:
         let:
-          idx:
+          s2_loop_idx:
             $reg:
-              $num: "{{num_add reg.idx 1}}"
+              $num: "{{num_add reg.s2_loop_idx 1}}"
           arg2:
             $ref: def.arg.arg2
         exec:
@@ -39,8 +39,10 @@ stage:
           )
         then:
           goto:
-            s2:
-              if: (lt idx 3)
+            s2: (lt s2_loop_idx 3)
+            
+            
+              
         
       
      

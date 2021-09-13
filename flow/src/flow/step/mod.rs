@@ -11,6 +11,7 @@ use chord::Error;
 use res::StepAssessStruct;
 
 use crate::flow::step::arg::RunArgStruct;
+use crate::flow::step::res::StepThen;
 use crate::model::app::FlowApp;
 use chord::value::{json, to_string_pretty, Value};
 
@@ -47,13 +48,13 @@ fn assess_create(
             if let Some(condition) = arg.assert() {
                 if assert(arg, condition, Ok(scope.as_value())) {
                     debug!("step Ok   {}", arg.id());
-                    let goto_step = choose_goto(arg, Ok(scope.as_value()));
+                    let then = choose_then(arg, Ok(scope.as_value()));
                     StepAssessStruct::new(
                         arg.id().clone(),
                         start,
                         Utc::now(),
                         StepState::Ok(scope),
-                        goto_step,
+                        then,
                     )
                 } else {
                     info!(
@@ -73,13 +74,13 @@ fn assess_create(
                 }
             } else {
                 debug!("step Ok   {}", arg.id());
-                let goto_step = choose_goto(arg, Ok(scope.as_value()));
+                let then = choose_then(arg, Ok(scope.as_value()));
                 StepAssessStruct::new(
                     arg.id().clone(),
                     start,
                     Utc::now(),
                     StepState::Ok(scope),
-                    goto_step,
+                    then,
                 )
             }
         }
@@ -93,13 +94,13 @@ fn assess_create(
                 if let Some(condition) = arg.assert() {
                     if assert(arg, condition, Err(&error)) {
                         debug!("step Ok   {}", arg.id());
-                        let goto_step = choose_goto(arg, Err(&error));
+                        let then = choose_then(arg, Err(&error));
                         StepAssessStruct::new(
                             arg.id().clone(),
                             start,
                             Utc::now(),
                             StepState::Ok(Box::new(error)),
-                            goto_step,
+                            then,
                         )
                     } else {
                         info!(
@@ -119,13 +120,13 @@ fn assess_create(
                     }
                 } else {
                     debug!("step Ok   {}", arg.id());
-                    let goto_step = choose_goto(arg, Err(&error));
+                    let then = choose_then(arg, Err(&error));
                     StepAssessStruct::new(
                         arg.id().clone(),
                         start,
                         Utc::now(),
                         StepState::Ok(Box::new(error)),
-                        goto_step,
+                        then,
                     )
                 }
             } else {
@@ -142,22 +143,40 @@ fn assess_create(
     };
 }
 
-fn choose_goto(arg: &RunArgStruct<'_, '_, '_>, value: Result<&Value, &Value>) -> Option<String> {
-    let goto_map = arg.then_goto();
-    if goto_map.is_none() {
+fn choose_then(arg: &RunArgStruct<'_, '_, '_>, value: Result<&Value, &Value>) -> Option<StepThen> {
+    let then_vec = arg.then();
+    if then_vec.is_none() {
         return None;
     }
-    let goto_map = goto_map.unwrap();
-    for (step_id, cond) in goto_map {
-        if cond.is_string() {
-            let cond = cond.as_str().unwrap();
-            if assert(arg, cond, value) {
-                trace!("step goto  {} > {}", arg.id(), step_id);
-                return Some(step_id.to_string());
-            }
+    for then in then_vec.unwrap() {
+        let cond = then["if"].as_str();
+        if cond.is_none() || assert(arg, cond.unwrap(), value) {
+            let goto = then["goto"].as_str();
+            let goto = if goto.is_none() {
+                None
+            } else {
+                let result = arg.render_str(goto.unwrap());
+                if result.is_err() {
+                    None
+                } else {
+                    Some(result.unwrap())
+                }
+            };
+
+            let reg = &then["reg"];
+            let reg = if reg.is_none() {
+                None
+            } else {
+                let result = arg.render_value(reg.unwrap(), None);
+                if result.is_err() {
+                    None
+                } else {
+                    Some(result.unwrap())
+                }
+            };
+            return Some(StepThen::new(reg, goto));
         }
     }
-
     return None;
 }
 

@@ -12,6 +12,7 @@ use chord::value::{to_value, Map};
 use crate::flow;
 use crate::flow::render_dollar;
 use crate::flow::step::arg::RunArgStruct;
+use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
 use chord::step::StepState;
@@ -115,7 +116,7 @@ impl CaseArgStruct {
     }
 
     pub fn step_arg_create<'app, 'h, 'reg>(
-        self: &mut CaseArgStruct,
+        self: &CaseArgStruct,
         step_id: &str,
         flow_app: &'app dyn FlowApp,
     ) -> Result<RunArgStruct<'_, 'h, 'reg>, Error>
@@ -143,21 +144,25 @@ impl CaseArgStruct {
         self.data
     }
 
-    pub async fn step_ok_register(&mut self, sid: &str, state: &StepState) {
-        match state {
-            StepState::Ok(scope) => {
-                if let Value::Object(reg) = self.render_ctx.data_mut() {
-                    reg["step"][sid]["value"] = scope.as_value().clone();
+    pub async fn step_ok_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
+        if let StepState::Ok(scope) = step_assess {
+            if let Value::Object(reg) = self.render_ctx.data_mut() {
+                reg["step"][sid]["value"] = scope.as_value().clone();
+                if let Some(then) = step_assess.then() {
+                    if let Some(r) = then.reg() {
+                        for (k, v) in r {
+                            reg.insert(k.to_string(), v.clone());
+                        }
+                    }
                 }
             }
-            _ => {}
         }
     }
 }
 
 fn render_let(
     handlebars: &Handlebars,
-    render_ctx: &mut RenderContext,
+    render_ctx: &RenderContext,
     let_raw: &Value,
 ) -> Result<Value, Error> {
     if let_raw.is_null() {
@@ -171,7 +176,7 @@ fn render_let(
             let v_str = flow::render(handlebars, &let_render_ctx, v_str.as_str())?;
             let v: Value = from_str(v_str.as_str())
                 .map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
-            let v = render_dollar_mut(k, &v, let_render_ctx.data(), render_ctx.data_mut())?;
+            let v = render_dollar(&v, let_render_ctx.data())?;
             if let Value::Object(m) = let_render_ctx.data_mut() {
                 m.insert(k.clone(), v.clone());
             }
@@ -184,26 +189,26 @@ fn render_let(
     }
 }
 
-fn render_dollar_mut(
-    key: &str,
-    val: &Value,
-    ref_from: &Value,
-    mut_from: &mut Value,
-) -> Result<Value, Error> {
-    return match val {
-        Value::Object(map) => {
-            if map.contains_key("$reg") {
-                if map.len() != 1 {
-                    return Err(err!("001", "invalid args $reg"));
-                }
-                let v = &map["$reg"];
-                let v = render_dollar(v, ref_from)?;
-                mut_from["reg"][key] = v.clone();
-                Ok(v)
-            } else {
-                render_dollar(val, ref_from)
-            }
-        }
-        _ => render_dollar(val, ref_from),
-    };
-}
+// fn render_dollar_mut(
+//     key: &str,
+//     val: &Value,
+//     ref_from: &Value,
+//     mut_from: &mut Value,
+// ) -> Result<Value, Error> {
+//     return match val {
+//         Value::Object(map) => {
+//             if map.contains_key("$reg") {
+//                 if map.len() != 1 {
+//                     return Err(err!("001", "invalid args $reg"));
+//                 }
+//                 let v = &map["$reg"];
+//                 let v = render_dollar(v, ref_from)?;
+//                 mut_from["reg"][key] = v.clone();
+//                 Ok(v)
+//             } else {
+//                 render_dollar(val, ref_from)
+//             }
+//         }
+//         _ => render_dollar(val, ref_from),
+//     };
+// }

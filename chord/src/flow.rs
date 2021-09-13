@@ -149,8 +149,13 @@ impl Flow {
         self._step(step_id)["assert"].as_str()
     }
 
-    pub fn step_then_goto(&self, step_id: &str) -> Option<&Map> {
-        self._step(step_id)["then"]["goto"].as_object()
+    pub fn step_then(&self, step_id: &str) -> Option<Vec<&Map>> {
+        let array = self._step(step_id)["then"].as_array()?;
+        array
+            .iter()
+            .filter(|v| v.is_object())
+            .map(|m| m.as_object().unwrap())
+            .collect()
     }
 
     // -----------------------------------------------

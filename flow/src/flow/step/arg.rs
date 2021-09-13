@@ -177,8 +177,8 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         self.flow.step_spec_catch_err(self.id().step())
     }
 
-    pub fn then_goto(&self) -> Option<&Map> {
-        self.flow.step_then_goto(self.id().step())
+    pub fn then(&self) -> Option<Vec<&Map>> {
+        self.flow.step_then(self.id().step())
     }
 
     fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<String, Error> {

@@ -20,29 +20,43 @@ mod logger;
 
 #[async_std::main]
 async fn main() -> Result<(), Error> {
-    let opt = Opt::from_args();
+    let opt = Chord::from_args();
+    match opt {
+        Chord::Run {
+            job_name,
+            exec_id,
+            input,
+            task,
+            config,
+        } => run(job_name, exec_id, input, task, config).await?,
+    }
+    Ok(())
+}
 
-    let input_dir = Path::new(&opt.input);
+async fn run(
+    job_name: String,
+    exec_id: String,
+    input: PathBuf,
+    task: Option<Vec<String>>,
+    config: Option<PathBuf>,
+) -> Result<(), Error> {
+    let input_dir = Path::new(&input);
     if !input_dir.is_dir().await {
         panic!("input is not a dir {}", input_dir.to_str().unwrap());
     }
 
-    let exec_id: String = opt.exec_id.clone();
-    let job_name = opt.job_name.clone();
+    let exec_id: String = exec_id.clone();
+    let job_name = job_name.clone();
 
-    let conf_path = opt
-        .config
-        .clone()
-        .map(|p| PathBuf::from(p))
-        .unwrap_or_else(|| {
-            PathBuf::from(
-                dirs::home_dir()
-                    .unwrap()
-                    .join(".chord")
-                    .join("conf")
-                    .join("cmd.yml"),
-            )
-        });
+    let conf_path = config.clone().map(|p| PathBuf::from(p)).unwrap_or_else(|| {
+        PathBuf::from(
+            dirs::home_dir()
+                .unwrap()
+                .join(".chord")
+                .join("conf")
+                .join("cmd.yml"),
+        )
+    });
     let conf_data = load_conf(conf_path).await?;
     let config = Config::new(conf_data);
 
@@ -64,7 +78,7 @@ async fn main() -> Result<(), Error> {
     let task_state_vec = job::run(
         report_factory,
         input_dir,
-        opt.task,
+        task.clone(),
         exec_id.clone(),
         flow_ctx,
     )
@@ -97,26 +111,28 @@ async fn load_conf<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
     };
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt)]
 #[structopt(name = "chord")]
-struct Opt {
-    /// job name
-    #[structopt(short, long, default_value = "chord_cmd")]
-    job_name: String,
+enum Chord {
+    Run {
+        /// job name
+        #[structopt(short, long, default_value = "chord_cmd")]
+        job_name: String,
 
-    /// exec id
-    #[structopt(short, long, default_value = "1")]
-    exec_id: String,
+        /// exec id
+        #[structopt(short, long, default_value = "1")]
+        exec_id: String,
 
-    /// input dir
-    #[structopt(short, long, parse(from_os_str))]
-    input: PathBuf,
+        /// input dir
+        #[structopt(short, long, parse(from_os_str))]
+        input: PathBuf,
 
-    /// task list
-    #[structopt(short, long)]
-    task: Option<Vec<String>>,
+        /// task list
+        #[structopt(short, long)]
+        task: Option<Vec<String>>,
 
-    /// config file path
-    #[structopt(short, long, parse(from_os_str))]
-    config: Option<PathBuf>,
+        /// config file path
+        #[structopt(short, long, parse(from_os_str))]
+        config: Option<PathBuf>,
+    },
 }

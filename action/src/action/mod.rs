@@ -23,8 +23,6 @@ mod download;
 mod dubbo;
 #[cfg(feature = "act_dylib")]
 mod dylib;
-#[cfg(feature = "act_fstore")]
-mod fstore;
 #[cfg(feature = "act_lua")]
 mod lua;
 #[cfg(feature = "act_mongodb")]
@@ -136,15 +134,6 @@ impl FactoryComposite {
             config_ref,
             "download",
             download::DownloadFactory::new,
-            false
-        );
-
-        #[cfg(feature = "act_fstore")]
-        register!(
-            table,
-            config_ref,
-            "fstore",
-            fstore::FstoreFactory::new,
             false
         );
 

@@ -13,11 +13,7 @@ action:
   download:
     enable: true
     workdir: /home/runner/.chord/workdir/download_fstore
-  
-  fstore:
-    enable: true
-    workdir: /home/runner/.chord/workdir/download_fstore
-  
+   
   shell:
     enable: true
     workdir: /home/runner/.chord/workdir/shell1

@@ -143,23 +143,23 @@ async fn run0(
     return Ok(df);
 }
 
-impl Drop for Download {
-    fn drop(&mut self) {
-        let path = self.tmp.clone();
-        let result = rm_rf::ensure_removed(path);
-
-        match result {
-            Ok(()) => trace!("tmp remove {}", self.tmp.as_path().to_str().unwrap()),
-            Err(e) => {
-                if let rm_rf::Error::NotFound = e {
-                    trace!("tmp not found {}", self.tmp.as_path().to_str().unwrap());
-                } else {
-                    warn!("tmp remove {}, {}", self.tmp.as_path().to_str().unwrap(), e);
-                }
-            }
-        }
-    }
-}
+// impl Drop for Download {
+//     fn drop(&mut self) {
+//         let path = self.tmp.clone();
+//         let result = rm_rf::ensure_removed(path);
+//
+//         match result {
+//             Ok(()) => trace!("tmp remove {}", self.tmp.as_path().to_str().unwrap()),
+//             Err(e) => {
+//                 if let rm_rf::Error::NotFound = e {
+//                     trace!("tmp not found {}", self.tmp.as_path().to_str().unwrap());
+//                 } else {
+//                     warn!("tmp remove {}, {}", self.tmp.as_path().to_str().unwrap(), e);
+//                 }
+//             }
+//         }
+//     }
+// }
 
 struct DownloadFile {
     path: PathBuf,

@@ -19,6 +19,7 @@ use chord::step::{StepAssess, StepState};
 use chord::value::{from_str, to_string, Value};
 use chord::{err, Error};
 use handlebars::Handlebars;
+use log::trace;
 
 #[derive(Clone)]
 pub struct CaseIdStruct {
@@ -151,7 +152,7 @@ impl CaseArgStruct {
                 if let Some(then) = step_assess.then() {
                     if let Some(r) = then.reg() {
                         for (k, v) in r {
-                            println!("reg {} {}", k, v);
+                            trace!("step reg {} {} {}", sid, k, v);
                             reg["reg"][k] = v.clone()
                         }
                     }
@@ -189,27 +190,3 @@ fn render_let(
         Err(err!("001", "invalid let"))
     }
 }
-
-// fn render_dollar_mut(
-//     key: &str,
-//     val: &Value,
-//     ref_from: &Value,
-//     mut_from: &mut Value,
-// ) -> Result<Value, Error> {
-//     return match val {
-//         Value::Object(map) => {
-//             if map.contains_key("$reg") {
-//                 if map.len() != 1 {
-//                     return Err(err!("001", "invalid args $reg"));
-//                 }
-//                 let v = &map["$reg"];
-//                 let v = render_dollar(v, ref_from)?;
-//                 mut_from["reg"][key] = v.clone();
-//                 Ok(v)
-//             } else {
-//                 render_dollar(val, ref_from)
-//             }
-//         }
-//         _ => render_dollar(val, ref_from),
-//     };
-// }

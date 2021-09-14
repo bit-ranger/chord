@@ -181,53 +181,45 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         self.flow.step_then(self.id().step())
     }
 
+    pub fn render_context(&mut self) -> &mut Value {
+        self.render_context.data_mut()
+    }
+
     fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<String, Error> {
         return flow::render(self.handlebars, render_context, txt);
     }
 
-    fn render_args_with(
+    fn render_value_with(
         &self,
-        args_raw: &Value,
+        raw: &Value,
         render_context: &RenderContext,
     ) -> Result<Value, Error> {
-        if args_raw.is_null() {
+        if raw.is_null() {
             return Ok(Value::Null);
         }
-        if let Value::Object(map) = args_raw {
-            let value_str = to_string(map)?;
-            let value_str = self.render_str_with(value_str.as_str(), render_context)?;
-            let value: Value = from_str(value_str.as_str())
-                .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
-            if value.is_object() {
-                let value = render_dollar(&value, render_context.data())?;
-                if value.is_object() {
-                    Ok(value)
-                } else {
-                    Err(err!("001", "invalid args"))
-                }
-            } else {
-                Err(err!("001", "invalid args"))
-            }
-        } else {
-            Err(err!("001", "invalid args"))
-        }
+        let value_str = to_string(raw)?;
+        let value_str = self.render_str_with(value_str.as_str(), render_context)?;
+        let value: Value = from_str(value_str.as_str())
+            .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
+        let value = render_dollar(&value, render_context.data())?;
+        Ok(value)
     }
 
-    fn render_args(
+    pub fn render_value(
         &self,
-        args_raw: &Value,
+        raw: &Value,
         ctx: Option<Box<dyn RenderContextUpdate>>,
     ) -> Result<Value, Error> {
-        if args_raw.is_null() {
+        if raw.is_null() {
             return Ok(Value::Null);
         }
         return if ctx.is_some() {
             let ctx = ctx.unwrap();
             let mut render_context = self.render_context.clone();
             ctx.update(render_context.data_mut());
-            self.render_args_with(args_raw, &render_context)
+            self.render_value_with(raw, &render_context)
         } else {
-            self.render_args_with(args_raw, &self.render_context)
+            self.render_value_with(raw, &self.render_context)
         };
     }
 
@@ -254,7 +246,10 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
 
     fn args(&self, ctx: Option<Box<dyn RenderContextUpdate>>) -> Result<Value, Error> {
         let args_raw = self.flow.step_exec_args(self.id().step());
-        return self.render_args(args_raw, ctx);
+        if !args_raw.is_object() {
+            return Err(err!("001", "invalid args"));
+        }
+        return self.render_value(args_raw, ctx);
     }
 
     fn timeout(&self) -> Duration {

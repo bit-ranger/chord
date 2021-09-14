@@ -151,11 +151,13 @@ impl Flow {
 
     pub fn step_then(&self, step_id: &str) -> Option<Vec<&Map>> {
         let array = self._step(step_id)["then"].as_array()?;
-        array
-            .iter()
-            .filter(|v| v.is_object())
-            .map(|m| m.as_object().unwrap())
-            .collect()
+        Some(
+            array
+                .iter()
+                .filter(|v| v.is_object())
+                .map(|m| m.as_object().unwrap())
+                .collect(),
+        )
     }
 
     // -----------------------------------------------

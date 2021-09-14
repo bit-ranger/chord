@@ -15,7 +15,7 @@ use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
-use chord::step::StepState;
+use chord::step::{StepAssess, StepState};
 use chord::value::{from_str, to_string, Value};
 use chord::{err, Error};
 use handlebars::Handlebars;
@@ -125,7 +125,7 @@ impl CaseArgStruct {
         'app: 'reg,
     {
         let let_raw = self.flow.step_let(step_id);
-        let let_value = render_let(flow_app.get_handlebars(), &mut self.render_ctx, let_raw)?;
+        let let_value = render_let(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
 
         RunArgStruct::new(
             self.flow.as_ref(),
@@ -145,13 +145,14 @@ impl CaseArgStruct {
     }
 
     pub async fn step_ok_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
-        if let StepState::Ok(scope) = step_assess {
+        if let StepState::Ok(scope) = step_assess.state() {
             if let Value::Object(reg) = self.render_ctx.data_mut() {
                 reg["step"][sid]["value"] = scope.as_value().clone();
                 if let Some(then) = step_assess.then() {
                     if let Some(r) = then.reg() {
                         for (k, v) in r {
-                            reg.insert(k.to_string(), v.clone());
+                            println!("reg {} {}", k, v);
+                            reg["reg"][k] = v.clone()
                         }
                     }
                 }

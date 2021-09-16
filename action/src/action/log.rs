@@ -1,4 +1,4 @@
-use log::debug;
+use log::info;
 
 use chord::action::prelude::*;
 
@@ -23,8 +23,8 @@ struct Log {}
 impl Action for Log {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args(None)?;
-        let content = &args["content"];
-        debug!("{}", content.to_string().trim());
+        let content = &args["log"];
+        info!("{}", content.to_string());
         return Ok(Box::new(Value::Null));
     }
 }

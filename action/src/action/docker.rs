@@ -63,20 +63,25 @@ impl Action for ImageWrapper {
             .await?;
         container.start().await?;
         let wait_res = container.wait().await;
-        let tail = args["tail"].as_u64().unwrap_or(1) as usize;
-        let tail_log = match wait_res {
+        let tail = 1;
+        let tail_lines = match wait_res {
             Ok(_) => container.tail(false, tail).await?,
             Err(_) => container.tail(true, tail).await?,
         };
-        let tail_log: Vec<String> = tail_log
+        let tail_lines: Vec<String> = tail_lines
             .into_iter()
             .map(|row| row.trim().to_string())
             .filter(|row| !row.is_empty())
             .collect();
 
-        if tail_log.len() > 0 {
-            let value: Value = from_str(tail_log.join("").as_str())?;
-            Ok(Box::new(value))
+        if tail_lines.len() > 0 {
+            if args["value_as_json"].as_bool().unwrap_or(true) {
+                let value: Value = from_str(tail_lines.join("").as_str())?;
+                Ok(Box::new(value))
+            } else {
+                let value: Value = Value::String(tail_lines.join(""));
+                Ok(Box::new(value))
+            }
         } else {
             Ok(Box::new(Value::Null))
         }

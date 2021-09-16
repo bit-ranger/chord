@@ -57,7 +57,7 @@ async fn call0(
 
     let mut res: Response = rb.send().await?;
 
-    let mut tail: VecDeque<String> = VecDeque::with_capacity(tail_size);
+    let mut tail_lines: VecDeque<String> = VecDeque::with_capacity(tail_size);
     let mut line_buf = vec![];
     loop {
         line_buf.clear();
@@ -77,9 +77,9 @@ async fn call0(
 
             trace!("{}", line);
 
-            tail.push_back(line.clone());
-            if tail.len() > tail_size {
-                tail.pop_front();
+            tail_lines.push_back(line.clone());
+            if tail_lines.len() > tail_size {
+                tail_lines.pop_front();
             }
         } else {
             break;
@@ -88,7 +88,7 @@ async fn call0(
     return if !res.status().is_success() {
         Err(err!("020", res.status().to_string()))?
     } else {
-        Ok(tail.into())
+        Ok(tail_lines.into())
     };
 }
 

@@ -1,7 +1,7 @@
 version: "0.0.1"
 
 def:
-  iter: [ a, b, c, { "d": "e" } ]
+  iter: [ a, b, c, { "d": "5" } ]
 
 
 stage:
@@ -20,7 +20,7 @@ stage:
             map:
               action: echo
               args:
-                content:
+                echo:
                   - idx: "0-{{idx}}"
                     item: "0-{{item}}"
                   
@@ -60,21 +60,22 @@ stage:
         exec:
           action: log
           args:
-            content:
+            log:
               $ref: content
       
       sp4:
-        let: |
-          path_val: {{jsonpath def.iter  "$[?(@.d ~= '^e$')].d"}}
+        let:
+          _path: $[?(@.d ~= '^5$')].d
+          path_val: "{{jsonpath def.iter _path}}"
         exec:
           action: echo
           args:
-            content:
-              $ref: path_val
-        
+            echo:
+              $num: "{{path_val}}"
         assert: |
-          (eq value "e")
-          
+          (all
+            (eq value 5)
+          )
           
           
           

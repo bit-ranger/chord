@@ -10,15 +10,16 @@ use chord::task::TaskId;
 use chord::value::{to_value, Map};
 
 use crate::flow;
-use crate::flow::render_ref;
+use crate::flow::render_dollar;
 use crate::flow::step::arg::RunArgStruct;
+use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
-use chord::input::FlowParse;
-use chord::step::StepState;
+use chord::step::{StepAssess, StepState};
 use chord::value::{from_str, to_string, Value};
 use chord::{err, Error};
 use handlebars::Handlebars;
+use log::trace;
 
 #[derive(Clone)]
 pub struct CaseIdStruct {
@@ -97,6 +98,7 @@ impl CaseArgStruct {
         }
         render_data.insert(String::from("case"), data.clone());
         render_data.insert(String::from("step"), Value::Object(Map::new()));
+        render_data.insert(String::from("reg"), Value::Object(Map::new()));
         if let Some(pre_ctx) = pre_ctx.as_ref() {
             render_data.insert(String::from("pre"), pre_ctx.as_ref().clone());
         }
@@ -124,12 +126,7 @@ impl CaseArgStruct {
         'app: 'reg,
     {
         let let_raw = self.flow.step_let(step_id);
-        let let_value = render_let_with(
-            flow_app.get_handlebars(),
-            flow_app.get_flow_parse(),
-            &self.render_ctx,
-            let_raw,
-        )?;
+        let let_value = render_let(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
 
         RunArgStruct::new(
             self.flow.as_ref(),
@@ -148,52 +145,47 @@ impl CaseArgStruct {
         self.data
     }
 
-    pub async fn step_ok_register(&mut self, sid: &str, state: &StepState) {
-        match state {
-            StepState::Ok(scope) => {
-                if let Value::Object(reg) = self.render_ctx.data_mut() {
-                    reg["step"][sid]["value"] = scope.as_value().clone();
+    pub async fn step_ok_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
+        if let StepState::Ok(scope) = step_assess.state() {
+            if let Value::Object(reg) = self.render_ctx.data_mut() {
+                reg["step"][sid]["value"] = scope.as_value().clone();
+                if let Some(then) = step_assess.then() {
+                    if let Some(r) = then.reg() {
+                        for (k, v) in r {
+                            trace!("step reg {} {} {}", sid, k, v);
+                            reg["reg"][k] = v.clone()
+                        }
+                    }
                 }
             }
-            _ => {}
         }
     }
 }
 
-fn render_let_with(
+fn render_let(
     handlebars: &Handlebars,
-    flow_parse: &dyn FlowParse,
     render_ctx: &RenderContext,
     let_raw: &Value,
 ) -> Result<Value, Error> {
     if let_raw.is_null() {
         return Ok(Value::Null);
     }
-    if let Value::String(txt) = let_raw {
-        let value_str = flow::render(handlebars, render_ctx, txt.as_str())?;
-        let value = flow_parse
-            .parse_str(value_str.as_str())
-            .map_err(|_| err!("001", format!("invalid let {}", value_str)))?;
-        if value.is_object() {
-            Ok(value)
-        } else {
-            Err(err!("001", "invalid let"))
-        }
-    } else if let Value::Object(map) = let_raw {
-        let value_str = to_string(map)?;
-        let value_str = flow::render(handlebars, render_ctx, value_str.as_str())?;
-        let value: Value = from_str(value_str.as_str())
-            .map_err(|_| err!("001", format!("invalid let {}", value_str)))?;
-        if value.is_object() {
-            let value = render_ref(&value, render_ctx.data())?;
-            if value.is_object() {
-                Ok(value)
-            } else {
-                Err(err!("001", "invalid let"))
+    if let Value::Object(map) = let_raw {
+        let mut let_render_ctx = render_ctx.clone();
+        let mut let_value = Map::new();
+        for (k, v) in map.iter() {
+            let v_str = to_string(v)?;
+            let v_str = flow::render(handlebars, &let_render_ctx, v_str.as_str())?;
+            let v: Value = from_str(v_str.as_str())
+                .map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
+            let v = render_dollar(&v, let_render_ctx.data())?;
+            if let Value::Object(m) = let_render_ctx.data_mut() {
+                m.insert(k.clone(), v.clone());
             }
-        } else {
-            Err(err!("001", "invalid let"))
+            let_value.insert(k.clone(), v);
         }
+
+        Ok(Value::Object(let_value))
     } else {
         Err(err!("001", "invalid let"))
     }

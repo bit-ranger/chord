@@ -8,6 +8,7 @@ mod count;
 mod echo;
 mod iter;
 mod log;
+mod nop;
 mod sleep;
 
 #[cfg(feature = "act_crypto")]
@@ -22,12 +23,12 @@ mod download;
 mod dubbo;
 #[cfg(feature = "act_dylib")]
 mod dylib;
-#[cfg(feature = "act_fstore")]
-mod fstore;
 #[cfg(feature = "act_lua")]
 mod lua;
 #[cfg(feature = "act_mongodb")]
 mod mongodb;
+#[cfg(feature = "act_program")]
+mod program;
 #[cfg(feature = "act_redis")]
 mod redis;
 #[cfg(feature = "act_restapi")]
@@ -58,24 +59,11 @@ impl FactoryComposite {
 
         let config_ref = config.as_ref();
 
+        register!(table, config_ref, "nop", nop::NopFactory::new, true);
         register!(table, config_ref, "echo", echo::EchoFactory::new, true);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new, true);
         register!(table, config_ref, "log", log::LogFactory::new, true);
         register!(table, config_ref, "count", count::CountFactory::new, true);
-        register!(
-            table,
-            config_ref,
-            "iter_flatten",
-            iter::flatten::IterFlattenFactory::new,
-            true
-        );
-        register!(
-            table,
-            config_ref,
-            "iter_filter",
-            iter::filter::IterFilterFactory::new,
-            true
-        );
 
         #[cfg(feature = "act_restapi")]
         register!(
@@ -119,6 +107,18 @@ impl FactoryComposite {
             true
         );
 
+        #[cfg(feature = "act_lua")]
+        register!(table, config_ref, "lua", lua::LuaFactory::new, true);
+
+        #[cfg(feature = "act_program")]
+        register!(
+            table,
+            config_ref,
+            "program",
+            program::ProgramFactory::new,
+            true
+        );
+
         #[cfg(feature = "act_dubbo")]
         register!(table, config_ref, "dubbo", dubbo::DubboFactory::new, false);
 
@@ -127,9 +127,6 @@ impl FactoryComposite {
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new, false);
-
-        #[cfg(feature = "act_lua")]
-        register!(table, config_ref, "lua", lua::LuaFactory::new, false);
 
         #[cfg(feature = "act_download")]
         register!(
@@ -140,17 +137,24 @@ impl FactoryComposite {
             false
         );
 
-        #[cfg(feature = "act_fstore")]
+        #[cfg(all(feature = "act_shell", target_os = "linux"))]
+        register!(table, config_ref, "shell", shell::ShellFactory::new, false);
+
         register!(
             table,
             config_ref,
-            "fstore",
-            fstore::FstoreFactory::new,
-            false
+            "iter_filter",
+            iter::filter::IterFilterFactory::new,
+            true
         );
 
-        #[cfg(all(feature = "act_shell", target_os = "linux"))]
-        register!(table, config_ref, "shell", shell::ShellFactory::new, false);
+        register!(
+            table,
+            config_ref,
+            "iter_flatten",
+            iter::flatten::IterFlattenFactory::new,
+            true
+        );
 
         table.insert(
             "iter_map".into(),

@@ -84,7 +84,7 @@ impl Ctl for CtlImpl {
     }
 }
 
-async fn job_run(req: Req, exec_id: String, _: Arc<dyn Config>, image: Arc<Image>) {
+async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Image>) {
     let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
     let host = git_url_splits[1];
@@ -106,9 +106,10 @@ async fn job_run(req: Req, exec_id: String, _: Arc<dyn Config>, image: Arc<Image
     let mut host_config = Map::new();
     host_config.insert(
         "Binds".to_string(),
-        Value::Array(vec![Value::String(
-            "/data/chord/docker:/data/chord".to_string(),
-        )]),
+        Value::Array(vec![Value::String(format!(
+            "{}:/data/chord",
+            conf.docker_dir().to_str().unwrap()
+        ))]),
     );
 
     let cmd = vec![

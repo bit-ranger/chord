@@ -1,19 +1,20 @@
-use lazy_static::lazy_static;
+use async_std::path::{Path, PathBuf};
+use chord::value::Value;
 
-use chord::value::{Map, Value};
+use dirs;
 
 pub trait Config: Sync + Send {
     fn server_ip(&self) -> &str;
 
     fn server_port(&self) -> usize;
 
-    fn docker_volume_path(&self) -> &str;
-
     fn docker_address(&self) -> &str;
 
     fn docker_image(&self) -> &str;
 
-    fn log_dir(&self) -> &str;
+    fn docker_dir(&self) -> &Path;
+
+    fn log_dir(&self) -> &Path;
 
     fn log_level(&self) -> Vec<(String, String)>;
 }
@@ -21,16 +22,34 @@ pub trait Config: Sync + Send {
 #[derive(Debug, Clone)]
 pub struct ConfigImpl {
     conf: Value,
+    home_dir: PathBuf,
+    log_dir: PathBuf,
+    docker_dir: PathBuf,
 }
 
 impl ConfigImpl {
     pub fn new(conf: Value) -> ConfigImpl {
-        ConfigImpl { conf }
-    }
-}
+        let home_dir = dirs::home_dir()
+            .map(|p| PathBuf::from(p).join(".chord"))
+            .unwrap_or_else(|| Path::new("/").join("data").join("chord"));
 
-lazy_static! {
-    static ref EMPTY_MAP: Map = Map::new();
+        let log_dir = match conf["log"]["dir"].as_str() {
+            Some(p) => Path::new(p).to_path_buf(),
+            None => home_dir.join("output"),
+        };
+
+        let docker_dir = match conf["docker"]["dir"].as_str() {
+            Some(p) => Path::new(p).to_path_buf(),
+            None => home_dir.join("output"),
+        };
+
+        ConfigImpl {
+            conf,
+            home_dir,
+            log_dir,
+            docker_dir,
+        }
+    }
 }
 
 impl Config for ConfigImpl {
@@ -40,12 +59,6 @@ impl Config for ConfigImpl {
 
     fn server_port(&self) -> usize {
         self.conf["server"]["port"].as_u64().unwrap_or(9999) as usize
-    }
-
-    fn docker_volume_path(&self) -> &str {
-        self.conf["docker"]["volume"]["path"]
-            .as_str()
-            .unwrap_or("/data/chord/docker")
     }
 
     fn docker_address(&self) -> &str {
@@ -60,10 +73,12 @@ impl Config for ConfigImpl {
             .unwrap_or("bitranger/chord:latest")
     }
 
-    fn log_dir(&self) -> &str {
-        self.conf["log"]["dir"]
-            .as_str()
-            .unwrap_or("/data/chord/output")
+    fn docker_dir(&self) -> &Path {
+        self.log_dir.as_path()
+    }
+
+    fn log_dir(&self) -> &Path {
+        self.log_dir.as_path()
     }
 
     fn log_level(&self) -> Vec<(String, String)> {

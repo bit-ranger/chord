@@ -51,7 +51,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
-        HeaderValue::from_str("application/json")?,
+        HeaderValue::from_str("application/json; charset=utf-8")?,
     );
 
     if let Some(header) = args["header"].as_object() {

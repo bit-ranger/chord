@@ -1,8 +1,7 @@
 use std::str::FromStr;
 
 use async_std::io::BufWriter;
-use async_std::path::PathBuf;
-use futures::executor::block_on;
+use async_std::path::{Path, PathBuf};
 use log::{trace, warn};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
@@ -41,19 +40,16 @@ impl DownloadFactory {
 #[async_trait]
 impl Factory for DownloadFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let tmp = self.workdir.join(arg.id().to_string());
-        async_std::fs::create_dir_all(tmp.as_path()).await?;
-        trace!("tmp create {}", tmp.as_path().to_str().unwrap());
-        Ok(Box::new(Download {
-            name: arg.id().to_string(),
-            tmp,
-        }))
+        let task_dir = self.workdir.join(arg.id().task_id().to_string());
+        async_std::fs::create_dir_all(task_dir.as_path()).await?;
+        trace!("tmp create {}", task_dir.as_path().to_str().unwrap());
+        remove_dir(task_dir.as_path()).await;
+        Ok(Box::new(Download { task_dir }))
     }
 }
 
 struct Download {
-    name: String,
-    tmp: PathBuf,
+    task_dir: PathBuf,
 }
 
 #[async_trait]
@@ -95,12 +91,11 @@ async fn run0(
         }
     }
 
-    let path = download.tmp.join(arg.id().to_string());
+    let case_dir = download.task_dir.join(arg.id().case_id().to_string());
+    async_std::fs::create_dir_all(case_dir.as_path()).await?;
+    let path = case_dir.join(arg.id().step());
 
-    let mut df = DownloadFile {
-        path: path.clone(),
-        value: Value::Null,
-    };
+    let mut df = DownloadFile { value: Value::Null };
 
     let file = async_std::fs::OpenOptions::new()
         .create(true)
@@ -126,14 +121,6 @@ async fn run0(
     }
     value.insert(String::from("header"), Value::Object(header_data));
 
-    value.insert(
-        String::from("path"),
-        Value::Array(vec![
-            Value::String(download.name.clone()),
-            Value::String(arg.id().to_string()),
-        ]),
-    );
-
     let size = async_std::io::copy(res.take_body(), writer).await?;
     trace!("file create {}, {}", path.as_path().to_str().unwrap(), size);
 
@@ -143,26 +130,7 @@ async fn run0(
     return Ok(df);
 }
 
-impl Drop for Download {
-    fn drop(&mut self) {
-        let path = self.tmp.clone();
-        let result = rm_rf::ensure_removed(path);
-
-        match result {
-            Ok(()) => trace!("tmp remove {}", self.tmp.as_path().to_str().unwrap()),
-            Err(e) => {
-                if let rm_rf::Error::NotFound = e {
-                    trace!("tmp not found {}", self.tmp.as_path().to_str().unwrap());
-                } else {
-                    warn!("tmp remove {}, {}", self.tmp.as_path().to_str().unwrap(), e);
-                }
-            }
-        }
-    }
-}
-
 struct DownloadFile {
-    path: PathBuf,
     value: Value,
 }
 
@@ -172,22 +140,16 @@ impl Scope for DownloadFile {
     }
 }
 
-impl Drop for DownloadFile {
-    fn drop(&mut self) {
-        let result = block_on(async_std::fs::remove_file(self.path.as_path()));
+async fn remove_dir(path: &Path) {
+    let result = rm_rf::ensure_removed(std::path::Path::new(path));
 
-        match result {
-            Ok(()) => trace!("file remove {}", self.path.as_path().to_str().unwrap()),
-            Err(e) => {
-                if let std::io::ErrorKind::NotFound = e.kind() {
-                    trace!("file not found {}", self.path.as_path().to_str().unwrap());
-                } else {
-                    warn!(
-                        "file remove {}, {}",
-                        self.path.as_path().to_str().unwrap(),
-                        e
-                    );
-                }
+    match result {
+        Ok(()) => trace!("tmp remove {}", path.to_str().unwrap()),
+        Err(e) => {
+            if let rm_rf::Error::NotFound = e {
+                trace!("tmp not found {}", path.to_str().unwrap());
+            } else {
+                warn!("tmp remove {}, {}", path.to_str().unwrap(), e);
             }
         }
     }

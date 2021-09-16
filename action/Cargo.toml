@@ -52,7 +52,7 @@ act_url = ["urlencoding"]
 act_dylib = ["dynamic_reload"]
 act_docker = ["chord-util"]
 act_lua = ["rlua", "rlua_serde"]
-act_fstore = []
 act_shell = []
+act_program = []
 
 

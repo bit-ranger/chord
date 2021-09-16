@@ -19,7 +19,7 @@ chord = { path = "../chord" }
 chord-flow = { path = "../flow" }
 chord-input = { path = "../input" }
 chord-output = { path = "../output", features = ["report_csv", "report_elasticsearch"] }
-chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_dylib", "act_docker", "act_download", "act_lua", "act_fstore"] }
+chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_dylib", "act_docker", "act_download", "act_lua", "act_program"] }
 log = { version = "0.4.14", features = ["std"] }
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 time = "0.1.42"
@@ -28,6 +28,7 @@ itertools = "0.10.0"
 flume = "0.10.5"
 structopt = "0.3"
 serde_yaml = "0.8"
+dirs = "3.0.2"
 
 [target.'cfg(linux)'.dependencies]
-chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_dylib", "act_docker", "act_download", "act_lua", "act_fstore", "act_shell"] }
+chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_dylib", "act_docker", "act_download", "act_lua", "act_shell"] }

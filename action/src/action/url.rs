@@ -1,4 +1,3 @@
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 
 pub struct UrlFactory {}
@@ -29,17 +28,11 @@ impl Action for Url {
         return match by {
             "encode" => {
                 let to = urlencoding::encode(from);
-                Ok(Box::new(CommonScope {
-                    args,
-                    value: Value::String(to),
-                }))
+                Ok(Box::new(Value::String(to)))
             }
             "decode" => {
                 let to = urlencoding::decode(from)?;
-                Ok(Box::new(CommonScope {
-                    args,
-                    value: Value::String(to),
-                }))
+                Ok(Box::new(Value::String(to)))
             }
             _ => Err(err!("102", format!("unsupported {}", by))),
         };

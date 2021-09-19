@@ -1,4 +1,3 @@
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 use chord::action::RenderContextUpdate;
 use log::{info, trace};
@@ -94,9 +93,6 @@ impl Action for IterFilter {
             }
         }
 
-        Ok(Box::new(CommonScope {
-            args,
-            value: Value::Array(value_vec),
-        }))
+        Ok(Box::new(Value::Array(value_vec)))
     }
 }

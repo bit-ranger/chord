@@ -199,18 +199,3 @@ fn enable(config: Option<&Value>, step_name: &str, default_enable: bool) -> bool
         .as_bool()
         .unwrap_or(default_enable);
 }
-
-struct CommonScope {
-    args: Value,
-    value: Value,
-}
-
-impl Scope for CommonScope {
-    fn args(&self) -> &Value {
-        &self.args
-    }
-
-    fn value(&self) -> &Value {
-        &self.value
-    }
-}

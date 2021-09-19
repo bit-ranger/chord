@@ -44,20 +44,19 @@ fn assess_create(
     start: DateTime<Utc>,
     action_value: Result<Box<dyn Scope>, Error>,
 ) -> StepAssessStruct {
-    if let Err(e) = action_value.as_ref() {
+    if let Err(e) = action_value {
         if !arg.catch_err() {
-            let args = arg.args(None).unwrap_or(Value::Null);
             info!(
                 "step Err  {}\n{}\n<<<\n{}",
                 arg.id(),
                 to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
-                to_string_pretty(&args).unwrap_or("".to_string()),
+                to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
             );
             return StepAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
-                StepState::Err(e.clone()),
+                StepState::Err(e),
                 None,
             );
         } else {
@@ -66,26 +65,27 @@ fn assess_create(
                 map.insert("value".to_string(), to_value(&e));
             }
         }
-    } else if let Ok(sc) = action_value.as_ref() {
+    } else {
         if let Value::Object(map) = arg.render_context() {
             map.insert("state".to_string(), Value::String("Ok".to_string()));
-            map.insert("value".to_string(), sc.value().clone());
+            map.insert(
+                "value".to_string(),
+                action_value.unwrap().as_value().clone(),
+            );
         }
     }
 
     let then = assert_and_then(arg);
-    // let value = arg.render_context()["value"].clone();
+    let value = arg.render_context()["value"].clone();
     return if let Err(e) = then {
-        let args = arg.args(None).unwrap_or(Value::Null);
         info!(
             "step Err  {}\n{}\n<<<\n{}",
             arg.id(),
             to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
-            to_string_pretty(&args).unwrap_or("".to_string()),
+            to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
         );
         StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e), None)
     } else {
-        let scope = action_value.unwrap();
         let (ar, at) = then.unwrap();
         if ar {
             debug!("step Ok   {}", arg.id());
@@ -93,21 +93,21 @@ fn assess_create(
                 arg.id().clone(),
                 start,
                 Utc::now(),
-                StepState::Ok(scope),
+                StepState::Ok(Box::new(value)),
                 at,
             )
         } else {
             info!(
                 "step Fail {}\n{}\n<<<\n{}",
                 arg.id(),
-                to_string_pretty(scope.value()).unwrap_or("".to_string()),
-                to_string_pretty(scope.args()).unwrap_or("".to_string()),
+                to_string_pretty(&value).unwrap_or("".to_string()),
+                to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
             );
             StepAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
-                StepState::Fail(scope),
+                StepState::Fail(Box::new(value)),
                 None,
             )
         }

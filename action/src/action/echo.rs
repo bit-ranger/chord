@@ -1,4 +1,3 @@
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 
 pub struct EchoFactory {}
@@ -22,7 +21,6 @@ struct Echo {}
 impl Action for Echo {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args(None)?;
-        let value = args["echo"].clone();
-        return Ok(Box::new(CommonScope { args, value }));
+        return Ok(Box::new(args["echo"].clone()));
     }
 }

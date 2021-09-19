@@ -1,6 +1,5 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 
 pub struct CountFactory {}
@@ -31,12 +30,8 @@ struct Count {
 #[async_trait]
 impl Action for Count {
     async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let value = Value::Number(Number::from(
+        Ok(Box::new(Value::Number(Number::from(
             self.num.fetch_add(self.incr, Ordering::SeqCst),
-        ));
-        Ok(Box::new(CommonScope {
-            args: Value::Null,
-            value,
-        }))
+        ))))
     }
 }

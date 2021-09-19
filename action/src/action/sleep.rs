@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use async_std::task::sleep;
 
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 
 pub struct SleepFactory {}
@@ -43,9 +42,6 @@ impl Action for Sleep {
         }
 
         sleep(Duration::from_secs(sec)).await;
-        return Ok(Box::new(CommonScope {
-            args,
-            value: Value::Null,
-        }));
+        return Ok(Box::new(Value::Null));
     }
 }

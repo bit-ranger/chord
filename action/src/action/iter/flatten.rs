@@ -1,4 +1,3 @@
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 use log::trace;
 
@@ -33,7 +32,6 @@ impl Action for IterFlatten {
         }
 
         let flat_val_vec = vec_vec.into_iter().flatten().collect();
-        let value = Value::Array(flat_val_vec);
-        Ok(Box::new(CommonScope { args, value }))
+        Ok(Box::new(Value::Array(flat_val_vec)))
     }
 }

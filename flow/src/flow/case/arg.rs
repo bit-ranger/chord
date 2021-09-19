@@ -148,7 +148,7 @@ impl CaseArgStruct {
     pub async fn step_ok_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
         if let StepState::Ok(scope) = step_assess.state() {
             if let Value::Object(reg) = self.render_ctx.data_mut() {
-                reg["step"][sid]["value"] = scope.value().clone();
+                reg["step"][sid]["value"] = scope.as_value().clone();
                 if let Some(then) = step_assess.then() {
                     if let Some(r) = then.reg() {
                         for (k, v) in r {

@@ -1,6 +1,5 @@
 use log::info;
 
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 
 pub struct LogFactory {}
@@ -26,9 +25,6 @@ impl Action for Log {
         let args = arg.args(None)?;
         let content = &args["log"];
         info!("{}", content.to_string());
-        return Ok(Box::new(CommonScope {
-            args,
-            value: Value::Null,
-        }));
+        return Ok(Box::new(Value::Null));
     }
 }

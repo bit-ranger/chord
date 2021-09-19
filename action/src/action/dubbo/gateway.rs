@@ -10,7 +10,6 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 use chord::err;
 use chord::value::{to_string, Deserialize, Serialize};
@@ -150,7 +149,7 @@ impl Action for Dubbo {
             return Err(err!("110", "invalid method"));
         }
 
-        let invoke_args = args["args"]
+        let args = args["args"]
             .as_array()
             .ok_or(err!("111", "args must be array"))?;
 
@@ -169,22 +168,21 @@ impl Action for Dubbo {
 
             method: parts[1].to_owned(),
             arg_types: parts[2..].iter().map(|p| p.to_owned().to_owned()).collect(),
-            args: invoke_args.clone(),
+            args: args.clone(),
         };
 
         let invoke_str = to_string(&invoke)?;
         trace!("invoke request {}", invoke_str);
-        let invoke_value = remote_invoke(self.port, invoke).await.map_err(|e| e.0)?;
-        trace!("invoke response {}, {}", invoke_str, &invoke_value);
-        let invoke_value = &invoke_value;
-        if invoke_value["success"].as_bool().unwrap_or(false) {
-            let value = invoke_value["data"].clone();
-            return Ok(Box::new(CommonScope { args, value }));
+        let value = remote_invoke(self.port, invoke).await.map_err(|e| e.0)?;
+        trace!("invoke response {}, {}", invoke_str, &value);
+        let value = &value;
+        if value["success"].as_bool().unwrap_or(false) {
+            return Ok(Box::new(value["data"].clone()));
         }
 
         return Err(err!(
             "113",
-            format!("{}::{}", invoke_value["code"], invoke_value["message"])
+            format!("{}::{}", value["code"], value["message"])
         ));
     }
 }

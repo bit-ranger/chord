@@ -1,4 +1,3 @@
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 
 pub struct CryptoFactory {}
@@ -35,8 +34,7 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         "md5" => {
             let digest = md5::compute(from);
             let digest = format!("{:x}", digest);
-            let value = Value::String(digest);
-            return Ok(Box::new(CommonScope { args, value }));
+            return Ok(Box::new(Value::String(digest)));
         }
         _ => Err(err!("102", format!("unsupported {}", by))),
     };

@@ -1,7 +1,6 @@
 use mongodb::bson::{to_document, Document};
 use mongodb::{options::ClientOptions, Client};
 
-use crate::action::CommonScope;
 use chord::action::prelude::*;
 use chord::value::from_str;
 
@@ -58,10 +57,7 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
                     let doc_vec: Vec<Document> =
                         arr.iter().map(|v| to_document(v).unwrap()).collect();
                     collection.insert_many(doc_vec, None).await?;
-                    return Ok(Box::new(CommonScope {
-                        args,
-                        value: Value::Null,
-                    }));
+                    return Ok(Box::new(Value::Null));
                 }
                 _ => Err(err!("105", "illegal arg")),
             }

@@ -7,6 +7,8 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
+use log::trace;
+use std::fmt::{Display, Formatter};
 
 pub struct RestapiFactory {}
 
@@ -39,15 +41,22 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
 
 async fn run0(arg: &dyn RunArg) -> std::result::Result<RestapiScope, RestapiError> {
     let args = arg.args(None)?;
+    let mut curl = Curl::default();
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
+    curl.url = url.to_string();
     let url = Url::from_str(url).or(Err(err!("101", format!("invalid url: {}", url))))?;
 
     let method = args["method"]
         .as_str()
         .ok_or(err!("102", "missing method"))?;
+    curl.method = method.to_string();
     let method = Method::from_str(method).or(Err(err!("103", "invalid method")))?;
 
+    curl.headers.push((
+        String::from("Content-Type"),
+        String::from("application/json; charset=utf-8"),
+    ));
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
@@ -60,11 +69,13 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<RestapiScope, RestapiErro
                 HeaderName::from_string(k.clone()).or(Err(err!("104", "invalid header name")))?;
             let hvs: Vec<HeaderValue> = match v {
                 Value::String(v) => {
+                    curl.headers.push((k.clone(), v.clone()));
                     vec![HeaderValue::from_str(v).or(Err(err!("105", "invalid header value")))?]
                 }
                 Value::Array(vs) => {
                     let mut vec = vec![];
                     for v in vs {
+                        curl.headers.push((k.clone(), v.to_string()));
                         let v = HeaderValue::from_str(v.to_string().as_str())?;
                         vec.push(v)
                     }
@@ -78,9 +89,11 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<RestapiScope, RestapiErro
 
     let body = args["body"].borrow();
     if !body.is_null() {
+        curl.body = Some(body.clone());
         rb = rb.body(Body::from(body.clone()));
     }
 
+    trace!("{}", curl);
     let mut res: Response = rb.send().await?;
     let mut res_data = Map::new();
     res_data.insert(
@@ -99,6 +112,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<RestapiScope, RestapiErro
 
     let body: Value = res.body_json().await?;
     res_data.insert(String::from("body"), body);
+    let args = Value::String(curl.to_string());
     let value = Value::Object(res_data);
     return Ok(RestapiScope { args, value });
 }
@@ -135,5 +149,31 @@ impl Scope for RestapiScope {
 
     fn value(&self) -> &Value {
         &self.value
+    }
+}
+
+#[derive(Default)]
+struct Curl {
+    method: String,
+    url: String,
+    headers: Vec<(String, String)>,
+    body: Option<Value>,
+}
+
+impl Display for Curl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let mut curl = format!(
+            r#"curl -X {} --location "{}" "#,
+            self.method.to_uppercase(),
+            self.url
+        );
+        for (k, v) in &self.headers {
+            curl.push_str(format!(r#"-H "{}:{}" "#, k, v).as_str());
+        }
+        if let Some(body) = &self.body {
+            curl.push_str(format!(r#"-d"{}""#, body.to_string().escape_default()).as_str())
+        }
+        f.write_str(curl.as_str())?;
+        Ok(())
     }
 }

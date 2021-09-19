@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::action::{RunId, Scope};
+use crate::action::{RunId, Scope, Value};
 use crate::error::Error;
 
 pub enum StepState {
@@ -38,6 +38,8 @@ pub trait StepAssess: Sync + Send {
     fn start(&self) -> DateTime<Utc>;
 
     fn end(&self) -> DateTime<Utc>;
+
+    fn explain(&self) -> &Value;
 
     fn state(&self) -> &StepState;
 }

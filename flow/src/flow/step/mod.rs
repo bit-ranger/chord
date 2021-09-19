@@ -26,22 +26,24 @@ pub async fn run(
 ) -> StepAssessStruct {
     trace!("step start {}", arg.id());
     let start = Utc::now();
+    let explain = action.explain(arg).await.unwrap_or(Value::Null);
     let future = AssertUnwindSafe(action.run(arg)).catch_unwind();
     let timeout_value = timeout(arg.timeout(), future).await;
     if let Err(_) = timeout_value {
-        return assess_create(arg, start, Err(Error::new("timeout", "timeout")));
+        return assess_create(arg, start, explain, Err(Error::new("timeout", "timeout")));
     }
     let unwind_value = timeout_value.unwrap();
     if let Err(_) = unwind_value {
-        return assess_create(arg, start, Err(Error::new("unwind", "unwind")));
+        return assess_create(arg, start, explain, Err(Error::new("unwind", "unwind")));
     }
     let action_value = unwind_value.unwrap();
-    return assess_create(arg, start, action_value);
+    return assess_create(arg, start, explain, action_value);
 }
 
 fn assess_create(
     arg: &mut RunArgStruct<'_, '_, '_>,
     start: DateTime<Utc>,
+    explain: Value,
     action_value: Result<Box<dyn Scope>, Error>,
 ) -> StepAssessStruct {
     if let Err(e) = action_value {
@@ -50,12 +52,13 @@ fn assess_create(
                 "step Err  {}\n{}\n<<<\n{}",
                 arg.id(),
                 to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
-                to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
+                explain_to_string(&explain),
             );
             return StepAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
+                explain,
                 StepState::Err(e),
                 None,
             );
@@ -82,9 +85,16 @@ fn assess_create(
             "step Err  {}\n{}\n<<<\n{}",
             arg.id(),
             to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
-            to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
+            explain_to_string(&explain)
         );
-        StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e), None)
+        StepAssessStruct::new(
+            arg.id().clone(),
+            start,
+            Utc::now(),
+            explain,
+            StepState::Err(e),
+            None,
+        )
     } else {
         let (ar, at) = then.unwrap();
         if ar {
@@ -93,6 +103,7 @@ fn assess_create(
                 arg.id().clone(),
                 start,
                 Utc::now(),
+                explain,
                 StepState::Ok(Box::new(value)),
                 at,
             )
@@ -101,12 +112,13 @@ fn assess_create(
                 "step Fail {}\n{}\n<<<\n{}",
                 arg.id(),
                 to_string_pretty(&value).unwrap_or("".to_string()),
-                to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
+                explain_to_string(&explain)
             );
             StepAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
+                explain,
                 StepState::Fail(Box::new(value)),
                 None,
             )
@@ -185,4 +197,12 @@ fn to_value(e: &Error) -> Value {
         "code": e.code(),
         "message": e.message()
     })
+}
+
+fn explain_to_string(explain: &Value) -> String {
+    if explain.is_string() {
+        return explain.as_str().unwrap().to_string();
+    } else {
+        to_string_pretty(&explain).unwrap_or("".to_string())
+    }
 }

@@ -13,6 +13,7 @@ use crate::flow::step::arg::RunIdStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
 use chord::action::Action;
+use chord::value::Value;
 use chord::Error;
 
 pub mod arg;
@@ -98,8 +99,14 @@ fn case_fail_by_step_err(
     info!("step Err {}\n{}", step_id, e);
 
     let step_run_id = RunIdStruct::new(step_id.to_string(), arg.id());
-    let step_assess =
-        StepAssessStruct::new(step_run_id, Utc::now(), Utc::now(), StepState::Err(e), None);
+    let step_assess = StepAssessStruct::new(
+        step_run_id,
+        Utc::now(),
+        Utc::now(),
+        Value::Null,
+        StepState::Err(e),
+        None,
+    );
     step_assess_vec.push(Box::new(step_assess));
     info!("case Fail {}", arg.id());
     return CaseAssessStruct::new(

@@ -18,6 +18,7 @@ use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::Error;
 
 use crate::report::Factory;
+use chord::value::{to_string_pretty, Value};
 
 pub struct ReportFactory {
     dir: PathBuf,
@@ -136,7 +137,8 @@ fn create_head() -> Vec<String> {
     vec.push(String::from("id"));
     vec.push(String::from("layer"));
     vec.push(String::from("state"));
-    vec.push(String::from("info"));
+    vec.push(String::from("value"));
+    vec.push(String::from("explain"));
     vec.push(String::from("start"));
     vec.push(String::from("end"));
     vec
@@ -177,14 +179,17 @@ fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
                 StepState::Ok(v) => {
                     step_value.push(String::from("O"));
                     step_value.push(v.as_value().to_string());
+                    step_value.push(explain_to_string(pa.explain()));
                 }
                 StepState::Err(e) => {
                     step_value.push(String::from("E"));
                     step_value.push(String::from(format!("{}", e)));
+                    step_value.push(explain_to_string(pa.explain()));
                 }
                 StepState::Fail(v) => {
                     step_value.push(String::from("F"));
                     step_value.push(v.as_value().to_string());
+                    step_value.push(explain_to_string(pa.explain()));
                 }
             }
             step_value.push(pa.start().format("%T").to_string());
@@ -200,14 +205,17 @@ fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
         CaseState::Ok(_) => {
             case_value.push(String::from("O"));
             case_value.push(String::from(""));
+            case_value.push(ca.data().to_string());
         }
         CaseState::Err(e) => {
             case_value.push(String::from("E"));
             case_value.push(String::from(format!("{}", e)));
+            case_value.push(ca.data().to_string());
         }
         CaseState::Fail(_) => {
             case_value.push(String::from("F"));
             case_value.push(String::from(""));
+            case_value.push(ca.data().to_string());
         }
     }
     case_value.push(ca.start().format("%T").to_string());
@@ -215,4 +223,12 @@ fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
 
     value_vec.push(case_value);
     value_vec
+}
+
+fn explain_to_string(explain: &Value) -> String {
+    if explain.is_string() {
+        return explain.as_str().unwrap().to_string();
+    } else {
+        to_string_pretty(&explain).unwrap_or("".to_string())
+    }
 }

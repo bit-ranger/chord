@@ -64,6 +64,10 @@ pub trait CreateArg: Sync + Send {
 #[async_trait]
 pub trait Action: Sync + Send {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error>;
+
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+        return arg.args(None);
+    }
 }
 
 #[async_trait]

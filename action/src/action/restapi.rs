@@ -7,6 +7,7 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
+use std::fmt::{Display, Formatter};
 
 pub struct RestapiFactory {}
 
@@ -29,6 +30,41 @@ struct Restapi {}
 impl Action for Restapi {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
+    }
+
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+        let args = arg.args(None)?;
+        let mut curl = Curl::default();
+        let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
+        curl.url = url.to_string();
+        let method = args["method"]
+            .as_str()
+            .ok_or(err!("102", "missing method"))?;
+        curl.method = method.to_string();
+        curl.headers.push((
+            "Content-Type".to_string(),
+            "application/json; charset=utf-8".to_string(),
+        ));
+        if let Some(header) = args["header"].as_object() {
+            for (k, v) in header.iter() {
+                match v {
+                    Value::String(v) => {
+                        curl.headers.push((k.clone(), v.clone()));
+                    }
+                    Value::Array(vs) => {
+                        for v in vs {
+                            curl.headers.push((k.clone(), v.to_string()));
+                        }
+                    }
+                    _ => Err(err!("106", "invalid header value"))?,
+                };
+            }
+        };
+        let body = args["body"].borrow();
+        if !body.is_null() {
+            curl.body = Some(body.clone());
+        }
+        Ok(Value::String(curl.to_string()))
     }
 }
 
@@ -119,5 +155,31 @@ impl From<chord::Error> for RestapiError {
 impl From<chord::value::Error> for RestapiError {
     fn from(err: chord::value::Error) -> Self {
         RestapiError(err.into())
+    }
+}
+
+#[derive(Default)]
+struct Curl {
+    method: String,
+    url: String,
+    headers: Vec<(String, String)>,
+    body: Option<Value>,
+}
+
+impl Display for Curl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let mut curl = format!(
+            r#"curl -X {} --location "{}" "#,
+            self.method.to_uppercase(),
+            self.url
+        );
+        for (k, v) in &self.headers {
+            curl.push_str(format!(r#"-H "{}:{}" "#, k, v).as_str());
+        }
+        if let Some(body) = &self.body {
+            curl.push_str(format!(r#"-d"{}""#, body.to_string().escape_default()).as_str())
+        }
+        f.write_str(curl.as_str())?;
+        Ok(())
     }
 }

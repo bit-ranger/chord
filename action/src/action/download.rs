@@ -7,6 +7,7 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{RequestBuilder, Response, Url};
 
+use crate::action::CommonScope;
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
 
@@ -63,7 +64,7 @@ impl Action for Download {
 async fn run0(
     download: &Download,
     arg: &dyn RunArg,
-) -> std::result::Result<DownloadFile, DownloadError> {
+) -> std::result::Result<CommonScope, DownloadError> {
     let args = arg.args(None)?;
     let url = args["url"].as_str().ok_or(err!("102", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("103", format!("invalid url: {}", url))))?;
@@ -95,7 +96,10 @@ async fn run0(
     async_std::fs::create_dir_all(case_dir.as_path()).await?;
     let path = case_dir.join(arg.id().step());
 
-    let mut df = DownloadFile { value: Value::Null };
+    let mut df = CommonScope {
+        args,
+        value: Value::Null,
+    };
 
     let file = async_std::fs::OpenOptions::new()
         .create(true)
@@ -128,16 +132,6 @@ async fn run0(
 
     df.value = Value::Object(value);
     return Ok(df);
-}
-
-struct DownloadFile {
-    value: Value,
-}
-
-impl Scope for DownloadFile {
-    fn as_value(&self) -> &Value {
-        &self.value
-    }
 }
 
 async fn remove_dir(path: &Path) {

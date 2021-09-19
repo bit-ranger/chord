@@ -1,5 +1,6 @@
 use redis::{Client, Value as RedisValue};
 
+use crate::action::CommonScope;
 use chord::action::prelude::*;
 use chord::value::{from_str, Number};
 
@@ -63,7 +64,7 @@ async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error
     }
 
     let redis_value: RedisValue = command.query_async(&mut con).await?;
-    let result = match &redis_value {
+    let value = match &redis_value {
         RedisValue::Nil => Value::Null,
         RedisValue::Int(i) => Value::Number(Number::from(i.clone())),
         RedisValue::Data(data) => {
@@ -78,5 +79,5 @@ async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error
         RedisValue::Okay => Value::String("OK".to_string()),
         _ => Value::Array(vec![]),
     };
-    return Ok(Box::new(result));
+    return Ok(Box::new(CommonScope { args, value }));
 }

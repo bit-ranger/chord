@@ -136,7 +136,8 @@ fn create_head() -> Vec<String> {
     vec.push(String::from("id"));
     vec.push(String::from("layer"));
     vec.push(String::from("state"));
-    vec.push(String::from("info"));
+    vec.push(String::from("value"));
+    vec.push(String::from("args"));
     vec.push(String::from("start"));
     vec.push(String::from("end"));
     vec
@@ -176,15 +177,18 @@ fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
             match pa.state() {
                 StepState::Ok(v) => {
                     step_value.push(String::from("O"));
-                    step_value.push(v.as_value().to_string());
+                    step_value.push(v.value().to_string());
+                    step_value.push(v.args().to_string());
                 }
                 StepState::Err(e) => {
                     step_value.push(String::from("E"));
                     step_value.push(String::from(format!("{}", e)));
+                    step_value.push(String::from(""));
                 }
                 StepState::Fail(v) => {
                     step_value.push(String::from("F"));
-                    step_value.push(v.as_value().to_string());
+                    step_value.push(v.value().to_string());
+                    step_value.push(v.args().to_string());
                 }
             }
             step_value.push(pa.start().format("%T").to_string());
@@ -200,14 +204,17 @@ fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
         CaseState::Ok(_) => {
             case_value.push(String::from("O"));
             case_value.push(String::from(""));
+            case_value.push(ca.data().to_string());
         }
         CaseState::Err(e) => {
             case_value.push(String::from("E"));
             case_value.push(String::from(format!("{}", e)));
+            case_value.push(ca.data().to_string());
         }
         CaseState::Fail(_) => {
             case_value.push(String::from("F"));
             case_value.push(String::from(""));
+            case_value.push(ca.data().to_string());
         }
     }
     case_value.push(ca.start().format("%T").to_string());

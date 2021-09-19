@@ -1,3 +1,4 @@
+use crate::action::CommonScope;
 use async_std::sync::Arc;
 use chord::action::prelude::*;
 use chord::action::{CreateId, RenderContextUpdate, RunId};
@@ -166,8 +167,9 @@ impl Action for IterMap {
                 item_name: "item".to_string(),
             };
             let val = self.map_action.run(&mra).await?;
-            map_val_vec.push(val.as_value().clone());
+            map_val_vec.push(val.value().clone());
         }
-        Ok(Box::new(Value::Array(map_val_vec)))
+        let value = Value::Array(map_val_vec);
+        Ok(Box::new(CommonScope { args, value }))
     }
 }

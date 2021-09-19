@@ -2,6 +2,7 @@ use log::trace;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 
+use crate::action::CommonScope;
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
 
@@ -64,8 +65,8 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
 
     if sql.trim_start().to_uppercase().starts_with("SELECT ") {
         let pr = PageRequest::new(1, 20);
-        let args = vec![];
-        let page: Page<Value> = rb.fetch_page("", sql, &args, &pr).await?;
+        let sql_args = vec![];
+        let page: Page<Value> = rb.fetch_page("", sql, &sql_args, &pr).await?;
         let mut map = Map::new();
         map.insert(
             String::from("total"),
@@ -84,9 +85,9 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
             Value::Number(Number::from(page.page_size)),
         );
         map.insert(String::from("records"), Value::Array(page.records));
-        let page = Value::Object(map);
-        trace!("select: {} >>> {}", arg.id(), page);
-        return Ok(Box::new(page));
+        let value = Value::Object(map);
+        trace!("select: {} >>> {}", arg.id(), value);
+        return Ok(Box::new(CommonScope { args, value }));
     } else {
         let exec = rb.exec("", sql).await?;
         let mut map = Map::new();
@@ -103,8 +104,8 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
             }
             None => {}
         }
-        let exec = Value::Object(map);
-        trace!("exec: {} >>> {}", arg.id(), exec);
-        return Ok(Box::new(exec));
+        let value = Value::Object(map);
+        trace!("exec: {} >>> {}", arg.id(), value);
+        return Ok(Box::new(CommonScope { args, value }));
     }
 }

@@ -1,3 +1,4 @@
+use crate::action::CommonScope;
 use async_std::process::Command;
 use chord::action::prelude::*;
 use log::trace;
@@ -60,14 +61,17 @@ impl Action for Program {
         let last_line = out.lines().last();
 
         match last_line {
-            None => Ok(Box::new(Value::Null)),
+            None => Ok(Box::new(CommonScope {
+                args,
+                value: Value::Null,
+            })),
             Some(last_line) => {
                 if args["value_as_json"].as_bool().unwrap_or(true) {
                     let value: Value = from_str(last_line)?;
-                    Ok(Box::new(value))
+                    Ok(Box::new(CommonScope { args, value }))
                 } else {
                     let value: Value = Value::String(last_line.to_string());
-                    Ok(Box::new(value))
+                    Ok(Box::new(CommonScope { args, value }))
                 }
             }
         }

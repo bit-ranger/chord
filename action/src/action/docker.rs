@@ -1,3 +1,4 @@
+use crate::action::CommonScope;
 use async_std::sync::Arc;
 use chord::action::prelude::*;
 use chord_util::docker::container::Arg;
@@ -77,13 +78,16 @@ impl Action for ImageWrapper {
         if tail_lines.len() > 0 {
             if args["value_as_json"].as_bool().unwrap_or(true) {
                 let value: Value = from_str(tail_lines.join("").as_str())?;
-                Ok(Box::new(value))
+                Ok(Box::new(CommonScope { args, value }))
             } else {
                 let value: Value = Value::String(tail_lines.join(""));
-                Ok(Box::new(value))
+                Ok(Box::new(CommonScope { args, value }))
             }
         } else {
-            Ok(Box::new(Value::Null))
+            Ok(Box::new(CommonScope {
+                args,
+                value: Value::Null,
+            }))
         }
     }
 }

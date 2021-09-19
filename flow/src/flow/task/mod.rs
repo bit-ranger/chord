@@ -325,7 +325,7 @@ async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
             for pa in pa_vec.iter() {
                 match pa.state() {
                     StepState::Ok(pv) => {
-                        pre_ctx["step"][pa.id().step()]["value"] = pv.as_value().clone();
+                        pre_ctx["step"][pa.id().step()]["value"] = pv.value().clone();
                     }
                     _ => return Err(err!("012", "pre step run failure")),
                 }

@@ -3,6 +3,7 @@ use async_std::process::{Command, Stdio};
 use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
 use log::trace;
 
+use crate::action::CommonScope;
 use async_std::path::PathBuf;
 use chord::action::prelude::*;
 use chord::err;
@@ -93,7 +94,7 @@ impl Action for Shell {
             if line.is_none() {
                 let value: Value = from_str(last_line.as_str())
                     .map_err(|e| cause!("106", "last line invalid", e))?;
-                return Ok(Box::new(value));
+                return Ok(Box::new(CommonScope { args, value }));
             }
             let line = line.unwrap()?;
             log_line(&line).await;

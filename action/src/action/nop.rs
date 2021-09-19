@@ -1,3 +1,4 @@
+use crate::action::CommonScope;
 use chord::action::prelude::*;
 
 pub struct NopFactory {}
@@ -20,6 +21,9 @@ struct Nop {}
 #[async_trait]
 impl Action for Nop {
     async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        return Ok(Box::new(Value::Null));
+        return Ok(Box::new(CommonScope {
+            args: Value::Null,
+            value: Value::Null,
+        }));
     }
 }

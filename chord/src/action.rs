@@ -23,7 +23,9 @@ pub mod prelude {
 }
 
 pub trait Scope: Sync + Send {
-    fn as_value(&self) -> &Value;
+    fn args(&self) -> &Value;
+
+    fn value(&self) -> &Value;
 }
 
 pub trait RunArg: Sync + Send {
@@ -69,12 +71,6 @@ pub trait Action: Sync + Send {
 #[async_trait]
 pub trait Factory: Sync + Send {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error>;
-}
-
-impl Scope for Value {
-    fn as_value(&self) -> &Value {
-        &self
-    }
 }
 
 pub trait CreateId: Sync + Send + Display {

@@ -37,7 +37,7 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     Ok(Box::new(value))
 }
 
-async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
+async fn run0(arg: &dyn RunArg) -> std::result::Result<RestapiScope, RestapiError> {
     let args = arg.args(None)?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
@@ -99,7 +99,8 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
 
     let body: Value = res.body_json().await?;
     res_data.insert(String::from("body"), body);
-    return Ok(Value::Object(res_data));
+    let value = Value::Object(res_data);
+    return Ok(RestapiScope { args, value });
 }
 
 struct RestapiError(chord::Error);
@@ -119,5 +120,20 @@ impl From<chord::Error> for RestapiError {
 impl From<chord::value::Error> for RestapiError {
     fn from(err: chord::value::Error) -> Self {
         RestapiError(err.into())
+    }
+}
+
+struct RestapiScope {
+    args: Value,
+    value: Value,
+}
+
+impl Scope for RestapiScope {
+    fn args(&self) -> &Value {
+        &self.args
+    }
+
+    fn value(&self) -> &Value {
+        &self.value
     }
 }

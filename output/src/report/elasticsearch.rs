@@ -188,7 +188,7 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         .to_owned(),
         value: Value::String(
             match sa.state() {
-                StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().clone(),
+                StepState::Ok(scope) | StepState::Fail(scope) => scope.value().clone(),
                 StepState::Err(e) => json!({
                     "code": e.code(),
                     "message": e.message()

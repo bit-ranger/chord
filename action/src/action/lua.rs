@@ -1,5 +1,6 @@
 use rlua::StdLib;
 
+use crate::action::CommonScope;
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
 
@@ -27,7 +28,7 @@ impl Action for Lua {
             StdLib::BASE | StdLib::TABLE | StdLib::STRING | StdLib::UTF8 | StdLib::MATH,
         );
         rt.set_memory_limit(Some(1024000));
-        rt.context(|lua| {
+        let sc: Result<CommonScope, Error> = rt.context(|lua| {
             let args = arg.args(None)?;
 
             if let Some(globals) = args["global"].as_object() {
@@ -39,18 +40,17 @@ impl Action for Lua {
 
             let code = args["code"].as_str().ok_or(err!("100", "missing code"))?;
 
-            self.eval(lua, code.to_string())
-        })
+            let value = self.eval(lua, code.to_string())?;
+            Ok(CommonScope { args, value })
+        });
+        Ok(Box::new(sc?))
     }
 }
 
 impl Lua {
-    fn eval(&self, lua: rlua::Context, code: String) -> Result<Box<dyn Scope>, Error> {
+    fn eval(&self, lua: rlua::Context, code: String) -> Result<Value, Error> {
         match lua.load(code.as_str()).eval::<rlua::Value>() {
-            Ok(v) => {
-                let v: Value = to_value(&v)?;
-                Ok(Box::new(v))
-            }
+            Ok(v) => to_value(&v),
             Err(e) => Err(err!("101", format!("{}", e))),
         }
     }

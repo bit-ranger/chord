@@ -19,9 +19,11 @@ use chord::Error;
 
 use crate::report::Factory;
 use chord::value::{to_string_pretty, Value};
+use std::io::Write;
 
 pub struct ReportFactory {
     dir: PathBuf,
+    with_bom: bool,
 }
 
 #[async_trait]
@@ -37,6 +39,7 @@ impl ReportFactory {
         report_dir: P,
         name: String,
         exec_id: String,
+        with_bom: bool,
     ) -> Result<ReportFactory, Error> {
         let report_dir = report_dir.as_ref().join(name).join(exec_id);
         if !report_dir.exists().await {
@@ -57,11 +60,12 @@ impl ReportFactory {
 
         Ok(ReportFactory {
             dir: report_dir.clone(),
+            with_bom,
         })
     }
 
     pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
-        Reporter::new(self.dir.clone(), task_id).await
+        Reporter::new(self.dir.clone(), task_id, self.with_bom).await
     }
 }
 
@@ -106,13 +110,14 @@ impl Reporter {
     pub async fn new<P: AsRef<Path>>(
         report_dir: P,
         task_id: Arc<dyn TaskId>,
+        with_bom: bool,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
 
         let report_file = report_dir.join(format!("{}_result.csv", task_id.task()));
 
         let report = Reporter {
-            writer: from_path(report_file).await?,
+            writer: from_path(report_file, with_bom).await?,
             report_dir,
             task_id,
         };
@@ -120,10 +125,16 @@ impl Reporter {
     }
 }
 
-async fn from_path<P: AsRef<Path>>(path: P) -> Result<Writer<std::fs::File>, Error> {
-    csv::WriterBuilder::new()
-        .from_path(path.as_ref().to_str().ok_or(err!("010", "invalid path"))?)
-        .map_err(|e| err!("csv", e.to_string()))
+async fn from_path<P: AsRef<Path>>(
+    path: P,
+    with_bom: bool,
+) -> Result<Writer<std::fs::File>, Error> {
+    let mut file =
+        std::fs::File::create(path.as_ref().to_str().ok_or(err!("010", "invalid path"))?)?;
+    if with_bom {
+        file.write_all("\u{feff}".as_bytes())?;
+    }
+    Ok(csv::WriterBuilder::new().from_writer(file))
 }
 
 async fn prepare<W: std::io::Write>(writer: &mut Writer<W>) -> Result<(), Error> {

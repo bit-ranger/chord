@@ -171,13 +171,13 @@ impl Display for Curl {
         let mut curl = format!(
             r#"curl -X {} --location "{}" "#,
             self.method.to_uppercase(),
-            self.url
+            self.url.escape_debug()
         );
         for (k, v) in &self.headers {
-            curl.push_str(format!(r#"-H "{}:{}" "#, k, v).as_str());
+            curl.push_str(format!(r#"-H "{}:{}" "#, k.escape_debug(), v.escape_debug()).as_str());
         }
         if let Some(body) = &self.body {
-            curl.push_str(format!(r#"-d"{}""#, body.to_string().escape_default()).as_str())
+            curl.push_str(format!(r#"-d"{}""#, body.to_string().escape_debug()).as_str())
         }
         f.write_str(curl.as_str())?;
         Ok(())

@@ -1,5 +1,3 @@
-use rlua::StdLib;
-
 use chord::action::prelude::*;
 use chord::value::{Map, Number};
 

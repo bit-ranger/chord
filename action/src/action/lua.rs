@@ -23,9 +23,7 @@ struct Lua {}
 #[async_trait]
 impl Action for Lua {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let rt = rlua::Lua::new_with(
-            StdLib::BASE | StdLib::TABLE | StdLib::STRING | StdLib::UTF8 | StdLib::MATH,
-        );
+        let rt = rlua::Lua::new_with(StdLib::ALL);
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {
             let args = arg.args(None)?;

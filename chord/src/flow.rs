@@ -68,7 +68,9 @@ impl Flow {
                 .as_object()
                 .ok_or_else(|| err!("flow", format!("step {} invalid content", sid)))?;
 
+            let _ = flow._step_let(sid)?;
             let _ = flow._step_exec_action(sid)?;
+            let _ = flow._step_exec_args(sid)?;
             let _ = flow._step_spec_timeout(sid)?;
         }
 

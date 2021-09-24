@@ -6,6 +6,7 @@ use chord::err;
 
 mod count;
 mod echo;
+mod iter;
 mod log;
 mod nop;
 mod sleep;
@@ -138,6 +139,17 @@ impl FactoryComposite {
 
         #[cfg(all(feature = "act_shell", target_os = "linux"))]
         register!(table, config_ref, "shell", shell::ShellFactory::new, false);
+
+        table.insert(
+            "iter_map".into(),
+            Arc::new(
+                iter::map::IterMapFactory::new(
+                    config_ref.map(|c| c["iter_map"].clone()),
+                    table.clone(),
+                )
+                .await?,
+            ),
+        );
 
         Ok(FactoryComposite { table })
     }

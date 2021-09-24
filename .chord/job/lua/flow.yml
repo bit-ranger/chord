@@ -12,6 +12,9 @@ stage:
           action: lua
           args:
             code: |
+              r = os.time();
+              t =  "CHORD-" .. tostring(r);
+              print(t);
               return
               {
                    {
@@ -20,6 +23,9 @@ stage:
                   ,
                   {
                       ['bar'] = tonumber(bar)
+                  },
+                  {
+                      ['tag'] = t
                   }
               }
         

@@ -21,7 +21,7 @@ struct IterFlatten {}
 #[async_trait]
 impl Action for IterFlatten {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args(None)?;
+        let args = Value::Object(arg.args()?);
         trace!("{}", args);
         let array = args["arr"].as_array().ok_or(err!("103", "missing .arr"))?;
 

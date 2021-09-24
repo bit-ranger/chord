@@ -33,7 +33,7 @@ impl Action for Restapi {
     }
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
-        let args = arg.args(None)?;
+        let args = Value::Object(arg.args()?);
         let mut curl = Curl::default();
         let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
         curl.url = url.to_string();
@@ -74,7 +74,7 @@ async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
 }
 
 async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
-    let args = arg.args(None)?;
+    let args = Value::Object(arg.args()?);
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("101", format!("invalid url: {}", url))))?;

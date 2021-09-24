@@ -24,7 +24,7 @@ impl Action for Lua {
         let rt = rlua::Lua::new();
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {
-            let args = arg.args(None)?;
+            let args = Value::Object(arg.args()?);
 
             if let Some(globals) = args["global"].as_object() {
                 for (k, v) in globals {

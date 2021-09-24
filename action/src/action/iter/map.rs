@@ -35,12 +35,8 @@ impl<'a> CreateArg for MapCreateArg<'a> {
         &self.iter_arg.args_raw()["map"]["args"]
     }
 
-    fn render_str(
-        &self,
-        text: &str,
-        ctx: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<String, Error> {
-        self.iter_arg.render_str(text, ctx)
+    fn render_str(&self, text: &str) -> Result<String, Error> {
+        self.iter_arg.render_str(text)
     }
 
     fn is_static(&self, text: &str) -> bool {
@@ -65,7 +61,15 @@ impl<'a, 'i> RunArg for MapRunArg<'a, 'i> {
         self.iter_arg.id()
     }
 
-    fn args(&self, ctx: Option<Box<dyn RenderContextUpdate>>) -> Result<Value, Error> {
+    fn context(&self) -> &Map {
+        self.iter_arg.context()
+    }
+
+    fn args(&self) -> Result<Map, Error> {
+        self.iter_arg.args()
+    }
+
+    fn args_with(&self, ctx: Map) -> Result<Map, Error> {
         let map_ctx = MapContext {
             upper_ctx: ctx,
             index: self.index,
@@ -73,52 +77,7 @@ impl<'a, 'i> RunArg for MapRunArg<'a, 'i> {
             item: self.item.clone(),
             item_name: self.item_name.clone(),
         };
-        Ok(self.iter_arg.args(Some(Box::new(map_ctx)))?["map"]["args"].clone())
-    }
-
-    fn timeout(&self) -> Duration {
-        self.iter_arg.timeout()
-    }
-
-    fn render_str(
-        &self,
-        text: &str,
-        ctx: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<String, Error> {
-        self.iter_arg.render_str(text, ctx)
-    }
-}
-
-struct MapContext {
-    upper_ctx: Option<Box<dyn RenderContextUpdate>>,
-    index: usize,
-    index_name: String,
-    item: Value,
-    item_name: String,
-}
-
-impl RenderContextUpdate for MapContext {
-    fn update(&self, value: &mut Value) {
-        value[self.index_name.as_str()] = Value::Number(Number::from(self.index));
-        value[self.item_name.as_str()] = self.item.clone();
-        if let Some(ctx) = self.upper_ctx.as_ref() {
-            ctx.update(value);
-        }
-    }
-}
-
-struct IterMapContext {}
-
-impl RenderContextUpdate for IterMapContext {
-    fn update(&self, value: &mut Value) {
-        if let Value::Object(data) = value {
-            if !data.contains_key("idx") {
-                data.insert("idx".to_string(), Value::Number(Number::from(0)));
-            }
-            if !data.contains_key("item") {
-                data.insert("item".to_string(), Value::Null);
-            }
-        }
+        Ok(self.iter_arg.args_with(Some(Box::new(map_ctx)))?["map"]["args"].clone())
     }
 }
 
@@ -152,8 +111,16 @@ impl Factory for IterMapFactory {
 #[async_trait]
 impl Action for IterMap {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args(Some(Box::new(IterMapContext {})))?;
-        trace!("{}", args);
+        let mut context = arg.context().clone();
+        if !context.contains_key("idx") {
+            context.insert("idx".to_string(), Value::Number(Number::from(0)));
+        }
+        if !context.contains_key("item") {
+            context.insert("item".to_string(), Value::Null);
+        }
+
+        let args = arg.args_with(context)?;
+        trace!("{}", Value::Object(args));
         let array = args["arr"].as_array().ok_or(err!("103", "missing arr"))?;
 
         let mut map_val_vec = Vec::with_capacity(array.len());

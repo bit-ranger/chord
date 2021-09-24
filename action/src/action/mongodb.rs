@@ -29,7 +29,7 @@ impl Action for Mongodb {
 }
 
 async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.args(None)?;
+    let args = Value::Object(arg.args()?);
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
     let database = args["database"]
         .as_str()

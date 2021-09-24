@@ -22,7 +22,7 @@ struct Program {}
 #[async_trait]
 impl Action for Program {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args(None)?;
+        let args = Value::Object(arg.args()?);
 
         let cmd = args["program"]
             .as_str()

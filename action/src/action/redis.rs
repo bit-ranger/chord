@@ -16,7 +16,7 @@ impl Factory for RedisFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         if let Some(url) = arg.args_raw()["url"].as_str() {
             if arg.is_static(url) {
-                let url = arg.render_str(url, None)?;
+                let url = arg.render_str(url)?;
                 let client = redis::Client::open(url)?;
                 return Ok(Box::new(Redis {
                     client: Some(client),
@@ -37,7 +37,7 @@ impl Action for Redis {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
-                let args = arg.args(None)?;
+                let args = Value::Object(arg.args()?);
                 let url = args["url"].as_str().ok_or(err!("101", "missing url"))?;
 
                 let client = redis::Client::open(url)?;
@@ -48,7 +48,7 @@ impl Action for Redis {
 }
 
 async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.args(None)?;
+    let args = Value::Object(arg.args()?);
     let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 
     let mut con = client.get_async_connection().await?;

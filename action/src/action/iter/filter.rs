@@ -1,5 +1,4 @@
 use chord::action::prelude::*;
-use chord::action::RenderContextUpdate;
 use log::{info, trace};
 
 pub struct IterFilterFactory {}
@@ -79,7 +78,7 @@ impl RenderContextUpdate for IterFilterContext {
 #[async_trait]
 impl Action for IterFilter {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args(Some(Box::new(IterFilterContext {})))?;
+        let args = arg.args_with(Some(Box::new(IterFilterContext {})))?;
         trace!("{}", args);
         let array = args["arr"].as_array().ok_or(err!("103", "missing arr"))?;
         let filter = args["filter"]

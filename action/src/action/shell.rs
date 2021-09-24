@@ -52,7 +52,7 @@ struct Shell {
 #[async_trait]
 impl Action for Shell {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args(None)?;
+        let args = Value::Object(arg.args()?);
 
         let code = args["code"].as_str().ok_or(err!("109", "missing code"))?;
         let shell_path = self.workdir.join(arg.id().to_string());

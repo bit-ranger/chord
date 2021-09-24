@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use handlebars::Handlebars;
 
+use chord::action::RunId;
 use chord::action::{CreateArg, CreateId, RunArg};
-use chord::action::{RenderContextUpdate, RunId};
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::task::TaskId;
@@ -90,11 +90,7 @@ impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f> {
         return context;
     }
 
-    fn render_str(
-        &self,
-        text: &str,
-        _: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<String, Error> {
+    fn render_str(&self, text: &str) -> Result<String, Error> {
         Ok(text.to_string())
     }
 }
@@ -108,16 +104,12 @@ impl<'f> CreateArg for CreateArgStruct<'f> {
         self.action.as_str()
     }
 
-    fn args_raw(&self) -> &Value {
+    fn args_raw(&self) -> &Map {
         self.flow.step_exec_args(self.id.step())
     }
 
-    fn render_str(
-        &self,
-        text: &str,
-        ctx: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<String, Error> {
-        self.render_str(&text, ctx)
+    fn render_str(&self, text: &str) -> Result<String, Error> {
+        self.render_str(text)
     }
 
     fn is_static(&self, text: &str) -> bool {
@@ -131,7 +123,7 @@ impl<'f> CreateArg for CreateArgStruct<'f> {
 pub struct RunArgStruct<'f, 'h, 'reg> {
     flow: &'f Flow,
     handlebars: &'h Handlebars<'reg>,
-    render_context: RenderContext,
+    context: RenderContext,
     id: RunIdStruct,
 }
 
@@ -139,7 +131,7 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
     pub fn new(
         flow: &'f Flow,
         handlebars: &'h Handlebars<'reg>,
-        let_value: Value,
+        context: Option<Map>,
         case_id: Arc<dyn CaseId>,
         step_id: String,
     ) -> Result<RunArgStruct<'f, 'h, 'reg>, Error> {
@@ -147,15 +139,14 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
             case_id,
             step: step_id,
         };
-        let render_context = if let_value.is_null() {
-            RenderContext::wraps(Value::Object(Map::new()))
-        } else {
-            RenderContext::wraps(let_value)
+        let context = match context {
+            Some(lv) => RenderContext::wraps(lv),
+            None => RenderContext::wraps(Map::new()),
         }?;
         let run_arg = RunArgStruct {
             flow,
             handlebars,
-            render_context,
+            context,
             id,
         };
         return Ok(run_arg);
@@ -181,61 +172,33 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         self.flow.step_then(self.id().step())
     }
 
-    pub fn render_context(&mut self) -> &mut Value {
-        self.render_context.data_mut()
+    pub fn context_mut(&mut self) -> &mut Map {
+        self.context.data_mut().as_object_mut().unwrap()
+    }
+
+    pub fn render_str(&self, txt: &str) -> Result<String, Error> {
+        self.render_str_with(txt, &self.context)
     }
 
     fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<String, Error> {
         return flow::render(self.handlebars, render_context, txt);
     }
 
-    fn render_value_with(
-        &self,
-        raw: &Value,
-        render_context: &RenderContext,
-    ) -> Result<Value, Error> {
-        if raw.is_null() {
-            return Ok(Value::Null);
-        }
+    fn render_object_with(&self, raw: &Map, render_context: &RenderContext) -> Result<Map, Error> {
         let value_str = to_string(raw)?;
         let value_str = self.render_str_with(value_str.as_str(), render_context)?;
         let value: Value = from_str(value_str.as_str())
             .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
         let value = render_dollar(&value, render_context.data())?;
-        Ok(value)
+        if let Value::Object(object) = value {
+            Ok(object)
+        } else {
+            Err(err!("001", format!("invalid args {}", value_str)))
+        }
     }
 
-    pub fn render_value(
-        &self,
-        raw: &Value,
-        ctx: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<Value, Error> {
-        if raw.is_null() {
-            return Ok(Value::Null);
-        }
-        return if ctx.is_some() {
-            let ctx = ctx.unwrap();
-            let mut render_context = self.render_context.clone();
-            ctx.update(render_context.data_mut());
-            self.render_value_with(raw, &render_context)
-        } else {
-            self.render_value_with(raw, &self.render_context)
-        };
-    }
-
-    fn render_str(
-        &self,
-        text: &str,
-        ctx: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<String, Error> {
-        if ctx.is_some() {
-            let ctx = ctx.unwrap();
-            let mut render_context = self.render_context.clone();
-            ctx.update(render_context.data_mut());
-            self.render_str_with(text, &render_context)
-        } else {
-            self.render_str_with(text, &self.render_context)
-        }
+    pub fn render_object(&self, raw: &Map) -> Result<Map, Error> {
+        self.render_object_with(raw, &self.context)
     }
 }
 
@@ -244,23 +207,21 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
         &self.id
     }
 
-    fn args(&self, ctx: Option<Box<dyn RenderContextUpdate>>) -> Result<Value, Error> {
-        let args_raw = self.flow.step_exec_args(self.id().step());
-        if !args_raw.is_object() {
-            return Err(err!("001", "invalid args"));
-        }
-        return self.render_value(args_raw, ctx);
+    fn context(&self) -> &Map {
+        &self.context.data().as_object().unwrap()
     }
 
     fn timeout(&self) -> Duration {
         self.timeout()
     }
 
-    fn render_str(
-        &self,
-        text: &str,
-        ctx: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<String, Error> {
-        self.render_str(&text, ctx)
+    fn args(&self) -> Result<Map, Error> {
+        self.args_with(self.context.data().as_object().unwrap())
+    }
+
+    fn args_with(&self, context: &Map) -> Result<Map, Error> {
+        let args_raw = self.flow.step_exec_args(self.id().step());
+        let ctx = RenderContext::wraps(context)?;
+        return self.render_object_with(&args_raw, &ctx);
     }
 }

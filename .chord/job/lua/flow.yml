@@ -12,19 +12,14 @@ stage:
           action: lua
           args:
             code: |
-              for i = 1, 5 do
-                  n = math.random(100)
-                  print("hello lua: " .. tostring(n));
-              end
-              
               return
               {
                    {
-                      ['foo'] = {{foo}}
+                      ['foo'] = foo
                   }
                   ,
                   {
-                      ['bar'] = {{bar}}
+                      ['bar'] = tonumber(bar)
                   }
               }
         
@@ -34,14 +29,14 @@ stage:
           )
       
       step2:
+        let:
+          arr1: [ "a", "b" ]
+          arr2: {
+            "foo": "bar"
+          }
         exec:
           action: lua
           args:
-            global:
-              arr1: [ "a", "b" ]
-              arr2: {
-                "foo": "bar"
-              }
             code: |
               table.insert(arr1, "c");
               table.insert(arr1, arr2);

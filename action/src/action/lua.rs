@@ -25,15 +25,12 @@ impl Action for Lua {
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {
             let args = Value::Object(arg.args()?);
-
-            if let Some(globals) = args["global"].as_object() {
-                for (k, v) in globals {
-                    let v = rlua_serde::to_value(lua, v)?;
-                    lua.globals().set(k.as_str(), v)?;
-                }
-            }
-
             let code = args["code"].as_str().ok_or(err!("100", "missing code"))?;
+
+            for (k, v) in arg.context() {
+                let v = rlua_serde::to_value(lua, v)?;
+                lua.globals().set(k.as_str(), v)?;
+            }
 
             self.eval(lua, code.to_string())
         })

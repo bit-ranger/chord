@@ -189,18 +189,18 @@ fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
             match pa.state() {
                 StepState::Ok(v) => {
                     step_value.push(String::from("O"));
-                    step_value.push(v.as_value().to_string());
-                    step_value.push(explain_to_string(pa.explain()));
+                    step_value.push(to_csv_string(v.as_value()));
+                    step_value.push(to_csv_string(pa.explain()));
                 }
                 StepState::Err(e) => {
                     step_value.push(String::from("E"));
                     step_value.push(String::from(format!("{}", e)));
-                    step_value.push(explain_to_string(pa.explain()));
+                    step_value.push(to_csv_string(pa.explain()));
                 }
                 StepState::Fail(v) => {
                     step_value.push(String::from("F"));
-                    step_value.push(v.as_value().to_string());
-                    step_value.push(explain_to_string(pa.explain()));
+                    step_value.push(to_csv_string(v.as_value()));
+                    step_value.push(to_csv_string(pa.explain()));
                 }
             }
             step_value.push(pa.start().format("%T").to_string());
@@ -216,17 +216,17 @@ fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
         CaseState::Ok(_) => {
             case_value.push(String::from("O"));
             case_value.push(String::from(""));
-            case_value.push(ca.data().to_string());
+            case_value.push(to_csv_string(ca.data()));
         }
         CaseState::Err(e) => {
             case_value.push(String::from("E"));
             case_value.push(String::from(format!("{}", e)));
-            case_value.push(ca.data().to_string());
+            case_value.push(to_csv_string(ca.data()));
         }
         CaseState::Fail(_) => {
             case_value.push(String::from("F"));
             case_value.push(String::from(""));
-            case_value.push(ca.data().to_string());
+            case_value.push(to_csv_string(ca.data()));
         }
     }
     case_value.push(ca.start().format("%T").to_string());
@@ -236,7 +236,7 @@ fn to_value_vec(ca: &dyn CaseAssess) -> Vec<Vec<String>> {
     value_vec
 }
 
-fn explain_to_string(explain: &Value) -> String {
+fn to_csv_string(explain: &Value) -> String {
     if explain.is_string() {
         return explain.as_str().unwrap().to_string();
     } else {

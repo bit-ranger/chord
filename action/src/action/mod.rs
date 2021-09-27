@@ -140,22 +140,6 @@ impl FactoryComposite {
         #[cfg(all(feature = "act_shell", target_os = "linux"))]
         register!(table, config_ref, "shell", shell::ShellFactory::new, false);
 
-        register!(
-            table,
-            config_ref,
-            "iter_filter",
-            iter::filter::IterFilterFactory::new,
-            true
-        );
-
-        register!(
-            table,
-            config_ref,
-            "iter_flatten",
-            iter::flatten::IterFlattenFactory::new,
-            true
-        );
-
         table.insert(
             "iter_map".into(),
             Arc::new(

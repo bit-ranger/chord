@@ -45,6 +45,7 @@ impl ReportFactory {
                                     .ok_or(err!("report", "missing report.csv.dir"))?,
                                 name.to_string(),
                                 exec_id.to_string(),
+                                v["with_bom"].as_bool().unwrap_or(true),
                             )
                             .await?;
                             return Ok(ReportFactory {

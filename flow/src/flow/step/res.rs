@@ -4,12 +4,13 @@ use chord::action::RunId;
 use chord::step::{StepAssess, StepState};
 
 use crate::flow::step::arg::RunIdStruct;
-use chord::value::Map;
+use chord::value::{Map, Value};
 
 pub struct StepAssessStruct {
     id: RunIdStruct,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
+    explain: Value,
     state: StepState,
     then: Option<StepThen>,
 }
@@ -38,6 +39,7 @@ impl StepAssessStruct {
         id: RunIdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
+        explain: Value,
         state: StepState,
         then: Option<StepThen>,
     ) -> StepAssessStruct {
@@ -45,6 +47,7 @@ impl StepAssessStruct {
             id,
             start,
             end,
+            explain,
             state,
             then,
         }
@@ -66,6 +69,10 @@ impl StepAssess for StepAssessStruct {
 
     fn end(&self) -> DateTime<Utc> {
         self.end
+    }
+
+    fn explain(&self) -> &Value {
+        &self.explain
     }
 
     fn state(&self) -> &StepState {

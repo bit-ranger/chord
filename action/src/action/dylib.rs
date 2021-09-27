@@ -28,7 +28,7 @@ impl Factory for DylibFactory {
             unsafe { lib.lib.get(b"init")? };
 
         let config_str = to_string(arg.args_raw())?;
-        let config_str = arg.render_str(config_str.as_str(), None)?;
+        let config_str = arg.render_str(config_str.as_str())?;
         action_create(arg.id().to_string().as_str(), config_str.as_str())?;
 
         Ok(Box::new(Dylib { lib }))
@@ -45,7 +45,7 @@ impl Action for Dylib {
         let action_run: Symbol<fn(&str, &str) -> Result<Box<dyn Scope>, Error>> =
             unsafe { self.lib.lib.get(b"run")? };
 
-        let args = arg.args(None)?;
+        let args = Value::Object(arg.args()?);
         let config_str = to_string(&args)?;
         action_run(arg.id().to_string().as_str(), config_str.as_str())
     }

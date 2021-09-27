@@ -37,7 +37,7 @@ struct ImageWrapper(Image);
 #[async_trait]
 impl Action for ImageWrapper {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args(None)?;
+        let args = Value::Object(arg.args()?);
         let cmd = &args["cmd"];
 
         let mut ca = Arg::default();

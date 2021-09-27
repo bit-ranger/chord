@@ -18,7 +18,7 @@ impl Factory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         if let Some(url) = arg.args_raw()["url"].as_str() {
             if arg.is_static(url) {
-                let url = arg.render_str(url, None)?;
+                let url = arg.render_str(url)?;
                 let rb = create_rb(url.as_str()).await?;
                 return Ok(Box::new(Database { rb: Some(rb) }));
             }
@@ -46,7 +46,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
 }
 
 async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.args(None)?;
+    let args = Value::Object(arg.args()?);
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {
@@ -59,7 +59,7 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> 
 }
 
 async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.args(None)?;
+    let args = Value::Object(arg.args()?);
     let sql = args["sql"].as_str().ok_or(err!("101", "missing sql"))?;
 
     if sql.trim_start().to_uppercase().starts_with("SELECT ") {

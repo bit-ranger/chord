@@ -12,6 +12,7 @@ stage:
       s1:
         exec:
           action: nop
+          args: { }
         then:
           - reg:
               s3_loop_idx: 0
@@ -56,6 +57,7 @@ stage:
             $num: "{{reg.s3_loop_idx}}"
         exec:
           action: nop
+          args: { }
         then:
           - if: (lt s3_loop_idx 3)
             reg:

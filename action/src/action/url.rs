@@ -20,7 +20,7 @@ struct Url {}
 #[async_trait]
 impl Action for Url {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args(None)?;
+        let args = Value::Object(arg.args()?);
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 
         let from = args["from"].as_str().ok_or(err!("101", "missing from"))?;

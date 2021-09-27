@@ -126,7 +126,13 @@ impl CaseArgStruct {
         'app: 'reg,
     {
         let let_raw = self.flow.step_let(step_id);
-        let let_value = render_let(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
+        let let_value = match let_raw {
+            Some(let_raw) => {
+                let let_value = render_let(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
+                Some(let_value)
+            }
+            None => None,
+        };
 
         RunArgStruct::new(
             self.flow.as_ref(),
@@ -165,28 +171,21 @@ impl CaseArgStruct {
 fn render_let(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
-    let_raw: &Value,
-) -> Result<Value, Error> {
-    if let_raw.is_null() {
-        return Ok(Value::Null);
-    }
-    if let Value::Object(map) = let_raw {
-        let mut let_render_ctx = render_ctx.clone();
-        let mut let_value = Map::new();
-        for (k, v) in map.iter() {
-            let v_str = to_string(v)?;
-            let v_str = flow::render(handlebars, &let_render_ctx, v_str.as_str())?;
-            let v: Value = from_str(v_str.as_str())
-                .map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
-            let v = render_dollar(&v, let_render_ctx.data())?;
-            if let Value::Object(m) = let_render_ctx.data_mut() {
-                m.insert(k.clone(), v.clone());
-            }
-            let_value.insert(k.clone(), v);
+    let_raw: &Map,
+) -> Result<Map, Error> {
+    let mut let_render_ctx = render_ctx.clone();
+    let mut let_value = Map::new();
+    for (k, v) in let_raw.iter() {
+        let v_str = to_string(v)?;
+        let v_str = flow::render(handlebars, &let_render_ctx, v_str.as_str())?;
+        let v: Value =
+            from_str(v_str.as_str()).map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
+        let v = render_dollar(&v, let_render_ctx.data())?;
+        if let Value::Object(m) = let_render_ctx.data_mut() {
+            m.insert(k.clone(), v.clone());
         }
-
-        Ok(Value::Object(let_value))
-    } else {
-        Err(err!("001", "invalid let"))
+        let_value.insert(k.clone(), v);
     }
+
+    Ok(let_value)
 }

@@ -1,6 +1,6 @@
 use async_std::sync::Arc;
 use chord::action::prelude::*;
-use chord::action::{CreateId, RenderContextUpdate, RunId};
+use chord::action::{CreateId, RunId};
 use log::trace;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -20,6 +20,7 @@ impl IterMapFactory {
 
 struct MapCreateArg<'a> {
     iter_arg: &'a dyn CreateArg,
+    args_raw_empty: Map,
 }
 
 impl<'a> CreateArg for MapCreateArg<'a> {
@@ -31,16 +32,14 @@ impl<'a> CreateArg for MapCreateArg<'a> {
         self.iter_arg.action()
     }
 
-    fn args_raw(&self) -> &Value {
-        &self.iter_arg.args_raw()["map"]["args"]
+    fn args_raw(&self) -> &Map {
+        &self.iter_arg.args_raw()["exec"]["args"]
+            .as_object()
+            .unwrap_or(&self.args_raw_empty)
     }
 
-    fn render_str(
-        &self,
-        text: &str,
-        ctx: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<String, Error> {
-        self.iter_arg.render_str(text, ctx)
+    fn render_str(&self, text: &str) -> Result<String, Error> {
+        self.iter_arg.render_str(text)
     }
 
     fn is_static(&self, text: &str) -> bool {
@@ -52,86 +51,72 @@ struct IterMap {
     map_action: Box<dyn Action>,
 }
 
-struct MapRunArg<'a, 'i> {
-    iter_arg: &'a dyn RunArg,
+struct MapRunArg<'a> {
+    delegate: &'a dyn RunArg,
     index: usize,
-    index_name: String,
-    item: &'i Value,
-    item_name: String,
+    item: Value,
+    context: Map,
 }
 
-impl<'a, 'i> RunArg for MapRunArg<'a, 'i> {
-    fn id(&self) -> &dyn RunId {
-        self.iter_arg.id()
+impl<'a> MapRunArg<'a> {
+    fn new(delegate: &'a dyn RunArg, index: usize, item: Value) -> MapRunArg {
+        let mut context = delegate.context().clone();
+        context.insert("idx".to_string(), Value::Number(Number::from(index)));
+        context.insert("item".to_string(), item.clone());
+        MapRunArg {
+            delegate,
+            index,
+            item,
+            context,
+        }
     }
+}
 
-    fn args(&self, ctx: Option<Box<dyn RenderContextUpdate>>) -> Result<Value, Error> {
-        let map_ctx = MapContext {
-            upper_ctx: ctx,
-            index: self.index,
-            index_name: self.index_name.clone(),
-            item: self.item.clone(),
-            item_name: self.item_name.clone(),
-        };
-        Ok(self.iter_arg.args(Some(Box::new(map_ctx)))?["map"]["args"].clone())
+impl<'a> RunArg for MapRunArg<'a> {
+    fn id(&self) -> &dyn RunId {
+        self.delegate.id()
     }
 
     fn timeout(&self) -> Duration {
-        self.iter_arg.timeout()
+        self.delegate.timeout()
     }
 
-    fn render_str(
-        &self,
-        text: &str,
-        ctx: Option<Box<dyn RenderContextUpdate>>,
-    ) -> Result<String, Error> {
-        self.iter_arg.render_str(text, ctx)
+    fn context(&self) -> &Map {
+        &self.context
     }
-}
 
-struct MapContext {
-    upper_ctx: Option<Box<dyn RenderContextUpdate>>,
-    index: usize,
-    index_name: String,
-    item: Value,
-    item_name: String,
-}
-
-impl RenderContextUpdate for MapContext {
-    fn update(&self, value: &mut Value) {
-        value[self.index_name.as_str()] = Value::Number(Number::from(self.index));
-        value[self.item_name.as_str()] = self.item.clone();
-        if let Some(ctx) = self.upper_ctx.as_ref() {
-            ctx.update(value);
-        }
+    fn args(&self) -> Result<Map, Error> {
+        self.args_with(self.context())
     }
-}
 
-struct IterMapContext {}
-
-impl RenderContextUpdate for IterMapContext {
-    fn update(&self, value: &mut Value) {
-        if let Value::Object(data) = value {
-            if !data.contains_key("idx") {
-                data.insert("idx".to_string(), Value::Number(Number::from(0)));
-            }
-            if !data.contains_key("item") {
-                data.insert("item".to_string(), Value::Null);
+    fn args_with(&self, context: &Map) -> Result<Map, Error> {
+        let mut ctx = context.clone();
+        ctx.insert("idx".to_string(), Value::Number(Number::from(self.index)));
+        ctx.insert("item".to_string(), self.item.clone());
+        let args = self.delegate.args_with(&ctx)?;
+        if let Some(map) = args.get("exec") {
+            if let Value::Object(map) = map {
+                if let Some(args) = map.get("args") {
+                    if let Value::Object(args) = args {
+                        return Ok(args.clone());
+                    }
+                }
             }
         }
+        return Ok(Map::new());
     }
 }
 
 #[async_trait]
 impl Factory for IterMapFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let map = arg.args_raw()["map"]
+        let exec = arg.args_raw()["exec"]
             .as_object()
-            .ok_or(err!("101", "missing map"))?;
+            .ok_or(err!("101", "missing exec"))?;
 
-        let action = map["action"]
+        let action = exec["action"]
             .as_str()
-            .ok_or(err!("102", "missing action"))?;
+            .ok_or(err!("102", "missing exec.action"))?;
         let factory = match action {
             "iter_map" => self as &dyn Factory,
             _ => self
@@ -141,7 +126,10 @@ impl Factory for IterMapFactory {
                 .as_ref(),
         };
 
-        let map_create_arg = MapCreateArg { iter_arg: arg };
+        let map_create_arg = MapCreateArg {
+            iter_arg: arg,
+            args_raw_empty: Map::new(),
+        };
 
         let map_action = factory.create(&map_create_arg).await?;
 
@@ -152,19 +140,17 @@ impl Factory for IterMapFactory {
 #[async_trait]
 impl Action for IterMap {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args(Some(Box::new(IterMapContext {})))?;
+        let mut context = arg.context().clone();
+        context.insert("idx".to_string(), Value::Null);
+        context.insert("item".to_string(), Value::Null);
+
+        let args = Value::Object(arg.args_with(&context)?);
         trace!("{}", args);
         let array = args["arr"].as_array().ok_or(err!("103", "missing arr"))?;
 
         let mut map_val_vec = Vec::with_capacity(array.len());
         for (index, item) in array.iter().enumerate() {
-            let mra = MapRunArg {
-                iter_arg: arg,
-                index,
-                index_name: "idx".to_string(),
-                item,
-                item_name: "item".to_string(),
-            };
+            let mra = MapRunArg::new(arg, index, item.clone());
             let val = self.map_action.run(&mra).await?;
             map_val_vec.push(val.as_value().clone());
         }

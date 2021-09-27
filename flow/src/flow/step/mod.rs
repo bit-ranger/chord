@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use futures::FutureExt;
 use log::{debug, info, trace};
 
-use chord::action::{Action, RunArg, Scope};
+use chord::action::{Action, Scope};
 use chord::step::StepState;
 use chord::Error;
 use res::StepAssessStruct;
@@ -13,7 +13,6 @@ use res::StepAssessStruct;
 use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepThen;
 use crate::model::app::FlowApp;
-use chord::err;
 use chord::value::{json, to_string_pretty, Value};
 
 pub mod arg;
@@ -26,22 +25,24 @@ pub async fn run(
 ) -> StepAssessStruct {
     trace!("step start {}", arg.id());
     let start = Utc::now();
+    let explain = action.explain(arg).await.unwrap_or(Value::Null);
     let future = AssertUnwindSafe(action.run(arg)).catch_unwind();
     let timeout_value = timeout(arg.timeout(), future).await;
     if let Err(_) = timeout_value {
-        return assess_create(arg, start, Err(Error::new("timeout", "timeout")));
+        return assess_create(arg, start, explain, Err(Error::new("timeout", "timeout")));
     }
     let unwind_value = timeout_value.unwrap();
     if let Err(_) = unwind_value {
-        return assess_create(arg, start, Err(Error::new("unwind", "unwind")));
+        return assess_create(arg, start, explain, Err(Error::new("unwind", "unwind")));
     }
     let action_value = unwind_value.unwrap();
-    return assess_create(arg, start, action_value);
+    return assess_create(arg, start, explain, action_value);
 }
 
 fn assess_create(
     arg: &mut RunArgStruct<'_, '_, '_>,
     start: DateTime<Utc>,
+    explain: Value,
     action_value: Result<Box<dyn Scope>, Error>,
 ) -> StepAssessStruct {
     if let Err(e) = action_value {
@@ -50,66 +51,76 @@ fn assess_create(
                 "step Err  {}\n{}\n<<<\n{}",
                 arg.id(),
                 to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
-                to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
+                explain_to_string(&explain),
             );
             return StepAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
+                explain,
                 StepState::Err(e),
                 None,
             );
         } else {
-            if let Value::Object(map) = arg.render_context() {
-                map.insert("state".to_string(), Value::String("Err".to_string()));
-                map.insert("value".to_string(), to_value(&e));
-            }
+            let map = arg.context_mut();
+            map.insert("state".to_string(), Value::String("Err".to_string()));
+            map.insert("value".to_string(), to_value(&e));
         }
     } else {
-        if let Value::Object(map) = arg.render_context() {
-            map.insert("state".to_string(), Value::String("Ok".to_string()));
-            map.insert(
-                "value".to_string(),
-                action_value.unwrap().as_value().clone(),
-            );
-        }
+        let map = arg.context_mut();
+        map.insert("state".to_string(), Value::String("Ok".to_string()));
+        map.insert(
+            "value".to_string(),
+            action_value.unwrap().as_value().clone(),
+        );
     }
 
     let then = assert_and_then(arg);
-    let value = arg.render_context()["value"].clone();
-    return if let Err(e) = then {
-        info!(
-            "step Err  {}\n{}\n<<<\n{}",
-            arg.id(),
-            to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
-            to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
-        );
-        StepAssessStruct::new(arg.id().clone(), start, Utc::now(), StepState::Err(e), None)
-    } else {
-        let (ar, at) = then.unwrap();
-        if ar {
-            debug!("step Ok   {}", arg.id());
-            StepAssessStruct::new(
-                arg.id().clone(),
-                start,
-                Utc::now(),
-                StepState::Ok(Box::new(value)),
-                at,
-            )
-        } else {
+    return match then {
+        Err(e) => {
             info!(
-                "step Fail {}\n{}\n<<<\n{}",
+                "step Err  {}\n{}\n<<<\n{}",
                 arg.id(),
-                to_string_pretty(&value).unwrap_or("".to_string()),
-                to_string_pretty(&arg.args(None).unwrap_or(Value::Null)).unwrap_or("".to_string()),
+                to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
+                explain_to_string(&explain)
             );
             StepAssessStruct::new(
                 arg.id().clone(),
                 start,
                 Utc::now(),
-                StepState::Fail(Box::new(value)),
+                explain,
+                StepState::Err(e),
                 None,
             )
+        }
+        Ok((ar, at)) => {
+            let value = arg.context_mut().get("value").unwrap().clone();
+            if ar {
+                debug!("step Ok   {}", arg.id());
+                StepAssessStruct::new(
+                    arg.id().clone(),
+                    start,
+                    Utc::now(),
+                    explain,
+                    StepState::Ok(Box::new(value)),
+                    at,
+                )
+            } else {
+                info!(
+                    "step Fail {}\n{}\n<<<\n{}",
+                    arg.id(),
+                    to_string_pretty(&value).unwrap_or("".to_string()),
+                    explain_to_string(&explain)
+                );
+                StepAssessStruct::new(
+                    arg.id().clone(),
+                    start,
+                    Utc::now(),
+                    explain,
+                    StepState::Fail(Box::new(value)),
+                    None,
+                )
+            }
         }
     };
 }
@@ -146,7 +157,7 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
             let goto = if goto.is_none() {
                 None
             } else if let Value::String(goto) = goto.unwrap() {
-                Some(arg.render_str(goto.as_str(), None)?)
+                Some(arg.render_str(goto.as_str())?)
             } else {
                 None
             };
@@ -154,14 +165,8 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
             let reg = then.get("reg");
             let reg = if reg.is_none() {
                 None
-            } else if let Value::Object(_) = reg.unwrap() {
-                let value = arg.render_value(reg.unwrap(), None)?;
-                Some(
-                    value
-                        .as_object()
-                        .map(|m| m.clone())
-                        .ok_or(err!("001", "invalid reg"))?,
-                )
+            } else if let Value::Object(m) = reg.unwrap() {
+                Some(arg.render_object(m)?)
             } else {
                 None
             };
@@ -176,7 +181,7 @@ fn assert(arg: &RunArgStruct<'_, '_, '_>, condition: &str) -> Result<bool, Error
         "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
         condition = condition
     );
-    let assert_result = arg.render_str(assert_tpl.as_str(), None)?;
+    let assert_result = arg.render_str(assert_tpl.as_str())?;
     Ok(assert_result == "true")
 }
 
@@ -185,4 +190,12 @@ fn to_value(e: &Error) -> Value {
         "code": e.code(),
         "message": e.message()
     })
+}
+
+fn explain_to_string(explain: &Value) -> String {
+    if explain.is_string() {
+        return explain.as_str().unwrap().to_string();
+    } else {
+        to_string_pretty(&explain).unwrap_or("".to_string())
+    }
 }

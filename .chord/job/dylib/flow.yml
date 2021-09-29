@@ -1,0 +1,18 @@
+version: "0.0.1"
+
+
+stage:
+  stage1:
+    
+    step:
+      step1:
+        exec:
+          action: dylib
+          args:
+            dir: C:\Home\Workspace\repo\bit-ranger\chord\target\debug
+        assert: |
+          (all
+            (eq value.run "1")
+          )
+    
+

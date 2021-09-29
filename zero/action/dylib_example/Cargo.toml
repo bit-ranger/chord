@@ -1,5 +1,5 @@
 [package]
-name = "chord-action-dylib"
+name = "chord-action-dylib-example"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2018"
@@ -8,8 +8,7 @@ edition = "2018"
 
 [dependencies]
 chord = { path = "../../../chord" }
-lazy_static = "1.4.0"
 
 [lib]
-name = "act_dylib"
+name = "chord_dylib"
 crate-type = ["dylib"]

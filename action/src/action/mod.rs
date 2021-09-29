@@ -123,7 +123,7 @@ impl FactoryComposite {
         register!(table, config_ref, "dubbo", dubbo::DubboFactory::new, false);
 
         #[cfg(feature = "act_dylib")]
-        register!(table, config_ref, "dylib", dylib::DylibFactory::new, false);
+        register!(table, config_ref, "dylib", dylib::DylibFactory::new, true);
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new, false);

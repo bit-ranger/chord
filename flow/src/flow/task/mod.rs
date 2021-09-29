@@ -2,7 +2,7 @@ use async_std::future::timeout;
 use async_std::sync::Arc;
 use async_std::task::{Builder, JoinHandle};
 use futures::future::join_all;
-use log::{debug, info, trace, warn};
+use log::{error, info, trace, warn};
 
 use chord::action::Action;
 use chord::case::{CaseAssess, CaseState};
@@ -125,7 +125,7 @@ impl TaskRunner {
         let result = self.start_run().await;
 
         let task_assess = if let Err(e) = result {
-            warn!("task Err {}", self.id);
+            error!("task Err {}", self.id);
             TaskAssessStruct::new(
                 self.id.clone(),
                 start,
@@ -135,15 +135,15 @@ impl TaskRunner {
         } else {
             match &self.task_state {
                 TaskState::Ok => {
-                    debug!("task Ok {}", self.id);
+                    info!("task Ok {}", self.id);
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok)
                 }
                 TaskState::Fail => {
-                    info!("task Fail {}", self.id);
+                    warn!("task Fail {}", self.id);
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Fail)
                 }
                 TaskState::Err(e) => {
-                    warn!("task Err {}", self.id);
+                    error!("task Err {}", self.id);
                     TaskAssessStruct::new(
                         self.id.clone(),
                         start,

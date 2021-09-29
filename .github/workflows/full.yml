@@ -52,6 +52,7 @@ jobs:
           docker run --rm -v "$(pwd)":/home/rust/src -v $HOME/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo --version
           docker run --rm -v "$(pwd)":/home/rust/src -v $HOME/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo build --verbose --release
           docker run --rm -v "$(pwd)":/home/rust/src -v $HOME/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo test  --verbose --release
+          find $(pwd)
       
       
       - name: compose-boot

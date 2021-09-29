@@ -216,7 +216,7 @@ impl Flow {
     fn _step_spec_timeout(&self, step_id: &str) -> Result<Duration, Error> {
         let s = self._step(step_id)["spec"]["timeout"].as_u64();
         if s.is_none() {
-            return Ok(Duration::from_secs(10));
+            return Ok(Duration::from_secs(300));
         }
 
         let s = s.unwrap();

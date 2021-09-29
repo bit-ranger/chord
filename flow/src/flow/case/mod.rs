@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use log::{debug, info, trace};
+use log::{error, info, trace, warn};
 
 use chord::case::CaseState;
 use chord::collection::TailDropVec;
@@ -48,7 +48,7 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
 
         if !step_assess.state().is_ok() {
             step_assess_vec.push(Box::new(step_assess));
-            debug!("case Fail  {}", arg.id());
+            warn!("case Fail  {}", arg.id());
             return CaseAssessStruct::new(
                 arg.id().clone(),
                 start,
@@ -79,7 +79,7 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
         }
     }
 
-    debug!("case Ok   {}", arg.id());
+    info!("case Ok   {}", arg.id());
     return CaseAssessStruct::new(
         arg.id().clone(),
         start,
@@ -96,7 +96,7 @@ fn case_fail_by_step_err(
     mut step_assess_vec: Vec<Box<dyn StepAssess>>,
     start: DateTime<Utc>,
 ) -> CaseAssessStruct {
-    info!("step Err {}\n{}", step_id, e);
+    error!("step Err {}\n{}", step_id, e);
 
     let step_run_id = RunIdStruct::new(step_id.to_string(), arg.id());
     let step_assess = StepAssessStruct::new(
@@ -108,7 +108,7 @@ fn case_fail_by_step_err(
         None,
     );
     step_assess_vec.push(Box::new(step_assess));
-    info!("case Fail {}", arg.id());
+    warn!("case Fail {}", arg.id());
     return CaseAssessStruct::new(
         arg.id().clone(),
         start,

@@ -3,7 +3,7 @@ use std::panic::AssertUnwindSafe;
 use async_std::future::timeout;
 use chrono::{DateTime, Utc};
 use futures::FutureExt;
-use log::{debug, info, trace};
+use log::{debug, error, info, trace, warn};
 
 use chord::action::{Action, Scope};
 use chord::step::StepState;
@@ -47,7 +47,7 @@ fn assess_create(
 ) -> StepAssessStruct {
     if let Err(e) = action_value {
         if !arg.catch_err() {
-            info!(
+            error!(
                 "step Err  {}\n{}\n<<<\n{}",
                 arg.id(),
                 to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
@@ -78,7 +78,7 @@ fn assess_create(
     let then = assert_and_then(arg);
     return match then {
         Err(e) => {
-            info!(
+            error!(
                 "step Err  {}\n{}\n<<<\n{}",
                 arg.id(),
                 to_string_pretty(&to_value(&e)).unwrap_or("".to_string()),
@@ -96,7 +96,7 @@ fn assess_create(
         Ok((ar, at)) => {
             let value = arg.context_mut().get("value").unwrap().clone();
             if ar {
-                debug!("step Ok   {}", arg.id());
+                info!("step Ok   {}", arg.id());
                 StepAssessStruct::new(
                     arg.id().clone(),
                     start,
@@ -106,7 +106,7 @@ fn assess_create(
                     at,
                 )
             } else {
-                info!(
+                warn!(
                     "step Fail {}\n{}\n<<<\n{}",
                     arg.id(),
                     to_string_pretty(&value).unwrap_or("".to_string()),
@@ -126,7 +126,10 @@ fn assess_create(
 }
 
 fn assert_and_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<(bool, Option<StepThen>), Error> {
-    let assert_success = value_assert(arg, arg.assert())?;
+    let assert_success = value_assert(arg, arg.assert()).unwrap_or_else(|e| {
+        debug!("step assert Err {}", e);
+        false
+    });
     return if !assert_success {
         Ok((false, None))
     } else {

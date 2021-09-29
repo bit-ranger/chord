@@ -42,7 +42,10 @@ impl Config {
 
     pub fn log_level(&self) -> Vec<(String, String)> {
         let target_level: Vec<(String, String)> = match self.conf["log"]["level"].as_object() {
-            None => Vec::new(),
+            None => vec![
+                ("root".to_string(), "warn".to_string()),
+                ("chord".to_string(), "trace".to_string()),
+            ],
             Some(m) => m
                 .iter()
                 .filter(|(_, v)| v.is_string())

@@ -9,7 +9,7 @@ stage:
         exec:
           action: dylib
           args:
-            dir: C:\Home\Workspace\repo\bit-ranger\chord\target\debug
+            dir: /home/runner/work/chord/chord/target/release
         assert: |
           (all
             (eq value.run "1")

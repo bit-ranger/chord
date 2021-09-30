@@ -677,6 +677,7 @@ dependencies = [
  "async-std",
  "chord",
  "chord-util",
+ "dirs",
  "dynamic_reload",
  "futures",
  "itertools",
@@ -692,6 +693,13 @@ dependencies = [
  "serde",
  "surf",
  "urlencoding",
+]
+
+[[package]]
+name = "chord-action-dylib-example"
+version = "0.1.0"
+dependencies = [
+ "chord",
 ]
 
 [[package]]

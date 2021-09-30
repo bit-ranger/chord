@@ -18,7 +18,10 @@ impl DubboFactory {
             return Err(err!("101", "missing dubbo.config"));
         }
 
-        let mode = config_ref["mode"].as_str().unwrap_or("gateway").to_owned();
+        let mode = config_ref["mode"]
+            .as_str()
+            .ok_or(err!("102", "missing dubbo.mode"))?
+            .to_owned();
 
         match mode.as_str() {
             "gateway" => Ok(DubboFactory {
@@ -27,7 +30,7 @@ impl DubboFactory {
             // "telnet" => Ok(DubboFactory {
             //     delegate: Box::new(telnet::DubboFactory::new(config).await?),
             // }),
-            _ => Err(err!("102", "unsupported mode")),
+            _ => Err(err!("103", "unsupported mode")),
         }
     }
 }

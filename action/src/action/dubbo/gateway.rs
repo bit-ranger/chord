@@ -43,25 +43,28 @@ impl DubboFactory {
             .ok_or(err!("102", "missing dubbo.gateway.registry.address"))?
             .to_owned();
 
-        let gateway_args = config["gateway"]["args"]
-            .as_array()
-            .ok_or(err!("103", "missing dubbo.gateway.args"))?;
-        let gateway_args: Vec<String> = gateway_args
-            .iter()
-            .map(|a| {
-                if a.is_string() {
-                    a.as_str().unwrap().to_owned()
-                } else {
-                    a.to_string()
-                }
-            })
-            .collect();
+        let gateway_lib = config["gateway"]["lib"]
+            .as_str()
+            .ok_or(err!("103", "missing dubbo.gateway.lib"))?
+            .to_owned();
 
-        let _ = gateway_args
-            .iter()
-            .filter(|a| a.trim() == "-jar")
-            .last()
-            .ok_or(err!("104", "missing dubbo.gateway.args.-jar"))?;
+        let gateway_args: Vec<String> = config["gateway"]["args"]
+            .as_array()
+            .map(|a| {
+                a.iter()
+                    .map(|a| {
+                        if a.is_string() {
+                            a.as_str().unwrap().to_owned()
+                        } else {
+                            a.to_string()
+                        }
+                    })
+                    .collect()
+            })
+            .unwrap_or(vec![
+                "-Ddubbo.application.qos.enable=false".to_string(),
+                "--server.port=8085".to_string(),
+            ]);
 
         let port = gateway_args
             .iter()
@@ -75,7 +78,7 @@ impl DubboFactory {
             .parse()?;
 
         let mut command = Command::new("java");
-
+        command.arg("-jar").arg(gateway_lib);
         for arg in gateway_args {
             command.arg(arg);
         }

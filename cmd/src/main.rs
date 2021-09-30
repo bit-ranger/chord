@@ -28,7 +28,8 @@ async fn main() -> Result<(), Error> {
             input,
             task,
             config,
-        } => run(job_name, exec_id, input, task, config).await?,
+            verbose,
+        } => run(job_name, exec_id, input, task, config, verbose).await?,
     }
     Ok(())
 }
@@ -39,6 +40,7 @@ async fn run(
     input: PathBuf,
     task: Option<Vec<String>>,
     config: Option<PathBuf>,
+    verbose: bool,
 ) -> Result<(), Error> {
     let input_dir = Path::new(&input);
     if !input_dir.is_dir().await {
@@ -59,6 +61,9 @@ async fn run(
     });
     let conf_data = load_conf(conf_path).await?;
     let config = Config::new(conf_data);
+    if verbose {
+        println!("config loaded: {}", config);
+    }
 
     let report_factory =
         ReportFactory::new(config.report(), job_name.as_str(), exec_id.as_str()).await?;
@@ -134,5 +139,8 @@ enum Chord {
         /// config file path
         #[structopt(short, long, parse(from_os_str))]
         config: Option<PathBuf>,
+
+        #[structopt(long)]
+        verbose: bool,
     },
 }

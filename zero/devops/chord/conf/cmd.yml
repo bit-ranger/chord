@@ -1,36 +1,11 @@
-log:
-  dir: /home/runner/.chord/output
-  level:
-    root: warn
-    chord: trace
-
-report:
-  csv:
-    dir: /home/runner/.chord/output
-
-
 action:
-  download:
-    enable: true
-    workdir: /home/runner/.chord/workdir/download_fstore
-   
-  shell:
-    enable: true
-    workdir: /home/runner/.chord/workdir/shell1
-  
   docker:
     enable: true
     address: 127.0.0.1:2375
     
   dubbo:
     enable: true
-    mode: gateway
     gateway:
       registry:
         protocol: zookeeper
         address: zookeeper://127.0.0.1:2181
-      args:
-        - "-Ddubbo.application.qos.enable=false"
-        - "-jar"
-        - /home/runner/.chord/conf/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
-        - "--server.port=8085"

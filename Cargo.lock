@@ -677,6 +677,7 @@ dependencies = [
  "async-std",
  "chord",
  "chord-util",
+ "dirs",
  "dynamic_reload",
  "futures",
  "itertools",

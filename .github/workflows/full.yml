@@ -32,6 +32,7 @@ jobs:
           echo "------------------------------------------------"
           mkdir -p $HOME/.chord
           cp -r $PWD/zero/devops/chord/conf $HOME/.chord/
+          mkdir -p $HOME/.chord/lib
           mkdir -p $HOME/.chord/output
           find $HOME/.chord/
           echo "------------------------------------------------"
@@ -69,7 +70,7 @@ jobs:
         run: |
           cd action/src/action/dubbo/generic-gateway
           mvn package
-          cp target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar $HOME/.chord/conf/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
+          cp target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar $HOME/.chord/lib/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
           cd ../../../../..
           pwd
           echo "------------------------------------------------"

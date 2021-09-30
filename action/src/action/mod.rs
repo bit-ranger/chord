@@ -43,8 +43,8 @@ pub struct FactoryComposite {
 }
 
 macro_rules! register {
-    ($table:ident, $config_ref:ident, $name:expr, $module:path, $enable:expr) => {
-        if enable($config_ref, $name, $enable) {
+    ($table:ident, $config_ref:ident, $name:expr, $module:path) => {
+        if enable($config_ref, $name) {
             $table.insert(
                 $name.into(),
                 Arc::new($module($config_ref.map(|c| c[$name].clone())).await?),
@@ -59,97 +59,73 @@ impl FactoryComposite {
 
         let config_ref = config.as_ref();
 
-        register!(table, config_ref, "nop", nop::NopFactory::new, true);
-        register!(table, config_ref, "echo", echo::EchoFactory::new, true);
-        register!(table, config_ref, "sleep", sleep::SleepFactory::new, true);
-        register!(table, config_ref, "log", log::LogFactory::new, true);
-        register!(table, config_ref, "count", count::CountFactory::new, true);
+        register!(table, config_ref, "nop", nop::NopFactory::new);
+        register!(table, config_ref, "echo", echo::EchoFactory::new);
+        register!(table, config_ref, "sleep", sleep::SleepFactory::new);
+        register!(table, config_ref, "log", log::LogFactory::new);
+        register!(table, config_ref, "count", count::CountFactory::new);
 
         #[cfg(feature = "act_restapi")]
-        register!(
-            table,
-            config_ref,
-            "restapi",
-            restapi::RestapiFactory::new,
-            true
-        );
+        register!(table, config_ref, "restapi", restapi::RestapiFactory::new);
 
         #[cfg(feature = "act_crypto")]
-        register!(
-            table,
-            config_ref,
-            "crypto",
-            crypto::CryptoFactory::new,
-            true
-        );
+        register!(table, config_ref, "crypto", crypto::CryptoFactory::new);
 
         #[cfg(feature = "act_url")]
-        register!(table, config_ref, "url", url::UrlFactory::new, true);
+        register!(table, config_ref, "url", url::UrlFactory::new);
 
         #[cfg(feature = "act_database")]
         register!(
             table,
             config_ref,
             "database",
-            database::DatabaseFactory::new,
-            true
+            database::DatabaseFactory::new
         );
 
         #[cfg(feature = "act_redis")]
-        register!(table, config_ref, "redis", redis::RedisFactory::new, true);
+        register!(table, config_ref, "redis", redis::RedisFactory::new);
 
         #[cfg(feature = "act_mongodb")]
-        register!(
-            table,
-            config_ref,
-            "mongodb",
-            mongodb::MongodbFactory::new,
-            true
-        );
+        register!(table, config_ref, "mongodb", mongodb::MongodbFactory::new);
 
         #[cfg(feature = "act_lua")]
-        register!(table, config_ref, "lua", lua::LuaFactory::new, true);
+        register!(table, config_ref, "lua", lua::LuaFactory::new);
 
         #[cfg(feature = "act_program")]
-        register!(
-            table,
-            config_ref,
-            "program",
-            program::ProgramFactory::new,
-            true
-        );
+        register!(table, config_ref, "program", program::ProgramFactory::new);
 
         #[cfg(feature = "act_dubbo")]
-        register!(table, config_ref, "dubbo", dubbo::DubboFactory::new, false);
+        register!(table, config_ref, "dubbo", dubbo::DubboFactory::new);
 
         #[cfg(feature = "act_dylib")]
-        register!(table, config_ref, "dylib", dylib::DylibFactory::new, true);
+        register!(table, config_ref, "dylib", dylib::DylibFactory::new);
 
         #[cfg(feature = "act_docker")]
-        register!(table, config_ref, "docker", docker::Docker::new, false);
+        register!(table, config_ref, "docker", docker::Docker::new);
 
         #[cfg(feature = "act_download")]
         register!(
             table,
             config_ref,
             "download",
-            download::DownloadFactory::new,
-            false
+            download::DownloadFactory::new
         );
 
         #[cfg(all(feature = "act_shell", target_os = "linux"))]
-        register!(table, config_ref, "shell", shell::ShellFactory::new, false);
+        register!(table, config_ref, "shell", shell::ShellFactory::new);
 
-        table.insert(
-            "iter_map".into(),
-            Arc::new(
-                iter::map::IterMapFactory::new(
-                    config_ref.map(|c| c["iter_map"].clone()),
-                    table.clone(),
-                )
-                .await?,
-            ),
-        );
+        if enable(config_ref, "iter_map") {
+            table.insert(
+                "iter_map".into(),
+                Arc::new(
+                    iter::map::IterMapFactory::new(
+                        config_ref.map(|c| c["iter_map"].clone()),
+                        table.clone(),
+                    )
+                    .await?,
+                ),
+            );
+        }
 
         Ok(FactoryComposite { table })
     }
@@ -163,14 +139,15 @@ impl Factory for FactoryComposite {
             .get(action)
             .ok_or(err!(
                 "002",
-                format!("unsupported step action {}", action).as_str()
+                format!("unsupported action {}", action).as_str()
             ))?
             .create(arg)
             .await
     }
 }
 
-fn enable(config: Option<&Value>, step_name: &str, default_enable: bool) -> bool {
+fn enable(config: Option<&Value>, step_name: &str) -> bool {
+    let default_enable = true;
     if config.is_none() {
         return default_enable;
     }

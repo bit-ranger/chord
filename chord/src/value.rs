@@ -13,3 +13,21 @@ pub use serde_json::to_value;
 pub type Value = serde_json::Value;
 pub type Map = serde_json::Map<String, Value>;
 pub type Number = serde_json::Number;
+
+pub fn map_merge_deep(old: &Map, new: &Map) -> Map {
+    let mut crt = old.clone();
+    for (k, v) in new {
+        let ov = crt.get(k);
+        if let Some(ov) = ov {
+            if let Value::Object(ov) = ov {
+                if let Value::Object(nv) = v {
+                    let mv = map_merge_deep(ov, nv);
+                    crt.insert(k.clone(), Value::Object(mv));
+                    continue;
+                }
+            }
+        }
+        crt.insert(k.clone(), v.clone());
+    }
+    crt
+}

@@ -12,7 +12,7 @@ pub trait Config: Sync + Send {
 
     fn docker_image(&self) -> &str;
 
-    fn docker_dir(&self) -> &Path;
+    fn workdir(&self) -> &Path;
 
     fn log_dir(&self) -> &Path;
 
@@ -24,7 +24,7 @@ pub struct ConfigImpl {
     conf: Value,
     home_dir: PathBuf,
     log_dir: PathBuf,
-    docker_dir: PathBuf,
+    workdir: PathBuf,
 }
 
 impl ConfigImpl {
@@ -33,12 +33,12 @@ impl ConfigImpl {
             .map(|p| PathBuf::from(p).join(".chord"))
             .unwrap_or_else(|| Path::new("/").join("data").join("chord"));
 
-        let log_dir = match conf["log"]["dir"].as_str() {
+        let workdir = match conf["workdir"].as_str() {
             Some(p) => Path::new(p).to_path_buf(),
-            None => home_dir.join("output"),
+            None => home_dir.join("web"),
         };
 
-        let docker_dir = match conf["docker"]["dir"].as_str() {
+        let log_dir = match conf["log"]["dir"].as_str() {
             Some(p) => Path::new(p).to_path_buf(),
             None => home_dir.join("output"),
         };
@@ -47,7 +47,7 @@ impl ConfigImpl {
             conf,
             home_dir,
             log_dir,
-            docker_dir,
+            workdir,
         }
     }
 }
@@ -73,7 +73,7 @@ impl Config for ConfigImpl {
             .unwrap_or("bitranger/chord:latest")
     }
 
-    fn docker_dir(&self) -> &Path {
+    fn workdir(&self) -> &Path {
         self.log_dir.as_path()
     }
 

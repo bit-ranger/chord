@@ -107,14 +107,14 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
     host_config.insert(
         "Binds".to_string(),
         Value::Array(vec![Value::String(format!(
-            "{}:/data/chord",
-            conf.docker_dir().to_str().unwrap()
+            "{}:/root",
+            conf.workdir().to_str().unwrap()
         ))]),
     );
 
     let cmd = vec![
         "sh".to_string(),
-        "/data/chord/conf/chord-web-worker.sh".to_string(),
+        "/root/.chord/conf/chord-web-worker.sh".to_string(),
     ];
 
     let ca = ca.env(env).host_config(host_config).cmd(cmd);

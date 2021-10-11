@@ -146,7 +146,7 @@ impl Factory for FactoryComposite {
     }
 }
 
-fn enable(config: Option<&Value>, step_name: &str) -> bool {
+fn enable(config: Option<&Value>, action_name: &str) -> bool {
     let default_enable = true;
     if config.is_none() {
         return default_enable;
@@ -156,7 +156,7 @@ fn enable(config: Option<&Value>, step_name: &str) -> bool {
         return default_enable;
     }
 
-    return config_ref[step_name]["enable"]
+    return config_ref[action_name]["enable"]
         .as_bool()
         .unwrap_or(default_enable);
 }

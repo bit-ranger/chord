@@ -39,14 +39,14 @@ impl Config {
                    "workdir": home_dir.join("output").join("shell").to_str().unwrap().to_string()
                },
                "dubbo": {
-                   "enable": "false",
+                   "enable": false,
                    "mode": "gateway",
                    "gateway": {
                        "lib": home_dir.join("lib").join("dubbo-generic-gateway-0.0.1-SNAPSHOT.jar").to_str().unwrap().to_string()
                    }
                },
                "docker": {
-                   "enable": "false"
+                   "enable": false
                }
            }
 

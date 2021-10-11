@@ -43,17 +43,18 @@ jobs:
       - name: cache-target
         uses: actions/cache@v2
         with:
-          key: build-target-linux-musl-${{ hashFiles('Cargo.lock') }}
+          key: build-target-linux-gnu-${{ hashFiles('Cargo.lock') }}
           path: |
             ./target
       
       - name: build
         run: |
           chmod -R 777 $PWD
-          docker run --rm -v "$(pwd)":/home/rust/src -v $HOME/.cargo:/home/rust/.cargo ekidd/rust-musl-builder cargo --version
-          docker run --rm -v "$(pwd)":/home/rust/src -v $HOME/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo build --verbose --release
-          docker run --rm -v "$(pwd)":/home/rust/src -v $HOME/.cargo:/home/rust/.cargo ekidd/rust-musl-builder  cargo test  --verbose --release
+          cargo --version
+          cargo test  --verbose --release
+          cargo build --verbose --release
           find $(pwd)
+          cp target/release/libchord_action_dylib_example.so $HOME/.chord/lib/libchord_action_dylib_example.so
       
       
       - name: compose-boot
@@ -91,7 +92,7 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v2
         with:
-          name: x86_64-unknown-linux-musl
+          name: x86_64-unknown-linux-gnu
           retention-days: 1
           if-no-files-found: error
           path: |

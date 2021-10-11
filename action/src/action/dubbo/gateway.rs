@@ -25,12 +25,12 @@ pub struct DubboFactory {
 impl DubboFactory {
     pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
         if config.is_none() {
-            return Err(err!("100", "missing dubbo.config"));
+            return Err(err!("100", "missing action.dubbo"));
         }
         let config = config.as_ref().unwrap();
 
         if config.is_null() {
-            return Err(err!("101", "missing dubbo.config"));
+            return Err(err!("101", "missing action.dubbo"));
         }
 
         let registry_protocol = config["gateway"]["registry"]["protocol"]

@@ -8,7 +8,10 @@ pub fn run(req: &str) -> Result<String, Error> {
     let context = req["context"].as_object().unwrap();
     let args = req["args"].as_object().unwrap();
     let timeout = req["timeout"].as_u64().unwrap();
-    println!("fdylib run {}, {:?}, {:?}, {}", id, context, args, timeout);
+    println!(
+        "dylib_example run {}, {:?}, {:?}, {}",
+        id, context, args, timeout
+    );
     let mut obj = Map::new();
     obj.insert("run".into(), "1".into());
     let v = Value::Object(obj);

@@ -4,24 +4,40 @@ use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 
 use chord::action::prelude::*;
 
-pub struct DylibFactory {}
+pub struct DylibFactory {
+    lib_dir: String,
+}
 
 impl DylibFactory {
-    pub async fn new(_: Option<Value>) -> Result<DylibFactory, Error> {
-        Ok(DylibFactory {})
+    pub async fn new(config: Option<Value>) -> Result<DylibFactory, Error> {
+        if config.is_none() {
+            return Err(err!("100", "missing action.dylib"));
+        }
+        let config = config.as_ref().unwrap();
+
+        if config.is_null() {
+            return Err(err!("101", "missing action.dylib"));
+        }
+
+        let lib_dir = config["dir"]
+            .as_str()
+            .ok_or(err!("103", "missing dylib.dir"))?
+            .to_owned();
+
+        Ok(DylibFactory { lib_dir })
     }
 }
 
 #[async_trait]
 impl Factory for DylibFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let dir = arg.args_raw()["dir"]
+        let lib_name = arg.args_raw()["lib"]
             .as_str()
-            .ok_or(err!("100", "missing dir"))?;
+            .ok_or(err!("100", "missing lib"))?;
 
-        let mut reload_handler = DynamicReload::new(Some(vec![dir]), None, Search::Default);
-
-        let lib = reload_handler.add_library("chord_dylib", PlatformName::Yes)?;
+        let mut reload_handler =
+            DynamicReload::new(Some(vec![self.lib_dir.as_str()]), None, Search::Default);
+        let lib = reload_handler.add_library(lib_name, PlatformName::Yes)?;
 
         Ok(Box::new(Dylib { lib }))
     }

@@ -47,15 +47,22 @@ impl Config {
                },
                "docker": {
                    "enable": false
+               },
+               "dylib": {
+                   "dir": home_dir.join("lib").to_str().unwrap().to_string()
                }
            }
 
         });
 
-        let conf_merge = map_merge_deep(
-            conf_default.as_object().expect("invalid conf"),
-            conf.as_object().expect("invalid conf"),
-        );
+        let conf_merge = if conf.is_null() {
+            conf_default.as_object().expect("invalid conf").clone()
+        } else {
+            map_merge_deep(
+                conf_default.as_object().expect("invalid conf"),
+                conf.as_object().expect("invalid conf"),
+            )
+        };
 
         Config {
             conf: Value::Object(conf_merge),

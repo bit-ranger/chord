@@ -47,6 +47,10 @@ impl Config {
                },
                "docker": {
                    "enable": false
+               },
+               "dylib": {
+                   "enable": false,
+                   "dir": home_dir.join("lib").to_str().unwrap().to_string()
                }
            }
 

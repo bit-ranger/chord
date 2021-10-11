@@ -9,7 +9,7 @@ stage:
         exec:
           action: dylib
           args:
-            dir: /home/runner/work/chord/chord/target/release
+            lib: chord_action_dylib_example
         assert: |
           (all
             (eq value.run "1")

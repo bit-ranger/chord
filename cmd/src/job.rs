@@ -19,6 +19,7 @@ pub async fn run<P: AsRef<Path>>(
     task_vec: Option<Vec<String>>,
     exec_id: String,
     app_ctx: Arc<dyn FlowApp>,
+    serial: bool,
 ) -> Result<Vec<TaskState>, Error> {
     let job_path_str = job_path.as_ref().to_str().unwrap();
 
@@ -26,6 +27,7 @@ pub async fn run<P: AsRef<Path>>(
     let mut job_dir = read_dir(job_path.as_ref()).await?;
 
     let mut futures = Vec::new();
+    let mut task_state_vec = Vec::new();
     loop {
         let task_dir = job_dir.next().await;
         if task_dir.is_none() {
@@ -46,21 +48,31 @@ pub async fn run<P: AsRef<Path>>(
             }
         }
 
-        let builder = Builder::new().name(task_name);
+        let builder = Builder::new().name(task_name.clone());
 
         let task_input_dir = job_path.as_ref().join(task_dir.path());
-        let jh = builder
-            .spawn(task_run(
-                task_input_dir,
-                exec_id.clone(),
-                app_ctx.clone(),
-                report_factory.clone(),
-            ))
-            .unwrap();
-        futures.push(jh);
+        let trf = task_run(
+            task_input_dir,
+            exec_id.clone(),
+            app_ctx.clone(),
+            report_factory.clone(),
+        );
+
+        if serial {
+            let state = builder.blocking(trf);
+            task_state_vec.push(state);
+        } else {
+            let jh = builder
+                .spawn(trf)
+                .expect(format!("task spawn fail {}", task_name).as_str());
+            futures.push(jh);
+        }
     }
 
-    let task_state_vec = join_all(futures).await;
+    if !serial {
+        task_state_vec = join_all(futures).await;
+    }
+
     trace!("job end {}", job_path_str);
     return Ok(task_state_vec);
 }

@@ -10,35 +10,13 @@ chord - async 并行任务处理框架
     
 ### run cmd
 
-    mkdir -p /data/chord/job/output
+    cargo build --release
 
-    cargo run --package  chord-cmd --bin chord-cmd  -- \ 
-        -c$(pwd)/zero/devops/chord/conf/cmd.yml \ 
-        -i$(pwd)/.chord/job \
-        -techo
-
-
-### other action
-
-    docker-compose up -d
-
-#### dubbo
-    cd action/src/action/dubbo/generic-gateway
-    mvn package
-    cp target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar /data/chord/bin/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
-    cd ../../../../..
-
-    cd zero/action/dubbo
-    mvn package
-    java -jar target/dubbo-provider-0.0.1-SNAPSHOT.jar &
-    cd ../../..
-
-    
+    target/release/chord-cmd run -i$(pwd)/.chord/job -techo
 
 ### help
 
-    cargo run --package  chord-cmd --bin chord-cmd -- --help
-
+    target/release/chord-cmd run --help
 
 ### example
 
@@ -46,4 +24,4 @@ chord - async 并行任务处理框架
 
 ### workflow
 
-[github action](https://github.com/bit-ranger/chord/blob/master/.github/workflows/multi.yml)
+[github action](https://github.com/bit-ranger/chord/blob/master/.github/workflows/full.yml)

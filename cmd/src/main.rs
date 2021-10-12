@@ -29,7 +29,8 @@ async fn main() -> Result<(), Error> {
             task,
             config,
             verbose,
-        } => run(job_name, exec_id, input, task, config, verbose).await?,
+            serial,
+        } => run(job_name, exec_id, input, task, config, verbose, serial).await?,
     }
     Ok(())
 }
@@ -41,6 +42,7 @@ async fn run(
     task: Option<Vec<String>>,
     config: Option<PathBuf>,
     verbose: bool,
+    serial: bool,
 ) -> Result<(), Error> {
     let input_dir = Path::new(&input);
     if !input_dir.is_dir().await {
@@ -86,6 +88,7 @@ async fn run(
         task.clone(),
         exec_id.clone(),
         flow_ctx,
+        serial,
     )
     .await?;
     logger::terminal(log_handler).await?;
@@ -140,7 +143,12 @@ enum Chord {
         #[structopt(short, long, parse(from_os_str))]
         config: Option<PathBuf>,
 
+        /// print verbose info
         #[structopt(long)]
         verbose: bool,
+
+        /// task serial
+        #[structopt(long)]
+        serial: bool,
     },
 }

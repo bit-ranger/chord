@@ -4,10 +4,10 @@
 [![GitHub Release](https://img.shields.io/github/v/release/bit-ranger/chord?include_prereleases)](https://github.com/bit-ranger/chord/releases/latest)
 [![License](https://img.shields.io/github/license/bit-ranger/chord)](https://github.com/bit-ranger/chord/blob/master/LICENSE)
 
-chord - async 并行任务处理框架
+chord - async parallel task executor
 
+可用于自动化测试
 
-    
 ### run cmd
 
     cargo build --release
@@ -17,6 +17,10 @@ chord - async 并行任务处理框架
 ### help
 
     target/release/chord-cmd run --help
+
+### rest api testing
+
+[example](https://github.com/bit-ranger/chord/tree/master/.chord/job/restapi)
 
 ### example
 

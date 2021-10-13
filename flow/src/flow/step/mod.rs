@@ -180,10 +180,7 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
 }
 
 fn assert(arg: &RunArgStruct<'_, '_, '_>, condition: &str) -> Result<bool, Error> {
-    let assert_tpl = format!(
-        "{{{{#if {condition}}}}}true{{{{else}}}}false{{{{/if}}}}",
-        condition = condition
-    );
+    let assert_tpl = format!("{{{{{condition}}}}}", condition = condition);
     let assert_result = arg.render_str(assert_tpl.as_str())?;
     Ok(assert_result == "true")
 }

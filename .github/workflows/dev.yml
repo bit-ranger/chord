@@ -90,14 +90,14 @@ jobs:
             target/release/chord-cmd
             target/release/chord-web
 
-      - name: extra-lib-upload
+      - name: extra-upload
         uses: actions/upload-artifact@v2
         with:
           name: extra
           retention-days: 1
           if-no-files-found: error
           path: |
-            action/src/action/dubbo/generic-gateway/target/dubbo-generic-gateway-0.0.1-SNAPSHOT.ja
+            action/src/action/dubbo/generic-gateway/target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
   
   windows:
     runs-on: windows-latest

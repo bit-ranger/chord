@@ -26,6 +26,7 @@ impl Config {
             },
 
             "report": {
+                "kind": "csv",
                 "csv": {
                     "dir": home_dir.join("output").to_str().unwrap().to_string()
                 }

@@ -28,4 +28,4 @@ chord - async parallel task executor
 
 ### workflow
 
-[github action](https://github.com/bit-ranger/chord/blob/master/.github/workflows/full.yml)
+[github action](https://github.com/bit-ranger/chord/blob/master/.github/workflows/master.yml)

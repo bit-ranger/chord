@@ -33,8 +33,6 @@ mod program;
 mod redis;
 #[cfg(feature = "act_restapi")]
 mod restapi;
-#[cfg(all(feature = "act_shell", target_os = "linux"))]
-mod shell;
 #[cfg(feature = "act_url")]
 mod url;
 
@@ -110,9 +108,6 @@ impl FactoryComposite {
             "download",
             download::DownloadFactory::new
         );
-
-        #[cfg(all(feature = "act_shell", target_os = "linux"))]
-        register!(table, config_ref, "shell", shell::ShellFactory::new);
 
         if enable(config_ref, "iter_map") {
             table.insert(

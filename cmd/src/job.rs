@@ -26,8 +26,7 @@ pub async fn run<P: AsRef<Path>>(
     trace!("job start {}", job_path_str);
     let mut job_dir = read_dir(job_path.as_ref()).await?;
 
-    let mut futures = Vec::new();
-    let mut task_state_vec = Vec::new();
+    let mut task_name_vec = Vec::new();
     loop {
         let task_dir = job_dir.next().await;
         if task_dir.is_none() {
@@ -47,10 +46,15 @@ pub async fn run<P: AsRef<Path>>(
                 continue;
             }
         }
+        task_name_vec.push(task_name);
+    }
+    task_name_vec.sort();
 
+    let mut futures = Vec::new();
+    let mut task_state_vec = Vec::new();
+    for task_name in task_name_vec {
         let builder = Builder::new().name(task_name.clone());
-
-        let task_input_dir = job_path.as_ref().join(task_dir.path());
+        let task_input_dir = job_path.as_ref().join(task_name.as_str());
         let trf = task_run(
             task_input_dir,
             exec_id.clone(),

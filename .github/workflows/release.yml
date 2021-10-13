@@ -1,0 +1,126 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+
+jobs:
+  linux:
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      
+      - name: dubbo-build
+        run: |
+          cd action/src/action/dubbo/generic-gateway
+          mvn package
+      
+      - name: chord-build-cache
+        uses: actions/cache@v2
+        with:
+          key: build-target-linux-gnu-${{ hashFiles('Cargo.lock') }}
+          path: |
+            ./target
+      
+      - name: chord-build
+        run: |
+          chmod -R 777 $PWD
+          cargo --version
+          cargo test  --verbose --release
+          cargo build --verbose --release
+          find $(pwd)
+      
+      - name: chord-target-upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: x86_64-unknown-linux-gnu
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            target/release/chord-cmd
+            target/release/chord-web
+      
+      - name: extra-lib-upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: extra
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            action/src/action/dubbo/generic-gateway/target/dubbo-generic-gateway-0.0.1-SNAPSHOT.jar
+  
+  
+  windows:
+    runs-on: windows-latest
+    
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      
+      - name: chord-build-cache
+        uses: actions/cache@v2
+        with:
+          key: build-target-windows-msvc-${{ hashFiles('Cargo.lock') }}
+          path: |
+            ./target
+      
+      - name: chord-build
+        run: cargo build --verbose --release
+      
+      - name: chord-target-upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: x86_64-pc-windows-msvc
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            target/release/chord-cmd.exe
+            target/release/chord-web.exe
+  
+  macos:
+    runs-on: macos-latest
+    
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      
+      - name: chord-build-cache
+        uses: actions/cache@v2
+        with:
+          key: build-target-apple-darwin--${{ hashFiles('Cargo.lock') }}
+          path: |
+            ./target
+      
+      - name: chord-build
+        run: cargo build --verbose --release
+      
+      - name: chord-target-upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: x86_64-apple-darwin
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            target/release/chord-cmd
+            target/release/chord-web
+  
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: chord-target-download
+        uses: actions/download-artifact@v2
+      
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          files: |
+            x86_64-unknown-linux-gnu.zip
+            x86_64-pc-windows-msvc.zip
+            x86_64-apple-darwin.zip
+            extra.zip

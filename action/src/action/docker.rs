@@ -22,7 +22,8 @@ impl Docker {
 #[async_trait]
 impl Factory for Docker {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let image = arg.args_raw()["image"]
+        let args_raw = Value::Object(arg.args_raw().clone());
+        let image = args_raw["image"]
             .as_str()
             .ok_or(err!("010", "missing image"))?;
 

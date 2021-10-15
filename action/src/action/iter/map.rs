@@ -21,6 +21,7 @@ impl IterMapFactory {
 struct MapCreateArg<'a> {
     iter_arg: &'a dyn CreateArg,
     args_raw_empty: Map,
+    args_raw: Map,
 }
 
 impl<'a> CreateArg for MapCreateArg<'a> {
@@ -33,7 +34,7 @@ impl<'a> CreateArg for MapCreateArg<'a> {
     }
 
     fn args_raw(&self) -> &Map {
-        &self.iter_arg.args_raw()["exec"]["args"]
+        &self.args_raw["exec"]["args"]
             .as_object()
             .unwrap_or(&self.args_raw_empty)
     }
@@ -110,7 +111,8 @@ impl<'a> RunArg for MapRunArg<'a> {
 #[async_trait]
 impl Factory for IterMapFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let exec = arg.args_raw()["exec"]
+        let args_raw = Value::Object(arg.args_raw().clone());
+        let exec = args_raw["exec"]
             .as_object()
             .ok_or(err!("101", "missing exec"))?;
 
@@ -129,6 +131,7 @@ impl Factory for IterMapFactory {
         let map_create_arg = MapCreateArg {
             iter_arg: arg,
             args_raw_empty: Map::new(),
+            args_raw: arg.args_raw().clone(),
         };
 
         let map_action = factory.create(&map_create_arg).await?;

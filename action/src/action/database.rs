@@ -16,7 +16,8 @@ impl DatabaseFactory {
 #[async_trait]
 impl Factory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        if let Some(url) = arg.args_raw()["url"].as_str() {
+        let args_raw = Value::Object(arg.args_raw().clone());
+        if let Some(url) = args_raw["url"].as_str() {
             if arg.is_static(url) {
                 let url = arg.render_str(url)?;
                 let rb = create_rb(url.as_str()).await?;

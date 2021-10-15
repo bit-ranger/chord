@@ -1,5 +1,5 @@
 use async_std::fs::read_dir;
-use async_std::path::Path;
+use async_std::path::{Path, PathBuf};
 use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
@@ -7,6 +7,8 @@ use futures::StreamExt;
 use log::info;
 use log::trace;
 
+use crate::load_conf;
+use async_recursion::async_recursion;
 use chord::flow::{Flow, ID_PATTERN};
 use chord::task::TaskState;
 use chord::Error;
@@ -19,66 +21,129 @@ pub async fn run<P: AsRef<Path>>(
     task_vec: Option<Vec<String>>,
     exec_id: String,
     app_ctx: Arc<dyn FlowApp>,
-    serial: bool,
 ) -> Result<Vec<TaskState>, Error> {
     let job_path_str = job_path.as_ref().to_str().unwrap();
-
     trace!("job start {}", job_path_str);
-    let mut job_dir = read_dir(job_path.as_ref()).await?;
+    let task_state_vec = job_run_recur(
+        report_factory,
+        job_path.as_ref().to_path_buf(),
+        task_vec,
+        exec_id,
+        app_ctx,
+    )
+    .await?;
+    trace!("job end {}", job_path_str);
+    return Ok(task_state_vec);
+}
 
-    let mut task_name_vec = Vec::new();
+#[async_recursion]
+async fn job_run_recur(
+    report_factory: Arc<ReportFactory>,
+    job_path: PathBuf,
+    sub_vec: Option<Vec<String>>,
+    exec_id: String,
+    app_ctx: Arc<dyn FlowApp>,
+) -> Result<Vec<TaskState>, Error> {
+    let ctrl_path = job_path.join(".chord.yml");
+    let ctrl_data = load_conf(ctrl_path).await?;
+    let serial = ctrl_data["job"]["serial"].as_bool().unwrap_or(false);
+
+    let mut job_dir = read_dir(job_path.clone()).await?;
+    let mut sub_name_vec = Vec::new();
     loop {
         let task_dir = job_dir.next().await;
         if task_dir.is_none() {
             break;
         }
-        let task_dir = task_dir.unwrap()?;
-        if !task_dir.path().is_dir().await {
+        let sub_dir = task_dir.unwrap()?;
+        if !sub_dir.path().is_dir().await {
             continue;
         }
 
-        let task_name: String = task_dir.file_name().to_str().unwrap().into();
-        if !ID_PATTERN.is_match(task_name.as_str()) {
+        let sub_name: String = sub_dir.file_name().to_str().unwrap().into();
+        if !ID_PATTERN.is_match(sub_name.as_str()) {
             continue;
         }
-        if let Some(t) = &task_vec {
-            if !t.contains(&task_name) {
+        if let Some(t) = &sub_vec {
+            if !t.contains(&sub_name) {
                 continue;
             }
         }
-        task_name_vec.push(task_name);
+        sub_name_vec.push(sub_name);
     }
-    task_name_vec.sort();
+    sub_name_vec.sort();
 
     let mut futures = Vec::new();
-    let mut task_state_vec = Vec::new();
-    for task_name in task_name_vec {
-        let builder = Builder::new().name(task_name.clone());
-        let task_input_dir = job_path.as_ref().join(task_name.as_str());
-        let trf = task_run(
-            task_input_dir,
-            exec_id.clone(),
-            app_ctx.clone(),
-            report_factory.clone(),
-        );
+    let mut task_state_vec: Vec<TaskState> = Vec::new();
+    for sub_name in sub_name_vec {
+        let sub_dir = job_path.join(sub_name.as_str());
 
         if serial {
-            let state = builder.blocking(trf);
-            task_state_vec.push(state);
+            if sub_dir.ends_with("_job") {
+                let state = job_run_recur(
+                    report_factory.clone(),
+                    job_path.join(sub_name.as_str()),
+                    None,
+                    exec_id.clone(),
+                    app_ctx.clone(),
+                )
+                .await?;
+                task_state_vec.extend(state)
+            } else {
+                let state = task_run(
+                    sub_dir,
+                    exec_id.clone(),
+                    app_ctx.clone(),
+                    report_factory.clone(),
+                )
+                .await;
+                task_state_vec.push(state);
+            }
         } else {
-            let jh = builder
-                .spawn(trf)
-                .expect(format!("task spawn fail {}", task_name).as_str());
-            futures.push(jh);
+            let builder = Builder::new().name(sub_name.clone());
+            if sub_dir.ends_with("_job") {
+                let jh = builder
+                    .spawn(job_run_recur(
+                        report_factory.clone(),
+                        job_path.join(sub_name.as_str()),
+                        None,
+                        exec_id.clone(),
+                        app_ctx.clone(),
+                    ))
+                    .expect(format!("job spawn fail {}", sub_name).as_str());
+                futures.push(jh);
+            } else {
+                let jh = builder
+                    .spawn(task_run_mock(
+                        sub_dir,
+                        exec_id.clone(),
+                        app_ctx.clone(),
+                        report_factory.clone(),
+                    ))
+                    .expect(format!("task spawn fail {}", sub_name).as_str());
+                futures.push(jh);
+            }
         }
     }
 
     if !serial {
-        task_state_vec = join_all(futures).await;
+        for state in join_all(futures).await {
+            task_state_vec.extend(state?);
+        }
     }
 
-    trace!("job end {}", job_path_str);
     return Ok(task_state_vec);
+}
+
+async fn task_run_mock<P: AsRef<Path>>(
+    task_path: P,
+    exec_id: String,
+    app_ctx: Arc<dyn FlowApp>,
+    report_factory: Arc<ReportFactory>,
+) -> Result<Vec<TaskState>, Error> {
+    Ok(vec![
+        task_run(task_path, exec_id, app_ctx, report_factory).await,
+    ])
 }
 
 async fn task_run<P: AsRef<Path>>(

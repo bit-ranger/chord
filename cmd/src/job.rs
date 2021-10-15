@@ -46,6 +46,7 @@ async fn job_run_recur(
     let ctrl_path = job_path.join(".chord.yml");
     let ctrl_data = load_conf(ctrl_path).await?;
     let serial = ctrl_data["job"]["serial"].as_bool().unwrap_or(false);
+    let job_name_suffix = ctrl_data["job"]["suffix"].as_str().unwrap_or("_job");
 
     let mut job_dir = read_dir(job_path.clone()).await?;
     let mut sub_name_vec = Vec::new();
@@ -74,7 +75,7 @@ async fn job_run_recur(
 
     let mut futures = Vec::new();
     let mut task_state_vec: Vec<TaskState> = Vec::new();
-    let job_name_suffix = "_job";
+
     for sub_name in sub_name_vec {
         let sub_dir = job_path.join(sub_name.as_str());
 

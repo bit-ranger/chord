@@ -22,18 +22,14 @@ pub async fn run<P: AsRef<Path>>(
     exec_id: String,
     app_ctx: Arc<dyn FlowApp>,
 ) -> Result<Vec<TaskState>, Error> {
-    let job_path_str = job_path.as_ref().to_str().unwrap();
-    trace!("job start {}", job_path_str);
-    let task_state_vec = job_run_recur(
+    job_run_recur(
         report_factory,
         job_path.as_ref().to_path_buf(),
         task_vec,
         exec_id,
         app_ctx,
     )
-    .await?;
-    trace!("job end {}", job_path_str);
-    return Ok(task_state_vec);
+    .await
 }
 
 #[async_recursion]
@@ -44,6 +40,9 @@ async fn job_run_recur(
     exec_id: String,
     app_ctx: Arc<dyn FlowApp>,
 ) -> Result<Vec<TaskState>, Error> {
+    let job_path_str = job_path.to_str().unwrap();
+    trace!("job start {}", job_path_str);
+
     let ctrl_path = job_path.join(".chord.yml");
     let ctrl_data = load_conf(ctrl_path).await?;
     let serial = ctrl_data["job"]["serial"].as_bool().unwrap_or(false);
@@ -75,11 +74,12 @@ async fn job_run_recur(
 
     let mut futures = Vec::new();
     let mut task_state_vec: Vec<TaskState> = Vec::new();
+    let job_name_suffix = "_job";
     for sub_name in sub_name_vec {
         let sub_dir = job_path.join(sub_name.as_str());
 
         if serial {
-            if sub_dir.ends_with("_job") {
+            if sub_name.ends_with(job_name_suffix) {
                 let state = job_run_recur(
                     report_factory.clone(),
                     job_path.join(sub_name.as_str()),
@@ -101,7 +101,7 @@ async fn job_run_recur(
             }
         } else {
             let builder = Builder::new().name(sub_name.clone());
-            if sub_dir.ends_with("_job") {
+            if sub_name.ends_with(job_name_suffix) {
                 let jh = builder
                     .spawn(job_run_recur(
                         report_factory.clone(),
@@ -132,6 +132,7 @@ async fn job_run_recur(
         }
     }
 
+    trace!("job end {}", job_path_str);
     return Ok(task_state_vec);
 }
 
@@ -153,8 +154,11 @@ async fn task_run<P: AsRef<Path>>(
     report_factory: Arc<ReportFactory>,
 ) -> TaskState {
     let task_path = Path::new(task_path.as_ref());
+    let task_id = task_path.file_name().unwrap().to_str().unwrap();
+    let task_id = Arc::new(TaskIdSimple::new(exec_id, task_id.to_owned()));
+    chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
     trace!("task start {}", task_path.to_str().unwrap());
-    let task_state = task_run0(task_path, exec_id, app_ctx, report_factory).await;
+    let task_state = task_run0(task_path, task_id, app_ctx, report_factory).await;
     return if let Err(e) = task_state {
         info!("task error {}, {}", task_path.to_str().unwrap(), e);
         TaskState::Err(e.clone())
@@ -166,17 +170,11 @@ async fn task_run<P: AsRef<Path>>(
 
 async fn task_run0<P: AsRef<Path>>(
     task_path: P,
-    exec_id: String,
+    task_id: Arc<TaskIdSimple>,
     app_ctx: Arc<dyn FlowApp>,
     report_factory: Arc<ReportFactory>,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
-    let task_id = task_path.file_name().unwrap().to_str().unwrap();
-
-    let task_id = Arc::new(TaskIdSimple::new(exec_id, task_id.to_owned())?);
-    chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));
-    trace!("task start {}", task_path.to_str().unwrap());
-
     let flow_file = task_path.clone().join("flow.yml");
     let flow = chord_input::load::flow::yml::load(&flow_file)?;
     let flow = Flow::new(flow)?;

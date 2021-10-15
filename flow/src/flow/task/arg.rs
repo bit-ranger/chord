@@ -1,7 +1,6 @@
 use std::fmt::{Display, Formatter};
 
 use chord::task::TaskId;
-use chord::Error;
 
 #[derive(Debug, Clone)]
 pub struct TaskIdSimple {
@@ -10,11 +9,11 @@ pub struct TaskIdSimple {
 }
 
 impl TaskIdSimple {
-    pub fn new(exec_id: String, task_id: String) -> Result<TaskIdSimple, Error> {
-        Ok(TaskIdSimple {
+    pub fn new(exec_id: String, task_id: String) -> TaskIdSimple {
+        TaskIdSimple {
             exec_id,
             task: task_id,
-        })
+        }
     }
 }
 

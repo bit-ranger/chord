@@ -12,7 +12,7 @@ chord - async parallel task executor
 
     cargo build --release
 
-    target/release/chord-cmd run -i$(pwd)/.chord/job -techo
+    target/release/chord-cmd run -i$(pwd)/.chord/job/echo
 
 ### help
 

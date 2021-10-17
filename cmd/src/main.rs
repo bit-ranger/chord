@@ -26,10 +26,9 @@ async fn main() -> Result<(), Error> {
             job_name,
             exec_id,
             input,
-            task,
             config,
             verbose,
-        } => run(job_name, exec_id, input, task, config, verbose).await?,
+        } => run(job_name, exec_id, input, config, verbose).await?,
     }
     Ok(())
 }
@@ -38,7 +37,6 @@ async fn run(
     job_name: String,
     exec_id: String,
     input: PathBuf,
-    task: Option<Vec<String>>,
     config: Option<PathBuf>,
     verbose: bool,
 ) -> Result<(), Error> {
@@ -76,18 +74,16 @@ async fn run(
         .join("cmd.log");
     let log_handler = logger::init(config.log_level(), log_file_path.as_path()).await?;
 
-    let flow_ctx = chord_flow::context_create(Box::new(
+    let app_ctx = chord_flow::context_create(Box::new(
         FactoryComposite::new(config.action().map(|c| c.clone())).await?,
     ))
-    .await;
+        .await;
     let task_state_vec = job::run(
+        app_ctx,
         report_factory,
-        input_dir,
-        task.clone(),
         exec_id.clone(),
-        flow_ctx,
-    )
-    .await?;
+        input_dir,
+    ).await?;
     logger::terminal(log_handler).await?;
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
     return match et {
@@ -131,10 +127,6 @@ enum Chord {
         /// input dir
         #[structopt(short, long, parse(from_os_str))]
         input: PathBuf,
-
-        /// task list
-        #[structopt(short, long)]
-        task: Option<Vec<String>>,
 
         /// config file path
         #[structopt(short, long, parse(from_os_str))]

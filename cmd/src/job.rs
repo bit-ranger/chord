@@ -29,7 +29,8 @@ pub async fn run<P: AsRef<Path>>(
             exec_id,
             job_path.as_ref().to_path_buf(),
             PathBuf::new(),
-        ).await
+        )
+        .await
     } else {
         job_run_recur(
             app_ctx,
@@ -37,9 +38,9 @@ pub async fn run<P: AsRef<Path>>(
             exec_id,
             job_path.as_ref().to_path_buf(),
             PathBuf::new(),
-        ).await
+        )
+        .await
     }
-
 }
 
 #[async_recursion]
@@ -54,7 +55,7 @@ async fn job_run_recur(
     let job_path_str = job_path.to_str().unwrap();
     trace!("job start {}", job_path_str);
 
-    let ctrl_path = job_path.join(".chord.yml");
+    let ctrl_path = job_path.join("chord.yml");
     let ctrl_data = load_conf(ctrl_path).await?;
     let serial = ctrl_data["job"]["serial"].as_bool().unwrap_or(false);
 
@@ -91,7 +92,8 @@ async fn job_run_recur(
                     exec_id.clone(),
                     root_path.clone(),
                     child_sub_path,
-                ).await;
+                )
+                .await;
                 task_state_vec.push(state);
             } else {
                 let state = job_run_recur(
@@ -100,7 +102,8 @@ async fn job_run_recur(
                     exec_id.clone(),
                     root_path.clone(),
                     child_sub_path,
-                ).await?;
+                )
+                .await?;
                 task_state_vec.extend(state)
             }
         } else {
@@ -114,7 +117,10 @@ async fn job_run_recur(
                         root_path.clone(),
                         child_sub_path.clone(),
                     ))
-                    .expect(format!("task spawn fail {}", child_sub_path.to_str().unwrap_or("")).as_str());
+                    .expect(
+                        format!("task spawn fail {}", child_sub_path.to_str().unwrap_or(""))
+                            .as_str(),
+                    );
                 futures.push(jh);
             } else {
                 let jh = builder
@@ -125,7 +131,10 @@ async fn job_run_recur(
                         root_path.clone(),
                         child_sub_path.clone(),
                     ))
-                    .expect(format!("job spawn fail {}", child_sub_path.to_str().unwrap_or("")).as_str());
+                    .expect(
+                        format!("job spawn fail {}", child_sub_path.to_str().unwrap_or(""))
+                            .as_str(),
+                    );
                 futures.push(jh);
             }
         }
@@ -153,9 +162,7 @@ async fn task_run_mock(
     ])
 }
 
-
-async fn dir_is_task(root_path: PathBuf,
-                     sub_path: PathBuf) -> bool {
+async fn dir_is_task(root_path: PathBuf, sub_path: PathBuf) -> bool {
     let task_path = root_path.join(sub_path);
     let flow_file = task_path.join("flow.yml");
     flow_file.exists().await
@@ -183,7 +190,6 @@ async fn task_run(
     };
 }
 
-
 async fn task_run0<P: AsRef<Path>>(
     task_path: P,
     task_id: Arc<TaskIdSimple>,
@@ -209,7 +215,7 @@ async fn task_run0<P: AsRef<Path>>(
         Arc::new(flow),
         task_id.clone(),
     )
-        .await?;
+    .await?;
 
     let task_assess = runner.run().await?;
 

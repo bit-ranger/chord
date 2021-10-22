@@ -51,7 +51,7 @@ jobs:
           cd ../../../../..
           pwd
           echo "------------------------------------------------"
-          cd zero/action/dubbo
+          cd zero/test/dubbo_provider
           mvn package
           java -jar target/dubbo-provider-0.0.1-SNAPSHOT.jar &
           sleep 10

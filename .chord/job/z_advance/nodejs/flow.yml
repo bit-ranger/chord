@@ -4,6 +4,17 @@ stage:
   bm1:
     step:
       s1:
+        exec:
+          action: program
+          args:
+            program: npm
+            args:
+              - --prefix
+              - /home/runner/work/chord/chord/zero/test/nodejs
+              - install
+            value_as_json: true
+
+      s2:
         let:
           case:
             $ref: case

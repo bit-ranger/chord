@@ -12,7 +12,7 @@ stage:
               - --prefix
               - /home/runner/work/chord/chord/zero/test/nodejs
               - install
-            value_as_json: true
+            value_as_json: false
 
       s2:
         let:

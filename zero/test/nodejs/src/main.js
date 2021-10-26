@@ -11,4 +11,4 @@ let result = {
   case_args: case_args,
   hash: hash
 };
-console.log(JSON.stringify(result));
+console.log(JSON.stringify(result).replace(/[\r\n]/g, ""));

@@ -36,6 +36,7 @@ jobs:
           echo "------------------------------------------------"
           sudo apt-get update
           sudo apt-get install curl
+          rustup update
 
       - name: service-boot
         run: |

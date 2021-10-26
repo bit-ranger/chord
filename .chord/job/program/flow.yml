@@ -16,7 +16,7 @@ stage:
         exec:
           action: program
           args:
-            scope: case
+            lifetime: case
             program: python
             args:
               - --version
@@ -26,7 +26,7 @@ stage:
         exec:
           action: program
           args:
-            scope: task
+            lifetime: task
             program: python
             args:
               - --version

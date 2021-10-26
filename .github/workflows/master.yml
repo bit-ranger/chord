@@ -36,7 +36,6 @@ jobs:
           echo "------------------------------------------------"
           sudo apt-get update
           sudo apt-get install curl
-          rustup update
 
       - name: service-boot
         run: |
@@ -69,6 +68,7 @@ jobs:
 
       - name: chord-build
         run: |
+          rustup update
           chmod -R 777 $PWD
           cargo --version
           cargo test  --verbose --release
@@ -116,7 +116,9 @@ jobs:
             ./target
       
       - name: chord-build
-        run: cargo build --verbose --release
+        run: |
+          rustup update
+          cargo build --verbose --release
       
       - name: chord-target-upload
         uses: actions/upload-artifact@v2
@@ -143,7 +145,9 @@ jobs:
             ./target
       
       - name: chord-build
-        run: cargo build --verbose --release
+        run: |
+          rustup update
+          cargo build --verbose --release
       
       - name: chord-target-upload
         uses: actions/upload-artifact@v2

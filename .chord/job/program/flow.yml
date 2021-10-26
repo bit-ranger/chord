@@ -16,6 +16,17 @@ stage:
         exec:
           action: program
           args:
+            scope: case
+            program: python
+            args:
+              - --version
+            value_as_json: false
+
+      s3:
+        exec:
+          action: program
+          args:
+            scope: task
             program: python
             args:
               - --version

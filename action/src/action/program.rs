@@ -40,8 +40,8 @@ impl Action for StepProgram {
 
         let std_out = String::from_utf8_lossy(&output.stdout).to_string();
         let std_err = String::from_utf8_lossy(&output.stderr).to_string();
-        trace!("{}", std_out);
-        trace!("{}", std_err);
+        trace!("stdout:\n{}", std_out);
+        trace!("stderr:\n{}", std_err);
 
         if !output.status.success() {
             return Err(err!(
@@ -82,9 +82,9 @@ impl Action for CaseProgram {
         let args = Value::Object(arg.args()?);
 
         let mut command = program_command(&args)?;
-        trace!("command {:?}", command);
+        trace!("program case command {:?}", command);
         let child = command.spawn()?;
-        trace!("pid {:?}", child.id());
+        trace!("program case spawn pid {:?}", child.id());
         Ok(Box::new(ChildHolder::new(child)))
     }
 }
@@ -112,6 +112,7 @@ impl Scope for ChildHolder {
 impl Drop for ChildHolder {
     fn drop(&mut self) {
         let _ = self.child.kill();
+        trace!("kill pid {:?}", self.child.id());
     }
 }
 
@@ -122,9 +123,9 @@ struct TaskProgram {
 impl TaskProgram {
     fn new(args_raw: &Value) -> Result<TaskProgram, Error> {
         let mut command = program_command(args_raw)?;
-        trace!("command {:?}", command);
+        trace!("program task command {:?}", command);
         let child = command.spawn()?;
-        trace!("pid {:?}", child.id());
+        trace!("program task spawn pid {:?}", child.id());
         Ok(TaskProgram { child })
     }
 }
@@ -139,6 +140,7 @@ impl Action for TaskProgram {
 impl Drop for TaskProgram {
     fn drop(&mut self) {
         let _ = self.child.kill();
+        trace!("kill pid {:?}", self.child.id());
     }
 }
 

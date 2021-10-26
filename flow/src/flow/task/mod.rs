@@ -240,6 +240,7 @@ impl TaskRunner {
                 if load_times == 1 {
                     return Err(err!("011", "no case provided"));
                 } else {
+                    trace!("task exhaust data {}", self.id);
                     return Ok(());
                 }
             }

@@ -175,7 +175,16 @@ async fn task_run(
     root_path: PathBuf,
     task_sub_path: PathBuf,
 ) -> TaskState {
-    let task_id = task_sub_path.iter().map(|p| p.to_str().unwrap()).join(".");
+    let mut task_id = task_sub_path.iter().map(|p| p.to_str().unwrap()).join(".");
+    if task_id.is_empty() {
+        task_id = root_path
+            .iter()
+            .last()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+    }
     let task_id = Arc::new(TaskIdSimple::new(exec_id, task_id.to_owned()));
     let task_path = root_path.join(task_sub_path);
     chord_flow::CTX_ID.with(|tid| tid.replace(task_id.to_string()));

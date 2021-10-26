@@ -36,6 +36,7 @@ jobs:
           echo "------------------------------------------------"
           sudo apt-get update
           sudo apt-get install curl
+          rustup update
 
       - name: service-boot
         run: |
@@ -68,7 +69,6 @@ jobs:
 
       - name: chord-build
         run: |
-          rustup update
           chmod -R 777 $PWD
           cargo --version
           cargo test  --verbose --release
@@ -107,6 +107,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: env-prepare
+        run: |
+          rustup update
       
       - name: chord-build-cache
         uses: actions/cache@v2
@@ -117,7 +121,6 @@ jobs:
       
       - name: chord-build
         run: |
-          rustup update
           cargo build --verbose --release
       
       - name: chord-target-upload
@@ -136,6 +139,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: env-prepare
+        run: |
+          rustup update
       
       - name: chord-build-cache
         uses: actions/cache@v2
@@ -146,7 +153,6 @@ jobs:
       
       - name: chord-build
         run: |
-          rustup update
           cargo build --verbose --release
       
       - name: chord-target-upload

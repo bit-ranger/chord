@@ -2,7 +2,7 @@
 name = "chord-flow"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 description = "async parallel case executor"
 homepage = "https://github.com/bit-ranger/chord"

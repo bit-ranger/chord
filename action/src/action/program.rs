@@ -14,7 +14,7 @@ impl ProgramFactory {
 impl Factory for ProgramFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = Value::Object(arg.args_raw().clone());
-        match args_raw["scope"].as_str().unwrap_or("step") {
+        match args_raw["lifetime"].as_str().unwrap_or("step") {
             "task" => Ok(Box::new(TaskProgram::new(&args_raw)?)),
             "case" => Ok(Box::new(CaseProgram::new(&args_raw)?)),
             _ => Ok(Box::new(StepProgram::new(&args_raw)?)),

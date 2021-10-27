@@ -116,15 +116,7 @@ impl HelperDef for JsonpathHelper {
         })?;
         finder.set_json(value.clone());
 
-        let mut vec: Vec<Value> = finder.find().into_iter().map(|v| v.clone()).collect();
-
-        let result = if vec.len() == 0 {
-            Value::Null
-        } else if vec.len() == 1 {
-            vec.pop().unwrap()
-        } else {
-            Value::Array(vec)
-        };
-        Ok(Some(ScopedJson::Derived(result)))
+        let find = finder.find();
+        Ok(Some(ScopedJson::Derived(find)))
     }
 }

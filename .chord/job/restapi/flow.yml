@@ -98,8 +98,6 @@ stage:
           term: "{{case.term}}"
         exec:
           action: restapi
-          spec:
-            timeout: 10
           args:
             url: "{{url}}/article/_search"
             method: GET

@@ -1,5 +1,5 @@
 # 基础镜像 
-FROM rust:1.53.0
+FROM rust:1.56.0
 
 ENV CARGO_HTTP_MULTIPLEXING false
 COPY zero/devops/apt /etc/apt

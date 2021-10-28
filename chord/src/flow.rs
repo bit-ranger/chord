@@ -68,7 +68,7 @@ impl Flow {
                 ._step(sid)
                 .as_object()
                 .ok_or_else(|| err!("flow", format!("step {} invalid content", sid)))?;
-            let step_keys = vec!["let", "exec", "spec", "assert"];
+            let step_keys = vec!["let", "spec", "exec", "assert", "then"];
             for (k, _) in step_obj {
                 if !step_keys.contains(&k.as_str()) {
                     return Err(err!(

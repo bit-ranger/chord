@@ -64,10 +64,19 @@ impl Flow {
         }
 
         for sid in step_id_checked.iter() {
-            flow._step(sid)
+            let step_obj = flow
+                ._step(sid)
                 .as_object()
                 .ok_or_else(|| err!("flow", format!("step {} invalid content", sid)))?;
-
+            let step_keys = vec!["let", "spec", "exec", "assert", "then"];
+            for (k, _) in step_obj {
+                if !step_keys.contains(&k.as_str()) {
+                    return Err(err!(
+                        "flow",
+                        format!("unexpected key {} in step {}", k, sid)
+                    ));
+                }
+            }
             let _ = flow._step_let(sid)?;
             let _ = flow._step_exec_action(sid)?;
             let _ = flow._step_exec_args(sid)?;

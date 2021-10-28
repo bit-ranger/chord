@@ -93,6 +93,7 @@ impl CaseArgStruct {
         let id = Arc::new(CaseIdStruct::new(task_id, stage_id, case_exec_id, case_id));
 
         let mut render_data: Map = Map::new();
+        render_data.insert(String::from("meta"), to_value(flow.meta()).unwrap());
         if let Some(def) = flow.def() {
             render_data.insert(String::from("def"), to_value(def).unwrap());
         }

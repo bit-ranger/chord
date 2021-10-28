@@ -192,7 +192,7 @@ impl Flow {
             if !enable_keys.contains(&k.as_str()) {
                 return Err(err!(
                     "flow",
-                    format!("unexpected key {} in step {}", k, step_id)
+                    format!("unexpected key {} in step.{}", k, step_id)
                 ));
             }
         }
@@ -232,7 +232,7 @@ impl Flow {
             if !enable_keys.contains(&k.as_str()) {
                 return Err(err!(
                     "flow",
-                    format!("unexpected key {} in step.exec {}", k, step_id)
+                    format!("unexpected key {} in step.{}.exec", k, step_id)
                 ));
             }
         }
@@ -268,7 +268,7 @@ impl Flow {
                 if !enable_keys.contains(&k.as_str()) {
                     return Err(err!(
                         "flow",
-                        format!("unexpected key {} in step.spec {}", k, step_id)
+                        format!("unexpected key {} in step.{}.spec", k, step_id)
                     ));
                 }
             }

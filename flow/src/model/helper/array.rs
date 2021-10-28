@@ -102,7 +102,12 @@ impl HelperDef for GetHelper {
                 .as_f64()
                 .ok_or(RenderError::new("Param invalid for helper \"arr_get\""))?
                 as usize;
-            return Ok(Some(ScopedJson::Derived(arr[start].clone())));
+            let result = if arr.len() > 0 {
+                arr[start].clone()
+            } else {
+                Value::Null
+            };
+            return Ok(Some(ScopedJson::Derived(result)));
         } else {
             return Err(RenderError::new("Param invalid for helper \"arr_get\""));
         }

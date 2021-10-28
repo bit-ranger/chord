@@ -9,15 +9,14 @@ use chord::flow::Flow;
 use chord::task::TaskId;
 use chord::value::{to_value, Map};
 
-use crate::flow;
-use crate::flow::render_dollar;
+use crate::flow::render_value;
 use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
 use chord::step::{StepAssess, StepState};
-use chord::value::{from_str, to_string, Value};
-use chord::{err, Error};
+use chord::value::Value;
+use chord::Error;
 use handlebars::Handlebars;
 use log::trace;
 
@@ -129,7 +128,8 @@ impl CaseArgStruct {
         let let_raw = self.flow.step_let(step_id);
         let let_value = match let_raw {
             Some(let_raw) => {
-                let let_value = render_let(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
+                let let_value =
+                    render_let_object(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
                 Some(let_value)
             }
             None => None,
@@ -169,7 +169,7 @@ impl CaseArgStruct {
     }
 }
 
-fn render_let(
+fn render_let_object(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
     let_raw: &Map,
@@ -177,11 +177,7 @@ fn render_let(
     let mut let_render_ctx = render_ctx.clone();
     let mut let_value = Map::new();
     for (k, v) in let_raw.iter() {
-        let v_str = to_string(v)?;
-        let v_str = flow::render(handlebars, &let_render_ctx, v_str.as_str())?;
-        let v: Value =
-            from_str(v_str.as_str()).map_err(|_| err!("001", format!("invalid let {}", v_str)))?;
-        let v = render_dollar(&v, let_render_ctx.data())?;
+        let v = render_value(handlebars, &let_render_ctx, v)?;
         if let Value::Object(m) = let_render_ctx.data_mut() {
             m.insert(k.clone(), v.clone());
         }

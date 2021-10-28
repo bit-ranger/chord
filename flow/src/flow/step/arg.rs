@@ -9,11 +9,11 @@ use chord::action::{CreateArg, CreateId, RunArg};
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::task::TaskId;
-use chord::value::{from_str, to_string, Map, Value};
-use chord::{err, Error};
+use chord::value::Map;
+use chord::Error;
 
 use crate::flow;
-use crate::flow::render_dollar;
+use crate::flow::render_value;
 use crate::model::app::RenderContext;
 
 #[derive(Clone)]
@@ -185,16 +185,12 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
     }
 
     fn render_object_with(&self, raw: &Map, render_context: &RenderContext) -> Result<Map, Error> {
-        let value_str = to_string(raw)?;
-        let value_str = self.render_str_with(value_str.as_str(), render_context)?;
-        let value: Value = from_str(value_str.as_str())
-            .map_err(|_| err!("001", format!("invalid args {}", value_str)))?;
-        let value = render_dollar(&value, render_context.data())?;
-        if let Value::Object(object) = value {
-            Ok(object)
-        } else {
-            Err(err!("001", format!("invalid args {}", value_str)))
+        let mut result = Map::new();
+        for (k, v) in raw {
+            let value = render_value(self.handlebars, render_context, v)?;
+            result.insert(k.clone(), value);
         }
+        Ok(result)
     }
 
     pub fn render_object(&self, raw: &Map) -> Result<Map, Error> {

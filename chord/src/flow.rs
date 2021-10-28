@@ -25,15 +25,15 @@ impl Flow {
         flow._version()?;
 
         let mut step_id_checked: HashSet<&str> = HashSet::new();
-        let pre_sid_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
-        for pre_sid in pre_sid_vec {
-            if !ID_PATTERN.is_match(pre_sid) {
-                return Err(err!("flow", format!("step {} invalid id", pre_sid)));
+        let pre_step_id_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
+        for pre_step_id in pre_step_id_vec {
+            if !ID_PATTERN.is_match(pre_step_id) {
+                return Err(err!("flow", format!("step {} invalid id", pre_step_id)));
             }
-            if step_id_checked.contains(pre_sid) {
-                return Err(err!("flow", format!("step {} duplicated id", pre_sid)));
+            if step_id_checked.contains(pre_step_id) {
+                return Err(err!("flow", format!("step {} duplicated id", pre_step_id)));
             } else {
-                step_id_checked.insert(pre_sid.into());
+                step_id_checked.insert(pre_step_id.into());
             }
         }
 
@@ -49,38 +49,35 @@ impl Flow {
             flow._stage_round(stage_id)?;
             flow._stage_break_on(stage_id)?;
 
-            let stage_sid_vec = flow._stage_step_id_vec(stage_id)?;
-            for stage_sid in stage_sid_vec {
-                if !ID_PATTERN.is_match(stage_sid) {
-                    return Err(err!("flow", format!("stage {} invalid id", stage_sid)));
+            let stage_step_id_vec = flow._stage_step_id_vec(stage_id)?;
+            for stage_step_id in stage_step_id_vec {
+                if !ID_PATTERN.is_match(stage_step_id) {
+                    return Err(err!("flow", format!("stage {} invalid id", stage_step_id)));
                 }
 
-                if step_id_checked.contains(stage_sid) {
-                    return Err(err!("flow", format!("step {} duplicated id", stage_sid)));
+                if step_id_checked.contains(stage_step_id) {
+                    return Err(err!(
+                        "flow",
+                        format!("step {} duplicated id", stage_step_id)
+                    ));
                 } else {
-                    step_id_checked.insert(stage_sid.into());
+                    step_id_checked.insert(stage_step_id.into());
                 }
             }
         }
 
-        for sid in step_id_checked.iter() {
-            let step_obj = flow
-                ._step(sid)
-                .as_object()
-                .ok_or_else(|| err!("flow", format!("step {} invalid content", sid)))?;
-            let step_keys = vec!["let", "spec", "exec", "assert", "then"];
-            for (k, _) in step_obj {
-                if !step_keys.contains(&k.as_str()) {
-                    return Err(err!(
-                        "flow",
-                        format!("unexpected key {} in step {}", k, sid)
-                    ));
-                }
-            }
-            let _ = flow._step_let(sid)?;
-            let _ = flow._step_exec_action(sid)?;
-            let _ = flow._step_exec_args(sid)?;
-            let _ = flow._step_spec_timeout(sid)?;
+        for step_id in step_id_checked.iter() {
+            flow._step_check(step_id)?;
+            flow._step_exec_check(step_id)?;
+            flow._step_spec_check(step_id)?;
+
+            let _ = flow._step_let(step_id)?;
+            let _ = flow._step_assert(step_id)?;
+            let _ = flow._step_then(step_id)?;
+            let _ = flow._step_exec_action(step_id)?;
+            let _ = flow._step_exec_args(step_id)?;
+            let _ = flow._step_spec_timeout(step_id)?;
+            let _ = flow._step_spec_catch_err(step_id)?;
         }
 
         return Ok(flow);
@@ -151,24 +148,15 @@ impl Flow {
     }
 
     pub fn step_spec_catch_err(&self, step_id: &str) -> bool {
-        self._step(step_id)["spec"]["catch_err"]
-            .as_bool()
-            .unwrap_or(false)
+        self._step_spec_catch_err(step_id).unwrap()
     }
 
     pub fn step_assert(&self, step_id: &str) -> Option<&str> {
-        self._step(step_id)["assert"].as_str()
+        self._step_assert(step_id).unwrap()
     }
 
     pub fn step_then(&self, step_id: &str) -> Option<Vec<&Map>> {
-        let array = self._step(step_id)["then"].as_array()?;
-        Some(
-            array
-                .iter()
-                .filter(|v| v.is_object())
-                .map(|m| m.as_object().unwrap())
-                .collect(),
-        )
+        self._step_then(step_id).unwrap()
     }
 
     // -----------------------------------------------
@@ -187,11 +175,28 @@ impl Flow {
     }
 
     fn _stage_step_id_vec(&self, stage_id: &str) -> Result<Vec<&str>, Error> {
-        let sid_vec = self.flow["stage"][stage_id]["step"]
+        let step_id_vec = self.flow["stage"][stage_id]["step"]
             .as_object()
             .map(|p| p.keys().map(|k| k.as_str()).collect())
             .ok_or(err!("flow", format!("stage {} missing step", stage_id)))?;
-        return Ok(sid_vec);
+        return Ok(step_id_vec);
+    }
+
+    fn _step_check(&self, step_id: &str) -> Result<(), Error> {
+        let enable_keys = vec!["let", "spec", "exec", "assert", "then"];
+        let step = self._step(step_id);
+        let object = step
+            .as_object()
+            .ok_or_else(|| err!("flow", format!("step {} must be a object", step_id)))?;
+        for (k, _) in object {
+            if !enable_keys.contains(&k.as_str()) {
+                return Err(err!(
+                    "flow",
+                    format!("unexpected key {} in step {}", k, step_id)
+                ));
+            }
+        }
+        return Ok(());
     }
 
     fn _step(&self, step_id: &str) -> &Value {
@@ -215,11 +220,61 @@ impl Flow {
             .ok_or(err!("flow", format!("step {} missing let", step_id)))
     }
 
+    fn _step_exec_check(&self, step_id: &str) -> Result<(), Error> {
+        let enable_keys = vec!["action", "args"];
+
+        let object = self._step(step_id)["exec"].as_object().ok_or(err!(
+            "flow",
+            format!("step {} exec must be a object", step_id)
+        ))?;
+
+        for (k, _) in object {
+            if !enable_keys.contains(&k.as_str()) {
+                return Err(err!(
+                    "flow",
+                    format!("unexpected key {} in step.exec {}", k, step_id)
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
     fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
         self._step(step_id)["exec"]["action"].as_str().ok_or(err!(
             "flow",
             format!("step {} missing exec.action", step_id)
         ))
+    }
+
+    pub fn _step_exec_args(&self, step_id: &str) -> Result<&Map, Error> {
+        self._step(step_id)["exec"]["args"]
+            .as_object()
+            .ok_or(err!("flow", format!("step {} missing exec.args", step_id)))
+    }
+
+    fn _step_spec_check(&self, step_id: &str) -> Result<(), Error> {
+        let spec = self._step(step_id)["spec"].borrow();
+        if spec.is_null() {
+            return Ok(());
+        } else {
+            let enable_keys = vec!["timeout", "catch_err"];
+            let object = spec.as_object().ok_or(err!(
+                "flow",
+                format!("step {} spec must be a object", step_id)
+            ))?;
+
+            for (k, _) in object {
+                if !enable_keys.contains(&k.as_str()) {
+                    return Err(err!(
+                        "flow",
+                        format!("unexpected key {} in step.spec {}", k, step_id)
+                    ));
+                }
+            }
+
+            Ok(())
+        }
     }
 
     fn _step_spec_timeout(&self, step_id: &str) -> Result<Duration, Error> {
@@ -238,18 +293,38 @@ impl Flow {
         Ok(Duration::from_secs(s))
     }
 
-    pub fn _step_exec_args(&self, step_id: &str) -> Result<&Map, Error> {
-        self._step(step_id)["exec"]["args"]
-            .as_object()
-            .ok_or(err!("flow", format!("step {} missing exec.args", step_id)))
+    fn _step_spec_catch_err(&self, step_id: &str) -> Result<bool, Error> {
+        Ok(self._step(step_id)["spec"]["catch_err"]
+            .as_bool()
+            .unwrap_or(false))
+    }
+
+    pub fn _step_assert(&self, step_id: &str) -> Result<Option<&str>, Error> {
+        Ok(self._step(step_id)["assert"].as_str())
+    }
+
+    pub fn _step_then(&self, step_id: &str) -> Result<Option<Vec<&Map>>, Error> {
+        let array = self._step(step_id)["then"].as_array();
+        if array.is_none() {
+            return Ok(None);
+        } else {
+            let array = array.unwrap();
+            Ok(Some(
+                array
+                    .iter()
+                    .filter(|v| v.is_object())
+                    .map(|m| m.as_object().unwrap())
+                    .collect(),
+            ))
+        }
     }
 
     fn _stage_id_vec(&self) -> Result<Vec<&str>, Error> {
-        let sid_vec = self.flow["stage"]
+        let step_id_vec = self.flow["stage"]
             .as_object()
             .map(|p| p.keys().map(|k| k.as_str()).collect())
             .ok_or(err!("flow", "stage missing"))?;
-        return Ok(sid_vec);
+        return Ok(step_id_vec);
     }
 
     fn _stage_concurrency(&self, stage_id: &str) -> Result<usize, Error> {

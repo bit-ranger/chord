@@ -16,6 +16,17 @@ stage:
         exec:
           action: program
           args:
+            lifetime: case
+            program: python
+            args:
+              - --version
+            value_as_json: false
+
+      s3:
+        exec:
+          action: program
+          args:
+            lifetime: task
             program: python
             args:
               - --version

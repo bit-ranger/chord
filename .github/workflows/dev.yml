@@ -36,6 +36,7 @@ jobs:
           echo "------------------------------------------------"
           sudo apt-get update
           sudo apt-get install curl
+          rustup update
 
       - name: service-boot
         run: |
@@ -51,7 +52,7 @@ jobs:
           cd ../../../../..
           pwd
           echo "------------------------------------------------"
-          cd zero/action/dubbo
+          cd zero/test/dubbo_provider
           mvn package
           java -jar target/dubbo-provider-0.0.1-SNAPSHOT.jar &
           sleep 10
@@ -104,7 +105,11 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
-      
+
+      - name: env-prepare
+        run: |
+          rustup update
+
       - name: chord-build-cache
         uses: actions/cache@v2
         with:
@@ -132,6 +137,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: env-prepare
+        run: |
+          rustup update
 
       - name: chord-build-cache
         uses: actions/cache@v2

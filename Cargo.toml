@@ -8,7 +8,7 @@ members = [
     'action',
     'cmd',
     'web',
-    'zero/action/dylib_example'
+    'zero/test/dylib_example'
 ]
 
 

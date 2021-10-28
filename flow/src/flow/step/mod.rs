@@ -45,7 +45,7 @@ fn assess_create(
     explain: Value,
     action_value: Result<Box<dyn Scope>, Error>,
 ) -> StepAssessStruct {
-    if let Err(e) = action_value {
+    if let Err(e) = action_value.as_ref() {
         if !arg.catch_err() {
             error!(
                 "step Err  {}\n{}\n<<<\n{}",
@@ -58,7 +58,7 @@ fn assess_create(
                 start,
                 Utc::now(),
                 explain,
-                StepState::Err(e),
+                StepState::Err(e.clone()),
                 None,
             );
         } else {
@@ -71,7 +71,7 @@ fn assess_create(
         map.insert("state".to_string(), Value::String("Ok".to_string()));
         map.insert(
             "value".to_string(),
-            action_value.unwrap().as_value().clone(),
+            action_value.as_ref().unwrap().as_value().clone(),
         );
     }
 
@@ -94,7 +94,6 @@ fn assess_create(
             )
         }
         Ok((ar, at)) => {
-            let value = arg.context_mut().get("value").unwrap().clone();
             if ar {
                 info!("step Ok   {}", arg.id());
                 StepAssessStruct::new(
@@ -102,14 +101,15 @@ fn assess_create(
                     start,
                     Utc::now(),
                     explain,
-                    StepState::Ok(Box::new(value)),
+                    StepState::Ok(action_value.unwrap()),
                     at,
                 )
             } else {
                 warn!(
                     "step Fail {}\n{}\n<<<\n{}",
                     arg.id(),
-                    to_string_pretty(&value).unwrap_or("".to_string()),
+                    to_string_pretty(action_value.as_ref().unwrap().as_value())
+                        .unwrap_or("".to_string()),
                     explain_to_string(&explain)
                 );
                 StepAssessStruct::new(
@@ -117,7 +117,7 @@ fn assess_create(
                     start,
                     Utc::now(),
                     explain,
-                    StepState::Fail(Box::new(value)),
+                    StepState::Fail(action_value.unwrap()),
                     None,
                 )
             }

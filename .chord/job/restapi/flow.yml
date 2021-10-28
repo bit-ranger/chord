@@ -7,7 +7,7 @@ def:
 
 stage:
   benchmark1:
-    
+
     round: 1
     duration: 30
     step:
@@ -19,7 +19,7 @@ stage:
           args:
             url: "{{url}}/article"
             method: DELETE
-      
+
       crt_inx:
         let:
           url: "{{def.es.url}}"
@@ -30,37 +30,37 @@ stage:
             method: PUT
             body:
               {
-                  "settings": {
-                      "index": {
-                          "analysis.analyzer.default.type": "ik_max_word"
-                      }
-                  },
-                  "mappings": {
-                      "properties": {
-                          "user": {
-                              "type": "text",
-                              "analyzer": "ik_max_word",
-                              "search_analyzer": "ik_max_word"
-                          },
-                          "title": {
-                              "type": "text",
-                              "analyzer": "ik_max_word",
-                              "search_analyzer": "ik_max_word"
-                          },
-                          "desc": {
-                              "type": "text",
-                              "analyzer": "ik_max_word",
-                              "search_analyzer": "ik_max_word"
-                          }
-                      }
+                "settings": {
+                  "index": {
+                    "analysis.analyzer.default.type": "ik_max_word"
                   }
+                },
+                "mappings": {
+                  "properties": {
+                    "user": {
+                      "type": "text",
+                      "analyzer": "ik_max_word",
+                      "search_analyzer": "ik_max_word"
+                    },
+                    "title": {
+                      "type": "text",
+                      "analyzer": "ik_max_word",
+                      "search_analyzer": "ik_max_word"
+                    },
+                    "desc": {
+                      "type": "text",
+                      "analyzer": "ik_max_word",
+                      "search_analyzer": "ik_max_word"
+                    }
+                  }
+                }
               }
         assert: |+
           (all
             (eq value.status 200)
             (eq value.body.acknowledged true)
           )
-      
+
       insert:
         let:
           url: "{{def.es.url}}"
@@ -69,8 +69,6 @@ stage:
           desc: "{{case.desc}}"
         exec:
           action: restapi
-          spec:
-            timeout: 10
           args:
             url: "{{url}}/article/_doc/1"
             method: PUT
@@ -80,19 +78,19 @@ stage:
                 "title": "{{title}}",
                 "desc": "{{desc}}"
               }
-        
+
         assert: |+
           (all
             (eq value.status 201)
             (eq value.body.result "created")
           )
-      
+
       wait:
         exec:
           action: sleep
           args:
             duration: 9
-      
+
       search:
         let:
           url: "{{def.es.url}}"
@@ -126,7 +124,7 @@ stage:
                   }
                 }
               }
-        
+
         assert: |+
           (all
             (eq value.status 200)

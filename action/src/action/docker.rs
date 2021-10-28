@@ -76,7 +76,7 @@ impl Action for ImageWrapper {
             .collect();
 
         if tail_lines.len() > 0 {
-            if args["value_as_json"].as_bool().unwrap_or(true) {
+            if args["value_to_json"].as_bool().unwrap_or(true) {
                 let value: Value = from_str(tail_lines.join("").as_str())?;
                 Ok(Box::new(value))
             } else {

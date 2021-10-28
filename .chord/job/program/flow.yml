@@ -10,7 +10,7 @@ stage:
             program: java
             args:
               - -version
-            value_as_json: false
+            value_to_json: false
             
       s2:
         exec:
@@ -20,7 +20,7 @@ stage:
             program: python
             args:
               - --version
-            value_as_json: false
+            value_to_json: false
 
       s3:
         exec:
@@ -30,5 +30,5 @@ stage:
             program: python
             args:
               - --version
-            value_as_json: false
+            value_to_json: false
 

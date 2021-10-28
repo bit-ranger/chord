@@ -56,7 +56,7 @@ impl Action for StepProgram {
         match last_line {
             None => Ok(Box::new(Value::Null)),
             Some(last_line) => {
-                if args["value_as_json"].as_bool().unwrap_or(true) {
+                if args["value_to_json"].as_bool().unwrap_or(true) {
                     let value: Value = from_str(last_line)?;
                     Ok(Box::new(value))
                 } else {
@@ -133,7 +133,7 @@ impl TaskProgram {
 #[async_trait]
 impl Action for TaskProgram {
     async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        Ok(Box::new(Value::Null))
+        Ok(Box::new(Value::Number(Number::from(self.child.id()))))
     }
 }
 

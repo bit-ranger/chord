@@ -12,7 +12,7 @@ stage:
               - --prefix
               - /home/runner/work/chord/chord/zero/test/nodejs
               - install
-            value_as_json: false
+            value_to_json: false
 
       s2:
         let:
@@ -28,6 +28,6 @@ stage:
               - run
               - test
               - $ref: case
-            value_as_json: true
+            value_to_json: true
         assert: |
           (eq value.case_args.foo "bar")

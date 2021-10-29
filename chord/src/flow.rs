@@ -7,8 +7,7 @@ use regex::Regex;
 
 use crate::err;
 use crate::error::Error;
-use crate::value::{json, Map, Value};
-use async_std::path::{Path, PathBuf};
+use crate::value::{Map, Value};
 
 lazy_static! {
     pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,50}$").unwrap();
@@ -16,22 +15,12 @@ lazy_static! {
 
 #[derive(Debug, Clone)]
 pub struct Flow {
-    path: PathBuf,
     flow: Value,
-    meta: Map,
 }
 
 impl Flow {
-    pub fn new<P: AsRef<Path>>(path: P, flow: Value) -> Result<Flow, Error> {
-        let path_buf = path.as_ref().to_path_buf();
-
-        let meta = json!({ "file_dir": path_buf.to_str().unwrap() });
-
-        let flow = Flow {
-            path: path_buf,
-            flow,
-            meta: meta.as_object().unwrap().clone(),
-        };
+    pub fn new(flow: Value) -> Result<Flow, Error> {
+        let flow = Flow { flow };
 
         flow._version()?;
 
@@ -96,10 +85,6 @@ impl Flow {
 
     pub fn version(&self) -> &str {
         self._version().unwrap()
-    }
-
-    pub fn meta(&self) -> &Map {
-        &self.meta
     }
 
     pub fn def(&self) -> Option<&Map> {

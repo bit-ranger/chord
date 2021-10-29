@@ -208,7 +208,7 @@ async fn task_run0<P: AsRef<Path>>(
     let task_path = Path::new(task_path.as_ref());
     let flow_file = task_path.clone().join("flow.yml");
     let flow = chord_input::load::flow::yml::load(&flow_file)?;
-    let flow = Flow::new(task_path, flow)?;
+    let flow = Flow::new(flow)?;
 
     //read
     let case_store = Box::new(chord_input::load::data::csv::Store::new(task_path.clone()).await?);

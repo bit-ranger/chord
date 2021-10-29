@@ -230,7 +230,7 @@ async fn task_run0<P: AsRef<Path>>(
 
     return match task_assess.state() {
         TaskState::Ok => Ok(TaskState::Ok),
-        TaskState::Fail => Ok(TaskState::Fail),
+        TaskState::Fail(c) => Ok(TaskState::Fail(c.clone())),
         TaskState::Err(e) => Ok(TaskState::Err(e.clone())),
     };
 }

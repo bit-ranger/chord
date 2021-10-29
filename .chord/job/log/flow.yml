@@ -16,14 +16,6 @@ stage:
             log: |-
               dml >>> update some_table set column1 = '{{lon_lat}}' where id = 1'
 
-      step2:
-        let:
-          file_dir: "{{meta.file_dir}}"
-        exec:
-          action: log
-          args:
-            log: |-
-              file_dir >>> {{file_dir}}
 
               
 

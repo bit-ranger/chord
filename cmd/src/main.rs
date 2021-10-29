@@ -77,20 +77,15 @@ async fn run(
     let app_ctx = chord_flow::context_create(Box::new(
         FactoryComposite::new(config.action().map(|c| c.clone())).await?,
     ))
-        .await;
-    let task_state_vec = job::run(
-        app_ctx,
-        report_factory,
-        exec_id.clone(),
-        input_dir,
-    ).await?;
+    .await;
+    let task_state_vec = job::run(app_ctx, report_factory, exec_id.clone(), input_dir).await?;
     logger::terminal(log_handler).await?;
     let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
     return match et {
         Some(et) => match et {
             TaskState::Ok => Ok(()),
             TaskState::Err(e) => Err(e.clone()),
-            TaskState::Fail => Err(err!("task", "fail")),
+            TaskState::Fail(c) => Err(err!("task", format!("cause {}", c))),
         },
         None => Ok(()),
     };

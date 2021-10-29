@@ -38,6 +38,42 @@ fn render(
     };
 }
 
+fn render_value(
+    handlebars: &Handlebars,
+    render_ctx: &RenderContext,
+    value_raw: &Value,
+) -> Result<Value, Error> {
+    match value_raw {
+        Value::String(v) => {
+            let v_str = render(handlebars, render_ctx, v)?;
+            Ok(Value::String(v_str))
+        }
+        Value::Object(v) => {
+            let mut let_value = Map::new();
+            for (k, v) in v.iter() {
+                let v = render_value(handlebars, render_ctx, v)?;
+                let_value.insert(k.clone(), v);
+            }
+            let value = Value::Object(let_value);
+            let value = render_dollar(&value, render_ctx.data())?;
+            Ok(value)
+        }
+        Value::Array(v) => {
+            let mut arr = Vec::new();
+            for e in v {
+                let av = render_value(handlebars, render_ctx, e)?;
+                arr.push(av)
+            }
+            let value = Value::Array(arr);
+            let value = render_dollar(&value, render_ctx.data())?;
+            Ok(value)
+        }
+        Value::Null => Ok(Value::Null),
+        Value::Bool(v) => Ok(Value::Bool(v.clone())),
+        Value::Number(v) => Ok(Value::Number(v.clone())),
+    }
+}
+
 fn render_dollar(val: &Value, ref_from: &Value) -> Result<Value, Error> {
     return match val {
         Value::Object(map) => {

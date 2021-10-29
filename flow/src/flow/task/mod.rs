@@ -366,6 +366,7 @@ async fn step_vec_create(
 
 fn render_context_create(flow: Arc<Flow>, pre_ctx: Option<Arc<Value>>) -> RenderContext {
     let mut render_data: Map = Map::new();
+    render_data.insert(String::from("meta"), to_value(flow.meta()).unwrap());
     let config_def = flow.def();
     match config_def {
         Some(def) => {

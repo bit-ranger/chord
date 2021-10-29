@@ -12,7 +12,7 @@ pub trait TaskId: Sync + Send + Display {
 
 pub enum TaskState {
     Ok,
-    Fail,
+    Fail(String),
     Err(Error),
 }
 

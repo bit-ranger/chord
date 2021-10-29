@@ -185,10 +185,9 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
     }
 
     fn render_object_with(&self, raw: &Map, render_context: &RenderContext) -> Result<Map, Error> {
-        let mut result = Map::new();
-        for (k, v) in raw {
-            let value = render_value(self.handlebars, render_context, v)?;
-            result.insert(k.clone(), value);
+        let mut result = raw.clone();
+        for (_, v) in result.iter_mut() {
+            render_value(self.handlebars, render_context, v)?;
         }
         Ok(result)
     }

@@ -129,13 +129,13 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
         elapse: (end - start).num_milliseconds() as usize,
         state: match ts {
             TaskState::Ok => "O",
-            TaskState::Fail => "F",
+            TaskState::Fail(_) => "F",
             TaskState::Err(_) => "E",
         }
         .to_owned(),
         value: match ts {
             TaskState::Ok => Value::Null,
-            TaskState::Fail => Value::Null,
+            TaskState::Fail(_) => Value::Null,
             TaskState::Err(e) => json!({
                 "code": e.code(),
                 "message": e.message()

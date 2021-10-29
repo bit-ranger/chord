@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::mem::replace;
 
 use async_std::sync::Arc;
 use async_std::task_local;
@@ -11,7 +12,7 @@ pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
 use crate::model::app::{FlowApp, FlowAppStruct, RenderContext};
-use chord::value::{from_str, Map, Number, Value};
+use chord::value::{from_str, Number, Value};
 use std::str::FromStr;
 
 mod case;
@@ -41,142 +42,150 @@ fn render(
 fn render_value(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
-    value_raw: &Value,
-) -> Result<Value, Error> {
-    match value_raw {
+    value: &mut Value,
+) -> Result<(), Error> {
+    match value {
         Value::String(v) => {
             let v_str = render(handlebars, render_ctx, v)?;
-            Ok(Value::String(v_str))
+            let _ = replace(value, Value::String(v_str));
+            Ok(())
         }
         Value::Object(v) => {
-            let mut let_value = Map::new();
-            for (k, v) in v.iter() {
-                let v = render_value(handlebars, render_ctx, v)?;
-                let_value.insert(k.clone(), v);
+            for (_, v) in v.iter_mut() {
+                render_value(handlebars, render_ctx, v)?;
             }
-            let value = Value::Object(let_value);
-            let value = render_dollar(&value, render_ctx.data())?;
-            Ok(value)
+            render_dollar_value(render_ctx.data(), value)?;
+            Ok(())
         }
         Value::Array(v) => {
-            let mut arr = Vec::new();
-            for e in v {
-                let av = render_value(handlebars, render_ctx, e)?;
-                arr.push(av)
+            for i in v {
+                render_value(handlebars, render_ctx, i)?;
             }
-            let value = Value::Array(arr);
-            let value = render_dollar(&value, render_ctx.data())?;
-            Ok(value)
+            render_dollar_value(render_ctx.data(), value)?;
+            Ok(())
         }
-        Value::Null => Ok(Value::Null),
-        Value::Bool(v) => Ok(Value::Bool(v.clone())),
-        Value::Number(v) => Ok(Value::Number(v.clone())),
+        Value::Null => Ok(()),
+        Value::Bool(_) => Ok(()),
+        Value::Number(_) => Ok(()),
     }
 }
 
-fn render_dollar(val: &Value, ref_from: &Value) -> Result<Value, Error> {
-    return match val {
-        Value::Object(map) => {
-            if map.contains_key("$str") {
-                if map.len() != 1 {
-                    return Err(err!("001", "invalid args $str"));
-                }
-                let v = &map["$str"];
-                if v.is_string() {
-                    Ok(v.clone())
-                } else {
-                    Ok(Value::String(map["$str"].to_string()))
-                }
-            } else if map.contains_key("$num") {
-                if map.len() != 1 {
-                    return Err(err!("001", "invalid args $num"));
-                }
-                let v = &map["$num"];
-                if v.is_number() {
-                    Ok(v.clone())
-                } else if v.is_string() {
-                    Ok(Value::Number(
-                        Number::from_str(v.as_str().unwrap())
+fn render_dollar_value(context: &Value, value: &mut Value) -> Result<(), Error> {
+    if value.is_object() {
+        if !value["$num"].is_null() {
+            if value.as_object().unwrap().len() != 1 {
+                return Err(err!("001", "invalid args $num"));
+            }
+            if value["$num"].is_number() {
+                let target = value["$num"].clone();
+                let _ = replace(value, target);
+            } else if value["$num"].is_string() {
+                let _ = replace(
+                    value,
+                    Value::Number(
+                        Number::from_str(value["$num"].as_str().unwrap())
                             .map_err(|_| err!("001", "invalid args $num"))?,
-                    ))
-                } else {
-                    Err(err!("001", "invalid args $num"))
-                }
-            } else if map.contains_key("$bool") {
-                if map.len() != 1 {
-                    return Err(err!("001", "invalid args $bool"));
-                }
-                let v = &map["$bool"];
-                if v.is_boolean() {
-                    Ok(v.clone())
-                } else if v.is_string() {
-                    Ok(Value::Bool(
-                        bool::from_str(v.as_str().unwrap())
+                    ),
+                );
+            } else {
+                return Err(err!("001", "invalid args $num"));
+            }
+        } else if !value["$bool"].is_null() {
+            if value.as_object().unwrap().len() != 1 {
+                return Err(err!("001", "invalid args $bool"));
+            }
+            if value["$bool"].is_boolean() {
+                let target = value["$bool"].clone();
+                let _ = replace(value, target);
+            } else if value["$bool"].is_string() {
+                let _ = replace(
+                    value,
+                    Value::Bool(
+                        bool::from_str(value["$bool"].as_str().unwrap())
                             .map_err(|_| err!("001", "invalid args $bool"))?,
-                    ))
-                } else {
-                    Err(err!("001", "invalid args $bool"))
-                }
-            } else if map.contains_key("$obj") {
-                if map.len() != 1 {
+                    ),
+                );
+            } else {
+                return Err(err!("001", "invalid args $bool"));
+            }
+        } else if !value["$str"].is_null() {
+            if value.as_object().unwrap().len() != 1 {
+                return Err(err!("001", "invalid args $str"));
+            }
+            if value["$str"].is_string() {
+                let target = value.as_object_mut().unwrap().remove("$str").unwrap();
+                let _ = replace(value, target);
+            } else {
+                let _ = replace(value, Value::String(value["$str"].to_string()));
+            }
+        } else if !value["$obj"].is_null() {
+            if value.as_object().unwrap().len() != 1 {
+                return Err(err!("001", "invalid args $obj"));
+            }
+            if value["$obj"].is_object() {
+                let mut target = value.as_object_mut().unwrap().remove("$obj").unwrap();
+                render_dollar_value(context, &mut target)?;
+                if !target.is_object() {
                     return Err(err!("001", "invalid args $obj"));
                 }
-                let v = &map["$obj"];
-                if v.is_object() {
-                    render_dollar(v, ref_from)
-                } else if v.is_string() {
-                    Ok(Value::Object(
-                        from_str(v.as_str().unwrap())
+                let _ = replace(value, target);
+            } else if value["$obj"].is_string() {
+                let _ = replace(
+                    value,
+                    Value::Object(
+                        from_str(value["$obj"].as_str().unwrap())
                             .map_err(|_| err!("001", "invalid args $obj"))?,
-                    ))
-                } else {
-                    Err(err!("001", "invalid args $obj"))
-                }
-            } else if map.contains_key("$arr") {
-                if map.len() != 1 {
+                    ),
+                );
+            } else {
+                return Err(err!("001", "invalid args $obj"));
+            }
+        } else if !value["$arr"].is_null() {
+            if value.as_object().unwrap().len() != 1 {
+                return Err(err!("001", "invalid args $arr"));
+            }
+            if value["$arr"].is_array() {
+                let mut target = value.as_object_mut().unwrap().remove("$arr").unwrap();
+                render_dollar_value(context, &mut target)?;
+                if !target.is_array() {
                     return Err(err!("001", "invalid args $arr"));
                 }
-                let v = &map["$arr"];
-                if v.is_array() {
-                    render_dollar(v, ref_from)
-                } else if v.is_string() {
-                    Ok(Value::Array(
-                        from_str(v.as_str().unwrap())
+                let _ = replace(value, target);
+            } else if value["$arr"].is_string() {
+                let _ = replace(
+                    value,
+                    Value::Array(
+                        from_str(value["$arr"].as_str().unwrap())
                             .map_err(|_| err!("001", "invalid args $arr"))?,
-                    ))
-                } else {
-                    Err(err!("001", "invalid args $arr"))
-                }
-            } else if map.contains_key("$ref") {
-                if map.len() != 1 {
-                    return Err(err!("001", "invalid args $ref"));
-                }
-                if map["$ref"].is_string() {
-                    let ref_path = map["$ref"].as_str().unwrap();
-                    let path: Vec<&str> = ref_path.split(".").collect();
-                    let mut ref_val = ref_from;
-                    for p in path {
-                        ref_val = &ref_val[p];
-                    }
-                    Ok(ref_val.clone())
-                } else {
-                    Err(err!("001", "invalid args $ref"))
-                }
+                    ),
+                );
             } else {
-                let mut render_val = Map::new();
-                for (k, v) in map {
-                    render_val.insert(k.to_string(), render_dollar(v, ref_from)?);
+                return Err(err!("001", "invalid args $arr"));
+            }
+        } else if !value["$ref"].is_null() {
+            if value.as_object().unwrap().len() != 1 {
+                return Err(err!("001", "invalid args $ref"));
+            }
+            if value["$ref"].is_string() {
+                let ref_path = value["$ref"].as_str().unwrap();
+                let path: Vec<&str> = ref_path.split(".").collect();
+                let mut ref_val = context;
+                for p in path {
+                    ref_val = &ref_val[p];
                 }
-                Ok(Value::Object(render_val))
+                let _ = replace(value, ref_val.clone());
+            } else {
+                return Err(err!("001", "invalid args $ref"));
             }
         }
-        Value::Array(arr) => {
-            let mut arr_val: Vec<Value> = Vec::with_capacity(arr.len());
-            for a in arr {
-                arr_val.push(render_dollar(a, ref_from)?);
-            }
-            Ok(Value::Array(arr_val))
+        Ok(())
+    } else if value.is_array() {
+        let arr = value.as_array_mut().unwrap();
+        for i in arr {
+            render_dollar_value(context, i)?;
         }
-        _ => Ok(val.clone()),
-    };
+        Ok(())
+    } else {
+        Ok(())
+    }
 }

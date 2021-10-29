@@ -138,9 +138,14 @@ impl TaskRunner {
                     info!("task Ok {}", self.id);
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok)
                 }
-                TaskState::Fail => {
+                TaskState::Fail(c) => {
                     warn!("task Fail {}", self.id);
-                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Fail)
+                    TaskAssessStruct::new(
+                        self.id.clone(),
+                        start,
+                        Utc::now(),
+                        TaskState::Fail(c.clone()),
+                    )
                 }
                 TaskState::Err(e) => {
                     error!("task Err {}", self.id);
@@ -168,7 +173,7 @@ impl TaskRunner {
         for state_id in stage_id_vec {
             trace!("task stage {}, {}", self.id, state_id);
             self.stage_run(state_id.as_str()).await?;
-            if let TaskState::Fail = self.stage_state {
+            if let TaskState::Fail(_) = self.stage_state {
                 if "stage_fail" == self.flow.stage_break_on(state_id.as_str()) {
                     break;
                 }
@@ -248,10 +253,20 @@ impl TaskRunner {
             trace!("task load data {}, {}", self.id, case_data_vec.len());
 
             let case_assess_vec = self.case_data_vec_run(case_data_vec, concurrency).await?;
-            let any_fail = case_assess_vec.iter().any(|ca| !ca.state().is_ok());
-            if any_fail {
-                self.stage_state = TaskState::Fail;
-                self.task_state = TaskState::Fail;
+            let first_fail = case_assess_vec.iter().find(|ca| !ca.state().is_ok());
+            if first_fail.is_some() {
+                let cause_case = first_fail.unwrap();
+                let cause = match cause_case.state() {
+                    CaseState::Err(_) => cause_case.id().to_string(),
+                    CaseState::Fail(v) => v
+                        .last()
+                        .map(|s| s.id().to_string())
+                        .or_else(|| Some(String::new()))
+                        .unwrap(),
+                    CaseState::Ok(_) => String::new(),
+                };
+                self.stage_state = TaskState::Fail(cause.clone());
+                self.task_state = TaskState::Fail(cause);
             }
             self.assess_report.report(&case_assess_vec).await?;
         }
@@ -366,7 +381,6 @@ async fn step_vec_create(
 
 fn render_context_create(flow: Arc<Flow>, pre_ctx: Option<Arc<Value>>) -> RenderContext {
     let mut render_data: Map = Map::new();
-    render_data.insert(String::from("meta"), to_value(flow.meta()).unwrap());
     let config_def = flow.def();
     match config_def {
         Some(def) => {

@@ -92,7 +92,6 @@ impl CaseArgStruct {
         let id = Arc::new(CaseIdStruct::new(task_id, stage_id, case_exec_id, case_id));
 
         let mut render_data: Map = Map::new();
-        render_data.insert(String::from("meta"), to_value(flow.meta()).unwrap());
         if let Some(def) = flow.def() {
             render_data.insert(String::from("def"), to_value(def).unwrap());
         }
@@ -174,14 +173,13 @@ fn render_let_object(
     render_ctx: &RenderContext,
     let_raw: &Map,
 ) -> Result<Map, Error> {
+    let mut let_value = let_raw.clone();
     let mut let_render_ctx = render_ctx.clone();
-    let mut let_value = Map::new();
-    for (k, v) in let_raw.iter() {
-        let v = render_value(handlebars, &let_render_ctx, v)?;
+    for (k, v) in let_value.iter_mut() {
+        render_value(handlebars, &let_render_ctx, v)?;
         if let Value::Object(m) = let_render_ctx.data_mut() {
             m.insert(k.clone(), v.clone());
         }
-        let_value.insert(k.clone(), v);
     }
 
     Ok(let_value)

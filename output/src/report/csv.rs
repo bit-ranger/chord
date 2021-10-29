@@ -90,7 +90,7 @@ impl Report for Reporter {
         let task_state_view = match task_assess.state() {
             TaskState::Ok => "O",
             TaskState::Err(_) => "E",
-            TaskState::Fail => "F",
+            TaskState::Fail(_) => "F",
         };
 
         let report_file = self

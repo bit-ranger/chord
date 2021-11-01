@@ -3,7 +3,7 @@ use std::path::Path;
 use chord::err;
 use chord::value::{Map, Number, Value};
 use chord::Error;
-use hocon::{Hocon, HoconLoader};
+use hocon_linked::{Hocon, HoconLoader};
 
 pub async fn load<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
     let loader = HoconLoader::new();

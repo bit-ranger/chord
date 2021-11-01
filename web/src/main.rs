@@ -2,13 +2,12 @@ use async_std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use crate::util::yaml::load;
 use chord::Error;
+use chord_input::load::conf;
 
 mod ctl;
 
 mod app;
-mod util;
 
 #[async_std::main]
 async fn main() -> Result<(), Error> {
@@ -23,10 +22,10 @@ async fn main() -> Result<(), Error> {
                     .unwrap()
                     .join(".chord")
                     .join("conf")
-                    .join("web.yml"),
+                    .join("web.hc"),
             )
         });
-    let conf = load(conf_path).await?;
+    let conf = conf::load(conf_path).await?;
     app::init(conf).await?;
     Ok(())
 }

@@ -31,7 +31,6 @@ flume = "0.10.5"
 tide = "0.16.0"
 validator = { version = "0.13", features = ["derive"] }
 lazy_static = "1.4.0"
-serde_yaml = "0.8"
 url = "2.2.1"
 regex = "1.4.6"
 structopt = "0.3"

@@ -7,12 +7,12 @@ use futures::StreamExt;
 use log::info;
 use log::trace;
 
-use crate::load_conf;
 use async_recursion::async_recursion;
 use chord::flow::{Flow, ID_PATTERN};
 use chord::task::TaskState;
 use chord::Error;
 use chord_flow::{FlowApp, TaskIdSimple};
+use chord_input::load::conf;
 use chord_output::report::{Factory, ReportFactory};
 use itertools::Itertools;
 
@@ -55,8 +55,8 @@ async fn job_run_recur(
     let job_path_str = job_path.to_str().unwrap();
     trace!("job start {}", job_path_str);
 
-    let ctrl_path = job_path.join("chord.yml");
-    let ctrl_data = load_conf(ctrl_path).await?;
+    let ctrl_path = job_path.join("chord.hc");
+    let ctrl_data = conf::load(ctrl_path).await?;
     let serial = ctrl_data["job"]["serial"].as_bool().unwrap_or(false);
 
     let mut job_dir = read_dir(job_path.clone()).await?;
@@ -164,7 +164,7 @@ async fn task_run_mock(
 
 async fn dir_is_task(root_path: PathBuf, sub_path: PathBuf) -> bool {
     let task_path = root_path.join(sub_path);
-    let flow_file = task_path.join("flow.yml");
+    let flow_file = task_path.join("flow.hc");
     flow_file.exists().await
 }
 
@@ -206,8 +206,8 @@ async fn task_run0<P: AsRef<Path>>(
     report_factory: Arc<ReportFactory>,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
-    let flow_file = task_path.clone().join("flow.yml");
-    let flow = chord_input::load::flow::yml::load(&flow_file)?;
+    let flow_file = task_path.clone().join("flow.hc");
+    let flow = chord_input::load::flow::load(&flow_file).await?;
     let flow = Flow::new(flow)?;
 
     //read

@@ -12,7 +12,3 @@ pub trait CaseStore: Sync + Send {
 pub trait CaseLoad: Sync + Send {
     async fn load(&mut self, size: usize) -> Result<Vec<(String, Value)>, Error>;
 }
-
-pub trait FlowParse: Sync + Send {
-    fn parse_str(&self, txt: &str) -> Result<Value, Error>;
-}

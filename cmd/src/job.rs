@@ -208,7 +208,7 @@ async fn task_run0<P: AsRef<Path>>(
     let flow = Flow::new(flow)?;
 
     //read
-    let case_store = Box::new(load::data::csv::Store::new(task_path.clone()).await?);
+    let case_store = Box::new(load::data::Store::new(task_path.clone()).await?);
 
     //write
     let assess_reporter = report_factory.create(task_id.clone()).await?;

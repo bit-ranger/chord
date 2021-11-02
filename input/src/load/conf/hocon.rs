@@ -1,5 +1,4 @@
-use std::path::Path;
-
+use async_std::path::Path;
 use chord::err;
 use chord::value::{Map, Number, Value};
 use chord::Error;
@@ -14,6 +13,11 @@ pub async fn load<P: AsRef<Path>>(dir_path: P, name: &str) -> Result<Value, Erro
         Err(e) => return Err(err!("hocon", format!("{:?}", e))),
         Ok(r) => Ok(r),
     };
+}
+
+pub async fn exists<P: AsRef<Path>>(dir_path: P, name: &str) -> bool {
+    let file_path = dir_path.as_ref().join(format!("{}.hc", name));
+    file_path.exists().await
 }
 
 fn convert(hocon: Hocon) -> Result<Value, Error> {

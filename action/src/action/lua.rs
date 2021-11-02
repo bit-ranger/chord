@@ -25,7 +25,7 @@ impl Action for Lua {
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {
             let args = Value::Object(arg.args()?);
-            let code = args["code"].as_str().ok_or(err!("100", "missing code"))?;
+            let code = args["lua"].as_str().ok_or(err!("100", "missing code"))?;
 
             for (k, v) in arg.context() {
                 let v = rlua_serde::to_value(lua, v)?;

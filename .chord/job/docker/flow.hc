@@ -7,6 +7,7 @@ stage.s1.step.docker1: {
     action: "docker",
     args: {
       image: "ubuntu:20.04",
+      value_to_json: true,
       cmd: [
         "echo",
         """{    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}"""

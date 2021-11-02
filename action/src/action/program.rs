@@ -56,7 +56,8 @@ impl Action for StepProgram {
         match last_line {
             None => Ok(Box::new(Value::Null)),
             Some(last_line) => {
-                if args["value_to_json"].as_bool().unwrap_or(true) {
+                let value_to_json = args["value_to_json"].as_bool().unwrap_or(false);
+                if value_to_json {
                     let value: Value = from_str(last_line)?;
                     Ok(Box::new(value))
                 } else {

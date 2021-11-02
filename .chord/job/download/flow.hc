@@ -1,12 +1,4 @@
-version: "0.0.1",
-stage: {
-  stage1: {
-    step: {
-
-    }
-  }
-}
-
+version: "0.0.1"
 
 stage.s1.step.step1: {
   let: {

@@ -377,7 +377,7 @@ impl Flow {
     fn _stage_break_on(&self, stage_id: &str) -> Result<&str, Error> {
         let break_on = self.flow["stage"][stage_id]["break_on"]
             .as_str()
-            .unwrap_or("never");
+            .unwrap_or("stage_fail");
         match break_on {
             "never" => Ok(break_on),
             "stage_fail" => Ok(break_on),

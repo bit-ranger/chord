@@ -91,7 +91,7 @@ stage.s2.step.example3: {
   exec: {
     action: "echo",
     args: {
-      echo: "update bas set a = '{{foo}}' where b = '{{bar}'"
+      echo: "update bas set a = '{{foo}}' where b = '{{bar}}'"
     }
   }
   assert: """

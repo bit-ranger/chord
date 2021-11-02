@@ -117,6 +117,15 @@ impl Flow {
         self._stage_id_vec().unwrap()
     }
 
+    pub fn stage_case_name<'a, 's>(&'s self, stage_id: &'a str) -> &'a str
+    where
+        's: 'a,
+    {
+        self.flow["stage"][stage_id]["case"]["name"]
+            .as_str()
+            .unwrap_or(stage_id)
+    }
+
     pub fn stage_concurrency(&self, stage_id: &str) -> usize {
         self._stage_concurrency(stage_id).unwrap()
     }

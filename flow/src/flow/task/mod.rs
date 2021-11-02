@@ -231,19 +231,19 @@ impl TaskRunner {
         stage_id: &str,
         concurrency: usize,
     ) -> Result<(), Error> {
-        let case_name = stage_id;
+        let case_name = self.flow.stage_case_name(stage_id);
         let mut data_load = self
             .case_factory
             .create(case_name)
             .await
-            .map_err(|_| err!("013", format!("stage {} case failed to load", case_name)))?;
+            .map_err(|_| err!("013", format!("stage {} failed to load case", stage_id)))?;
         let mut load_times = 0;
         loop {
             let case_data_vec: Vec<(String, Value)> = data_load.load(concurrency).await?;
             load_times = load_times + 1;
             if case_data_vec.len() == 0 {
                 if load_times == 1 {
-                    return Err(err!("011", format!("stage {} no case provided", case_name)));
+                    return Err(err!("011", format!("stage {} no case provided", stage_id)));
                 } else {
                     trace!("task exhaust data {}, {}", self.id, stage_id);
                     return Ok(());

@@ -72,14 +72,6 @@ stage.s1.step.example2: {
 }
 
 
-stage: {
-  s2: {
-    case: {
-      name: "case2"
-    }
-  }
-}
-
 stage.s2.step.example3: {
   let: {
     arg1: {

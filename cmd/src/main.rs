@@ -46,16 +46,12 @@ async fn run(
     let exec_id: String = exec_id.clone();
     let job_name = job_name.clone();
 
-    let conf_path = config.clone().map(|p| PathBuf::from(p)).unwrap_or_else(|| {
-        PathBuf::from(
-            dirs::home_dir()
-                .unwrap()
-                .join(".chord")
-                .join("conf")
-                .join("cmd.hc"),
-        )
-    });
-    let conf_data = load::conf::load(conf_path).await?;
+    let conf_dir_path = config
+        .clone()
+        .map(|p| PathBuf::from(p))
+        .unwrap_or_else(|| PathBuf::from(dirs::home_dir().unwrap().join(".chord").join("conf")));
+
+    let conf_data = load::conf::load(conf_dir_path, "cmd").await?;
     let config = Config::new(conf_data);
     if verbose {
         println!("config loaded: {}", config);

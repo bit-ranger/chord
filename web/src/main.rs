@@ -12,20 +12,12 @@ mod app;
 #[async_std::main]
 async fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
-    let conf_path = opt
+    let conf_dir_path = opt
         .config
         .clone()
         .map(|p| PathBuf::from(p))
-        .unwrap_or_else(|| {
-            PathBuf::from(
-                dirs::home_dir()
-                    .unwrap()
-                    .join(".chord")
-                    .join("conf")
-                    .join("web.hc"),
-            )
-        });
-    let conf = conf::load(conf_path).await?;
+        .unwrap_or_else(|| PathBuf::from(dirs::home_dir().unwrap().join(".chord").join("conf")));
+    let conf = conf::load(conf_dir_path, "web").await?;
     app::init(conf).await?;
     Ok(())
 }

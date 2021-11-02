@@ -5,9 +5,10 @@ use chord::value::{Map, Number, Value};
 use chord::Error;
 use hocon_linked::{Hocon, HoconLoader};
 
-pub async fn load<P: AsRef<Path>>(path: P) -> Result<Value, Error> {
+pub async fn load<P: AsRef<Path>>(dir_path: P, name: &str) -> Result<Value, Error> {
+    let file_path = dir_path.as_ref().join(format!("{}.hc", name));
     let loader = HoconLoader::new();
-    let hocon = loader.strict().load_file(path)?.hocon()?;
+    let hocon = loader.strict().load_file(file_path)?.hocon()?;
     let deserialized: Result<Value, Error> = convert(hocon);
     return match deserialized {
         Err(e) => return Err(err!("hocon", format!("{:?}", e))),

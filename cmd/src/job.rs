@@ -55,8 +55,7 @@ async fn job_run_recur(
     let job_path_str = job_path.to_str().unwrap();
     trace!("job start {}", job_path_str);
 
-    let ctrl_path = job_path.join("chord.hc");
-    let ctrl_data = conf::load(ctrl_path).await?;
+    let ctrl_data = conf::load(&job_path, "chord").await?;
     let serial = ctrl_data["job"]["serial"].as_bool().unwrap_or(false);
 
     let mut job_dir = read_dir(job_path.clone()).await?;
@@ -206,8 +205,7 @@ async fn task_run0<P: AsRef<Path>>(
     report_factory: Arc<ReportFactory>,
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
-    let flow_file = task_path.clone().join("flow.hc");
-    let flow = chord_input::load::flow::load(&flow_file).await?;
+    let flow = chord_input::load::flow::load(task_path, "flow").await?;
     let flow = Flow::new(flow)?;
 
     //read

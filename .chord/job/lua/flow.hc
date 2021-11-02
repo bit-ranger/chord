@@ -11,7 +11,7 @@ stage.s1.step.step1: {
     args: {
       lua: """
         r = os.time();
-        t =  "CHORDV-" .. tostring(r);
+        t =  "CHORD-" .. tostring(r);
         print(t);
         return
         {

@@ -129,12 +129,6 @@ impl Flow {
         self._stage_duration(stage_id).unwrap()
     }
 
-    pub fn stage_case_name(&self, stage_id: &str) -> &str {
-        self.flow["stage"][stage_id]["case"]["name"]
-            .as_str()
-            .unwrap_or(stage_id)
-    }
-
     pub fn stage_break_on(&self, stage_id: &str) -> &str {
         self._stage_break_on(stage_id).unwrap()
     }

@@ -7,8 +7,7 @@ stage.s1.step.s1: {
       program: "java",
       args: [
         "-version"
-      ],
-      value_to_json: false
+      ]
     }
   }
 }
@@ -21,8 +20,7 @@ stage.s1.step.s2: {
       program: "python",
       args: [
         "--version"
-      ],
-      value_to_json: false
+      ]
     }
   }
 }
@@ -35,8 +33,7 @@ stage.s1.step.s3: {
       program: "python",
       args: [
         "--version"
-      ],
-      value_to_json: false
+      ]
     }
   }
 }

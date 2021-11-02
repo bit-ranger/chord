@@ -9,9 +9,9 @@ stage.s1.step.step1: {
   exec: {
     action: "lua",
     args: {
-      code: """
+      lua: """
         r = os.time();
-        t =  "CHORDV-" .. tostring(r);
+        t =  "CHORD-" .. tostring(r);
         print(t);
         return
         {
@@ -49,7 +49,7 @@ stage.s1.step.step2: {
   exec: {
     action: "lua",
     args: {
-      code: """
+      lua: """
         table.insert(arr1, "c");
         table.insert(arr1, arr2);
         return arr1;

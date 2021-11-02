@@ -117,6 +117,15 @@ impl Flow {
         self._stage_id_vec().unwrap()
     }
 
+    pub fn stage_case_name<'a, 's>(&'s self, stage_id: &'a str) -> &'a str
+    where
+        's: 'a,
+    {
+        self.flow["stage"][stage_id]["case"]["name"]
+            .as_str()
+            .unwrap_or(stage_id)
+    }
+
     pub fn stage_concurrency(&self, stage_id: &str) -> usize {
         self._stage_concurrency(stage_id).unwrap()
     }
@@ -127,12 +136,6 @@ impl Flow {
 
     pub fn stage_duration(&self, stage_id: &str) -> Duration {
         self._stage_duration(stage_id).unwrap()
-    }
-
-    pub fn stage_case_name(&self, stage_id: &str) -> &str {
-        self.flow["stage"][stage_id]["case"]["name"]
-            .as_str()
-            .unwrap_or("case")
     }
 
     pub fn stage_break_on(&self, stage_id: &str) -> &str {
@@ -383,7 +386,7 @@ impl Flow {
     fn _stage_break_on(&self, stage_id: &str) -> Result<&str, Error> {
         let break_on = self.flow["stage"][stage_id]["break_on"]
             .as_str()
-            .unwrap_or("never");
+            .unwrap_or("stage_fail");
         match break_on {
             "never" => Ok(break_on),
             "stage_fail" => Ok(break_on),

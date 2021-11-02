@@ -38,6 +38,9 @@ impl Flow {
         }
 
         let stage_id_vec = flow._stage_id_vec()?;
+        if stage_id_vec.is_empty() {
+            return Err(err!("flow", "stage missing"));
+        }
 
         for stage_id in stage_id_vec {
             if !ID_PATTERN.is_match(stage_id) {
@@ -50,6 +53,11 @@ impl Flow {
             flow._stage_break_on(stage_id)?;
 
             let stage_step_id_vec = flow._stage_step_id_vec(stage_id)?;
+
+            if stage_step_id_vec.is_empty() {
+                return Err(err!("flow", format!("stage {} missing step", stage_id)));
+            }
+
             for stage_step_id in stage_step_id_vec {
                 if !ID_PATTERN.is_match(stage_step_id) {
                     return Err(err!("flow", format!("stage {} invalid id", stage_step_id)));

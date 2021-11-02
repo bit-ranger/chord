@@ -9,7 +9,7 @@ stage.s1.step.docker1: {
       image: "ubuntu:20.04",
       cmd: [
         "echo",
-        "{    \"size\": 100,    \"from\": 0,    \"sort\": {        \"elapse\": {            \"order\": \"desc\"        }    },    \"query\": {        \"bool\": {            \"must\": [                {                    \"term\": {                        \"layer\": \"case\"                    }                }            ]        }    }}"
+        """{    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}"""
       ]
     }
   },

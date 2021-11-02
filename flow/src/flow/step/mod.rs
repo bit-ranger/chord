@@ -29,10 +29,12 @@ pub async fn run(
     let future = AssertUnwindSafe(action.run(arg)).catch_unwind();
     let timeout_value = timeout(arg.timeout(), future).await;
     if let Err(_) = timeout_value {
+        warn!("step timeout {}", arg.id());
         return assess_create(arg, start, explain, Err(Error::new("timeout", "timeout")));
     }
     let unwind_value = timeout_value.unwrap();
     if let Err(_) = unwind_value {
+        error!("step unwind {}", arg.id());
         return assess_create(arg, start, explain, Err(Error::new("unwind", "unwind")));
     }
     let action_value = unwind_value.unwrap();

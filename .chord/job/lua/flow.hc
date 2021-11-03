@@ -9,24 +9,7 @@ stage.s1.step.step1: {
   exec: {
     action: "lua",
     args: {
-      lua: """
-        r = os.time();
-        t =  "CHORD-" .. tostring(r);
-        print(t);
-        return
-        {
-             {
-                ['foo'] = foo
-            }
-            ,
-            {
-                ['bar'] = tonumber(bar)
-            },
-            {
-                ['tag'] = t
-            }
-        }
-      """
+      lua: "$file:step1.lua"
     }
   },
   assert: """

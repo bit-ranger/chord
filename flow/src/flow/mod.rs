@@ -97,6 +97,12 @@ fn render_dollar_str(context: &Value, task_path: &Path, text: String) -> Result<
             ref_val = &ref_val[p];
         }
         ref_val.clone()
+    } else if text.starts_with("$file:") {
+        let ref_path = &text[6..];
+        let mut task_path = task_path.to_path_buf();
+        task_path.push(ref_path);
+        let string = std::fs::read_to_string(task_path)?;
+        Value::String(string)
     } else {
         Value::String(text)
     };

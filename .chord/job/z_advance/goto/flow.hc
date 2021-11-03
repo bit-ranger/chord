@@ -46,7 +46,7 @@ stage.s1.step.s2: {
 stage.s1.step.s3: {
   let: {
     arg2: {
-      "$ref": "def.arg.arg2"
+      "$ref:def.arg.arg2"
     }
   },
   exec: {
@@ -58,7 +58,7 @@ stage.s1.step.s3: {
           hello: "world"
         },
         {
-          "$ref": "arg2"
+          "$ref:arg2"
         }
       ]
     }
@@ -83,7 +83,7 @@ stage.s1.step.s3: {
 stage.s1.step.s4: {
   let: {
     s3_loop_idx: {
-      "$num": "{{reg.s3_loop_idx}}"
+      "$num:{{reg.s3_loop_idx}}"
     }
   },
   exec: {
@@ -95,7 +95,7 @@ stage.s1.step.s4: {
       if: "(lt s3_loop_idx 3)",
       reg: {
         s3_loop_idx: {
-          "$num": "{{num_add s3_loop_idx 1}}"
+          "$num:"{{num_add s3_loop_idx 1}}"
         }
       },
       goto: "s3"

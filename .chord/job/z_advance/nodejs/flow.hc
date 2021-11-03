@@ -19,7 +19,7 @@ stage.s1.step.s1: {
 stage.s1.step.s2: {
   let: {
     case: {
-      "$ref": "case"
+      "$ref:case"
     }
   },
   exec: {
@@ -32,7 +32,7 @@ stage.s1.step.s2: {
         "run",
         "test",
         {
-          "$ref": "case"
+          "$ref:case"
         }
       ],
       value_to_json: true

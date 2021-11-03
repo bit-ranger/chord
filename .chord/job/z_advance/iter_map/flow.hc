@@ -39,14 +39,14 @@ stage.s1.step.s1: {
 stage.s1.step.s2: {
   let: {
     contnet: {
-      "$ref": "step.sp1.value"
+      "$ref:step.sp1.value"
     }
   },
   exec: {
     action: "log",
     args: {
       log: {
-        "$ref": "contnet"
+        "$ref:contnet"
       }
     }
   }

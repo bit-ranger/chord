@@ -9,23 +9,27 @@ use std::vec::Vec;
 use async_std::fs::File;
 use async_std::io::BufWriter;
 use async_std::path::Path;
+use colored::*;
 use flume::{bounded, Receiver, Sender};
 use futures::executor::block_on;
 use futures::AsyncWriteExt;
 use itertools::Itertools;
 use log;
-use log::{LevelFilter, Metadata, Record};
+use log::{Level, LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
 
 use chord::Error;
 
 struct ChannelLogger {
     target_level: Vec<(String, LevelFilter)>,
-    sender: Sender<String>,
+    sender: Sender<(log::Level, String)>,
 }
 
 impl ChannelLogger {
-    fn new(target_level: Vec<(String, String)>, sender: Sender<String>) -> ChannelLogger {
+    fn new(
+        target_level: Vec<(String, String)>,
+        sender: Sender<(log::Level, String)>,
+    ) -> ChannelLogger {
         let target_level = target_level
             .into_iter()
             .map(|(t, l)| {
@@ -83,7 +87,7 @@ impl log::Log for ChannelLogger {
                 record.args()
             );
 
-            let _ = self.sender.try_send(data);
+            let _ = self.sender.try_send((record.level(), data));
         }
     }
 
@@ -91,7 +95,7 @@ impl log::Log for ChannelLogger {
 }
 
 async fn log_thread_func(
-    receiver: Receiver<String>,
+    receiver: Receiver<(log::Level, String)>,
     mut default_log_writer: BufWriter<File>,
     enable: Arc<AtomicBool>,
 ) {
@@ -101,7 +105,7 @@ async fn log_thread_func(
 }
 
 async fn loop_write(
-    receiver: Receiver<String>,
+    receiver: Receiver<(log::Level, String)>,
     default_log_writer: &mut BufWriter<File>,
     enable: Arc<AtomicBool>,
 ) {
@@ -116,11 +120,21 @@ async fn loop_write(
             }
         }
 
-        let data = recv.unwrap();
-
-        println!("{}", data);
+        let (level, data) = recv.unwrap();
 
         let _ = default_log_writer.write_all(data.as_bytes()).await;
+
+        println!("{}", color_level(level, data));
+    }
+}
+
+fn color_level(level: log::Level, data: String) -> ColoredString {
+    match level {
+        Level::Error => data.truecolor(0xff, 0x6b, 0x68),
+        Level::Warn => data.truecolor(0xa6, 0x6f, 0x00),
+        Level::Info => data.truecolor(0xc0, 0xc0, 0xc0),
+        Level::Debug => data.truecolor(0x93, 0x93, 0x93),
+        Level::Trace => data.truecolor(0x5e, 0x5e, 0x5e),
     }
 }
 

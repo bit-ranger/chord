@@ -8,6 +8,7 @@ use regex::Regex;
 use crate::err;
 use crate::error::Error;
 use crate::value::{Map, Value};
+use async_std::path::{Path, PathBuf};
 
 lazy_static! {
     pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,50}$").unwrap();
@@ -15,12 +16,16 @@ lazy_static! {
 
 #[derive(Debug, Clone)]
 pub struct Flow {
+    dir: PathBuf,
     flow: Value,
 }
 
 impl Flow {
-    pub fn new(flow: Value) -> Result<Flow, Error> {
-        let flow = Flow { flow };
+    pub fn new(flow: Value, dir: &Path) -> Result<Flow, Error> {
+        let flow = Flow {
+            flow,
+            dir: dir.to_path_buf(),
+        };
 
         flow._version()?;
 
@@ -89,6 +94,10 @@ impl Flow {
         }
 
         return Ok(flow);
+    }
+
+    pub fn dir(&self) -> &Path {
+        self.dir.as_path()
     }
 
     pub fn version(&self) -> &str {

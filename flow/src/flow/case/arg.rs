@@ -14,6 +14,7 @@ use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
+use async_std::path::Path;
 use chord::step::{StepAssess, StepState};
 use chord::value::Value;
 use chord::Error;
@@ -127,8 +128,12 @@ impl CaseArgStruct {
         let let_raw = self.flow.step_let(step_id);
         let let_value = match let_raw {
             Some(let_raw) => {
-                let let_value =
-                    render_let_object(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
+                let let_value = render_let_object(
+                    flow_app.get_handlebars(),
+                    &self.render_ctx,
+                    self.flow.dir(),
+                    let_raw,
+                )?;
                 Some(let_value)
             }
             None => None,
@@ -171,12 +176,13 @@ impl CaseArgStruct {
 fn render_let_object(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
+    task_path: &Path,
     let_raw: &Map,
 ) -> Result<Map, Error> {
     let mut let_value = let_raw.clone();
     let mut let_render_ctx = render_ctx.clone();
     for (k, v) in let_value.iter_mut() {
-        render_value(handlebars, &let_render_ctx, v)?;
+        render_value(handlebars, &let_render_ctx, task_path, v)?;
         if let Value::Object(m) = let_render_ctx.data_mut() {
             m.insert(k.clone(), v.clone());
         }

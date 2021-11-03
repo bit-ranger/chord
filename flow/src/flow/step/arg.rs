@@ -187,7 +187,7 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
     fn render_object_with(&self, raw: &Map, render_context: &RenderContext) -> Result<Map, Error> {
         let mut result = raw.clone();
         for (_, v) in result.iter_mut() {
-            render_value(self.handlebars, render_context, v)?;
+            render_value(self.handlebars, render_context, self.flow.dir(), v)?;
         }
         Ok(result)
     }

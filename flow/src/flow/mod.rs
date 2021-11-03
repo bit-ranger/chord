@@ -12,6 +12,7 @@ pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
 use crate::model::app::{FlowApp, FlowAppStruct, RenderContext};
+use async_std::path::Path;
 use chord::value::{from_str, Number, Value};
 use std::str::FromStr;
 
@@ -42,8 +43,10 @@ fn render(
 fn render_value(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
+    task_path: &Path,
     value: &mut Value,
 ) -> Result<(), Error> {
+    render_dollar_value(render_ctx.data(), task_path, value)?;
     match value {
         Value::String(v) => {
             let v_str = render(handlebars, render_ctx, v)?;
@@ -52,16 +55,14 @@ fn render_value(
         }
         Value::Object(v) => {
             for (_, v) in v.iter_mut() {
-                render_value(handlebars, render_ctx, v)?;
+                render_value(handlebars, render_ctx, task_path, v)?;
             }
-            render_dollar_value(render_ctx.data(), value)?;
             Ok(())
         }
         Value::Array(v) => {
             for i in v {
-                render_value(handlebars, render_ctx, i)?;
+                render_value(handlebars, render_ctx, task_path, i)?;
             }
-            render_dollar_value(render_ctx.data(), value)?;
             Ok(())
         }
         Value::Null => Ok(()),
@@ -70,7 +71,7 @@ fn render_value(
     }
 }
 
-fn render_dollar_value(context: &Value, value: &mut Value) -> Result<(), Error> {
+fn render_dollar_value(context: &Value, task_path: &Path, value: &mut Value) -> Result<(), Error> {
     if value.is_object() {
         if !value["$num"].is_null() {
             if value.as_object().unwrap().len() != 1 {
@@ -124,7 +125,7 @@ fn render_dollar_value(context: &Value, value: &mut Value) -> Result<(), Error> 
             }
             if value["$obj"].is_object() {
                 let mut target = value.as_object_mut().unwrap().remove("$obj").unwrap();
-                render_dollar_value(context, &mut target)?;
+                render_dollar_value(context, task_path, &mut target)?;
                 if !target.is_object() {
                     return Err(err!("001", "invalid args $obj"));
                 }
@@ -146,7 +147,7 @@ fn render_dollar_value(context: &Value, value: &mut Value) -> Result<(), Error> 
             }
             if value["$arr"].is_array() {
                 let mut target = value.as_object_mut().unwrap().remove("$arr").unwrap();
-                render_dollar_value(context, &mut target)?;
+                render_dollar_value(context, task_path, &mut target)?;
                 if !target.is_array() {
                     return Err(err!("001", "invalid args $arr"));
                 }
@@ -177,12 +178,27 @@ fn render_dollar_value(context: &Value, value: &mut Value) -> Result<(), Error> 
             } else {
                 return Err(err!("001", "invalid args $ref"));
             }
+        } else if !value["$file"].is_null() {
+            if value.as_object().unwrap().len() != 1 {
+                return Err(err!("001", "invalid args $file"));
+            }
+            if value["$file"].is_string() {
+                let file_path = value["$file"].as_str().unwrap();
+                let path: Vec<&str> = file_path.split(".").collect();
+                let mut ref_val = context;
+                for p in path {
+                    ref_val = &ref_val[p];
+                }
+                let _ = replace(value, ref_val.clone());
+            } else {
+                return Err(err!("001", "invalid args $ref"));
+            }
         }
         Ok(())
     } else if value.is_array() {
         let arr = value.as_array_mut().unwrap();
         for i in arr {
-            render_dollar_value(context, i)?;
+            render_dollar_value(context, task_path, i)?;
         }
         Ok(())
     } else {

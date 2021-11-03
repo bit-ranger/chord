@@ -205,7 +205,7 @@ async fn task_run0<P: AsRef<Path>>(
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let flow = load::flow::load(task_path, "flow").await?;
-    let flow = Flow::new(flow)?;
+    let flow = Flow::new(flow, task_path)?;
 
     //read
     let case_store = Box::new(load::data::Store::new(task_path.clone()).await?);

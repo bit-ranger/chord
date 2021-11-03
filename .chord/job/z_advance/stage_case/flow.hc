@@ -24,9 +24,7 @@ stage.s1.step.example: {
         {
           hello: "world"
         },
-        {
-          "$ref:arg2"
-        }
+        "$ref:arg2"
       ]
     }
   },

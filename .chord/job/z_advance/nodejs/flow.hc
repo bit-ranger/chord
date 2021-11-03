@@ -18,9 +18,8 @@ stage.s1.step.s1: {
 
 stage.s1.step.s2: {
   let: {
-    case: {
-      "$ref:case"
-    }
+    case: "$ref:case"
+
   },
   exec: {
     action: "program",
@@ -31,9 +30,7 @@ stage.s1.step.s2: {
         "/home/runner/work/chord/chord/zero/test/nodejs",
         "run",
         "test",
-        {
-          "$ref:case"
-        }
+        "$ref:case"
       ],
       value_to_json: true
     }

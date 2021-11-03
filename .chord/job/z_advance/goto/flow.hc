@@ -57,9 +57,7 @@ stage.s1.step.s3: {
         {
           hello: "world"
         },
-        {
-          "$ref:arg2"
-        }
+        "$ref:arg2"
       ]
     }
   },

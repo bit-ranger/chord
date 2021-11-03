@@ -162,7 +162,7 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
             let goto = if goto.is_none() {
                 None
             } else if let Value::String(goto) = goto.unwrap() {
-                Some(arg.render_str(goto.as_str())?)
+                Some(arg.render_str(goto.as_str())?.to_string())
             } else {
                 None
             };

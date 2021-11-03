@@ -9,11 +9,10 @@ use chord::action::{CreateArg, CreateId, RunArg};
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::task::TaskId;
-use chord::value::Map;
+use chord::value::{Map, Value};
 use chord::Error;
 
 use crate::flow;
-use crate::flow::render_value;
 use crate::model::app::RenderContext;
 
 #[derive(Clone)]
@@ -176,18 +175,18 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         self.context.data_mut().as_object_mut().unwrap()
     }
 
-    pub fn render_str(&self, txt: &str) -> Result<String, Error> {
+    pub fn render_str(&self, txt: &str) -> Result<Value, Error> {
         self.render_str_with(txt, &self.context)
     }
 
-    fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<String, Error> {
-        return flow::render(self.handlebars, render_context, txt);
+    fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<Value, Error> {
+        return flow::render_str(self.handlebars, render_context, self.flow.dir(), txt);
     }
 
     fn render_object_with(&self, raw: &Map, render_context: &RenderContext) -> Result<Map, Error> {
         let mut result = raw.clone();
         for (_, v) in result.iter_mut() {
-            render_value(self.handlebars, render_context, self.flow.dir(), v)?;
+            flow::render_value(self.handlebars, render_context, self.flow.dir(), v)?;
         }
         Ok(result)
     }

@@ -1,8 +1,5 @@
 use chord::value::Value;
-use handlebars::{
-    Context, Handlebars, Helper, HelperDef, HelperResult, Output, RenderContext, RenderError,
-    ScopedJson,
-};
+use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
@@ -39,25 +36,5 @@ impl HelperDef for FileHelper {
             }
             _ => Err(RenderError::new("Param invalid for helper \"file\"")),
         }
-    }
-
-    fn call<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper<'reg, 'rc>,
-        r: &'reg Handlebars<'reg>,
-        ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
-        out: &mut dyn Output,
-    ) -> HelperResult {
-        if let Some(result) = self.call_inner(h, r, ctx, rc)? {
-            if r.strict_mode() && result.is_missing() {
-                return Err(RenderError::strict_error(None));
-            } else {
-                let result = result.render();
-                out.write(result.as_ref())?;
-            }
-        }
-
-        Ok(())
     }
 }

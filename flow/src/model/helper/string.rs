@@ -1,7 +1,7 @@
 use chord::value::{from_str, Number, Value};
-use handlebars::handlebars_helper;
 use handlebars::{
-    Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError, ScopedJson,
+    handlebars_helper, Context, Handlebars, Helper, HelperDef, RenderContext, RenderError,
+    ScopedJson,
 };
 
 handlebars_helper!(start_with: |x: Json, y: Json|
@@ -26,21 +26,24 @@ pub static PARSE_JSON: ParseJsonHelper = ParseJsonHelper {};
 pub struct StrHelper;
 
 impl HelperDef for StrHelper {
-    fn call<'reg: 'rc, 'rc>(
+    fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-        out: &mut dyn Output,
-    ) -> Result<(), RenderError> {
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"str\""))?;
 
-        let json = param.value().to_string();
-        out.write(json.as_ref())?;
-        Ok(())
+        match param.value() {
+            Value::String(_) => Ok(Some(ScopedJson::Derived(param.value().clone()))),
+            _ => {
+                let json = param.value().to_string();
+                Ok(Some(ScopedJson::Derived(Value::String(json))))
+            }
+        }
     }
 }
 

@@ -20,6 +20,7 @@ impl<'reg> FlowAppStruct<'reg> {
     pub fn new(action_factory: Box<dyn Factory>) -> FlowAppStruct<'reg> {
         let mut handlebars = Handlebars::new();
         handlebars.set_strict_mode(true);
+        handlebars.register_escape_fn(handlebars::no_escape);
         register(&mut handlebars);
         FlowAppStruct {
             handlebars,

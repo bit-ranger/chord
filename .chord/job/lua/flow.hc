@@ -10,7 +10,7 @@ stage.s1.step.step1: {
   exec: {
     action: "lua",
     args: {
-      lua: "$ref:lua"
+      lua: "{{lua}}"
     }
   },
   assert: """

@@ -1,6 +1,5 @@
-use chord::value::Value;
+use chord::value::{from_str, Value};
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
-use std::str::FromStr;
 
 pub static BOOL: BoolHelper = BoolHelper {};
 pub static ALL: AllHelper = AllHelper {};
@@ -24,10 +23,7 @@ impl HelperDef for BoolHelper {
         let param = param.value();
 
         match param {
-            Value::String(x) => {
-                let n = bool::from_str(x.trim()).unwrap();
-                Ok(Some(ScopedJson::Derived(Value::Bool(n))))
-            }
+            Value::String(x) => Ok(Some(ScopedJson::Derived(Value::Bool(from_str(x.trim())?)))),
             Value::Bool(n) => Ok(Some(ScopedJson::Derived(Value::Bool(n.clone())))),
             _ => Err(RenderError::new("\"bool\" can not convert ")),
         }

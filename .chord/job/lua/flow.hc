@@ -5,7 +5,7 @@ stage.s1.step.step1: {
   let: {
     foo: "{{case.foo}}",
     bar: "{{case.bar}}",
-    lua: """{{file "step1.lua"}}"""
+    lua: """{{fs_read "step1.lua"}}"""
   },
   exec: {
     action: "lua",

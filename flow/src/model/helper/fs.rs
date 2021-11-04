@@ -3,12 +3,12 @@ use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderEr
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
-pub static FILE: FileHelper = FileHelper {};
+pub static READ: ReadHelper = ReadHelper {};
 
 #[derive(Clone, Copy)]
-pub struct FileHelper;
+pub struct ReadHelper;
 
-impl HelperDef for FileHelper {
+impl HelperDef for ReadHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,

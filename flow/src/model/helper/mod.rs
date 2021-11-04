@@ -1,21 +1,18 @@
-use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
-use jsonpath_rust::JsonPathFinder;
-
 use chord::value::Value;
+use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
-use crate::model::helper::boolean::{ALL, ANY, BOOL};
+use crate::model::helper::bool::{ALL, ANY, BOOL};
 
-mod array;
-mod boolean;
+mod arr;
+mod bool;
 mod fs;
-mod number;
-mod string;
+mod json;
+mod num;
+mod obj;
+mod str;
 
 pub fn register(handlebars: &mut Handlebars) {
     //handlebars-3.5.4/src/registry.rs:118
-    handlebars.register_helper("all", Box::new(ALL));
-    handlebars.register_helper("any", Box::new(ANY));
-    handlebars.register_helper("bool", Box::new(BOOL));
 
     //literal
     handlebars.register_helper(
@@ -31,47 +28,55 @@ pub fn register(handlebars: &mut Handlebars) {
         }),
     );
 
-    handlebars.register_helper("jsonpath", Box::new(JsonpathHelper {}));
+    //json
+    handlebars.register_helper("json", Box::new(crate::model::helper::json::JSON));
+    handlebars.register_helper("json_path", Box::new(crate::model::helper::json::PATH));
+
+    //object
+    handlebars.register_helper("obj", Box::new(crate::model::helper::obj::OBJ));
+
+    // bool
+    handlebars.register_helper("bool", Box::new(BOOL));
+    handlebars.register_helper("all", Box::new(ALL));
+    handlebars.register_helper("any", Box::new(ANY));
 
     //number
-    handlebars.register_helper("num", Box::new(crate::model::helper::number::NUM));
-    handlebars.register_helper("num_add", Box::new(crate::model::helper::number::NUM_ADD));
-    handlebars.register_helper("num_sub", Box::new(crate::model::helper::number::NUM_SUB));
-    handlebars.register_helper("num_mul", Box::new(crate::model::helper::number::NUM_MUL));
-    handlebars.register_helper("num_div", Box::new(crate::model::helper::number::NUM_DIV));
+    handlebars.register_helper("num", Box::new(crate::model::helper::num::NUM));
+    handlebars.register_helper("num_add", Box::new(crate::model::helper::num::ADD));
+    handlebars.register_helper("num_sub", Box::new(crate::model::helper::num::SUB));
+    handlebars.register_helper("num_mul", Box::new(crate::model::helper::num::MUL));
+    handlebars.register_helper("num_div", Box::new(crate::model::helper::num::DIV));
 
     //array
+    handlebars.register_helper("arr", Box::new(crate::model::helper::arr::ARR));
     handlebars.register_helper(
         "arr_contains",
-        Box::new(crate::model::helper::array::contains),
+        Box::new(crate::model::helper::arr::CONTAINS),
     );
-    handlebars.register_helper("arr_sub", Box::new(crate::model::helper::array::SUB));
-    handlebars.register_helper("arr_len", Box::new(crate::model::helper::array::LEN));
-    handlebars.register_helper("arr_get", Box::new(crate::model::helper::array::GET));
+    handlebars.register_helper("arr_sub", Box::new(crate::model::helper::arr::SUB));
+    handlebars.register_helper("arr_len", Box::new(crate::model::helper::arr::LEN));
+    handlebars.register_helper("arr_get", Box::new(crate::model::helper::arr::GET));
 
     //string
-    handlebars.register_helper("str", Box::new(crate::model::helper::string::STR));
-    handlebars.register_helper(
-        "str_parse_json",
-        Box::new(crate::model::helper::string::PARSE_JSON),
-    );
+    handlebars.register_helper("str", Box::new(crate::model::helper::str::STR));
+    handlebars.register_helper("str_sub", Box::new(crate::model::helper::str::SUB));
+    handlebars.register_helper("str_len", Box::new(crate::model::helper::str::LEN));
+    handlebars.register_helper("str_escape", Box::new(crate::model::helper::str::ESCAPE));
     handlebars.register_helper(
         "str_contains",
-        Box::new(crate::model::helper::string::contains),
+        Box::new(crate::model::helper::str::CONTAINS),
     );
     handlebars.register_helper(
         "str_start_with",
-        Box::new(crate::model::helper::string::start_with),
+        Box::new(crate::model::helper::str::START_WITH),
     );
     handlebars.register_helper(
         "str_end_with",
-        Box::new(crate::model::helper::string::end_with),
+        Box::new(crate::model::helper::str::END_WITH),
     );
-    handlebars.register_helper("str_sub", Box::new(crate::model::helper::string::SUB));
-    handlebars.register_helper("str_len", Box::new(crate::model::helper::string::LEN));
-    handlebars.register_helper("str_escape", Box::new(crate::model::helper::string::ESCAPE));
 
-    handlebars.register_helper("file", Box::new(crate::model::helper::fs::FILE));
+    //fs
+    handlebars.register_helper("fs_read", Box::new(crate::model::helper::fs::READ));
 }
 
 pub struct LiteralHelper {
@@ -89,37 +94,5 @@ impl HelperDef for LiteralHelper {
         Ok(Some(ScopedJson::Derived(Value::String(
             self.literal.to_string(),
         ))))
-    }
-}
-
-pub struct JsonpathHelper {}
-
-impl HelperDef for JsonpathHelper {
-    fn call_inner<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper<'reg, 'rc>,
-        _: &'reg Handlebars<'reg>,
-        _: &'rc Context,
-        _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        let params = h.params();
-        if params.len() != 2 {
-            return Err(RenderError::new("Param invalid for helper \"jsonpath\""));
-        }
-
-        let value = params[0].value();
-
-        let path = params[1]
-            .value()
-            .as_str()
-            .ok_or(RenderError::new("Param invalid for helper \"jsonpath\""))?;
-
-        let mut finder = JsonPathFinder::from_str("null", path).map_err(|e| {
-            RenderError::new(format!("Param invalid for helper \"jsonpath\": {}", e))
-        })?;
-        finder.set_json(value.clone());
-
-        let find = finder.find();
-        Ok(Some(ScopedJson::Derived(find)))
     }
 }

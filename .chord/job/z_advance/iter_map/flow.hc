@@ -38,9 +38,7 @@ stage.s1.step.s1: {
 
 stage.s1.step.s2: {
   let: {
-    content: {
-      "$ref:step.sp1.value"
-    }
+    content: "$ref:step.sp1.value"
   },
   exec: {
     action: "log",

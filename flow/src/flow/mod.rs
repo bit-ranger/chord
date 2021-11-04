@@ -30,35 +30,36 @@ pub async fn context_create(action_factory: Box<dyn Factory>) -> Arc<dyn FlowApp
 fn render_str(
     handlebars: &Handlebars<'_>,
     render_ctx: &RenderContext,
-    task_path: &Path,
+    task_dir: &Path,
     text: &str,
 ) -> Result<Value, Error> {
-    let rv = handlebars.render_template_with_context(text, render_ctx)
+    let rv = handlebars
+        .render_template_with_context(text, render_ctx)
         .map_err(|e| err!("tpl", format!("{}", e)))?;
-    render_dollar_str(render_ctx.data(), task_path, rv)
+    render_dollar_str(render_ctx.data(), task_dir, rv)
 }
 
 fn render_value(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
-    task_path: &Path,
+    task_dir: &Path,
     value: &mut Value,
 ) -> Result<(), Error> {
     match value {
         Value::String(v) => {
-            let vr = render_str(handlebars, render_ctx, task_path, v)?;
+            let vr = render_str(handlebars, render_ctx, task_dir, v)?;
             let _ = replace(value, vr);
             Ok(())
         }
         Value::Object(v) => {
             for (_, v) in v.iter_mut() {
-                render_value(handlebars, render_ctx, task_path, v)?;
+                render_value(handlebars, render_ctx, task_dir, v)?;
             }
             Ok(())
         }
         Value::Array(v) => {
             for i in v {
-                render_value(handlebars, render_ctx, task_path, i)?;
+                render_value(handlebars, render_ctx, task_dir, i)?;
             }
             Ok(())
         }
@@ -68,26 +69,18 @@ fn render_value(
     }
 }
 
-fn render_dollar_str(context: &Value, task_path: &Path, text: String) -> Result<Value, Error> {
+fn render_dollar_str(context: &Value, task_dir: &Path, text: String) -> Result<Value, Error> {
     let value = if text.starts_with("$num:") {
-        Value::Number(
-            from_str(&text[5..])
-                .map_err(|_| err!("001", "invalid args $num"))?,
-        )
+        Value::Number(from_str(&text[5..]).map_err(|_| err!("001", "invalid args $num"))?)
     } else if text.starts_with("$bool:") {
-        Value::Bool(
-            from_str(&text[6..])
-                .map_err(|_| err!("001", "invalid args $bool"))?,
-        )
+        Value::Bool(from_str(&text[6..]).map_err(|_| err!("001", "invalid args $bool"))?)
     } else if text.starts_with("$obj:") {
         Value::Object(
-            from_str(&text[5..])
-                .map_err(|e| err!("001", format!("invalid args $obj, {}", e)))?,
+            from_str(&text[5..]).map_err(|e| err!("001", format!("invalid args $obj, {}", e)))?,
         )
     } else if text.starts_with("$arr:") {
         Value::Array(
-            from_str(&text[5..])
-                .map_err(|e| err!("001", format!("invalid args $arr, {}", e)))?,
+            from_str(&text[5..]).map_err(|e| err!("001", format!("invalid args $arr, {}", e)))?,
         )
     } else if text.starts_with("$ref:") {
         let ref_path = &text[5..];
@@ -99,7 +92,7 @@ fn render_dollar_str(context: &Value, task_path: &Path, text: String) -> Result<
         ref_val.clone()
     } else if text.starts_with("$file:") {
         let ref_path = &text[6..];
-        let mut task_path = task_path.to_path_buf();
+        let mut task_path = task_dir.to_path_buf();
         task_path.push(ref_path);
         let string = std::fs::read_to_string(task_path)?;
         Value::String(string)

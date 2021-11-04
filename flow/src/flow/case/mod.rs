@@ -31,7 +31,7 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
             return case_fail_by_step_err(
                 step_id.as_str(),
                 arg,
-                err!("invalid step_id  {}", step_id.as_str()),
+                err!("step", format!("unrecognized step_id {}", step_id.as_str())),
                 step_assess_vec,
                 start,
             );

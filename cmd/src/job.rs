@@ -4,7 +4,7 @@ use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
 use futures::StreamExt;
-use log::info;
+use log::error;
 use log::trace;
 
 use async_recursion::async_recursion;
@@ -189,7 +189,7 @@ async fn task_run(
     trace!("task start {}", task_path.to_str().unwrap());
     let task_state = task_run0(task_path.clone(), task_id, app_ctx, report_factory).await;
     return if let Err(e) = task_state {
-        info!("task error {}, {}", task_path.to_str().unwrap(), e);
+        error!("task Err {}, {}", task_path.to_str().unwrap(), e);
         TaskState::Err(e.clone())
     } else {
         trace!("task end {}", task_path.to_str().unwrap());
@@ -205,7 +205,7 @@ async fn task_run0<P: AsRef<Path>>(
 ) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
     let flow = load::flow::load(task_path, "flow").await?;
-    let flow = Flow::new(flow)?;
+    let flow = Flow::new(flow, task_path)?;
 
     //read
     let case_store = Box::new(load::data::Store::new(task_path.clone()).await?);

@@ -6,6 +6,7 @@ use futures::FutureExt;
 use log::{debug, error, info, trace, warn};
 
 use chord::action::{Action, Scope};
+use chord::err;
 use chord::step::StepState;
 use chord::Error;
 use res::StepAssessStruct;
@@ -162,7 +163,12 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
             let goto = if goto.is_none() {
                 None
             } else if let Value::String(goto) = goto.unwrap() {
-                Some(arg.render_str(goto.as_str())?)
+                Some(
+                    arg.render_str(goto.as_str())?
+                        .as_str()
+                        .map(|s| s.to_string())
+                        .ok_or_else(|| err!("step", "goto must be a step_id"))?,
+                )
             } else {
                 None
             };

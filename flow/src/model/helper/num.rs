@@ -1,12 +1,11 @@
-use chord::value::{Number, Value};
+use chord::value::{from_str, Number, Value};
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
-use std::str::FromStr;
 
 pub static NUM: NumHelper = NumHelper {};
-pub static NUM_ADD: NumAddHelper = NumAddHelper {};
-pub static NUM_SUB: NumSubHelper = NumSubHelper {};
-pub static NUM_MUL: NumMulHelper = NumMulHelper {};
-pub static NUM_DIV: NumDivHelper = NumDivHelper {};
+pub static ADD: AddHelper = AddHelper {};
+pub static SUB: SubHelper = SubHelper {};
+pub static MUL: MulHelper = MulHelper {};
+pub static DIV: DivHelper = DivHelper {};
 
 #[derive(Clone, Copy)]
 pub struct NumHelper;
@@ -26,10 +25,9 @@ impl HelperDef for NumHelper {
         let param = param.value();
 
         match param {
-            Value::String(x) => {
-                let n = Number::from_str(x.trim()).unwrap();
-                Ok(Some(ScopedJson::Derived(Value::Number(n))))
-            }
+            Value::String(x) => Ok(Some(ScopedJson::Derived(Value::Number(from_str(
+                x.trim(),
+            )?)))),
             Value::Number(n) => Ok(Some(ScopedJson::Derived(Value::Number(n.clone())))),
             _ => Err(RenderError::new("\"num\" can not convert ")),
         }
@@ -37,9 +35,9 @@ impl HelperDef for NumHelper {
 }
 
 #[derive(Clone, Copy)]
-pub struct NumAddHelper;
+pub struct AddHelper;
 
-impl HelperDef for NumAddHelper {
+impl HelperDef for AddHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
@@ -78,9 +76,9 @@ impl HelperDef for NumAddHelper {
 }
 
 #[derive(Clone, Copy)]
-pub struct NumSubHelper;
+pub struct SubHelper;
 
-impl HelperDef for NumSubHelper {
+impl HelperDef for SubHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
@@ -119,9 +117,9 @@ impl HelperDef for NumSubHelper {
 }
 
 #[derive(Clone, Copy)]
-pub struct NumMulHelper;
+pub struct MulHelper;
 
-impl HelperDef for NumMulHelper {
+impl HelperDef for MulHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
@@ -160,9 +158,9 @@ impl HelperDef for NumMulHelper {
 }
 
 #[derive(Clone, Copy)]
-pub struct NumDivHelper;
+pub struct DivHelper;
 
-impl HelperDef for NumDivHelper {
+impl HelperDef for DivHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,

@@ -1,14 +1,38 @@
-use chord::value::{Number, Value};
+use chord::value::{from_str, Number, Value};
 use handlebars::handlebars_helper;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
-handlebars_helper!(contains: |x: Json, y: Json|{
+handlebars_helper!(CONTAINS: |x: Json, y: Json|{
     x.is_array() && x.as_array().unwrap().contains(y)
 });
 
+pub static ARR: ArrHelper = ArrHelper {};
 pub static LEN: LenHelper = LenHelper {};
 pub static SUB: SubHelper = SubHelper {};
 pub static GET: GetHelper = GetHelper {};
+
+#[derive(Clone, Copy)]
+pub struct ArrHelper {}
+
+impl HelperDef for ArrHelper {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        _: &'reg Handlebars<'reg>,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg, 'rc>,
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+        let param = h
+            .param(0)
+            .ok_or_else(|| RenderError::new("Param not found for helper \"arr\""))?;
+
+        match param.value() {
+            Value::String(txt) => Ok(Some(ScopedJson::Derived(Value::Array(from_str(txt)?)))),
+            Value::Array(arr) => Ok(Some(ScopedJson::Derived(Value::Array(arr.clone())))),
+            _ => Err(RenderError::new("\"arr\" can not convert ")),
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct SubHelper;

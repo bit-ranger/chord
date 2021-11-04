@@ -14,9 +14,7 @@ def: {
 
 stage.s1.step.example: {
   let: {
-    arg2: {
-      "$ref": "def.arg.arg2"
-    }
+    arg2: "$ref:def.arg.arg2"
   },
   exec: {
     action: "echo",
@@ -26,9 +24,7 @@ stage.s1.step.example: {
         {
           hello: "world"
         },
-        {
-          "$ref": "arg2"
-        }
+        "$ref:arg2"
       ]
     }
   },
@@ -43,9 +39,7 @@ stage.s1.step.example: {
 
 stage.s1.step.example2: {
   let: {
-    arg1: {
-      "$ref": "def.arg.arg1"
-    },
+    arg1: "$ref:def.arg.arg1",
     lon: "{{case.origin_lon}}",
     lat: "{{case.origin_lat}}"
   },
@@ -74,9 +68,7 @@ stage.s1.step.example2: {
 
 stage.s2.step.example3: {
   let: {
-    arg1: {
-      "$ref": "def.arg.arg1"
-    },
+    arg1: "$ref:def.arg.arg1",
     foo: "{{case.foo}}",
     bar: "{{case.bar}}"
   },

@@ -29,6 +29,7 @@ flume = "0.10.5"
 structopt = "0.3"
 dirs = "3.0.2"
 async-recursion = "0.3.2"
+colored = "2"
 
 [target.'cfg(linux)'.dependencies]
 chord-action = { path = "../action", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_dylib", "act_docker", "act_download", "act_lua", "act_shell"] }

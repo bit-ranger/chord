@@ -180,13 +180,13 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
     }
 
     fn render_str_with(&self, txt: &str, render_context: &RenderContext) -> Result<Value, Error> {
-        return flow::render_str(self.handlebars, render_context, self.flow.dir(), txt);
+        return flow::render_str(self.handlebars, render_context, txt);
     }
 
     fn render_object_with(&self, raw: &Map, render_context: &RenderContext) -> Result<Map, Error> {
         let mut result = raw.clone();
         for (_, v) in result.iter_mut() {
-            flow::render_value(self.handlebars, render_context, self.flow.dir(), v)?;
+            flow::render_value(self.handlebars, render_context, v)?;
         }
         Ok(result)
     }

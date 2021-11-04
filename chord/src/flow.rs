@@ -7,8 +7,8 @@ use regex::Regex;
 
 use crate::err;
 use crate::error::Error;
-use crate::value::{Map, Value};
-use async_std::path::{Path, PathBuf};
+use crate::value::{json, map_merge_deep, Map, Value};
+use async_std::path::Path;
 
 lazy_static! {
     pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,50}$").unwrap();
@@ -16,16 +16,25 @@ lazy_static! {
 
 #[derive(Debug, Clone)]
 pub struct Flow {
-    dir: PathBuf,
     flow: Value,
+    def: Map,
 }
 
 impl Flow {
     pub fn new(flow: Value, dir: &Path) -> Result<Flow, Error> {
-        let flow = Flow {
-            flow,
-            dir: dir.to_path_buf(),
-        };
+        let mut def = Map::new();
+        def.insert(
+            String::from("__meta__"),
+            json! ({
+                "task_dir": dir.to_path_buf().to_str().unwrap()
+            }),
+        );
+
+        if let Some(map) = flow["def"].as_object() {
+            def = map_merge_deep(&def, map);
+        }
+
+        let flow = Flow { flow, def };
 
         flow._version()?;
 
@@ -96,16 +105,12 @@ impl Flow {
         return Ok(flow);
     }
 
-    pub fn dir(&self) -> &Path {
-        self.dir.as_path()
-    }
-
     pub fn version(&self) -> &str {
         self._version().unwrap()
     }
 
     pub fn def(&self) -> Option<&Map> {
-        self.flow["def"].as_object()
+        Some(&self.def)
     }
 
     pub fn stage_step_id_vec(&self, stage_id: &str) -> Vec<&str> {

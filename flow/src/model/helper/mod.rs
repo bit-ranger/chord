@@ -7,6 +7,7 @@ use crate::model::helper::boolean::{ALL, ANY, BOOL};
 
 mod array;
 mod boolean;
+mod fs;
 mod number;
 mod string;
 
@@ -69,6 +70,8 @@ pub fn register(handlebars: &mut Handlebars) {
     handlebars.register_helper("str_sub", Box::new(crate::model::helper::string::SUB));
     handlebars.register_helper("str_len", Box::new(crate::model::helper::string::LEN));
     handlebars.register_helper("str_escape", Box::new(crate::model::helper::string::ESCAPE));
+
+    handlebars.register_helper("file", Box::new(crate::model::helper::fs::FILE));
 }
 
 pub struct LiteralHelper {

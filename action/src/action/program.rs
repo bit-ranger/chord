@@ -67,6 +67,12 @@ impl Action for StepProgram {
             }
         }
     }
+
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+        let args = Value::Object(arg.args()?);
+        let command = program_command_explain(&args)?;
+        Ok(Value::String(command))
+    }
 }
 
 struct CaseProgram {}
@@ -87,6 +93,12 @@ impl Action for CaseProgram {
         let child = command.spawn()?;
         trace!("program case spawn pid {:?}", child.id());
         Ok(Box::new(ChildHolder::new(child)))
+    }
+
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+        let args = Value::Object(arg.args()?);
+        let command = program_command_explain(&args)?;
+        Ok(Value::String(command))
     }
 }
 
@@ -136,6 +148,12 @@ impl Action for TaskProgram {
     async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         Ok(Box::new(Value::Number(Number::from(self.child.id()))))
     }
+
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+        let args = Value::Object(arg.args()?);
+        let command = program_command_explain(&args)?;
+        Ok(Value::String(command))
+    }
 }
 
 impl Drop for TaskProgram {
@@ -161,6 +179,27 @@ fn program_command(args: &Value) -> Result<Command, Error> {
             ca.to_string()
         };
         command.arg(ca);
+    }
+    Ok(command)
+}
+
+fn program_command_explain(args: &Value) -> Result<String, Error> {
+    let cmd = args["program"]
+        .as_str()
+        .ok_or(err!("103", "missing program"))?;
+
+    let mut command = String::from(cmd);
+
+    let cmd_args = args["args"].as_array().ok_or(err!("103", "missing args"))?;
+
+    for ca in cmd_args {
+        let ca = if ca.is_string() {
+            ca.as_str().unwrap().to_owned()
+        } else {
+            ca.to_string()
+        };
+        command.push_str(" ");
+        command.push_str(ca.as_str())
     }
     Ok(command)
 }

@@ -13,7 +13,6 @@ mod str;
 
 pub fn register(handlebars: &mut Handlebars) {
     //handlebars-3.5.4/src/registry.rs:118
-
     //literal
     handlebars.register_helper(
         "bl",

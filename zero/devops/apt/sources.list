@@ -1,10 +1,10 @@
-deb http://mirrors.163.com/ubuntu/ bionic main restricted universe multiverse
-deb http://mirrors.163.com/ubuntu/ bionic-security main restricted universe multiverse
-deb http://mirrors.163.com/ubuntu/ bionic-updates main restricted universe multiverse
-deb http://mirrors.163.com/ubuntu/ bionic-proposed main restricted universe multiverse
-deb http://mirrors.163.com/ubuntu/ bionic-backports main restricted universe multiverse
-deb-src http://mirrors.163.com/ubuntu/ bionic main restricted universe multiverse
-deb-src http://mirrors.163.com/ubuntu/ bionic-security main restricted universe multiverse
-deb-src http://mirrors.163.com/ubuntu/ bionic-updates main restricted universe multiverse
-deb-src http://mirrors.163.com/ubuntu/ bionic-proposed main restricted universe multiverse
-deb-src http://mirrors.163.com/ubuntu/ bionic-backports main restricted universe multivers
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-updates main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-updates main contrib non-free
+
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib non-free
+
+deb https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free

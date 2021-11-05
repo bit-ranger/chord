@@ -12,21 +12,21 @@ chord - async parallel task executor
 
     https://github.com/bit-ranger/chord/releases
 
-### run cmd
+### run command
 
-    chord-cmd run -i$(pwd)/.chord/job/echo
+    chord run -i$(pwd)/.chord/job/echo
 
-### run cmd from source code
+### run command from source code
 
     git clone https://github.com/bit-ranger/chord.git
     
     cargo build --release
     
-    target/release/chord-cmd run -i$(pwd)/.chord/job/echo
+    target/release/chord run -i$(pwd)/.chord/job/echo
 
 ### help
 
-    target/release/chord-cmd run --help
+    target/release/chord run --help
 
 ### rest api testing
 

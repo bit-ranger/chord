@@ -76,9 +76,9 @@ jobs:
           find $(pwd)
           cp target/release/libchord_action_dylib_example.so $HOME/.chord/lib/libchord_action_dylib_example.so
 
-      - name: chord-cmd-test
+      - name: chord-test
         run: |
-          ./target/release/chord-cmd run -i$PWD/.chord/job
+          ./target/release/chord run -i$PWD/.chord/job
 
       - name: chord-target-upload
         uses: actions/upload-artifact@v2
@@ -87,7 +87,7 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: |
-            target/release/chord-cmd
+            target/release/chord
             target/release/chord-web
 
       - name: extra-upload
@@ -127,7 +127,7 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: |
-            target/release/chord-cmd.exe
+            target/release/chord.exe
             target/release/chord-web.exe
       
   
@@ -159,7 +159,7 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: |
-            target/release/chord-cmd
+            target/release/chord
             target/release/chord-web
 
       

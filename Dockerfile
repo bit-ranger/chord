@@ -43,8 +43,8 @@ COPY web web
 COPY zero zero
 RUN cargo build --release --verbose \
 && cargo test --release --verbose \
-&& mv ./target/release/chord-cmd /usr/bin/chord-cmd \
-&& chmod 755 /usr/bin/chord-cmd \
+&& mv ./target/release/chord /usr/bin/chord \
+&& chmod 755 /usr/bin/chord \
 && cargo clean \
 && rm -rf /usr/local/cargo/registry \
 && cd /usr/src

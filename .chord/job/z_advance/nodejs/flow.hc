@@ -2,13 +2,16 @@ version: "0.0.1"
 
 
 stage.s1.step.s1: {
+  let {
+    prefix: """{{fs_path "nodejs-example"}}"""
+  },
   exec: {
     action: "program",
     args: {
       program: "npm",
       args: [
         "--prefix",
-        "/home/runner/work/chord/chord/zero/test/nodejs",
+        "{{prefix}}",
         "install"
       ],
       value_to_json: false
@@ -18,8 +21,8 @@ stage.s1.step.s1: {
 
 stage.s1.step.s2: {
   let: {
-    case: "$ref:case"
-
+    case: "$ref:case",
+    prefix: """{{fs_path "nodejs-example"}}"""
   },
   exec: {
     action: "program",
@@ -27,7 +30,7 @@ stage.s1.step.s2: {
       program: "npm",
       args: [
         "--prefix",
-        "/home/runner/work/chord/chord/zero/test/nodejs",
+        "{{prefix}}",
         "run",
         "test",
         "$ref:case"

@@ -77,6 +77,7 @@ pub fn register(handlebars: &mut Handlebars) {
 
     //fs
     handlebars.register_helper("fs_read", Box::new(crate::model::helper::fs::READ));
+    handlebars.register_helper("fs_path", Box::new(crate::model::helper::fs::PATH));
 }
 
 pub struct LiteralHelper {

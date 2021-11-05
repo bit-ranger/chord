@@ -78,7 +78,6 @@ async fn job_run_recur(
     }
     sub_name_vec.sort();
 
-    let mut futures = Vec::new();
     let mut task_state_vec: Vec<TaskState> = Vec::new();
 
     for sub_name in sub_name_vec {
@@ -93,7 +92,11 @@ async fn job_run_recur(
                     child_sub_path,
                 )
                 .await;
+                let not_ok = !state.is_ok();
                 task_state_vec.push(state);
+                if not_ok {
+                    break;
+                }
             } else {
                 let state = job_run_recur(
                     app_ctx.clone(),
@@ -103,9 +106,14 @@ async fn job_run_recur(
                     child_sub_path,
                 )
                 .await?;
-                task_state_vec.extend(state)
+                let not_ok = state.iter().any(|t| !t.is_ok());
+                task_state_vec.extend(state);
+                if not_ok {
+                    break;
+                }
             }
         } else {
+            let mut futures = Vec::new();
             let builder = Builder::new().name(sub_name.clone());
             if dir_is_task(root_path.clone(), child_sub_path.clone()).await {
                 let jh = builder
@@ -136,12 +144,9 @@ async fn job_run_recur(
                     );
                 futures.push(jh);
             }
-        }
-    }
-
-    if !serial {
-        for state in join_all(futures).await {
-            task_state_vec.extend(state?);
+            for state in join_all(futures).await {
+                task_state_vec.extend(state?);
+            }
         }
     }
 

@@ -74,12 +74,12 @@ async fn run(
     .await;
     let task_state_vec = job::run(app_ctx, report_factory, exec_id.clone(), input_dir).await?;
     logger::terminal(log_handler).await?;
-    let et = task_state_vec.iter().filter(|t| !t.is_ok()).last();
+    let et = task_state_vec.iter().filter(|t| !t.is_ok()).nth(0);
     return match et {
         Some(et) => match et {
             TaskState::Ok => Ok(()),
-            TaskState::Err(e) => Err(e.clone()),
-            TaskState::Fail(c) => Err(err!("task", format!("cause {}", c))),
+            TaskState::Err(e) => Err(err!("task", format!("cause err {}", e))),
+            TaskState::Fail(c) => Err(err!("task", format!("cause fail {}", c))),
         },
         None => Ok(()),
     };

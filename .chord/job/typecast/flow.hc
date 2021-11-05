@@ -7,7 +7,7 @@ def: {
 
 stage.s1.step.s1: {
   let: {
-    arg1: "{{ref def.a}}"
+    arg1: "{{num def.a}}"
     obj2: {
       x: "y"
     }
@@ -19,7 +19,7 @@ stage.s1.step.s1: {
     action: "echo",
     args: {
       echo: {
-        ref: "{{ref arg1}}",
+        ref: "{{num arg1}}",
         num1: "{{num 456}}",
         bool1: "{{bool true}}",
         obj1: """{{obj "{\"x\":\"y\"}" }}""",

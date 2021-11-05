@@ -13,6 +13,7 @@ mod str;
 
 pub fn register(handlebars: &mut Handlebars) {
     //handlebars-3.5.4/src/registry.rs:118
+    handlebars.register_helper("ref", Box::new(RefHelper {}));
 
     //literal
     handlebars.register_helper(
@@ -95,5 +96,24 @@ impl HelperDef for LiteralHelper {
         Ok(Some(ScopedJson::Derived(Value::String(
             self.literal.to_string(),
         ))))
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct RefHelper {}
+
+impl HelperDef for RefHelper {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        _: &'reg Handlebars<'reg>,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg, 'rc>,
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+        let param = h
+            .param(0)
+            .ok_or_else(|| RenderError::new("Param not found for helper \"ref\""))?;
+
+        Ok(Some(ScopedJson::Derived(param.value().clone())))
     }
 }

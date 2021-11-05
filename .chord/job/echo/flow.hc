@@ -12,7 +12,7 @@ def: {
 
 stage.s1.step.s1: {
   let: {
-    arg2: "$ref:def.arg.arg2"
+    arg2: "{{ref def.arg.arg2}}"
   },
   exec: {
     action: "echo",
@@ -22,7 +22,7 @@ stage.s1.step.s1: {
         {
           hello: "world"
         },
-        "$ref:arg2"
+        "{{ref arg2}}"
       ]
     }
   },

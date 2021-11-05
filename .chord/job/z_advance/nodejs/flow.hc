@@ -21,7 +21,7 @@ stage.s1.step.s1: {
 
 stage.s1.step.s2: {
   let: {
-    case: "$ref:case",
+    case: "{{ref case}}",
     prefix: """{{fs_path "nodejs-example"}}"""
   },
   exec: {
@@ -33,7 +33,7 @@ stage.s1.step.s2: {
         "{{prefix}}",
         "run",
         "test",
-        "$ref:case"
+        "{{ref case}}"
       ],
       value_to_json: true
     }

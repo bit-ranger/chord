@@ -8,6 +8,7 @@ use handlebars::Handlebars;
 use chord::action::Factory;
 use chord::err;
 use chord::Error;
+use log::trace;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
@@ -31,10 +32,53 @@ fn render_str(
     render_ctx: &RenderContext,
     text: &str,
 ) -> Result<Value, Error> {
+    if text.starts_with("{{") && text.ends_with("}}") {
+        let text_inner_trim = &text[2..text.len() - 2].trim();
+        if !text_inner_trim.contains("{{") && !text_inner_trim.contains("}}") {
+            let value = if text_inner_trim.starts_with("num ") {
+                let rv = handlebars
+                    .render_template_with_context(text, render_ctx)
+                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                Value::Number(from_str(rv.as_str()).map_err(|_| err!("001", "invalid args num"))?)
+            } else if text_inner_trim.starts_with("bool ") {
+                let rv = handlebars
+                    .render_template_with_context(text, render_ctx)
+                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                Value::Bool(from_str(rv.as_str()).map_err(|_| err!("001", "invalid args bool"))?)
+            } else if text_inner_trim.starts_with("obj ") {
+                let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
+                trace!("render_str real_text: {}", real_text);
+                let rv = handlebars
+                    .render_template_with_context(real_text.as_str(), render_ctx)
+                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                Value::Object(
+                    from_str(rv.as_str())
+                        .map_err(|e| err!("001", format!("invalid args obj, {}", e)))?,
+                )
+            } else if text_inner_trim.starts_with("arr ") {
+                let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
+                trace!("render_str real_text: {}", real_text);
+                let rv = handlebars
+                    .render_template_with_context(real_text.as_str(), render_ctx)
+                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                Value::Array(
+                    from_str(rv.as_str())
+                        .map_err(|e| err!("001", format!("invalid args arr, {}", e)))?,
+                )
+            } else {
+                let rv = handlebars
+                    .render_template_with_context(text, render_ctx)
+                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                Value::String(rv)
+            };
+            return Ok(value);
+        }
+    }
+
     let rv = handlebars
         .render_template_with_context(text, render_ctx)
         .map_err(|e| err!("tpl", format!("{}", e)))?;
-    render_dollar_str(render_ctx.data(), rv)
+    Ok(Value::String(rv))
 }
 
 fn render_value(
@@ -64,31 +108,4 @@ fn render_value(
         Value::Bool(_) => Ok(()),
         Value::Number(_) => Ok(()),
     }
-}
-
-fn render_dollar_str(context: &Value, text: String) -> Result<Value, Error> {
-    let value = if text.starts_with("$num:") {
-        Value::Number(from_str(&text[5..]).map_err(|_| err!("001", "invalid args $num"))?)
-    } else if text.starts_with("$bool:") {
-        Value::Bool(from_str(&text[6..]).map_err(|_| err!("001", "invalid args $bool"))?)
-    } else if text.starts_with("$obj:") {
-        Value::Object(
-            from_str(&text[5..]).map_err(|e| err!("001", format!("invalid args $obj, {}", e)))?,
-        )
-    } else if text.starts_with("$arr:") {
-        Value::Array(
-            from_str(&text[5..]).map_err(|e| err!("001", format!("invalid args $arr, {}", e)))?,
-        )
-    } else if text.starts_with("$ref:") {
-        let ref_path = &text[5..];
-        let path: Vec<&str> = ref_path.split(".").collect();
-        let mut ref_val = context;
-        for p in path {
-            ref_val = &ref_val[p];
-        }
-        ref_val.clone()
-    } else {
-        Value::String(text)
-    };
-    Ok(value)
 }

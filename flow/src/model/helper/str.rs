@@ -36,13 +36,8 @@ impl HelperDef for StrHelper {
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"str\""))?;
 
-        match param.value() {
-            Value::String(_) => Ok(Some(ScopedJson::Derived(param.value().clone()))),
-            _ => {
-                let json = param.value().to_string();
-                Ok(Some(ScopedJson::Derived(Value::String(json))))
-            }
-        }
+        let json = param.value().to_string();
+        Ok(Some(ScopedJson::Derived(Value::String(json))))
     }
 }
 

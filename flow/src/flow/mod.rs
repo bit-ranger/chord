@@ -47,7 +47,7 @@ fn render_str(
                 Value::Bool(from_str(rv.as_str()).map_err(|_| err!("001", "invalid args bool"))?)
             } else if text_inner_trim.starts_with("obj ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
-                trace!("render_str real_text: {}", real_text);
+                trace!("obj real text: {}", real_text);
                 let rv = handlebars
                     .render_template_with_context(real_text.as_str(), render_ctx)
                     .map_err(|e| err!("tpl", format!("{}", e)))?;
@@ -57,7 +57,7 @@ fn render_str(
                 )
             } else if text_inner_trim.starts_with("arr ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
-                trace!("render_str real_text: {}", real_text);
+                trace!("arr real text: {}", real_text);
                 let rv = handlebars
                     .render_template_with_context(real_text.as_str(), render_ctx)
                     .map_err(|e| err!("tpl", format!("{}", e)))?;
@@ -65,6 +65,15 @@ fn render_str(
                     from_str(rv.as_str())
                         .map_err(|e| err!("001", format!("invalid args arr, {}", e)))?,
                 )
+            } else if text_inner_trim.starts_with("json ") {
+                let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
+                trace!("json real text: {}", real_text);
+                let rv = handlebars
+                    .render_template_with_context(real_text.as_str(), render_ctx)
+                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                let value: Value = from_str(rv.as_str())
+                    .map_err(|e| err!("001", format!("invalid args arr, {}", e)))?;
+                value
             } else {
                 let rv = handlebars
                     .render_template_with_context(text, render_ctx)

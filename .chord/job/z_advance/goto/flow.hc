@@ -13,8 +13,7 @@ def: {
 
 stage.s1.step.s1: {
   exec: {
-    action: "nop",
-    args: {}
+    nop: {}
   },
   then: [
     {
@@ -31,8 +30,7 @@ stage.s1.step.s2: {
     s2_goto: "{{reg.s2_goto}}"
   },
   exec: {
-    action: "log",
-    args: {
+    log: {
       log: "hello world"
     }
   },
@@ -48,8 +46,7 @@ stage.s1.step.s3: {
     arg2: "{{arr def.arg.arg2}}"
   },
   exec: {
-    action: "echo",
-    args: {
+    echo: {
       echo: [
         "hello",
         {
@@ -81,8 +78,7 @@ stage.s1.step.s4: {
     s3_loop_idx: "{{num reg.s3_loop_idx }}"
   },
   exec: {
-    action: "nop",
-    args: {}
+    nop: {}
   },
   then: [
     {

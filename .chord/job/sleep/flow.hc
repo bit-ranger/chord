@@ -5,8 +5,7 @@ stage.s1.step.example: {
     duration: "{{case.seconds}}"
   },
   exec: {
-    action: "sleep",
-    args: {
+    sleep: {
       duration: "{{duration}}"
     }
   },

@@ -11,8 +11,7 @@ stage.s1.step.step1: {
     lua: "{{def.lua}}"
   },
   exec: {
-    action: "lua",
-    args: {
+    lua: {
       lua: "{{lua}}"
     }
   },
@@ -29,8 +28,7 @@ stage.s1.step.step2: {
     bar: "{{case.bar}}",
   },
   exec: {
-    action: "lua",
-    args: {
+    lua: {
       lua: """
         r = os.time();
         t =  "CHORD-" .. tostring(r);

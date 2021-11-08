@@ -3,16 +3,14 @@ version: "0.0.1"
 
 stage.s1.step.s1: {
   exec: {
-    action: "iter_map",
-    args: {
+    iter_map: {
       arr: [
         "a",
         "b",
         "c"
       ],
       exec: {
-        action: "echo",
-        args: {
+        echo: {
           echo: [
             {
               idx: "0-{{idx}}",
@@ -41,8 +39,7 @@ stage.s1.step.s2: {
     content: "{{arr step.s1.value}}"
   },
   exec: {
-    action: "log",
-    args: {
+    log: {
       log: "{{arr content}}"
     }
   }

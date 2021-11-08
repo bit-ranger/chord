@@ -12,8 +12,7 @@ stage.s1.step.set_redis: {
     arg0: "{{case.arg0}}"
   },
   exec: {
-    action: "redis",
-    args: {
+    redis: {
       url: "{{url}}",
       cmd: "SET",
       args: [
@@ -29,8 +28,7 @@ gstage.s1.step.et_redis: {
     arg0: "{{case.arg0}}"
   },
   exec: {
-    action: "redis",
-    args: {
+    redis: {
       url: "{{url}}",
       cmd: "GET",
       args: [

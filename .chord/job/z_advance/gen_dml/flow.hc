@@ -7,8 +7,7 @@ stage.s1.step.step1: {
     lat: "{{case.origin_lat}}"
   },
   exec: {
-    action: "echo",
-    args: {
+    echo: {
       echo: """
         update coord set x = '{{lon}}', y = '{{lat}}'
       """

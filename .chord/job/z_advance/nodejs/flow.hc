@@ -10,8 +10,7 @@ stage.s1.step.s1: {
     prefix: "{{def.prefix}}"
   },
   exec: {
-    action: "program",
-    args: {
+    program: {
       program: "npm",
       args: [
         "--prefix",
@@ -29,8 +28,7 @@ stage.s1.step.s2: {
     prefix: "{{def.prefix}}"
   },
   exec: {
-    action: "program",
-    args: {
+    program: {
       program: "npm",
       args: [
         "--prefix",

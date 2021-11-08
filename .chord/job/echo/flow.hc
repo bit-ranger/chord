@@ -15,8 +15,7 @@ stage.s1.step.s1: {
     arg2: "{{arr def.arg.arg2}}"
   },
   exec: {
-    action: "echo",
-    args: {
+    echo: {
       echo: [
         "hello",
         {

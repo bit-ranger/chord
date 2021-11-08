@@ -4,8 +4,7 @@ stage.s1.step.docker1: {
     timeout: 10
   },
   exec: {
-    action: "docker",
-    args: {
+    docker: {
       image: "ubuntu:20.04",
       value_to_json: true,
       cmd: [

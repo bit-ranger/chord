@@ -10,8 +10,7 @@ stage.s1.step.select: {
     user: "{{case.user}}"
   },
   exec: {
-    action: "database",
-    args: {
+    database: {
       url: "{{url}}",
       sql: "SELECT * FROM user WHERE user = '{{user}}'"
     }

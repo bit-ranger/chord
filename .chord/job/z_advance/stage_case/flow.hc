@@ -17,8 +17,7 @@ stage.s1.step.example: {
     arg2: "{{arr def.arg.arg2}}"
   },
   exec: {
-    action: "echo",
-    args: {
+    echo: {
       echo: [
         "hello",
         {
@@ -44,8 +43,7 @@ stage.s1.step.example2: {
     lat: "{{case.origin_lat}}"
   },
   exec: {
-    action: "echo",
-    args: {
+    echo: {
       echo: "update bas set a = '{{lon}}' where b = '{{lat}}'"
     }
   },
@@ -73,8 +71,7 @@ stage.s2.step.example3: {
     bar: "{{case.bar}}"
   },
   exec: {
-    action: "echo",
-    args: {
+    echo: {
       echo: "update bas set a = '{{foo}}' where b = '{{bar}}'"
     }
   }

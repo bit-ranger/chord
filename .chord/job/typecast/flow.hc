@@ -13,8 +13,7 @@ stage.s1.step.s1: {
     ]
   },
   exec: {
-    action: "echo",
-    args: {
+    echo: {
       echo: {
         num1: """{{num "456"}}""",
         num2: "{{num 456}}",

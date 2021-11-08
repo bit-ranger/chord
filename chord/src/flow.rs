@@ -244,36 +244,48 @@ impl Flow {
     }
 
     fn _step_exec_check(&self, step_id: &str) -> Result<(), Error> {
-        let enable_keys = vec!["action", "args"];
-
-        let object = self._step(step_id)["exec"].as_object().ok_or(err!(
+        let exec = self._step(step_id)["exec"].as_object().ok_or(err!(
             "flow",
             format!("step {} exec must be a object", step_id)
         ))?;
 
-        for (k, _) in object {
-            if !enable_keys.contains(&k.as_str()) {
-                return Err(err!(
-                    "flow",
-                    format!("unexpected key {} in step.{}.exec", k, step_id)
-                ));
-            }
+        if exec.is_empty() {
+            return Err(err!(
+                "flow",
+                format!("step {} missing exec.action", step_id)
+            ));
+        }
+
+        if exec.len() != 1 {
+            return Err(err!(
+                "flow",
+                format!("step {} invalid exec.action", step_id)
+            ));
         }
 
         Ok(())
     }
 
     fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
-        self._step(step_id)["exec"]["action"].as_str().ok_or(err!(
+        let exec = &self._step(step_id)["exec"].as_object().ok_or(err!(
             "flow",
             format!("step {} missing exec.action", step_id)
-        ))
+        ))?;
+
+        return exec.keys().nth(0).map(|s| s.as_str()).ok_or(err!(
+            "flow",
+            format!("step {} missing exec.action", step_id)
+        ));
     }
 
     pub fn _step_exec_args(&self, step_id: &str) -> Result<&Value, Error> {
-        let args = &self._step(step_id)["exec"]["args"];
+        let action = self._step_exec_action(step_id)?;
+        let args = &self._step(step_id)["exec"][action];
         return if args.is_null() {
-            Err(err!("flow", format!("step {} missing exec.args", step_id)))
+            Err(err!(
+                "flow",
+                format!("step {} missing exec.{}", step_id, action)
+            ))
         } else {
             Ok(args)
         };

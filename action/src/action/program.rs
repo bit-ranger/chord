@@ -14,28 +14,27 @@ impl ProgramFactory {
 impl Factory for ProgramFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = Value::Object(arg.args_raw().clone());
-        match args_raw["lifetime"].as_str().unwrap_or("step") {
-            "task" => Ok(Box::new(TaskProgram::new(&args_raw)?)),
-            "case" => Ok(Box::new(CaseProgram::new(&args_raw)?)),
-            _ => Ok(Box::new(StepProgram::new(&args_raw)?)),
+        match args_raw["detach"].as_bool().unwrap_or(false) {
+            true => Ok(Box::new(DetachProgram::new(&args_raw)?)),
+            false => Ok(Box::new(AttachProgram::new(&args_raw)?)),
         }
     }
 }
 
-struct StepProgram {}
+struct AttachProgram {}
 
-impl StepProgram {
-    fn new(_: &Value) -> Result<StepProgram, Error> {
-        Ok(StepProgram {})
+impl AttachProgram {
+    fn new(_: &Value) -> Result<AttachProgram, Error> {
+        Ok(AttachProgram {})
     }
 }
 
 #[async_trait]
-impl Action for StepProgram {
+impl Action for AttachProgram {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = Value::Object(arg.args()?);
         let mut command = program_command(&args)?;
-        trace!("command {:?}", command);
+        trace!("program attach command {:?}", command);
         let output = command.output().await?;
 
         let std_out = String::from_utf8_lossy(&output.stdout).to_string();
@@ -75,23 +74,23 @@ impl Action for StepProgram {
     }
 }
 
-struct CaseProgram {}
+struct DetachProgram {}
 
-impl CaseProgram {
-    fn new(_: &Value) -> Result<CaseProgram, Error> {
-        Ok(CaseProgram {})
+impl DetachProgram {
+    fn new(_: &Value) -> Result<DetachProgram, Error> {
+        Ok(DetachProgram {})
     }
 }
 
 #[async_trait]
-impl Action for CaseProgram {
+impl Action for DetachProgram {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = Value::Object(arg.args()?);
 
         let mut command = program_command(&args)?;
-        trace!("program case command {:?}", command);
+        trace!("detach command {:?}", command);
         let child = command.spawn()?;
-        trace!("program case spawn pid {:?}", child.id());
+        trace!("detach pid {:?}", child.id());
         Ok(Box::new(ChildHolder::new(child)))
     }
 
@@ -123,40 +122,6 @@ impl Scope for ChildHolder {
 }
 
 impl Drop for ChildHolder {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        trace!("kill pid {:?}", self.child.id());
-    }
-}
-
-struct TaskProgram {
-    child: Child,
-}
-
-impl TaskProgram {
-    fn new(args_raw: &Value) -> Result<TaskProgram, Error> {
-        let mut command = program_command(args_raw)?;
-        trace!("program task command {:?}", command);
-        let child = command.spawn()?;
-        trace!("program task spawn pid {:?}", child.id());
-        Ok(TaskProgram { child })
-    }
-}
-
-#[async_trait]
-impl Action for TaskProgram {
-    async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        Ok(Box::new(Value::Number(Number::from(self.child.id()))))
-    }
-
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
-        let args = Value::Object(arg.args()?);
-        let command = program_command_explain(&args)?;
-        Ok(Value::String(command))
-    }
-}
-
-impl Drop for TaskProgram {
     fn drop(&mut self) {
         let _ = self.child.kill();
         trace!("kill pid {:?}", self.child.id());

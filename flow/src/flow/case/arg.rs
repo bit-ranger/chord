@@ -133,6 +133,7 @@ impl CaseArgStruct {
                     flow_app.get_handlebars(),
                     &self.render_ctx,
                     let_raw,
+                    false,
                 )?;
                 Some(let_value)
             }

@@ -124,14 +124,27 @@ fn render_assign_object(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
     assign_raw: &Map,
+    discard_on_err: bool,
 ) -> Result<Map, Error> {
     let mut assign_value = assign_raw.clone();
     let mut let_render_ctx = render_ctx.clone();
+    let mut discard_keys = Vec::with_capacity(assign_raw.len());
     for (k, v) in assign_value.iter_mut() {
-        render_value(handlebars, &let_render_ctx, v)?;
-        if let Value::Object(m) = let_render_ctx.data_mut() {
-            m.insert(k.clone(), v.clone());
+        let rvr = render_value(handlebars, &let_render_ctx, v);
+        if rvr.is_ok() {
+            if let Value::Object(m) = let_render_ctx.data_mut() {
+                m.insert(k.clone(), v.clone());
+            }
+        } else {
+            if discard_on_err {
+                discard_keys.push(k.clone());
+            } else {
+                rvr?;
+            }
         }
+    }
+    for k in discard_keys {
+        assign_value.remove(&k);
     }
 
     Ok(assign_value)

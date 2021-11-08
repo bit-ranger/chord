@@ -18,6 +18,7 @@ impl Factory for RedisFactory {
         if let Some(url) = args_raw["url"].as_str() {
             if arg.is_static(url) {
                 let url = arg.render_str(url)?;
+                let url = url.as_str().ok_or(err!("100", "invalid url"))?;
                 let client = redis::Client::open(url)?;
                 return Ok(Box::new(Redis {
                     client: Some(client),

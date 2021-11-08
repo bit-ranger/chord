@@ -39,7 +39,7 @@ impl<'a> CreateArg for MapCreateArg<'a> {
             .unwrap_or(&self.args_raw_empty)
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
+    fn render_str(&self, text: &str) -> Result<Value, Error> {
         self.iter_arg.render_str(text)
     }
 

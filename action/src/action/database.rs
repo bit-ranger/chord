@@ -20,7 +20,8 @@ impl Factory for DatabaseFactory {
         if let Some(url) = args_raw["url"].as_str() {
             if arg.is_static(url) {
                 let url = arg.render_str(url)?;
-                let rb = create_rb(url.as_str()).await?;
+                let url = url.as_str().ok_or(err!("100", "invalid url"))?;
+                let rb = create_rb(url).await?;
                 return Ok(Box::new(Database { rb: Some(rb) }));
             }
         }

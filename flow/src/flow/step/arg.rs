@@ -65,36 +65,47 @@ impl Display for CreateIdStruct {
     }
 }
 
-pub struct CreateArgStruct<'f> {
+pub struct CreateArgStruct<'f, 'h, 'reg> {
     flow: &'f Flow,
+    handlebars: &'h Handlebars<'reg>,
+    context: RenderContext,
     action: String,
     id: CreateIdStruct,
 }
 
-impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f> {
+impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
     pub fn new(
         flow: &'f Flow,
-        _: &'h Handlebars<'reg>,
-        _: &'r RenderContext,
+        handlebars: &'h Handlebars<'reg>,
+        context: Option<Map>,
         task_id: Arc<dyn TaskId>,
         action: String,
         step_id: String,
-    ) -> CreateArgStruct<'f> {
+    ) -> Result<CreateArgStruct<'f, 'h, 'reg>, Error> {
         let id = CreateIdStruct {
             task_id,
             step: step_id,
         };
-        let context = CreateArgStruct { flow, action, id };
-
-        return context;
+        let context = match context {
+            Some(lv) => RenderContext::wraps(lv),
+            None => RenderContext::wraps(Map::new()),
+        }?;
+        let arg = CreateArgStruct {
+            flow,
+            handlebars,
+            context,
+            action,
+            id,
+        };
+        return Ok(arg);
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
-        Ok(text.to_string())
+    fn render_str(&self, text: &str) -> Result<Value, Error> {
+        return flow::render_str(self.handlebars, &self.context, text);
     }
 }
 
-impl<'f> CreateArg for CreateArgStruct<'f> {
+impl<'f, 'h, 'reg> CreateArg for CreateArgStruct<'f, 'h, 'reg> {
     fn id(&self) -> &dyn CreateId {
         &self.id
     }
@@ -107,7 +118,7 @@ impl<'f> CreateArg for CreateArgStruct<'f> {
         self.flow.step_exec_args(self.id.step())
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
+    fn render_str(&self, text: &str) -> Result<Value, Error> {
         self.render_str(text)
     }
 

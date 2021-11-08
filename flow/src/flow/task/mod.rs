@@ -63,7 +63,7 @@ impl TaskRunner {
                "__meta__": flow.meta()
             });
             let rc = RenderContext::wraps(rc).unwrap();
-            let rso = render_assign_object(flow_app.get_handlebars(), &rc, def_raw)?;
+            let rso = render_assign_object(flow_app.get_handlebars(), &rc, def_raw, false)?;
             Some(Arc::new(rso))
         } else {
             None
@@ -436,23 +436,33 @@ fn render_context_create(
 }
 
 async fn step_create(
-    flow_ctx: &dyn FlowApp,
+    flow_app: &dyn FlowApp,
     flow: &Flow,
     render_ctx: &RenderContext,
     task_id: Arc<TaskIdSimple>,
     step_id: String,
 ) -> Result<Box<dyn Action>, Error> {
+    let let_raw = flow.step_let(step_id.as_ref());
+    let let_value = match let_raw {
+        Some(let_raw) => {
+            let let_value =
+                render_assign_object(flow_app.get_handlebars(), render_ctx, let_raw, true)?;
+            Some(let_value)
+        }
+        None => None,
+    };
+
     let action = flow.step_exec_action(step_id.as_ref());
     let create_arg = CreateArgStruct::new(
         flow,
-        flow_ctx.get_handlebars(),
-        render_ctx,
+        flow_app.get_handlebars(),
+        let_value,
         task_id,
         action.into(),
         step_id,
-    );
+    )?;
 
-    flow_ctx.get_action_factory().create(&create_arg).await
+    flow_app.get_action_factory().create(&create_arg).await
 }
 
 async fn case_run(flow_ctx: &dyn FlowApp, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {

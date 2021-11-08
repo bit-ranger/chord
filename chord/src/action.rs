@@ -46,7 +46,7 @@ pub trait CreateArg: Sync + Send {
 
     fn args_raw(&self) -> &Map;
 
-    fn render_str(&self, text: &str) -> Result<String, Error>;
+    fn render_str(&self, text: &str) -> Result<Value, Error>;
 
     /// shared in whole action
     fn is_static(&self, text: &str) -> bool;

@@ -1,12 +1,12 @@
 version: "0.0.1",
-let: {
+def: {
   database: {
     url: "mysql://root:example@127.0.0.1:3306/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai"
   }
 },
 stage.s1.step.select: {
   let: {
-    url: "{{let.database.url}}",
+    url: "{{def.database.url}}",
     user: "{{case.user}}"
   },
   exec: {

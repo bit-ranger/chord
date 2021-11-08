@@ -42,7 +42,7 @@ pub struct TaskRunner {
 
     task_state: TaskState,
 
-    let_ctx: Option<Arc<Map>>,
+    def_ctx: Option<Arc<Map>>,
     assess_report: Box<dyn Report>,
     case_factory: Box<dyn CaseStore>,
     id: Arc<TaskIdSimple>,
@@ -58,7 +58,7 @@ impl TaskRunner {
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
     ) -> Result<TaskRunner, Error> {
-        let let_ctx = if let Some(def_raw) = flow.flow_let() {
+        let def_ctx = if let Some(def_raw) = flow.def() {
             let rc: Value = json!({
                "__meta__": flow.meta()
             });
@@ -74,7 +74,7 @@ impl TaskRunner {
                 step_vec_create(
                     flow_app.clone(),
                     flow.clone(),
-                    let_ctx.clone(),
+                    def_ctx.clone(),
                     None,
                     pre_ste_id_vec.into_iter().map(|s| s.to_owned()).collect(),
                     id.clone(),
@@ -99,7 +99,7 @@ impl TaskRunner {
 
                 task_state: TaskState::Ok,
 
-                let_ctx,
+                def_ctx,
                 assess_report,
                 case_factory,
                 id,
@@ -111,7 +111,7 @@ impl TaskRunner {
             let pre_arg = pre_arg(
                 flow.clone(),
                 id.clone(),
-                let_ctx.clone(),
+                def_ctx.clone(),
                 pre_step_vec.clone(),
             )
             .await?;
@@ -130,7 +130,7 @@ impl TaskRunner {
 
                 task_state: TaskState::Ok,
 
-                let_ctx,
+                def_ctx,
                 assess_report,
                 case_factory,
                 id,
@@ -221,7 +221,7 @@ impl TaskRunner {
         let action_vec = step_vec_create(
             self.flow_ctx.clone(),
             self.flow.clone(),
-            self.let_ctx.clone(),
+            self.def_ctx.clone(),
             self.pre_ctx.clone(),
             step_id_vec,
             self.id.clone(),
@@ -338,7 +338,7 @@ impl TaskRunner {
                     self.step_vec.clone(),
                     d,
                     self.pre_ctx.clone(),
-                    self.let_ctx.clone(),
+                    self.def_ctx.clone(),
                     self.id.clone(),
                     self.stage_id.clone(),
                     Arc::new(self.stage_round_no.to_string()),
@@ -353,7 +353,7 @@ impl TaskRunner {
 async fn pre_arg(
     flow: Arc<Flow>,
     task_id: Arc<TaskIdSimple>,
-    let_ctx: Option<Arc<Map>>,
+    def_ctx: Option<Arc<Map>>,
     pre_action_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
 ) -> Result<CaseArgStruct, Error> {
     Ok(CaseArgStruct::new(
@@ -361,7 +361,7 @@ async fn pre_arg(
         pre_action_vec,
         Value::Null,
         None,
-        let_ctx,
+        def_ctx,
         task_id.clone(),
         Arc::new("pre".into()),
         Arc::new("1".into()),
@@ -395,12 +395,12 @@ async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Map, Error> {
 async fn step_vec_create(
     flow_app: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
-    let_ctx: Option<Arc<Map>>,
+    def_ctx: Option<Arc<Map>>,
     pre_ctx: Option<Arc<Map>>,
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdSimple>,
 ) -> Result<Vec<(String, Box<dyn Action>)>, Error> {
-    let render_context = render_context_create(flow.clone(), let_ctx, pre_ctx);
+    let render_context = render_context_create(flow.clone(), def_ctx, pre_ctx);
     let mut action_vec = vec![];
     for sid in step_id_vec {
         let pr = step_create(
@@ -418,14 +418,14 @@ async fn step_vec_create(
 
 fn render_context_create(
     flow: Arc<Flow>,
-    let_ctx: Option<Arc<Map>>,
+    def_ctx: Option<Arc<Map>>,
     pre_ctx: Option<Arc<Map>>,
 ) -> RenderContext {
     let mut render_data: Map = Map::new();
 
     render_data.insert("__meta__".to_owned(), Value::Object(flow.meta().clone()));
-    if let Some(let_ctx) = let_ctx {
-        render_data.insert("let".to_owned(), Value::Object(let_ctx.as_ref().clone()));
+    if let Some(def_ctx) = def_ctx {
+        render_data.insert("def".to_owned(), Value::Object(def_ctx.as_ref().clone()));
     }
 
     if let Some(pre_ctx) = pre_ctx {

@@ -1,5 +1,5 @@
 version: "0.0.1"
-let: {
+def: {
   redis: {
     url: "redis://:@127.0.0.1:6379/0"
   }
@@ -8,7 +8,7 @@ let: {
 
 stage.s1.step.set_redis: {
   let: {
-    url: "{{let.redis.url}}",
+    url: "{{def.redis.url}}",
     arg0: "{{case.arg0}}"
   },
   exec: {
@@ -25,7 +25,7 @@ stage.s1.step.set_redis: {
 },
 gstage.s1.step.et_redis: {
   let: {
-    url: "{{let.redis.url}}",
+    url: "{{def.redis.url}}",
     arg0: "{{case.arg0}}"
   },
   exec: {

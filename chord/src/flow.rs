@@ -103,8 +103,8 @@ impl Flow {
         self._version().unwrap()
     }
 
-    pub fn flow_let(&self) -> Option<&Map> {
-        self.flow["let"].as_object()
+    pub fn def(&self) -> Option<&Map> {
+        self.flow["def"].as_object()
     }
 
     pub fn meta(&self) -> &Map {

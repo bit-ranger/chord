@@ -1,6 +1,6 @@
 version: "0.0.1"
 
-def: {
+let: {
   arg: {
     arg1: "123",
     arg2: [
@@ -14,7 +14,7 @@ def: {
 
 stage.s1.step.example: {
   let: {
-    arg2: "{{arr def.arg.arg2}}"
+    arg2: "{{arr let.arg.arg2}}"
   },
   exec: {
     action: "echo",
@@ -39,7 +39,7 @@ stage.s1.step.example: {
 
 stage.s1.step.example2: {
   let: {
-    arg1: "{{def.arg.arg1}}",
+    arg1: "{{let.arg.arg1}}",
     lon: "{{case.origin_lon}}",
     lat: "{{case.origin_lat}}"
   },
@@ -68,7 +68,7 @@ stage.s1.step.example2: {
 
 stage.s2.step.example3: {
   let: {
-    arg1: "{{def.arg.arg1}}",
+    arg1: "{{let.arg.arg1}}",
     foo: "{{case.foo}}",
     bar: "{{case.bar}}"
   },

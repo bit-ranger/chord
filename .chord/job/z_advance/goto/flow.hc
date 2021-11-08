@@ -1,5 +1,5 @@
 version: "0.0.1",
-def: {
+let: {
   arg: {
     arg1: "123",
     arg2: [
@@ -45,7 +45,7 @@ stage.s1.step.s2: {
 
 stage.s1.step.s3: {
   let: {
-    arg2: "{{arr def.arg.arg2}}"
+    arg2: "{{arr let.arg.arg2}}"
   },
   exec: {
     action: "echo",

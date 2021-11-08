@@ -1,5 +1,5 @@
 version: "0.0.1"
-def: {
+let: {
   es: {
     url: "http://127.0.0.1:9200"
   }
@@ -14,7 +14,7 @@ stage: {
 
 stage.s1.step.del_idx: {
   let: {
-    url: "{{def.es.url}}"
+    url: "{{let.es.url}}"
   },
   exec: {
     action: "restapi",
@@ -27,7 +27,7 @@ stage.s1.step.del_idx: {
 
 stage.s1.step.crt_inx: {
   let: {
-    url: "{{def.es.url}}"
+    url: "{{let.es.url}}"
   },
   exec: {
     action: "restapi",
@@ -37,7 +37,7 @@ stage.s1.step.crt_inx: {
       body: {
         "settings": {
           "index": {
-            "analysis.analyzer.default.type": "ik_max_word"
+            "analysis.analyzer.letault.type": "ik_max_word"
           }
         },
         "mappings": {
@@ -73,7 +73,7 @@ stage.s1.step.crt_inx: {
 
 stage.s1.step.insert: {
   let: {
-    url: "{{def.es.url}}",
+    url: "{{let.es.url}}",
     author: "{{case.author}}",
     title: "{{case.title}}",
     desc: "{{case.desc}}"
@@ -111,7 +111,7 @@ stage.s1.step.wait: {
 
 stage.s1.step.search: {
   let: {
-    url: "{{def.es.url}}",
+    url: "{{let.es.url}}",
     match: "{{case.match}}",
     term: "{{case.term}}"
   },

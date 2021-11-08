@@ -83,7 +83,7 @@ impl CaseArgStruct {
         step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
         data: Value,
         pre_ctx: Option<Arc<Value>>,
-        def_ctx: Option<Arc<Value>>,
+        let_ctx: Option<Arc<Value>>,
         task_id: Arc<dyn TaskId>,
         stage_id: Arc<String>,
         case_exec_id: Arc<String>,
@@ -93,8 +93,8 @@ impl CaseArgStruct {
 
         let mut render_data: Map = Map::new();
         render_data.insert("__meta__".to_owned(), Value::Object(flow.meta().clone()));
-        if let Some(def_ctx) = def_ctx {
-            render_data.insert(String::from("def"), def_ctx.as_ref().clone());
+        if let Some(let_ctx) = let_ctx {
+            render_data.insert(String::from("let"), let_ctx.as_ref().clone());
         }
         if let Some(pre_ctx) = pre_ctx.as_ref() {
             render_data.insert(String::from("pre"), pre_ctx.as_ref().clone());

@@ -1,13 +1,13 @@
 version: "0.0.1"
 
 
-def {
+let {
   prefix: """{{fs_path "nodejs-example"}}"""
 }
 
 stage.s1.step.s1: {
   let {
-    prefix: "{{def.prefix}}"
+    prefix: "{{let.prefix}}"
   },
   exec: {
     action: "program",
@@ -26,7 +26,7 @@ stage.s1.step.s1: {
 stage.s1.step.s2: {
   let: {
     case: "{{obj case}}",
-    prefix: "{{def.prefix}}"
+    prefix: "{{let.prefix}}"
   },
   exec: {
     action: "program",

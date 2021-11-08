@@ -34,9 +34,9 @@ pub trait RunArg: Sync + Send {
 
     fn timeout(&self) -> Duration;
 
-    fn args(&self) -> Result<Map, Error>;
+    fn args(&self) -> Result<Value, Error>;
 
-    fn args_with(&self, context: &Map) -> Result<Map, Error>;
+    fn args_with(&self, context: &Map) -> Result<Value, Error>;
 }
 
 pub trait CreateArg: Sync + Send {
@@ -44,7 +44,7 @@ pub trait CreateArg: Sync + Send {
 
     fn action(&self) -> &str;
 
-    fn args_raw(&self) -> &Map;
+    fn args_raw(&self) -> &Value;
 
     fn render_str(&self, text: &str) -> Result<Value, Error>;
 
@@ -57,7 +57,7 @@ pub trait Action: Sync + Send {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error>;
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
-        return arg.args().map(|m| Value::Object(m));
+        return arg.args().clone();
     }
 }
 

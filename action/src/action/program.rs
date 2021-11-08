@@ -13,7 +13,7 @@ impl ProgramFactory {
 #[async_trait]
 impl Factory for ProgramFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = Value::Object(arg.args_raw().clone());
+        let args_raw = arg.args_raw();
         match args_raw["detach"].as_bool().unwrap_or(false) {
             true => Ok(Box::new(DetachProgram::new(&args_raw)?)),
             false => Ok(Box::new(AttachProgram::new(&args_raw)?)),
@@ -32,7 +32,7 @@ impl AttachProgram {
 #[async_trait]
 impl Action for AttachProgram {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = Value::Object(arg.args()?);
+        let args = arg.args()?;
         let mut command = program_command(&args)?;
         trace!("program attach command {:?}", command);
         let output = command.output().await?;
@@ -68,7 +68,7 @@ impl Action for AttachProgram {
     }
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
-        let args = Value::Object(arg.args()?);
+        let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))
     }
@@ -85,7 +85,7 @@ impl DetachProgram {
 #[async_trait]
 impl Action for DetachProgram {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = Value::Object(arg.args()?);
+        let args = arg.args()?;
 
         let mut command = program_command(&args)?;
         trace!("detach command {:?}", command);
@@ -95,7 +95,7 @@ impl Action for DetachProgram {
     }
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
-        let args = Value::Object(arg.args()?);
+        let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))
     }

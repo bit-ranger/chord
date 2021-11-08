@@ -162,7 +162,7 @@ impl Flow {
         self._step_exec_action(step_id).unwrap()
     }
 
-    pub fn step_exec_args(&self, step_id: &str) -> &Map {
+    pub fn step_exec_args(&self, step_id: &str) -> &Value {
         self._step_exec_args(step_id).unwrap()
     }
 
@@ -270,10 +270,13 @@ impl Flow {
         ))
     }
 
-    pub fn _step_exec_args(&self, step_id: &str) -> Result<&Map, Error> {
-        self._step(step_id)["exec"]["args"]
-            .as_object()
-            .ok_or(err!("flow", format!("step {} missing exec.args", step_id)))
+    pub fn _step_exec_args(&self, step_id: &str) -> Result<&Value, Error> {
+        let args = &self._step(step_id)["exec"]["args"];
+        return if args.is_null() {
+            Err(err!("flow", format!("step {} missing exec.args", step_id)))
+        } else {
+            Ok(args)
+        };
     }
 
     fn _step_spec_check(&self, step_id: &str) -> Result<(), Error> {

@@ -24,7 +24,7 @@ struct Sleep {}
 #[async_trait]
 impl Action for Sleep {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = Value::Object(arg.args()?);
+        let args = arg.args()?;
         let sec = &args["duration"];
         if sec.is_null() {
             return Err(err!("100", "duration must > 0"));

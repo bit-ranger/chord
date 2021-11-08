@@ -13,7 +13,7 @@ impl CountFactory {
 #[async_trait]
 impl Factory for CountFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = Value::Object(arg.args_raw().clone());
+        let args_raw = arg.args_raw();
         let init = args_raw["init"].as_u64().unwrap_or(1);
         let incr = args_raw["incr"].as_u64().unwrap_or(1);
         Ok(Box::new(Count {

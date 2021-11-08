@@ -31,7 +31,7 @@ impl DylibFactory {
 #[async_trait]
 impl Factory for DylibFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = Value::Object(arg.args_raw().clone());
+        let args_raw = arg.args_raw();
         let lib_name = args_raw["lib"].as_str().ok_or(err!("100", "missing lib"))?;
 
         let mut reload_handler =
@@ -53,7 +53,7 @@ impl Action for Dylib {
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();
         ar.insert("id".to_string(), Value::String(arg.id().to_string()));
-        ar.insert("args".to_string(), Value::Object(arg.args()?));
+        ar.insert("args".to_string(), arg.args()?);
         ar.insert("context".to_string(), Value::Object(arg.context().clone()));
         ar.insert(
             "timeout".to_string(),

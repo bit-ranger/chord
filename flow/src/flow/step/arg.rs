@@ -114,7 +114,7 @@ impl<'f, 'h, 'reg> CreateArg for CreateArgStruct<'f, 'h, 'reg> {
         self.action.as_str()
     }
 
-    fn args_raw(&self) -> &Map {
+    fn args_raw(&self) -> &Value {
         self.flow.step_exec_args(self.id.step())
     }
 
@@ -218,13 +218,15 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
         self.timeout()
     }
 
-    fn args(&self) -> Result<Map, Error> {
+    fn args(&self) -> Result<Value, Error> {
         self.args_with(self.context.data().as_object().unwrap())
     }
 
-    fn args_with(&self, context: &Map) -> Result<Map, Error> {
+    fn args_with(&self, context: &Map) -> Result<Value, Error> {
         let args_raw = self.flow.step_exec_args(self.id().step());
+        let mut args_val = args_raw.clone();
         let ctx = RenderContext::wraps(context)?;
-        return self.render_object_with(&args_raw, &ctx);
+        flow::render_value(self.handlebars, &ctx, &mut args_val)?;
+        return Ok(args_val);
     }
 }

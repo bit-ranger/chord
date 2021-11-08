@@ -34,7 +34,7 @@ pub struct TaskRunner {
     stage_id: Arc<String>,
     stage_state: TaskState,
 
-    pre_ctx: Option<Arc<Value>>,
+    pre_ctx: Option<Arc<Map>>,
     #[allow(dead_code)]
     pre_assess: Option<Box<dyn CaseAssess>>,
     #[allow(dead_code)]
@@ -42,7 +42,7 @@ pub struct TaskRunner {
 
     task_state: TaskState,
 
-    let_ctx: Option<Arc<Value>>,
+    let_ctx: Option<Arc<Map>>,
     assess_report: Box<dyn Report>,
     case_factory: Box<dyn CaseStore>,
     id: Arc<TaskIdSimple>,
@@ -64,7 +64,7 @@ impl TaskRunner {
             });
             let rc = RenderContext::wraps(rc).unwrap();
             let rso = render_assign_object(flow_app.get_handlebars(), &rc, def_raw)?;
-            Some(Arc::new(Value::Object(rso)))
+            Some(Arc::new(rso))
         } else {
             None
         };
@@ -353,7 +353,7 @@ impl TaskRunner {
 async fn pre_arg(
     flow: Arc<Flow>,
     task_id: Arc<TaskIdSimple>,
-    let_ctx: Option<Arc<Value>>,
+    let_ctx: Option<Arc<Map>>,
     pre_action_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
 ) -> Result<CaseArgStruct, Error> {
     Ok(CaseArgStruct::new(
@@ -369,7 +369,7 @@ async fn pre_arg(
     ))
 }
 
-async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
+async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Map, Error> {
     match pre_assess.state() {
         CaseState::Ok(pa_vec) => {
             let mut pre_ctx = Map::new();
@@ -382,7 +382,7 @@ async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
                     _ => return Err(err!("012", "pre step run failure")),
                 }
             }
-            Ok(Value::Object(pre_ctx))
+            Ok(pre_ctx)
         }
         CaseState::Fail(pa_vec) => {
             let pa_last = pa_vec.last().unwrap();
@@ -395,8 +395,8 @@ async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
 async fn step_vec_create(
     flow_app: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
-    let_ctx: Option<Arc<Value>>,
-    pre_ctx: Option<Arc<Value>>,
+    let_ctx: Option<Arc<Map>>,
+    pre_ctx: Option<Arc<Map>>,
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdSimple>,
 ) -> Result<Vec<(String, Box<dyn Action>)>, Error> {
@@ -418,18 +418,18 @@ async fn step_vec_create(
 
 fn render_context_create(
     flow: Arc<Flow>,
-    let_ctx: Option<Arc<Value>>,
-    pre_ctx: Option<Arc<Value>>,
+    let_ctx: Option<Arc<Map>>,
+    pre_ctx: Option<Arc<Map>>,
 ) -> RenderContext {
     let mut render_data: Map = Map::new();
 
     render_data.insert("__meta__".to_owned(), Value::Object(flow.meta().clone()));
     if let Some(let_ctx) = let_ctx {
-        render_data.insert("let".to_owned(), let_ctx.as_ref().clone());
+        render_data.insert("let".to_owned(), Value::Object(let_ctx.as_ref().clone()));
     }
 
     if let Some(pre_ctx) = pre_ctx {
-        render_data.insert("pre".to_owned(), pre_ctx.as_ref().clone());
+        render_data.insert("pre".to_owned(), Value::Object(pre_ctx.as_ref().clone()));
     }
 
     return RenderContext::wraps(render_data).unwrap();

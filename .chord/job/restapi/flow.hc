@@ -37,7 +37,7 @@ stage.s1.step.crt_inx: {
       body: {
         "settings": {
           "index": {
-            "analysis.analyzer.default.type": "ik_max_word"
+            "analysis.analyzer.letault.type": "ik_max_word"
           }
         },
         "mappings": {

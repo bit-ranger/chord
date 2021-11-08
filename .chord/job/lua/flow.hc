@@ -1,11 +1,14 @@
 version: "0.0.1"
 
+def {
+  lua: """{{fs_read "step1.lua"}}"""
+}
 
 stage.s1.step.step1: {
   let: {
     foo: "{{case.foo}}",
     bar: "{{case.bar}}",
-    lua: """{{fs_read "step1.lua"}}"""
+    lua: "{{def.lua}}"
   },
   exec: {
     action: "lua",

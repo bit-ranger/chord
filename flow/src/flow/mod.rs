@@ -4,16 +4,17 @@ use std::mem::replace;
 use async_std::sync::Arc;
 use async_std::task_local;
 use handlebars::Handlebars;
+use log::trace;
 
+use chord::action::prelude::Map;
 use chord::action::Factory;
 use chord::err;
+use chord::value::{from_str, Value};
 use chord::Error;
-use log::trace;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
 use crate::model::app::{FlowApp, FlowAppStruct, RenderContext};
-use chord::value::{from_str, Value};
 
 mod case;
 mod step;
@@ -117,4 +118,21 @@ fn render_value(
         Value::Bool(_) => Ok(()),
         Value::Number(_) => Ok(()),
     }
+}
+
+fn render_assign_object(
+    handlebars: &Handlebars,
+    render_ctx: &RenderContext,
+    assign_raw: &Map,
+) -> Result<Map, Error> {
+    let mut assign_value = assign_raw.clone();
+    let mut let_render_ctx = render_ctx.clone();
+    for (k, v) in assign_value.iter_mut() {
+        render_value(handlebars, &let_render_ctx, v)?;
+        if let Value::Object(m) = let_render_ctx.data_mut() {
+            m.insert(k.clone(), v.clone());
+        }
+    }
+
+    Ok(assign_value)
 }

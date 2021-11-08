@@ -7,7 +7,7 @@ use regex::Regex;
 
 use crate::err;
 use crate::error::Error;
-use crate::value::{json, map_merge_deep, Map, Value};
+use crate::value::{Map, Value};
 use async_std::path::Path;
 
 lazy_static! {
@@ -17,24 +17,18 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub struct Flow {
     flow: Value,
-    def: Map,
+    meta: Map,
 }
 
 impl Flow {
     pub fn new(flow: Value, dir: &Path) -> Result<Flow, Error> {
-        let mut def = Map::new();
-        def.insert(
-            String::from("__meta__"),
-            json! ({
-                "task_dir": dir.to_path_buf().to_str().unwrap()
-            }),
+        let mut meta = Map::new();
+        meta.insert(
+            "task_dir".to_string(),
+            Value::String(dir.to_path_buf().to_str().unwrap().to_string()),
         );
 
-        if let Some(map) = flow["def"].as_object() {
-            def = map_merge_deep(&def, map);
-        }
-
-        let flow = Flow { flow, def };
+        let flow = Flow { flow, meta };
 
         flow._version()?;
 
@@ -110,7 +104,11 @@ impl Flow {
     }
 
     pub fn def(&self) -> Option<&Map> {
-        Some(&self.def)
+        self.flow["def"].as_object()
+    }
+
+    pub fn meta(&self) -> &Map {
+        &self.meta
     }
 
     pub fn stage_step_id_vec(&self, stage_id: &str) -> Vec<&str> {

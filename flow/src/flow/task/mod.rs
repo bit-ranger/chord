@@ -13,12 +13,13 @@ use chord::output::Report;
 use chord::output::Utc;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::{to_value, Map, Value};
+use chord::value::{json, Map, Value};
 use chord::{err, Error};
 use res::TaskAssessStruct;
 
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
+use crate::flow::render_assign_object;
 use crate::flow::step::arg::CreateArgStruct;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::model::app::{FlowApp, RenderContext};
@@ -40,6 +41,8 @@ pub struct TaskRunner {
     pre_step_vec: Option<Arc<TailDropVec<(String, Box<dyn Action>)>>>,
 
     task_state: TaskState,
+
+    def_ctx: Option<Arc<Value>>,
     assess_report: Box<dyn Report>,
     case_factory: Box<dyn CaseStore>,
     id: Arc<TaskIdSimple>,
@@ -51,15 +54,27 @@ impl TaskRunner {
     pub async fn new(
         case_factory: Box<dyn CaseStore>,
         assess_report: Box<dyn Report>,
-        flow_ctx: Arc<dyn FlowApp>,
+        flow_app: Arc<dyn FlowApp>,
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
     ) -> Result<TaskRunner, Error> {
+        let def_ctx = if let Some(def_raw) = flow.def() {
+            let rc: Value = json!({
+               "__meta__": flow.meta()
+            });
+            let rc = RenderContext::wraps(rc).unwrap();
+            let rso = render_assign_object(flow_app.get_handlebars(), &rc, def_raw)?;
+            Some(Arc::new(Value::Object(rso)))
+        } else {
+            None
+        };
+
         let pre_step_vec = match flow.pre_step_id_vec() {
             Some(pre_ste_id_vec) => {
                 step_vec_create(
-                    flow_ctx.clone(),
+                    flow_app.clone(),
                     flow.clone(),
+                    def_ctx.clone(),
                     None,
                     pre_ste_id_vec.into_iter().map(|s| s.to_owned()).collect(),
                     id.clone(),
@@ -75,39 +90,51 @@ impl TaskRunner {
                 step_vec: Arc::new(TailDropVec::from(vec![])),
                 stage_id: Arc::new("".into()),
                 stage_round_no: 0,
-                task_state: TaskState::Ok,
+
                 stage_state: TaskState::Ok,
 
                 pre_ctx: None,
                 pre_assess: None,
                 pre_step_vec: None,
 
+                task_state: TaskState::Ok,
+
+                def_ctx,
                 assess_report,
                 case_factory,
                 id,
-                flow_ctx,
+                flow_ctx: flow_app,
                 flow,
             };
             Ok(runner)
         } else {
-            let pre_arg = pre_arg(flow.clone(), id.clone(), pre_step_vec.clone()).await?;
-            let pre_assess = case_run(flow_ctx.as_ref(), pre_arg).await;
+            let pre_arg = pre_arg(
+                flow.clone(),
+                id.clone(),
+                def_ctx.clone(),
+                pre_step_vec.clone(),
+            )
+            .await?;
+            let pre_assess = case_run(flow_app.as_ref(), pre_arg).await;
             let pre_ctx = pre_ctx_create(pre_assess.as_ref()).await?;
             let runner = TaskRunner {
                 step_vec: Arc::new(TailDropVec::from(vec![])),
                 stage_id: Arc::new("".into()),
                 stage_round_no: 0,
-                task_state: TaskState::Ok,
+
                 stage_state: TaskState::Ok,
 
                 pre_ctx: Some(Arc::new(pre_ctx)),
                 pre_assess: Some(pre_assess),
                 pre_step_vec: Some(pre_step_vec),
 
+                task_state: TaskState::Ok,
+
+                def_ctx,
                 assess_report,
                 case_factory,
                 id,
-                flow_ctx,
+                flow_ctx: flow_app,
                 flow,
             };
             Ok(runner)
@@ -194,6 +221,7 @@ impl TaskRunner {
         let action_vec = step_vec_create(
             self.flow_ctx.clone(),
             self.flow.clone(),
+            self.def_ctx.clone(),
             self.pre_ctx.clone(),
             step_id_vec,
             self.id.clone(),
@@ -310,6 +338,7 @@ impl TaskRunner {
                     self.step_vec.clone(),
                     d,
                     self.pre_ctx.clone(),
+                    self.def_ctx.clone(),
                     self.id.clone(),
                     self.stage_id.clone(),
                     Arc::new(self.stage_round_no.to_string()),
@@ -324,6 +353,7 @@ impl TaskRunner {
 async fn pre_arg(
     flow: Arc<Flow>,
     task_id: Arc<TaskIdSimple>,
+    def_ctx: Option<Arc<Value>>,
     pre_action_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
 ) -> Result<CaseArgStruct, Error> {
     Ok(CaseArgStruct::new(
@@ -331,10 +361,11 @@ async fn pre_arg(
         pre_action_vec,
         Value::Null,
         None,
+        def_ctx,
         task_id.clone(),
         Arc::new("pre".into()),
-        Arc::new("pre".into()),
-        "pre".into(),
+        Arc::new("1".into()),
+        "1".into(),
     ))
 }
 
@@ -362,17 +393,18 @@ async fn pre_ctx_create(pre_assess: &dyn CaseAssess) -> Result<Value, Error> {
 }
 
 async fn step_vec_create(
-    flow_ctx: Arc<dyn FlowApp>,
+    flow_app: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
+    def_ctx: Option<Arc<Value>>,
     pre_ctx: Option<Arc<Value>>,
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdSimple>,
 ) -> Result<Vec<(String, Box<dyn Action>)>, Error> {
-    let render_context = render_context_create(flow.clone(), pre_ctx);
+    let render_context = render_context_create(flow.clone(), def_ctx, pre_ctx);
     let mut action_vec = vec![];
     for sid in step_id_vec {
         let pr = step_create(
-            flow_ctx.as_ref(),
+            flow_app.as_ref(),
             flow.as_ref(),
             &render_context,
             task_id.clone(),
@@ -384,14 +416,16 @@ async fn step_vec_create(
     Ok(action_vec)
 }
 
-fn render_context_create(flow: Arc<Flow>, pre_ctx: Option<Arc<Value>>) -> RenderContext {
+fn render_context_create(
+    flow: Arc<Flow>,
+    def_ctx: Option<Arc<Value>>,
+    pre_ctx: Option<Arc<Value>>,
+) -> RenderContext {
     let mut render_data: Map = Map::new();
-    let config_def = flow.def();
-    match config_def {
-        Some(def) => {
-            render_data.insert(String::from("def"), to_value(def).unwrap());
-        }
-        None => {}
+
+    render_data.insert("__meta__".to_owned(), Value::Object(flow.meta().clone()));
+    if let Some(def_ctx) = def_ctx {
+        render_data.insert("def".to_owned(), def_ctx.as_ref().clone());
     }
 
     if let Some(pre_ctx) = pre_ctx {

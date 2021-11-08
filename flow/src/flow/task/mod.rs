@@ -130,7 +130,7 @@ impl TaskRunner {
 
                 task_state: TaskState::Ok,
 
-                let_ctx: let_ctx,
+                let_ctx,
                 assess_report,
                 case_factory,
                 id,

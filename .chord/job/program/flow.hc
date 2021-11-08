@@ -49,3 +49,15 @@ stage.s1.step.s2: {
     }
   }
 }
+
+stage.s1.step.s3: {
+  exec: {
+    action: "program",
+    args: {
+      program: "python3",
+      args: [
+        "--version"
+      ]
+    }
+  }
+}

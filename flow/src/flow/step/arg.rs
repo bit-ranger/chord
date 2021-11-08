@@ -112,10 +112,8 @@ impl<'f> CreateArg for CreateArgStruct<'f> {
     }
 
     fn is_static(&self, text: &str) -> bool {
-        if let Some(_) = text.find("{{") {
-            return false;
-        }
-        return true;
+        //handlebars.set_strict_mode(true);
+        self.render_str(text).is_ok()
     }
 }
 

@@ -11,8 +11,8 @@ stage.s1.step.s1: {
   },
   exec: {
     program: {
-      program: "npm",
-      args: [
+      cmd: [
+        "npm",
         "--prefix",
         "{{prefix}}",
         "install"
@@ -29,8 +29,8 @@ stage.s1.step.s2: {
   },
   exec: {
     program: {
-      program: "npm",
-      args: [
+      cmd: [
+        "npm",
         "--prefix",
         "{{prefix}}",
         "run",

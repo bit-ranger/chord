@@ -93,10 +93,23 @@ impl<'a> RunArg for MapRunArg<'a> {
         ctx.insert("item".to_string(), self.item.clone());
         let args = self.delegate.args_with(&ctx)?;
         if let Some(map) = args.get("exec") {
-            if let Value::Object(map) = map {
-                if let Some(args) = map.get("args") {
-                    return Ok(args.clone());
+            if let Value::Object(exec) = map {
+                let step_id = self.id().step();
+                if exec.is_empty() {
+                    return Err(err!(
+                        "flow",
+                        format!("step {} missing exec.action", step_id)
+                    ));
                 }
+
+                if exec.len() != 1 {
+                    return Err(err!(
+                        "flow",
+                        format!("step {} invalid exec.action", step_id)
+                    ));
+                }
+
+                return Ok(exec.values().nth(0).unwrap().clone());
             }
         }
         return Ok(Value::Null);
@@ -110,10 +123,15 @@ impl Factory for IterMapFactory {
         let exec = args_raw["exec"]
             .as_object()
             .ok_or(err!("101", "missing exec"))?;
+        if exec.is_empty() {
+            return Err(err!("102", "missing iter_map.exec.action"));
+        }
 
-        let action = exec["action"]
-            .as_str()
-            .ok_or(err!("102", "missing exec.action"))?;
+        if exec.len() != 1 {
+            return Err(err!("102", "invalid iter_map.exec.action"));
+        }
+
+        let action = exec.keys().nth(0).unwrap().as_str();
         let factory = match action {
             "iter_map" => self as &dyn Factory,
             _ => self

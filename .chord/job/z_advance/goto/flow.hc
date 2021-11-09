@@ -44,15 +44,13 @@ stage.s1.step.s3: {
     arg2: "{{arr def.arg.arg2}}"
   },
   exec: {
-    echo: {
-      echo: [
-        "hello",
-        {
-          hello: "world"
-        },
-        "{{arr arg2}}"
-      ]
-    }
+    echo: [
+      "hello",
+      {
+        hello: "world"
+      },
+      "{{arr arg2}}"
+    ]
   },
   assert: """
     (all

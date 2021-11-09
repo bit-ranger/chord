@@ -2,9 +2,7 @@ version: "0.0.1"
 
 stage.s1.step.step1: {
   exec: {
-    dylib: {
-      lib: "chord_action_dylib_example"
-    }
+    dylib: "chord_action_dylib_example"
   },
   assert: """
     (all

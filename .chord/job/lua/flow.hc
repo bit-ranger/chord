@@ -11,9 +11,7 @@ stage.s1.step.step1: {
     lua: "{{def.lua}}"
   },
   exec: {
-    lua: {
-      lua: "{{lua}}"
-    }
+    lua: "{{lua}}"
   },
   assert: """
     (all
@@ -28,8 +26,7 @@ stage.s1.step.step2: {
     bar: "{{case.bar}}",
   },
   exec: {
-    lua: {
-      lua: """
+    lua: """
         r = os.time();
         t =  "CHORD-" .. tostring(r);
         print(t);
@@ -47,7 +44,6 @@ stage.s1.step.step2: {
             }
         }
       """
-    }
   },
   assert: """
     (all

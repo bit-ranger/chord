@@ -10,18 +10,16 @@ stage.s1.step.s1: {
         "c"
       ],
       exec: {
-        echo: {
-          echo: [
-            {
-              idx: "0-{{idx}}",
-              item: "0-{{item}}"
-            },
-            {
-              idx: "1-{{idx}}",
-              item: "1-{{item}}"
-            }
-          ]
-        }
+        echo: [
+          {
+            idx: "0-{{idx}}",
+            item: "0-{{item}}"
+          },
+          {
+            idx: "1-{{idx}}",
+            item: "1-{{item}}"
+          }
+        ]
       }
     }
   },
@@ -39,8 +37,6 @@ stage.s1.step.s2: {
     content: "{{arr step.s1.value}}"
   },
   exec: {
-    log: {
-      log: "{{arr content}}"
-    }
+    log: "{{arr content}}"
   }
 }

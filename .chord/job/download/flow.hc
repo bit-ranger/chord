@@ -37,8 +37,6 @@ stage.s1.step.setp3: {
     step1_size: "{{step.step1.value.size}}"
   },
   exec: {
-    log: {
-      log: "{{step1_size}}"
-    }
+    log: "{{step1_size}}"
   }
 }

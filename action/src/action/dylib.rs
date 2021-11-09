@@ -32,7 +32,7 @@ impl DylibFactory {
 impl Factory for DylibFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
-        let lib_name = args_raw["lib"].as_str().ok_or(err!("100", "missing lib"))?;
+        let lib_name = args_raw.as_str().ok_or(err!("100", "missing lib"))?;
 
         let mut reload_handler =
             DynamicReload::new(Some(vec![self.lib_dir.as_str()]), None, Search::Default);

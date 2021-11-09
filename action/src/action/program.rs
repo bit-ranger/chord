@@ -129,13 +129,8 @@ impl Drop for ChildHolder {
 }
 
 fn program_command(args: &Value) -> Result<Command, Error> {
-    let cmd = args["program"]
-        .as_str()
-        .ok_or(err!("103", "missing program"))?;
-
-    let mut command = Command::new(cmd);
-
-    let cmd_args = args["args"].as_array().ok_or(err!("103", "missing args"))?;
+    let cmd_args = args["cmd"].as_array().ok_or(err!("103", "missing cmd"))?;
+    let mut command = Command::new(cmd_vec[0].to_string());
 
     for ca in cmd_args {
         let ca = if ca.is_string() {
@@ -149,15 +144,14 @@ fn program_command(args: &Value) -> Result<Command, Error> {
 }
 
 fn program_command_explain(args: &Value) -> Result<String, Error> {
-    let cmd = args["program"]
-        .as_str()
-        .ok_or(err!("103", "missing program"))?;
+    let cmd_vec = args["cmd"].as_array().ok_or(err!("103", "missing cmd"))?;
+    if cmd_vec.len() < 1 {
+        return Err(err!("103", "missing cmd"));
+    }
 
-    let mut command = String::from(cmd);
+    let mut command = String::new();
 
-    let cmd_args = args["args"].as_array().ok_or(err!("103", "missing args"))?;
-
-    for ca in cmd_args {
+    for ca in cmd_vec {
         let ca = if ca.is_string() {
             ca.as_str().unwrap().to_owned()
         } else {

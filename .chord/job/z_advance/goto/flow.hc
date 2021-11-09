@@ -30,9 +30,7 @@ stage.s1.step.s2: {
     s2_goto: "{{reg.s2_goto}}"
   },
   exec: {
-    log: {
-      log: "hello world"
-    }
+    log: "hello world"
   },
   then: [
     {

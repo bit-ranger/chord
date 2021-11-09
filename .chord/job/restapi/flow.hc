@@ -98,9 +98,7 @@ stage.s1.step.insert: {
 
 stage.s1.step.wait: {
   exec: {
-    sleep: {
-      duration: 9
-    }
+    sleep: 9
   }
 }
 

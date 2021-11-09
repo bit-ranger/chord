@@ -129,10 +129,13 @@ impl Drop for ChildHolder {
 }
 
 fn program_command(args: &Value) -> Result<Command, Error> {
-    let cmd_vec = args["cmd"].as_array().ok_or(err!("103", "missing cmd"))?;
-    let mut command = Command::new(cmd_vec[0].to_string());
+    let cmd_vec = args["cmd"].as_array().ok_or(err!("101", "missing cmd"))?;
+    if cmd_vec.len() < 1 {
+        return Err(err!("101", "missing cmd"));
+    }
+    let mut command = Command::new(cmd_vec[0].as_str().ok_or(err!("102", "invalid cmd"))?);
 
-    for ca in cmd_vec {
+    for ca in &cmd_vec[1..] {
         let ca = if ca.is_string() {
             ca.as_str().unwrap().to_owned()
         } else {
@@ -144,9 +147,9 @@ fn program_command(args: &Value) -> Result<Command, Error> {
 }
 
 fn program_command_explain(args: &Value) -> Result<String, Error> {
-    let cmd_vec = args["cmd"].as_array().ok_or(err!("103", "missing cmd"))?;
+    let cmd_vec = args["cmd"].as_array().ok_or(err!("101", "missing cmd"))?;
     if cmd_vec.len() < 1 {
-        return Err(err!("103", "missing cmd"));
+        return Err(err!("101", "missing cmd"));
     }
 
     let mut command = String::new();
@@ -157,8 +160,8 @@ fn program_command_explain(args: &Value) -> Result<String, Error> {
         } else {
             ca.to_string()
         };
+        command.push_str(ca.as_str());
         command.push_str(" ");
-        command.push_str(ca.as_str())
     }
     Ok(command)
 }

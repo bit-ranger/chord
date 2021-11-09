@@ -17,16 +17,13 @@ stage.s1.step.example: {
     arg2: "{{arr def.arg.arg2}}"
   },
   exec: {
-    action: "echo",
-    args: {
-      echo: [
-        "hello",
-        {
-          hello: "world"
-        },
-        "{{arr arg2}}"
-      ]
-    }
+    echo: [
+      "hello",
+      {
+        hello: "world"
+      },
+      "{{arr arg2}}"
+    ]
   },
   assert: """
     (all
@@ -44,10 +41,7 @@ stage.s1.step.example2: {
     lat: "{{case.origin_lat}}"
   },
   exec: {
-    action: "echo",
-    args: {
-      echo: "update bas set a = '{{lon}}' where b = '{{lat}}'"
-    }
+    echo: "update bas set a = '{{lon}}' where b = '{{lat}}'"
   },
   assert: """
     (all
@@ -73,10 +67,7 @@ stage.s2.step.example3: {
     bar: "{{case.bar}}"
   },
   exec: {
-    action: "echo",
-    args: {
-      echo: "update bas set a = '{{foo}}' where b = '{{bar}}'"
-    }
+    echo: "update bas set a = '{{foo}}' where b = '{{bar}}'"
   }
   assert: """
     (all

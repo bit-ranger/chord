@@ -25,9 +25,9 @@ impl HelperDef for ReadHelper {
 
         match param {
             Value::String(x) => {
-                let task_dir = ctx.data()["def"]["__meta__"]["task_dir"]
+                let task_dir = ctx.data()["__meta__"]["task_dir"]
                     .as_str()
-                    .ok_or_else(|| RenderError::new("Param not found for helper \"fs_read\""))?;
+                    .ok_or_else(|| RenderError::new("Param invalid for helper \"fs_read\""))?;
                 let mut file_path = PathBuf::from(task_dir);
                 file_path.push(x);
                 let file_string = read_to_string(file_path).map_err(|e| {
@@ -59,9 +59,9 @@ impl HelperDef for PathHelper {
 
         match param {
             Value::String(x) => {
-                let task_dir = ctx.data()["def"]["__meta__"]["task_dir"]
+                let task_dir = ctx.data()["__meta__"]["task_dir"]
                     .as_str()
-                    .ok_or_else(|| RenderError::new("Param not found for helper \"fs_path\""))?;
+                    .ok_or_else(|| RenderError::new("Param invalid for helper \"fs_path\""))?;
                 let mut file_path = PathBuf::from(task_dir);
                 file_path.push(x);
                 let path_string = file_path

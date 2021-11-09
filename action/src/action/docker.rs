@@ -22,7 +22,7 @@ impl Docker {
 #[async_trait]
 impl Factory for Docker {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = Value::Object(arg.args_raw().clone());
+        let args_raw = arg.args_raw();
         let image = args_raw["image"]
             .as_str()
             .ok_or(err!("010", "missing image"))?;
@@ -38,7 +38,7 @@ struct ImageWrapper(Image);
 #[async_trait]
 impl Action for ImageWrapper {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = Value::Object(arg.args()?);
+        let args = arg.args()?;
         let cmd = &args["cmd"];
 
         let mut ca = Arg::default();

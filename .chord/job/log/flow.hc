@@ -7,9 +7,6 @@ stage.s1.step.s1: {
     lon_lat: "{{lon}},{{lat}}"
   },
   exec: {
-    action: "log",
-    args: {
-      log: "dml >>> update some_table set column1 = '{{lon_lat}}' where id = 1'"
-    }
+    log: "dml >>> update some_table set column1 = '{{lon_lat}}' where id = 1'"
   }
 }

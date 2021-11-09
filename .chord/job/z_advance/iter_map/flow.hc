@@ -3,27 +3,23 @@ version: "0.0.1"
 
 stage.s1.step.s1: {
   exec: {
-    action: "iter_map",
-    args: {
+    iter_map: {
       arr: [
         "a",
         "b",
         "c"
       ],
       exec: {
-        action: "echo",
-        args: {
-          echo: [
-            {
-              idx: "0-{{idx}}",
-              item: "0-{{item}}"
-            },
-            {
-              idx: "1-{{idx}}",
-              item: "1-{{item}}"
-            }
-          ]
-        }
+        echo: [
+          {
+            idx: "0-{{idx}}",
+            item: "0-{{item}}"
+          },
+          {
+            idx: "1-{{idx}}",
+            item: "1-{{item}}"
+          }
+        ]
       }
     }
   },
@@ -41,9 +37,6 @@ stage.s1.step.s2: {
     content: "{{arr step.s1.value}}"
   },
   exec: {
-    action: "log",
-    args: {
-      log: "{{arr content}}"
-    }
+    log: "{{arr content}}"
   }
 }

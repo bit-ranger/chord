@@ -24,10 +24,9 @@ struct Sleep {}
 #[async_trait]
 impl Action for Sleep {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let args = Value::Object(arg.args()?);
-        let sec = &args["duration"];
+        let sec = arg.args()?;
         if sec.is_null() {
-            return Err(err!("100", "duration must > 0"));
+            return Err(err!("100", "sleep must > 0"));
         }
         let sec = if sec.is_number() && sec.as_u64().is_some() {
             sec.as_u64().unwrap()
@@ -38,7 +37,7 @@ impl Action for Sleep {
         };
 
         if sec < 1 {
-            return Err(err!("101", "duration must > 0"));
+            return Err(err!("101", "sleep must > 0"));
         }
 
         sleep(Duration::from_secs(sec)).await;

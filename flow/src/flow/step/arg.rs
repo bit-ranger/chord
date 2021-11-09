@@ -65,36 +65,47 @@ impl Display for CreateIdStruct {
     }
 }
 
-pub struct CreateArgStruct<'f> {
+pub struct CreateArgStruct<'f, 'h, 'reg> {
     flow: &'f Flow,
+    handlebars: &'h Handlebars<'reg>,
+    context: RenderContext,
     action: String,
     id: CreateIdStruct,
 }
 
-impl<'f, 'h, 'reg, 'r> CreateArgStruct<'f> {
+impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
     pub fn new(
         flow: &'f Flow,
-        _: &'h Handlebars<'reg>,
-        _: &'r RenderContext,
+        handlebars: &'h Handlebars<'reg>,
+        context: Option<Map>,
         task_id: Arc<dyn TaskId>,
         action: String,
         step_id: String,
-    ) -> CreateArgStruct<'f> {
+    ) -> Result<CreateArgStruct<'f, 'h, 'reg>, Error> {
         let id = CreateIdStruct {
             task_id,
             step: step_id,
         };
-        let context = CreateArgStruct { flow, action, id };
-
-        return context;
+        let context = match context {
+            Some(lv) => RenderContext::wraps(lv),
+            None => RenderContext::wraps(Map::new()),
+        }?;
+        let arg = CreateArgStruct {
+            flow,
+            handlebars,
+            context,
+            action,
+            id,
+        };
+        return Ok(arg);
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
-        Ok(text.to_string())
+    fn render_str(&self, text: &str) -> Result<Value, Error> {
+        return flow::render_str(self.handlebars, &self.context, text);
     }
 }
 
-impl<'f> CreateArg for CreateArgStruct<'f> {
+impl<'f, 'h, 'reg> CreateArg for CreateArgStruct<'f, 'h, 'reg> {
     fn id(&self) -> &dyn CreateId {
         &self.id
     }
@@ -103,19 +114,17 @@ impl<'f> CreateArg for CreateArgStruct<'f> {
         self.action.as_str()
     }
 
-    fn args_raw(&self) -> &Map {
+    fn args_raw(&self) -> &Value {
         self.flow.step_exec_args(self.id.step())
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
+    fn render_str(&self, text: &str) -> Result<Value, Error> {
         self.render_str(text)
     }
 
     fn is_static(&self, text: &str) -> bool {
-        if let Some(_) = text.find("{{") {
-            return false;
-        }
-        return true;
+        //handlebars.set_strict_mode(true);
+        self.render_str(text).is_ok()
     }
 }
 
@@ -209,13 +218,15 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
         self.timeout()
     }
 
-    fn args(&self) -> Result<Map, Error> {
+    fn args(&self) -> Result<Value, Error> {
         self.args_with(self.context.data().as_object().unwrap())
     }
 
-    fn args_with(&self, context: &Map) -> Result<Map, Error> {
+    fn args_with(&self, context: &Map) -> Result<Value, Error> {
         let args_raw = self.flow.step_exec_args(self.id().step());
+        let mut args_val = args_raw.clone();
         let ctx = RenderContext::wraps(context)?;
-        return self.render_object_with(&args_raw, &ctx);
+        flow::render_value(self.handlebars, &ctx, &mut args_val)?;
+        return Ok(args_val);
     }
 }

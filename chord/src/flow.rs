@@ -7,7 +7,7 @@ use regex::Regex;
 
 use crate::err;
 use crate::error::Error;
-use crate::value::{json, map_merge_deep, Map, Value};
+use crate::value::{Map, Value};
 use async_std::path::Path;
 
 lazy_static! {
@@ -17,24 +17,18 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub struct Flow {
     flow: Value,
-    def: Map,
+    meta: Map,
 }
 
 impl Flow {
     pub fn new(flow: Value, dir: &Path) -> Result<Flow, Error> {
-        let mut def = Map::new();
-        def.insert(
-            String::from("__meta__"),
-            json! ({
-                "task_dir": dir.to_path_buf().to_str().unwrap()
-            }),
+        let mut meta = Map::new();
+        meta.insert(
+            "task_dir".to_string(),
+            Value::String(dir.to_path_buf().to_str().unwrap().to_string()),
         );
 
-        if let Some(map) = flow["def"].as_object() {
-            def = map_merge_deep(&def, map);
-        }
-
-        let flow = Flow { flow, def };
+        let flow = Flow { flow, meta };
 
         flow._version()?;
 
@@ -110,7 +104,11 @@ impl Flow {
     }
 
     pub fn def(&self) -> Option<&Map> {
-        Some(&self.def)
+        self.flow["def"].as_object()
+    }
+
+    pub fn meta(&self) -> &Map {
+        &self.meta
     }
 
     pub fn stage_step_id_vec(&self, stage_id: &str) -> Vec<&str> {
@@ -164,7 +162,7 @@ impl Flow {
         self._step_exec_action(step_id).unwrap()
     }
 
-    pub fn step_exec_args(&self, step_id: &str) -> &Map {
+    pub fn step_exec_args(&self, step_id: &str) -> &Value {
         self._step_exec_args(step_id).unwrap()
     }
 
@@ -246,36 +244,51 @@ impl Flow {
     }
 
     fn _step_exec_check(&self, step_id: &str) -> Result<(), Error> {
-        let enable_keys = vec!["action", "args"];
-
-        let object = self._step(step_id)["exec"].as_object().ok_or(err!(
+        let exec = self._step(step_id)["exec"].as_object().ok_or(err!(
             "flow",
             format!("step {} exec must be a object", step_id)
         ))?;
 
-        for (k, _) in object {
-            if !enable_keys.contains(&k.as_str()) {
-                return Err(err!(
-                    "flow",
-                    format!("unexpected key {} in step.{}.exec", k, step_id)
-                ));
-            }
+        if exec.is_empty() {
+            return Err(err!(
+                "flow",
+                format!("step {} missing exec.action", step_id)
+            ));
+        }
+
+        if exec.len() != 1 {
+            return Err(err!(
+                "flow",
+                format!("step {} invalid exec.action", step_id)
+            ));
         }
 
         Ok(())
     }
 
     fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
-        self._step(step_id)["exec"]["action"].as_str().ok_or(err!(
+        let exec = &self._step(step_id)["exec"].as_object().ok_or(err!(
             "flow",
             format!("step {} missing exec.action", step_id)
-        ))
+        ))?;
+
+        return exec.keys().nth(0).map(|s| s.as_str()).ok_or(err!(
+            "flow",
+            format!("step {} missing exec.action", step_id)
+        ));
     }
 
-    pub fn _step_exec_args(&self, step_id: &str) -> Result<&Map, Error> {
-        self._step(step_id)["exec"]["args"]
-            .as_object()
-            .ok_or(err!("flow", format!("step {} missing exec.args", step_id)))
+    pub fn _step_exec_args(&self, step_id: &str) -> Result<&Value, Error> {
+        let action = self._step_exec_action(step_id)?;
+        let args = &self._step(step_id)["exec"][action];
+        return if args.is_null() {
+            Err(err!(
+                "flow",
+                format!("step {} missing exec.{}", step_id, action)
+            ))
+        } else {
+            Ok(args)
+        };
     }
 
     fn _step_spec_check(&self, step_id: &str) -> Result<(), Error> {
@@ -325,7 +338,16 @@ impl Flow {
     }
 
     pub fn _step_assert(&self, step_id: &str) -> Result<Option<&str>, Error> {
-        Ok(self._step(step_id)["assert"].as_str())
+        match &self._step(step_id)["assert"] {
+            Value::Null => Ok(None),
+            Value::String(s) => Ok(Some(s.as_str())),
+            _ => {
+                return Err(err!(
+                    "flow",
+                    format!("step {} assert must be string", step_id)
+                ));
+            }
+        }
     }
 
     pub fn _step_then(&self, step_id: &str) -> Result<Option<Vec<&Map>>, Error> {

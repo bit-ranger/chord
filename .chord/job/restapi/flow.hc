@@ -17,8 +17,7 @@ stage.s1.step.del_idx: {
     url: "{{def.es.url}}"
   },
   exec: {
-    action: "restapi",
-    args: {
+    restapi: {
       url: "{{url}}/article",
       method: "DELETE"
     }
@@ -30,8 +29,7 @@ stage.s1.step.crt_inx: {
     url: "{{def.es.url}}"
   },
   exec: {
-    action: "restapi",
-    args: {
+    restapi: {
       url: "{{url}}/article",
       method: "PUT",
       body: {
@@ -79,8 +77,7 @@ stage.s1.step.insert: {
     desc: "{{case.desc}}"
   },
   exec: {
-    action: "restapi",
-    args: {
+    restapi: {
       url: "{{url}}/article/_doc/1",
       method: "PUT",
       body: {
@@ -101,10 +98,7 @@ stage.s1.step.insert: {
 
 stage.s1.step.wait: {
   exec: {
-    action: "sleep",
-    args: {
-      duration: 9
-    }
+    sleep: 9
   }
 }
 
@@ -116,8 +110,7 @@ stage.s1.step.search: {
     term: "{{case.term}}"
   },
   exec: {
-    action: "restapi",
-    args: {
+    restapi: {
       url: "{{url}}/article/_search",
       method: "GET",
       body: {

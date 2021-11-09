@@ -5,8 +5,7 @@ stage.s1.step.step1: {
     url: "{{case.url}}"
   },
   exec: {
-    action: "download",
-    args: {
+    download: {
       url: "{{url}}"
     }
   },
@@ -20,8 +19,7 @@ stage.s1.step.step2: {
     url: "{{case.url}}"
   },
   exec: {
-    action: "download",
-    args: {
+    download: {
       header: {
         abc: [
           "a",
@@ -39,9 +37,6 @@ stage.s1.step.setp3: {
     step1_size: "{{step.step1.value.size}}"
   },
   exec: {
-    action: "log",
-    args: {
-      log: "{{step1_size}}"
-    }
+    log: "{{step1_size}}"
   }
 }

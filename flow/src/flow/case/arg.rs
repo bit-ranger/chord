@@ -1,24 +1,23 @@
 use std::fmt::{Display, Formatter};
 
 use async_std::sync::Arc;
+use log::trace;
 
 use chord::action::Action;
 use chord::case::CaseId;
 use chord::collection::TailDropVec;
 use chord::flow::Flow;
+use chord::step::{StepAssess, StepState};
 use chord::task::TaskId;
-use chord::value::{to_value, Map};
+use chord::value::Map;
+use chord::value::Value;
+use chord::Error;
 
-use crate::flow::render_value;
+use crate::flow;
 use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
-use chord::step::{StepAssess, StepState};
-use chord::value::Value;
-use chord::Error;
-use handlebars::Handlebars;
-use log::trace;
 
 #[derive(Clone)]
 pub struct CaseIdStruct {
@@ -83,7 +82,8 @@ impl CaseArgStruct {
         flow: Arc<Flow>,
         step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
         data: Value,
-        pre_ctx: Option<Arc<Value>>,
+        pre_ctx: Option<Arc<Map>>,
+        def_ctx: Option<Arc<Map>>,
         task_id: Arc<dyn TaskId>,
         stage_id: Arc<String>,
         case_exec_id: Arc<String>,
@@ -92,15 +92,17 @@ impl CaseArgStruct {
         let id = Arc::new(CaseIdStruct::new(task_id, stage_id, case_exec_id, case_id));
 
         let mut render_data: Map = Map::new();
-        if let Some(def) = flow.def() {
-            render_data.insert(String::from("def"), to_value(def).unwrap());
+        render_data.insert("__meta__".to_owned(), Value::Object(flow.meta().clone()));
+        if let Some(def_ctx) = def_ctx {
+            render_data.insert(String::from("def"), Value::Object(def_ctx.as_ref().clone()));
+        }
+        if let Some(pre_ctx) = pre_ctx.as_ref() {
+            render_data.insert(String::from("pre"), Value::Object(pre_ctx.as_ref().clone()));
         }
         render_data.insert(String::from("case"), data.clone());
         render_data.insert(String::from("step"), Value::Object(Map::new()));
         render_data.insert(String::from("reg"), Value::Object(Map::new()));
-        if let Some(pre_ctx) = pre_ctx.as_ref() {
-            render_data.insert(String::from("pre"), pre_ctx.as_ref().clone());
-        }
+
         let render_ctx = RenderContext::wraps(render_data).unwrap();
         return CaseArgStruct {
             flow,
@@ -127,8 +129,12 @@ impl CaseArgStruct {
         let let_raw = self.flow.step_let(step_id);
         let let_value = match let_raw {
             Some(let_raw) => {
-                let let_value =
-                    render_let_object(flow_app.get_handlebars(), &self.render_ctx, let_raw)?;
+                let let_value = flow::render_assign_object(
+                    flow_app.get_handlebars(),
+                    &self.render_ctx,
+                    let_raw,
+                    false,
+                )?;
                 Some(let_value)
             }
             None => None,
@@ -166,21 +172,4 @@ impl CaseArgStruct {
             }
         }
     }
-}
-
-fn render_let_object(
-    handlebars: &Handlebars,
-    render_ctx: &RenderContext,
-    let_raw: &Map,
-) -> Result<Map, Error> {
-    let mut let_value = let_raw.clone();
-    let mut let_render_ctx = render_ctx.clone();
-    for (k, v) in let_value.iter_mut() {
-        render_value(handlebars, &let_render_ctx, v)?;
-        if let Value::Object(m) = let_render_ctx.data_mut() {
-            m.insert(k.clone(), v.clone());
-        }
-    }
-
-    Ok(let_value)
 }

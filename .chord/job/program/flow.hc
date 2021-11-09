@@ -1,12 +1,34 @@
 version: "0.0.1"
 
+pre.step.p1 {
+  exec: {
+    program: {
+      cmd: [
+        "python3"
+        "--version"
+      ]
+    }
+  }
+}
+
+pre.step.p2 {
+  exec: {
+    program: {
+      detach: true,
+      cmd: [
+        "python3",
+        "--version"
+      ]
+    }
+  }
+}
+
 stage.s1.step.s1: {
   exec: {
-    action: "program",
-    args: {
-      program: "java",
-      args: [
-        "-version"
+    program: {
+      cmd: [
+        "python3",
+        "--version"
       ]
     }
   }
@@ -14,11 +36,10 @@ stage.s1.step.s1: {
 
 stage.s1.step.s2: {
   exec: {
-    action: "program",
-    args: {
-      lifetime: "case",
-      program: "python",
-      args: [
+    program: {
+      detach: true,
+      cmd: [
+        "python3",
         "--version"
       ]
     }
@@ -27,11 +48,9 @@ stage.s1.step.s2: {
 
 stage.s1.step.s3: {
   exec: {
-    action: "program",
-    args: {
-      lifetime: "task",
-      program: "python",
-      args: [
+    program: {
+      cmd: [
+        "python3",
         "--version"
       ]
     }

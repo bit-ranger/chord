@@ -1,4 +1,3 @@
-use chord::value::{from_str, Value};
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 use jsonpath_rust::JsonPathFinder;
 
@@ -20,10 +19,7 @@ impl HelperDef for JsonHelper {
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"json\""))?;
 
-        match param.value() {
-            Value::String(txt) => Ok(Some(ScopedJson::Derived(from_str(txt)?))),
-            _ => Ok(Some(ScopedJson::Derived(param.value().clone()))),
-        }
+        Ok(Some(ScopedJson::Derived(param.value().clone())))
     }
 }
 

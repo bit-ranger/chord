@@ -1,15 +1,18 @@
 version: "0.0.1"
 
 
+def {
+  prefix: """{{fs_path "nodejs-example"}}"""
+}
+
 stage.s1.step.s1: {
   let {
-    prefix: """{{fs_path "nodejs-example"}}"""
+    prefix: "{{def.prefix}}"
   },
   exec: {
-    action: "program",
-    args: {
-      program: "npm",
-      args: [
+    program: {
+      cmd: [
+        "npm",
         "--prefix",
         "{{prefix}}",
         "install"
@@ -22,13 +25,12 @@ stage.s1.step.s1: {
 stage.s1.step.s2: {
   let: {
     case: "{{obj case}}",
-    prefix: """{{fs_path "nodejs-example"}}"""
+    prefix: "{{def.prefix}}"
   },
   exec: {
-    action: "program",
-    args: {
-      program: "npm",
-      args: [
+    program: {
+      cmd: [
+        "npm",
         "--prefix",
         "{{prefix}}",
         "run",

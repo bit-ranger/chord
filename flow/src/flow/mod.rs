@@ -4,16 +4,17 @@ use std::mem::replace;
 use async_std::sync::Arc;
 use async_std::task_local;
 use handlebars::Handlebars;
+use log::trace;
 
+use chord::action::prelude::Map;
 use chord::action::Factory;
 use chord::err;
+use chord::value::{from_str, Value};
 use chord::Error;
-use log::trace;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
 use crate::model::app::{FlowApp, FlowAppStruct, RenderContext};
-use chord::value::{from_str, Value};
 
 mod case;
 mod step;
@@ -47,7 +48,7 @@ fn render_str(
                 Value::Bool(from_str(rv.as_str()).map_err(|_| err!("001", "invalid args bool"))?)
             } else if text_inner_trim.starts_with("obj ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
-                trace!("render_str real_text: {}", real_text);
+                trace!("obj real text: {}", real_text);
                 let rv = handlebars
                     .render_template_with_context(real_text.as_str(), render_ctx)
                     .map_err(|e| err!("tpl", format!("{}", e)))?;
@@ -57,7 +58,7 @@ fn render_str(
                 )
             } else if text_inner_trim.starts_with("arr ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
-                trace!("render_str real_text: {}", real_text);
+                trace!("arr real text: {}", real_text);
                 let rv = handlebars
                     .render_template_with_context(real_text.as_str(), render_ctx)
                     .map_err(|e| err!("tpl", format!("{}", e)))?;
@@ -65,6 +66,15 @@ fn render_str(
                     from_str(rv.as_str())
                         .map_err(|e| err!("001", format!("invalid args arr, {}", e)))?,
                 )
+            } else if text_inner_trim.starts_with("json ") {
+                let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
+                trace!("json real text: {}", real_text);
+                let rv = handlebars
+                    .render_template_with_context(real_text.as_str(), render_ctx)
+                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                let value: Value = from_str(rv.as_str())
+                    .map_err(|e| err!("001", format!("invalid args arr, {}", e)))?;
+                value
             } else {
                 let rv = handlebars
                     .render_template_with_context(text, render_ctx)
@@ -108,4 +118,34 @@ fn render_value(
         Value::Bool(_) => Ok(()),
         Value::Number(_) => Ok(()),
     }
+}
+
+fn render_assign_object(
+    handlebars: &Handlebars,
+    render_ctx: &RenderContext,
+    assign_raw: &Map,
+    discard_on_err: bool,
+) -> Result<Map, Error> {
+    let mut assign_value = assign_raw.clone();
+    let mut let_render_ctx = render_ctx.clone();
+    let mut discard_keys = Vec::with_capacity(assign_raw.len());
+    for (k, v) in assign_value.iter_mut() {
+        let rvr = render_value(handlebars, &let_render_ctx, v);
+        if rvr.is_ok() {
+            if let Value::Object(m) = let_render_ctx.data_mut() {
+                m.insert(k.clone(), v.clone());
+            }
+        } else {
+            if discard_on_err {
+                discard_keys.push(k.clone());
+            } else {
+                rvr?;
+            }
+        }
+    }
+    for k in discard_keys {
+        assign_value.remove(&k);
+    }
+
+    Ok(assign_value)
 }

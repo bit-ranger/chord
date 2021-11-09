@@ -2,17 +2,13 @@ version: "0.0.1",
 
 stage.s1.step.s1: {
   exec: {
-    action: "log",
-    args: {
-      log: "{{(num_sub 2.1 1.1)}}"
-    }
+    log: "{{(num_sub 2.1 1.1)}}"
   }
 },
 
 stage.s1.step.s2: {
   exec: {
-    action: "nop",
-    args: {}
+    nop: {}
   },
   assert: """
   (all

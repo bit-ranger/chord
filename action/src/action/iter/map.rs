@@ -20,8 +20,7 @@ impl IterMapFactory {
 
 struct MapCreateArg<'a> {
     iter_arg: &'a dyn CreateArg,
-    args_raw_empty: Map,
-    args_raw: Map,
+    args_raw: Value,
 }
 
 impl<'a> CreateArg for MapCreateArg<'a> {
@@ -33,13 +32,11 @@ impl<'a> CreateArg for MapCreateArg<'a> {
         self.iter_arg.action()
     }
 
-    fn args_raw(&self) -> &Map {
+    fn args_raw(&self) -> &Value {
         &self.args_raw["exec"]["args"]
-            .as_object()
-            .unwrap_or(&self.args_raw_empty)
     }
 
-    fn render_str(&self, text: &str) -> Result<String, Error> {
+    fn render_str(&self, text: &str) -> Result<Value, Error> {
         self.iter_arg.render_str(text)
     }
 
@@ -86,39 +83,55 @@ impl<'a> RunArg for MapRunArg<'a> {
         &self.context
     }
 
-    fn args(&self) -> Result<Map, Error> {
+    fn args(&self) -> Result<Value, Error> {
         self.args_with(self.context())
     }
 
-    fn args_with(&self, context: &Map) -> Result<Map, Error> {
+    fn args_with(&self, context: &Map) -> Result<Value, Error> {
         let mut ctx = context.clone();
         ctx.insert("idx".to_string(), Value::Number(Number::from(self.index)));
         ctx.insert("item".to_string(), self.item.clone());
         let args = self.delegate.args_with(&ctx)?;
         if let Some(map) = args.get("exec") {
-            if let Value::Object(map) = map {
-                if let Some(args) = map.get("args") {
-                    if let Value::Object(args) = args {
-                        return Ok(args.clone());
-                    }
+            if let Value::Object(exec) = map {
+                let step_id = self.id().step();
+                if exec.is_empty() {
+                    return Err(err!(
+                        "flow",
+                        format!("step {} missing exec.action", step_id)
+                    ));
                 }
+
+                if exec.len() != 1 {
+                    return Err(err!(
+                        "flow",
+                        format!("step {} invalid exec.action", step_id)
+                    ));
+                }
+
+                return Ok(exec.values().nth(0).unwrap().clone());
             }
         }
-        return Ok(Map::new());
+        return Ok(Value::Null);
     }
 }
 
 #[async_trait]
 impl Factory for IterMapFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = Value::Object(arg.args_raw().clone());
+        let args_raw = arg.args_raw();
         let exec = args_raw["exec"]
             .as_object()
             .ok_or(err!("101", "missing exec"))?;
+        if exec.is_empty() {
+            return Err(err!("102", "missing iter_map.exec.action"));
+        }
 
-        let action = exec["action"]
-            .as_str()
-            .ok_or(err!("102", "missing exec.action"))?;
+        if exec.len() != 1 {
+            return Err(err!("102", "invalid iter_map.exec.action"));
+        }
+
+        let action = exec.keys().nth(0).unwrap().as_str();
         let factory = match action {
             "iter_map" => self as &dyn Factory,
             _ => self
@@ -130,7 +143,6 @@ impl Factory for IterMapFactory {
 
         let map_create_arg = MapCreateArg {
             iter_arg: arg,
-            args_raw_empty: Map::new(),
             args_raw: arg.args_raw().clone(),
         };
 
@@ -147,7 +159,7 @@ impl Action for IterMap {
         context.insert("idx".to_string(), Value::Null);
         context.insert("item".to_string(), Value::Null);
 
-        let args = Value::Object(arg.args_with(&context)?);
+        let args = arg.args_with(&context)?;
         trace!("{}", args);
         let array = args["arr"].as_array().ok_or(err!("103", "missing arr"))?;
 

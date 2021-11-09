@@ -338,7 +338,16 @@ impl Flow {
     }
 
     pub fn _step_assert(&self, step_id: &str) -> Result<Option<&str>, Error> {
-        Ok(self._step(step_id)["assert"].as_str())
+        match &self._step(step_id)["assert"] {
+            Value::Null => Ok(None),
+            Value::String(s) => Ok(Some(s.as_str())),
+            _ => {
+                return Err(err!(
+                    "flow",
+                    format!("step {} assert must be string", step_id)
+                ));
+            }
+        }
     }
 
     pub fn _step_then(&self, step_id: &str) -> Result<Option<Vec<&Map>>, Error> {

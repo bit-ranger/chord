@@ -8,6 +8,7 @@ use chord_action::FactoryComposite;
 
 use crate::conf::Config;
 use async_std::sync::Arc;
+use chord::value::Value;
 use chord_input::load;
 use chord_output::report::ReportFactory;
 use dirs;
@@ -51,7 +52,12 @@ async fn run(
         .map(|p| PathBuf::from(p))
         .unwrap_or_else(|| PathBuf::from(dirs::home_dir().unwrap().join(".chord").join("conf")));
 
-    let conf_data = load::conf::load(conf_dir_path, "cmd").await?;
+    let conf_data = if load::conf::exists(conf_dir_path.as_path(), "cmd").await {
+        load::conf::load(conf_dir_path.as_path(), "cmd").await?
+    } else {
+        Value::Null
+    };
+
     let config = Config::new(conf_data);
     if verbose {
         println!("config loaded: {}", config);

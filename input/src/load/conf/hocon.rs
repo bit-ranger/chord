@@ -2,7 +2,7 @@ use async_std::path::Path;
 use chord::err;
 use chord::value::{Map, Number, Value};
 use chord::Error;
-use hocon_linked::{Hocon, HoconLoader};
+use hocon::{Hocon, HoconLoader};
 
 pub async fn load<P: AsRef<Path>>(dir_path: P, name: &str) -> Result<Value, Error> {
     let file_path = dir_path.as_ref().join(format!("{}.conf", name));

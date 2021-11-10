@@ -41,7 +41,10 @@ async fn run(
 ) -> Result<(), Error> {
     let input_dir = Path::new(&input);
     if !input_dir.is_dir().await {
-        panic!("input is not a dir {}", input_dir.to_str().unwrap());
+        return Err(err!(
+            "chord",
+            format!("input is not a dir {}", input_dir.to_str().unwrap())
+        ));
     }
 
     let exec_id: String = exec_id.clone();

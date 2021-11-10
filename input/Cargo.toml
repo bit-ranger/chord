@@ -21,4 +21,4 @@ async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 csv = { version = "1.1.5" }
 chrono = { version = "0.4.19", features = ["serde"] }
 log = { version = "0.4.14", features = ["std"] }
-hocon-linked = { version = "0.5.3-dev", features = [] }
+hocon = { version = "0.7.0", features = [] }

@@ -8,8 +8,10 @@ use log::error;
 use log::trace;
 
 use async_recursion::async_recursion;
+use chord::err;
 use chord::flow::{Flow, ID_PATTERN};
 use chord::task::TaskState;
+use chord::value::Value;
 use chord::Error;
 use chord_flow::{FlowApp, TaskIdSimple};
 use chord_input::load;
@@ -22,7 +24,7 @@ pub async fn run<P: AsRef<Path>>(
     exec_id: String,
     job_path: P,
 ) -> Result<Vec<TaskState>, Error> {
-    if dir_is_task(job_path.as_ref().to_path_buf(), PathBuf::new()).await {
+    let task_state_vec = if dir_is_task(job_path.as_ref().to_path_buf(), PathBuf::new()).await {
         task_run_mock(
             app_ctx,
             report_factory,
@@ -40,7 +42,12 @@ pub async fn run<P: AsRef<Path>>(
             PathBuf::new(),
         )
         .await
-    }
+    }?;
+    return if task_state_vec.is_empty() {
+        Err(err!("job", "no task to run"))
+    } else {
+        Ok(task_state_vec)
+    };
 }
 
 #[async_recursion]
@@ -55,7 +62,12 @@ async fn job_run_recur(
     let job_path_str = job_path.to_str().unwrap();
     trace!("job start {}", job_path_str);
 
-    let ctrl_data = load::conf::load(&job_path, "chord").await?;
+    let ctrl_data = if load::conf::exists(&job_path, "chord").await {
+        load::conf::load(&job_path, "chord").await?
+    } else {
+        Value::Null
+    };
+
     let serial = ctrl_data["job"]["serial"].as_bool().unwrap_or(false);
 
     let mut job_dir = read_dir(job_path.clone()).await?;

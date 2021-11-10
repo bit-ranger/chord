@@ -5,7 +5,7 @@ use chord::Error;
 use hocon_linked::{Hocon, HoconLoader};
 
 pub async fn load<P: AsRef<Path>>(dir_path: P, name: &str) -> Result<Value, Error> {
-    let file_path = dir_path.as_ref().join(format!("{}.hc", name));
+    let file_path = dir_path.as_ref().join(format!("{}.conf", name));
     let loader = HoconLoader::new();
     let hocon = loader.strict().load_file(file_path)?.hocon()?;
     let deserialized: Result<Value, Error> = convert(hocon);
@@ -16,7 +16,7 @@ pub async fn load<P: AsRef<Path>>(dir_path: P, name: &str) -> Result<Value, Erro
 }
 
 pub async fn exists<P: AsRef<Path>>(dir_path: P, name: &str) -> bool {
-    let file_path = dir_path.as_ref().join(format!("{}.hc", name));
+    let file_path = dir_path.as_ref().join(format!("{}.conf", name));
     file_path.exists().await
 }
 

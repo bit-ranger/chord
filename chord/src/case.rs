@@ -3,10 +3,11 @@ use std::fmt::Display;
 use chrono::{DateTime, Utc};
 
 use crate::collection::TailDropVec;
-use crate::error::Error;
 use crate::step::StepAssess;
 use crate::task::TaskId;
 use crate::value::Value;
+
+pub enum Error {}
 
 pub trait CaseId: Sync + Send + Display {
     fn case(&self) -> &str;

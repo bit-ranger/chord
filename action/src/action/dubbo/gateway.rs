@@ -23,7 +23,7 @@ pub struct DubboFactory {
 }
 
 impl DubboFactory {
-    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
+    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Box<dyn Error>> {
         if config.is_none() {
             return Err(err!("100", "missing action.dubbo"));
         }
@@ -121,7 +121,7 @@ impl DubboFactory {
 
 #[async_trait]
 impl Factory for DubboFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         Ok(Box::new(Dubbo {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
@@ -138,7 +138,7 @@ struct Dubbo {
 
 #[async_trait]
 impl Action for Dubbo {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         let args = arg.args()?;
         let method_long = args["method"]
             .as_str()

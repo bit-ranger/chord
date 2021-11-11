@@ -7,9 +7,8 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{RequestBuilder, Response, Url};
 
+use crate::docker::Error;
 use chord::value::Value;
-use chord::Error;
-use chord::{cause, err};
 
 pub struct Engine {
     address: String,
@@ -45,7 +44,7 @@ async fn call0(
     tail_size: usize,
 ) -> Result<Vec<String>, DockerError> {
     let url = format!("http://{}/{}", address, uri);
-    let url = Url::from_str(url.as_str()).or(Err(err!("100", format!("invalid url: {}", url))))?;
+    let url = Url::from_str(url.as_str()).or(Err(Error::Host(format!("invalid url: {}", url))))?;
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
@@ -86,34 +85,14 @@ async fn call0(
         }
     }
     return if !res.status().is_success() {
-        Err(err!("020", res.status().to_string()))?
+        Err(Error::Engine(res.status().to_string()))
     } else {
         Ok(tail_lines.into())
     };
 }
 
-struct DockerError(chord::Error);
-
-impl From<surf::Error> for DockerError {
-    fn from(err: surf::Error) -> DockerError {
-        DockerError(err!("102", format!("{}", err.status())))
-    }
-}
-
-impl From<chord::Error> for DockerError {
-    fn from(err: Error) -> Self {
-        DockerError(err)
-    }
-}
-
-impl From<chord::value::Error> for DockerError {
-    fn from(err: chord::value::Error) -> Self {
-        DockerError(cause!("103", "parse fail", err))
-    }
-}
-
-impl Into<chord::Error> for DockerError {
-    fn into(self) -> Error {
-        self.0
+impl From<surf::Error> for Error {
+    fn from(err: surf::Error) -> Error {
+        Error::Engine(err.to_string())
     }
 }

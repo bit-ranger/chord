@@ -1,10 +1,11 @@
 use crate::case::CaseAssess;
-use crate::error::Error;
 use crate::flow::Flow;
 use crate::task::TaskAssess;
 use async_std::sync::Arc;
 pub use async_trait::async_trait;
 pub use chrono::{DateTime, Utc};
+
+pub enum Error {}
 
 #[async_trait]
 pub trait Report: Sync + Send {

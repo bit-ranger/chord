@@ -5,14 +5,14 @@ use log::trace;
 pub struct ProgramFactory {}
 
 impl ProgramFactory {
-    pub async fn new(_: Option<Value>) -> Result<ProgramFactory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<ProgramFactory, Box<dyn Error>> {
         Ok(ProgramFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for ProgramFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         let args_raw = arg.args_raw();
         match args_raw["detach"].as_bool().unwrap_or(false) {
             true => Ok(Box::new(DetachProgram::new(&args_raw)?)),
@@ -24,14 +24,14 @@ impl Factory for ProgramFactory {
 struct AttachProgram {}
 
 impl AttachProgram {
-    fn new(_: &Value) -> Result<AttachProgram, Error> {
+    fn new(_: &Value) -> Result<AttachProgram, Box<dyn Error>> {
         Ok(AttachProgram {})
     }
 }
 
 #[async_trait]
 impl Action for AttachProgram {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         let args = arg.args()?;
         let mut command = program_command(&args)?;
         trace!("program attach command {:?}", command);
@@ -67,7 +67,7 @@ impl Action for AttachProgram {
         }
     }
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Box<dyn Error>> {
         let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))
@@ -77,14 +77,14 @@ impl Action for AttachProgram {
 struct DetachProgram {}
 
 impl DetachProgram {
-    fn new(_: &Value) -> Result<DetachProgram, Error> {
+    fn new(_: &Value) -> Result<DetachProgram, Box<dyn Error>> {
         Ok(DetachProgram {})
     }
 }
 
 #[async_trait]
 impl Action for DetachProgram {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         let args = arg.args()?;
 
         let mut command = program_command(&args)?;
@@ -94,7 +94,7 @@ impl Action for DetachProgram {
         Ok(Box::new(ChildHolder::new(child)))
     }
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Box<dyn Error>> {
         let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))
@@ -128,7 +128,7 @@ impl Drop for ChildHolder {
     }
 }
 
-fn program_command(args: &Value) -> Result<Command, Error> {
+fn program_command(args: &Value) -> Result<Command, Box<dyn Error>> {
     let cmd_vec = args["cmd"].as_array().ok_or(err!("101", "missing cmd"))?;
     if cmd_vec.len() < 1 {
         return Err(err!("101", "missing cmd"));
@@ -146,7 +146,7 @@ fn program_command(args: &Value) -> Result<Command, Error> {
     Ok(command)
 }
 
-fn program_command_explain(args: &Value) -> Result<String, Error> {
+fn program_command_explain(args: &Value) -> Result<String, Box<dyn Error>> {
     let cmd_vec = args["cmd"].as_array().ok_or(err!("101", "missing cmd"))?;
     if cmd_vec.len() < 1 {
         return Err(err!("101", "missing cmd"));

@@ -8,14 +8,14 @@ use crate::value::json;
 #[macro_export]
 macro_rules! err {
     ($code:expr, $message:expr) => {{
-        $crate::Error::new($code, $message)
+        Box::new($crate::Error::new($code, $message))
     }};
 }
 
 #[macro_export]
 macro_rules! cause {
     ($code:expr, $message:expr, $cause:expr) => {{
-        $crate::Error::cause($code, $message, $cause)
+        Box::new($crate::Error::cause($code, $message, $cause))
     }};
 }
 
@@ -86,23 +86,4 @@ impl Debug for Error {
     }
 }
 
-impl<E> From<E> for Error
-where
-    E: StdError + Send + Sync + 'static,
-{
-    fn from(error: E) -> Self {
-        Error::cause("std", error.to_string(), error)
-    }
-}
-
-impl AsRef<dyn StdError + Send + Sync> for Error {
-    fn as_ref(&self) -> &(dyn StdError + Send + Sync + 'static) {
-        self.cause.as_ref().as_ref()
-    }
-}
-
-impl AsRef<dyn StdError> for Error {
-    fn as_ref(&self) -> &(dyn StdError + 'static) {
-        self.cause.as_ref().as_ref()
-    }
-}
+impl std::error::Error for Error {}

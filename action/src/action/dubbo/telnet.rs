@@ -10,7 +10,7 @@ pub struct DubboFactory {
 }
 
 impl DubboFactory {
-    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
+    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Box<dyn Error>> {
         if config.is_none() {
             return Err(err!("dubbo", "missing dubbo.config"));
         }
@@ -28,7 +28,7 @@ impl DubboFactory {
 
 #[async_trait]
 impl Factory for DubboFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         Ok(Box::new(Dubbo {
             address: self.address.clone(),
         }))
@@ -41,7 +41,7 @@ struct Dubbo {
 
 #[async_trait]
 impl Action for Dubbo {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         let mut stream = TcpStream::connect(self.address.as_str())
             .await
             .map_err(|e| err!("connection error", format!("{}", e)))?;

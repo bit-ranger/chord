@@ -8,7 +8,7 @@ pub struct DubboFactory {
 }
 
 impl DubboFactory {
-    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
+    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Box<dyn Error>> {
         if config.is_none() {
             return Err(err!("100", "missing dubbo.config"));
         }
@@ -37,7 +37,7 @@ impl DubboFactory {
 
 #[async_trait]
 impl Factory for DubboFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         self.delegate.create(arg).await
     }
 }

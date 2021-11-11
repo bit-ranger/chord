@@ -5,7 +5,7 @@ use surf::http::Method;
 
 use crate::docker::container::{Arg, Container};
 use crate::docker::engine::Engine;
-use chord::Error;
+use crate::docker::Error;
 
 pub struct Image {
     engine: Arc<Engine>,

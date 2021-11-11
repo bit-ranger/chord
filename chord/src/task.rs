@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
 
-use crate::error::Error;
+pub enum Error {}
 
 pub trait TaskId: Sync + Send + Display {
     fn task(&self) -> &str;

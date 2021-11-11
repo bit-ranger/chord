@@ -12,14 +12,14 @@ use std::fmt::{Display, Formatter};
 pub struct RestapiFactory {}
 
 impl RestapiFactory {
-    pub async fn new(_: Option<Value>) -> Result<RestapiFactory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<RestapiFactory, Box<dyn Error>> {
         Ok(RestapiFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for RestapiFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         Ok(Box::new(Restapi {}))
     }
 }
@@ -28,11 +28,11 @@ struct Restapi {}
 
 #[async_trait]
 impl Action for Restapi {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         run(arg).await
     }
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Box<dyn Error>> {
         let args = arg.args()?;
         let mut curl = Curl::default();
         let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
@@ -68,7 +68,7 @@ impl Action for Restapi {
     }
 }
 
-async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
     let value = run0(arg).await.map_err(|e| e.0)?;
     Ok(Box::new(value))
 }

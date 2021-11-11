@@ -6,14 +6,14 @@ use chord::value::{from_str, Number};
 pub struct RedisFactory {}
 
 impl RedisFactory {
-    pub async fn new(_: Option<Value>) -> Result<RedisFactory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<RedisFactory, Box<dyn Error>> {
         Ok(RedisFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for RedisFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         let args_raw = arg.args_raw();
         if let Some(url) = args_raw["url"].as_str() {
             if arg.is_static(url) {
@@ -35,7 +35,7 @@ struct Redis {
 
 #[async_trait]
 impl Action for Redis {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
@@ -49,7 +49,7 @@ impl Action for Redis {
     }
 }
 
-async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error> {
+async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Box<dyn Error>> {
     let args = arg.args()?;
     let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 

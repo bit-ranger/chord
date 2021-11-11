@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use async_std::sync::Arc;
 use chord::action::prelude::*;
-use chord::err;
 
 mod count;
 mod echo;
@@ -52,7 +51,7 @@ macro_rules! register {
 }
 
 impl FactoryComposite {
-    pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Error> {
+    pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Box<dyn Error>> {
         let mut table: HashMap<String, Arc<dyn Factory>> = HashMap::new();
 
         let config_ref = config.as_ref();
@@ -128,7 +127,7 @@ impl FactoryComposite {
 
 #[async_trait]
 impl Factory for FactoryComposite {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         let action = arg.action();
         self.table
             .get(action)

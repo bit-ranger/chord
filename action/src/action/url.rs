@@ -3,14 +3,14 @@ use chord::action::prelude::*;
 pub struct UrlFactory {}
 
 impl UrlFactory {
-    pub async fn new(_: Option<Value>) -> Result<UrlFactory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<UrlFactory, Box<dyn Error>> {
         Ok(UrlFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for UrlFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         Ok(Box::new(Url {}))
     }
 }
@@ -19,7 +19,7 @@ struct Url {}
 
 #[async_trait]
 impl Action for Url {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 

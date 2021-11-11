@@ -5,14 +5,14 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::err;
-use crate::error::Error;
 use crate::value::{Map, Value};
 use async_std::path::Path;
 
 lazy_static! {
     pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,50}$").unwrap();
 }
+
+pub enum Error {}
 
 #[derive(Debug, Clone)]
 pub struct Flow {

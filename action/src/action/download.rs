@@ -15,7 +15,7 @@ pub struct DownloadFactory {
 }
 
 impl DownloadFactory {
-    pub async fn new(config: Option<Value>) -> Result<DownloadFactory, Error> {
+    pub async fn new(config: Option<Value>) -> Result<DownloadFactory, Box<dyn Error>> {
         if config.is_none() {
             return Err(err!("100", "missing config"));
         }
@@ -39,7 +39,7 @@ impl DownloadFactory {
 
 #[async_trait]
 impl Factory for DownloadFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         let task_dir = self.workdir.join(arg.id().task_id().to_string());
         async_std::fs::create_dir_all(task_dir.as_path()).await?;
         trace!("tmp create {}", task_dir.as_path().to_str().unwrap());
@@ -54,7 +54,7 @@ struct Download {
 
 #[async_trait]
 impl Action for Download {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         let file = run0(self, arg).await.map_err(|e| e.0)?;
         Ok(Box::new(file))
     }

@@ -8,14 +8,14 @@ use chord::value::{Map, Number};
 pub struct DatabaseFactory {}
 
 impl DatabaseFactory {
-    pub async fn new(_: Option<Value>) -> Result<DatabaseFactory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<DatabaseFactory, Box<dyn Error>> {
         Ok(DatabaseFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for DatabaseFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         let args_raw = arg.args_raw();
         if let Some(url) = args_raw["url"].as_str() {
             if arg.is_static(url) {
@@ -36,18 +36,18 @@ struct Database {
 
 #[async_trait]
 impl Action for Database {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         run(&self, arg).await
     }
 }
 
-async fn create_rb(url: &str) -> Result<Rbatis, Error> {
+async fn create_rb(url: &str) -> Result<Rbatis, Box<dyn Error>> {
     let rb = Rbatis::new();
     rb.link(url).await?;
     Ok(rb)
 }
 
-async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
     let args = arg.args()?;
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
@@ -60,7 +60,7 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> 
     };
 }
 
-async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
+async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Box<dyn Error>> {
     let args = arg.args()?;
     let sql = args["sql"].as_str().ok_or(err!("101", "missing sql"))?;
 

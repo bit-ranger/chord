@@ -7,14 +7,14 @@ use chord::action::prelude::*;
 pub struct SleepFactory {}
 
 impl SleepFactory {
-    pub async fn new(_: Option<Value>) -> Result<SleepFactory, Error> {
+    pub async fn new(_: Option<Value>) -> Result<SleepFactory, Box<dyn Error>> {
         Ok(SleepFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for SleepFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
         Ok(Box::new(Sleep {}))
     }
 }
@@ -23,7 +23,7 @@ struct Sleep {}
 
 #[async_trait]
 impl Action for Sleep {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
         let sec = arg.args()?;
         if sec.is_null() {
             return Err(err!("100", "sleep must > 0"));

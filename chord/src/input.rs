@@ -1,7 +1,8 @@
 pub use async_trait::async_trait;
 
-use crate::error::Error;
 use crate::value::Value;
+
+pub enum Error {}
 
 #[async_trait]
 pub trait CaseStore: Sync + Send {

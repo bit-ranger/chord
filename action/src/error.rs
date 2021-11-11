@@ -1,21 +1,20 @@
+use chord::value::json;
 use std::error::Error as StdError;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 
-use crate::value::json;
-
 #[macro_export]
 macro_rules! err {
     ($code:expr, $message:expr) => {{
-        Box::new($crate::Error::new($code, $message))
+        Box::new($crate::error::Error::new($code, $message))
     }};
 }
 
 #[macro_export]
 macro_rules! cause {
     ($code:expr, $message:expr, $cause:expr) => {{
-        Box::new($crate::Error::cause($code, $message, $cause))
+        Box::new($crate::error::Error::cause($code, $message, $cause))
     }};
 }
 

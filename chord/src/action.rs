@@ -7,6 +7,7 @@ use crate::task::TaskId;
 use crate::value::Map;
 use crate::value::Value;
 use core::fmt::Write;
+use std::error::Error;
 use std::time::Duration;
 
 #[derive(thiserror::Error, Debug, Clone)]
@@ -16,8 +17,6 @@ pub enum ArgErr {
 }
 
 pub mod prelude {
-    pub use crate::value::*;
-
     pub use super::async_trait;
     pub use super::Action;
     pub use super::ArgErr;
@@ -25,13 +24,13 @@ pub mod prelude {
     pub use super::Factory;
     pub use super::RunArg;
     pub use super::Scope;
+    pub use crate::value::*;
+    pub use std::error::Error;
 }
 
 pub trait Scope: Sync + Send {
     fn as_value(&self) -> &Value;
 }
-
-pub type Error = dyn std::error::Error + Sync + Send;
 
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &dyn RunId;
@@ -60,16 +59,16 @@ pub trait CreateArg: Sync + Send {
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<Error>>;
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>>;
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Box<Error>> {
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Box<dyn Error>> {
         arg.args().map_err(|e| Box::new(e).into())
     }
 }
 
 #[async_trait]
 pub trait Factory: Sync + Send {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<Error>>;
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>>;
 }
 
 impl Scope for Value {

@@ -10,7 +10,7 @@ use core::fmt::Write;
 use std::time::Duration;
 
 #[derive(thiserror::Error, Debug, Clone)]
-pub enum ArgsErr {
+pub enum ArgErr {
     #[error("{0}")]
     Render(String),
 }
@@ -20,7 +20,7 @@ pub mod prelude {
 
     pub use super::async_trait;
     pub use super::Action;
-    pub use super::ArgsErr;
+    pub use super::ArgErr;
     pub use super::CreateArg;
     pub use super::Factory;
     pub use super::RunArg;
@@ -40,9 +40,9 @@ pub trait RunArg: Sync + Send {
 
     fn timeout(&self) -> Duration;
 
-    fn args(&self) -> Result<Value, ArgsErr>;
+    fn args(&self) -> Result<Value, ArgErr>;
 
-    fn args_with(&self, context: &Map) -> Result<Value, ArgsErr>;
+    fn args_with(&self, context: &Map) -> Result<Value, ArgErr>;
 }
 
 pub trait CreateArg: Sync + Send {
@@ -52,7 +52,7 @@ pub trait CreateArg: Sync + Send {
 
     fn args_raw(&self) -> &Value;
 
-    fn render_str(&self, text: &str) -> Result<Value, ArgsErr>;
+    fn render_str(&self, text: &str) -> Result<Value, ArgErr>;
 
     /// shared in whole action
     fn is_static(&self, text: &str) -> bool;

@@ -1,5 +1,4 @@
 use chord::value::json;
-use std::error::Error as StdError;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
@@ -40,18 +39,18 @@ impl Error {
         }
     }
 
-    pub fn cause<C, M, E>(code: C, message: M, cause: E) -> Error
-    where
-        C: Into<String>,
-        M: Into<String>,
-        E: StdError + Send + Sync + 'static,
-    {
-        Error {
-            code: code.into(),
-            message: message.into(),
-            cause: Arc::new(anyhow::Error::from(cause)),
-        }
-    }
+    // pub fn cause<C, M, E>(code: C, message: M, cause: E) -> Error
+    // where
+    //     C: Into<String>,
+    //     M: Into<String>,
+    //     E: StdError + Send + Sync + 'static,
+    // {
+    //     Error {
+    //         code: code.into(),
+    //         message: message.into(),
+    //         cause: Arc::new(anyhow::Error::from(cause)),
+    //     }
+    // }
 
     #[allow(dead_code)]
     pub fn code(self: &Error) -> &str {

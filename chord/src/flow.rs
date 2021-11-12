@@ -18,16 +18,16 @@ lazy_static! {
 pub enum Error {
     #[error("invalid id `{0}`")]
     IdInvalid(String),
-    #[error("duplicated id `{}`")]
+    #[error("duplicated id `{0}`")]
     IdDuplicated(String),
-    #[error("`{}` lost entry `{}`")]
+    #[error("{0} lost entry `{1}`")]
     EntryLost(String, String),
-    #[error("`{}` unexpect entry `{}`")]
+    #[error("{0} unexpect entry `{1}`")]
     EntryUnexpected(String, String),
-    #[error("`{}` value must `{}` but it `{}`")]
+    #[error("{0} must {1} but it {2}")]
     Violation(String, String, String),
-    #[error("`{}` value un recognized `{}`")]
-    ValueUnrecognized(String, String),
+    #[error("{0} unexpect value {1}")]
+    ValueUnexpected(String, String),
 }
 
 #[derive(Debug, Clone)]
@@ -222,11 +222,11 @@ impl Flow {
         let enable_keys = vec!["let", "spec", "exec", "assert", "then"];
         let step = self._step(step_id);
         let object = step.as_object().ok_or_else(|| {
-            Err(Violation(
+            Violation(
                 format!("step.{}", step_id),
                 "be object".into(),
                 "is not".into(),
-            ));
+            )
         })?;
         for (k, _) in object {
             if !enable_keys.contains(&k.as_str()) {
@@ -444,7 +444,7 @@ impl Flow {
         match break_on {
             "never" => Ok(break_on),
             "stage_fail" => Ok(break_on),
-            o => Err(ValueUnrecognized(
+            o => Err(ValueUnexpected(
                 format!("stage.{}.break_on", stage_id),
                 o.into(),
             )),

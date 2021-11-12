@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::Display;
 
 pub use async_trait::async_trait;
 
@@ -6,7 +6,6 @@ use crate::case::CaseId;
 use crate::task::TaskId;
 use crate::value::Map;
 use crate::value::Value;
-use core::fmt::Write;
 use std::error::Error;
 use std::time::Duration;
 

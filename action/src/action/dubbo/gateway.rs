@@ -11,9 +11,9 @@ use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
-use chord::err;
 use chord::value::{to_string, Deserialize, Serialize};
-use chord::Error;
+
+use crate::err;
 
 pub struct DubboFactory {
     registry_protocol: String,
@@ -176,7 +176,7 @@ impl Action for Dubbo {
 
         let invoke_str = to_string(&invoke)?;
         trace!("invoke request {}", invoke_str);
-        let value = remote_invoke(self.port, invoke).await.map_err(|e| e.0)?;
+        let value = remote_invoke(self.port, invoke).await?;
         trace!("invoke response {}, {}", invoke_str, &value);
         let value = &value;
         if value["success"].as_bool().unwrap_or(false) {
@@ -190,7 +190,7 @@ impl Action for Dubbo {
     }
 }
 
-async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, DubboError> {
+async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, Box<dyn Error>> {
     let rb = RequestBuilder::new(
         Method::Post,
         Url::from_str(format!("http://127.0.0.1:{}/api/dubbo/generic/invoke", port).as_str())
@@ -271,24 +271,4 @@ struct Application {
 struct Registry {
     protocol: String,
     address: String,
-}
-
-struct DubboError(chord::Error);
-
-impl From<surf::Error> for DubboError {
-    fn from(err: surf::Error) -> DubboError {
-        DubboError(err!("116", format!("{}", err.status())))
-    }
-}
-
-impl From<chord::value::Error> for DubboError {
-    fn from(err: chord::value::Error) -> DubboError {
-        DubboError(err!("117", format!("{}:{}", err.line(), err.column())))
-    }
-}
-
-impl From<chord::Error> for DubboError {
-    fn from(err: Error) -> Self {
-        DubboError(err)
-    }
 }

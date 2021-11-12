@@ -1,23 +1,15 @@
-use std::fmt::{Display, Formatter};
-
 pub mod container;
 pub mod engine;
 pub mod image;
 
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
-    Host(String),
-    Engine(String),
-    Image(String),
+    #[error("invalid url {0}")]
+    Url(String),
+    #[error("error with status {0}")]
+    Status(u16),
+    #[error("{0}")]
+    Io(String),
+    #[error("container error: {0}")]
     Container(String),
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        match &self {
-            Error::Host(s) => f.write_str(s),
-            Error::Engine(s) => f.write_str(s),
-            Error::Image(s) => f.write_str(s),
-            Error::Container(s) => f.write_str(s),
-        }
-    }
 }

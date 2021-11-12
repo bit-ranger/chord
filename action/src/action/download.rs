@@ -1,14 +1,15 @@
 use std::str::FromStr;
 
-use async_std::io::BufWriter;
 use async_std::path::{Path, PathBuf};
+use futures::io::BufWriter;
 use log::{trace, warn};
 use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
-use chord::value::{Map, Number};
+
+use crate::err;
 
 pub struct DownloadFactory {
     workdir: PathBuf,
@@ -55,7 +56,7 @@ struct Download {
 #[async_trait]
 impl Action for Download {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
-        let file = run0(self, arg).await.map_err(|e| e.0)?;
+        let file = run0(self, arg).await?;
         Ok(Box::new(file))
     }
 }
@@ -63,7 +64,7 @@ impl Action for Download {
 async fn run0(
     download: &Download,
     arg: &dyn RunArg,
-) -> std::result::Result<DownloadFile, DownloadError> {
+) -> std::result::Result<DownloadFile, Box<dyn Error>> {
     let args = arg.args()?;
     let url = args["url"].as_str().ok_or(err!("102", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("103", format!("invalid url: {}", url))))?;
@@ -152,25 +153,5 @@ async fn remove_dir(path: &Path) {
                 warn!("tmp remove {}, {}", path.to_str().unwrap(), e);
             }
         }
-    }
-}
-
-struct DownloadError(chord::Error);
-
-impl From<surf::Error> for DownloadError {
-    fn from(err: surf::Error) -> DownloadError {
-        DownloadError(err!("107", format!("{}", err.status())))
-    }
-}
-
-impl From<chord::Error> for DownloadError {
-    fn from(err: Error) -> Self {
-        DownloadError(err)
-    }
-}
-
-impl From<std::io::Error> for DownloadError {
-    fn from(err: std::io::Error) -> Self {
-        DownloadError(cause!("108", err.to_string(), err))
     }
 }

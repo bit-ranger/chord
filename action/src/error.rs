@@ -1,7 +1,6 @@
 use chord::value::json;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
-use std::sync::Arc;
 
 #[macro_export]
 macro_rules! err {
@@ -10,18 +9,10 @@ macro_rules! err {
     }};
 }
 
-#[macro_export]
-macro_rules! cause {
-    ($code:expr, $message:expr, $cause:expr) => {{
-        Box::new($crate::error::Error::cause($code, $message, $cause))
-    }};
-}
-
 #[derive(Clone)]
 pub struct Error {
     code: String,
     message: String,
-    cause: Arc<anyhow::Error>,
 }
 
 impl Error {
@@ -35,22 +26,8 @@ impl Error {
         Error {
             code: c.clone(),
             message: m,
-            cause: Arc::new(anyhow::Error::msg(c)),
         }
     }
-
-    // pub fn cause<C, M, E>(code: C, message: M, cause: E) -> Error
-    // where
-    //     C: Into<String>,
-    //     M: Into<String>,
-    //     E: StdError + Send + Sync + 'static,
-    // {
-    //     Error {
-    //         code: code.into(),
-    //         message: message.into(),
-    //         cause: Arc::new(anyhow::Error::from(cause)),
-    //     }
-    // }
 
     #[allow(dead_code)]
     pub fn code(self: &Error) -> &str {
@@ -78,9 +55,7 @@ impl Debug for Error {
             })
             .to_string()
             .as_str(),
-        )?;
-        f.write_str("\n")?;
-        Debug::fmt(self.cause.as_ref(), f)
+        )
     }
 }
 

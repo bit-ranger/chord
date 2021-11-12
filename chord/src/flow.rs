@@ -5,6 +5,8 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::flow::Error::EntryLost;
+use crate::flow::Error::*;
 use crate::value::{Map, Value};
 use async_std::path::Path;
 
@@ -12,7 +14,21 @@ lazy_static! {
     pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,50}$").unwrap();
 }
 
-pub enum Error {}
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("invalid id `{0}`")]
+    IdInvalid(String),
+    #[error("duplicated id `{}`")]
+    IdDuplicated(String),
+    #[error("`{}` lost entry `{}`")]
+    EntryLost(String, String),
+    #[error("`{}` unexpect entry `{}`")]
+    EntryUnexpected(String, String),
+    #[error("`{}` value must `{}` but it `{}`")]
+    Violation(String, String, String),
+    #[error("`{}` value un recognized `{}`")]
+    ValueUnrecognized(String, String),
+}
 
 #[derive(Debug, Clone)]
 pub struct Flow {
@@ -36,10 +52,10 @@ impl Flow {
         let pre_step_id_vec = flow.pre_step_id_vec().unwrap_or(vec![]);
         for pre_step_id in pre_step_id_vec {
             if !ID_PATTERN.is_match(pre_step_id) {
-                return Err(err!("flow", format!("step {} invalid id", pre_step_id)));
+                return Err(IdInvalid(pre_step_id.into()));
             }
             if step_id_checked.contains(pre_step_id) {
-                return Err(err!("flow", format!("step {} duplicated id", pre_step_id)));
+                return Err(IdDuplicated(pre_step_id.into()));
             } else {
                 step_id_checked.insert(pre_step_id.into());
             }
@@ -47,12 +63,12 @@ impl Flow {
 
         let stage_id_vec = flow._stage_id_vec()?;
         if stage_id_vec.is_empty() {
-            return Err(err!("flow", "stage missing"));
+            return Err(EntryLost("root".into(), "stage".into()));
         }
 
         for stage_id in stage_id_vec {
             if !ID_PATTERN.is_match(stage_id) {
-                return Err(err!("flow", format!("stage {} invalid id", stage_id)));
+                return Err(IdInvalid(stage_id.into()));
             }
 
             flow._stage_concurrency(stage_id)?;
@@ -63,19 +79,16 @@ impl Flow {
             let stage_step_id_vec = flow._stage_step_id_vec(stage_id)?;
 
             if stage_step_id_vec.is_empty() {
-                return Err(err!("flow", format!("stage {} missing step", stage_id)));
+                return Err(EntryLost(stage_id.into(), "step".into()));
             }
 
             for stage_step_id in stage_step_id_vec {
                 if !ID_PATTERN.is_match(stage_step_id) {
-                    return Err(err!("flow", format!("stage {} invalid id", stage_step_id)));
+                    return Err(IdInvalid(stage_step_id.into()));
                 }
 
                 if step_id_checked.contains(stage_step_id) {
-                    return Err(err!(
-                        "flow",
-                        format!("step {} duplicated id", stage_step_id)
-                    ));
+                    return Err(IdDuplicated(stage_step_id.into()));
                 } else {
                     step_id_checked.insert(stage_step_id.into());
                 }
@@ -188,10 +201,10 @@ impl Flow {
     fn _version(&self) -> Result<&str, Error> {
         let v = self.flow["version"]
             .as_str()
-            .ok_or(err!("flow", "version missing"))?;
+            .ok_or(EntryLost("root".into(), "version".into()))?;
 
         if v != "0.0.1" {
-            return Err(err!("flow", format!("version {} not supported", v)));
+            return Err(Violation("version".into(), "0.0.1".into(), v.into()));
         } else {
             Ok(v)
         }
@@ -201,22 +214,23 @@ impl Flow {
         let step_id_vec = self.flow["stage"][stage_id]["step"]
             .as_object()
             .map(|p| p.keys().map(|k| k.as_str()).collect())
-            .ok_or(err!("flow", format!("stage {} missing step", stage_id)))?;
+            .ok_or(EntryLost(stage_id.into(), "step".into()))?;
         return Ok(step_id_vec);
     }
 
     fn _step_check(&self, step_id: &str) -> Result<(), Error> {
         let enable_keys = vec!["let", "spec", "exec", "assert", "then"];
         let step = self._step(step_id);
-        let object = step
-            .as_object()
-            .ok_or_else(|| err!("flow", format!("step {} must be a object", step_id)))?;
+        let object = step.as_object().ok_or_else(|| {
+            Err(Violation(
+                format!("step.{}", step_id),
+                "be object".into(),
+                "is not".into(),
+            ));
+        })?;
         for (k, _) in object {
             if !enable_keys.contains(&k.as_str()) {
-                return Err(err!(
-                    "flow",
-                    format!("unexpected key {} in step.{}", k, step_id)
-                ));
+                return Err(EntryUnexpected(format!("step.{}", step_id), k.into()));
             }
         }
         return Ok(());
@@ -233,33 +247,32 @@ impl Flow {
         return self.flow["pre"]["step"][step_id].borrow();
     }
 
-    pub fn _step_let(&self, step_id: &str) -> Result<Option<&Map>, Error> {
+    fn _step_let(&self, step_id: &str) -> Result<Option<&Map>, Error> {
         let lv = &self._step(step_id)["let"];
         if lv.is_null() {
             return Ok(None);
         }
         lv.as_object()
             .map(|o| Some(o))
-            .ok_or(err!("flow", format!("step {} missing let", step_id)))
+            .ok_or(EntryLost(format!("step.{}", step_id), "let".into()))
     }
 
     fn _step_exec_check(&self, step_id: &str) -> Result<(), Error> {
-        let exec = self._step(step_id)["exec"].as_object().ok_or(err!(
-            "flow",
-            format!("step {} exec must be a object", step_id)
+        let exec = self._step(step_id)["exec"].as_object().ok_or(Violation(
+            step_id.into(),
+            "be object".into(),
+            "is not".into(),
         ))?;
 
         if exec.is_empty() {
-            return Err(err!(
-                "flow",
-                format!("step {} missing exec.action", step_id)
-            ));
+            return Err(EntryLost(format!("step.{}", step_id), "exec.action".into()));
         }
 
         if exec.len() != 1 {
-            return Err(err!(
-                "flow",
-                format!("step {} invalid exec.action", step_id)
+            return Err(Violation(
+                format!("step.{}.exec.action", step_id),
+                "have only 1 entry".into(),
+                format!("has {}", exec.len()),
             ));
         }
 
@@ -267,25 +280,24 @@ impl Flow {
     }
 
     fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
-        let exec = &self._step(step_id)["exec"].as_object().ok_or(err!(
-            "flow",
-            format!("step {} missing exec.action", step_id)
+        let exec = &self._step(step_id)["exec"].as_object().ok_or(Violation(
+            format!("step.{}.exec.action", step_id),
+            "be object".into(),
+            "is not".into(),
         ))?;
 
-        return exec.keys().nth(0).map(|s| s.as_str()).ok_or(err!(
-            "flow",
-            format!("step {} missing exec.action", step_id)
-        ));
+        return exec
+            .keys()
+            .nth(0)
+            .map(|s| s.as_str())
+            .ok_or(EntryLost(format!("step.{}", step_id), "exec.action".into()));
     }
 
     pub fn _step_exec_args(&self, step_id: &str) -> Result<&Value, Error> {
         let action = self._step_exec_action(step_id)?;
         let args = &self._step(step_id)["exec"][action];
         return if args.is_null() {
-            Err(err!(
-                "flow",
-                format!("step {} missing exec.{}", step_id, action)
-            ))
+            Err(EntryLost(format!("step.{}", step_id), "exec.args".into()))
         } else {
             Ok(args)
         };
@@ -297,17 +309,15 @@ impl Flow {
             return Ok(());
         } else {
             let enable_keys = vec!["timeout", "catch_err"];
-            let object = spec.as_object().ok_or(err!(
-                "flow",
-                format!("step {} spec must be a object", step_id)
+            let object = spec.as_object().ok_or(Violation(
+                format!("step.{}.spec", step_id),
+                "be object".into(),
+                "is not".into(),
             ))?;
 
             for (k, _) in object {
                 if !enable_keys.contains(&k.as_str()) {
-                    return Err(err!(
-                        "flow",
-                        format!("unexpected key {} in step.{}.spec", k, step_id)
-                    ));
+                    return Err(EntryUnexpected(format!("step.{}", step_id), k.into()));
                 }
             }
 
@@ -323,9 +333,10 @@ impl Flow {
 
         let s = s.unwrap();
         if s < 1 {
-            return Err(err!(
-                "flow",
-                format!("step {} spec.timeout must > 0", step_id)
+            return Err(Violation(
+                format!("step.{}.spec.timeout", step_id),
+                "> 0".into(),
+                format!("is {}", s),
             ));
         }
         Ok(Duration::from_secs(s))
@@ -342,9 +353,10 @@ impl Flow {
             Value::Null => Ok(None),
             Value::String(s) => Ok(Some(s.as_str())),
             _ => {
-                return Err(err!(
-                    "flow",
-                    format!("step {} assert must be string", step_id)
+                return Err(Violation(
+                    format!("step.{}.assert", step_id),
+                    "be string".into(),
+                    "is not".into(),
                 ));
             }
         }
@@ -370,7 +382,7 @@ impl Flow {
         let step_id_vec = self.flow["stage"]
             .as_object()
             .map(|p| p.keys().map(|k| k.as_str()).collect())
-            .ok_or(err!("flow", "stage missing"))?;
+            .ok_or(EntryLost("root".into(), "stage".into()))?;
         return Ok(step_id_vec);
     }
 
@@ -382,9 +394,10 @@ impl Flow {
 
         let s = s.unwrap();
         if s < 1 {
-            return Err(err!(
-                "flow",
-                format!("stage {} concurrency must > 0", stage_id)
+            return Err(Violation(
+                format!("stage.{}.concurrency", stage_id),
+                "> 0".into(),
+                format!("is {}", s),
             ));
         }
         Ok(s as usize)
@@ -398,7 +411,11 @@ impl Flow {
 
         let s = s.unwrap();
         if s < 1 {
-            return Err(err!("flow", format!("stage {} round must > 0", stage_id)));
+            return Err(Violation(
+                format!("stage.{}.round", stage_id),
+                "> 0".into(),
+                format!("is {}", s),
+            ));
         }
         Ok(s as usize)
     }
@@ -411,9 +428,10 @@ impl Flow {
 
         let s = s.unwrap();
         if s < 1 {
-            return Err(err!(
-                "flow",
-                format!("stage {} duration must > 0", stage_id)
+            return Err(Violation(
+                format!("stage.{}.duration", stage_id),
+                "> 0".into(),
+                format!("is {}", s),
             ));
         }
         Ok(Duration::from_secs(s))
@@ -426,9 +444,9 @@ impl Flow {
         match break_on {
             "never" => Ok(break_on),
             "stage_fail" => Ok(break_on),
-            o => Err(err!(
-                "flow",
-                format!("stage {} break_on {} unsupported", stage_id, o)
+            o => Err(ValueUnrecognized(
+                format!("stage.{}.break_on", stage_id),
+                o.into(),
             )),
         }
     }

@@ -6,8 +6,7 @@ use crate::collection::TailDropVec;
 use crate::step::StepAssess;
 use crate::task::TaskId;
 use crate::value::Value;
-
-pub enum Error {}
+use std::error::Error;
 
 pub trait CaseId: Sync + Send + Display {
     fn case(&self) -> &str;
@@ -31,7 +30,7 @@ pub trait CaseAssess: Sync + Send {
 
 pub enum CaseState {
     Ok(TailDropVec<Box<dyn StepAssess>>),
-    Err(Error),
+    Err(Box<dyn Error>),
     Fail(TailDropVec<Box<dyn StepAssess>>),
 }
 

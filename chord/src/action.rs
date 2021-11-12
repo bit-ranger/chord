@@ -10,16 +10,9 @@ use core::fmt::Write;
 use std::error::Error;
 use std::time::Duration;
 
-#[derive(thiserror::Error, Debug, Clone)]
-pub enum ArgErr {
-    #[error("{0}")]
-    Render(String),
-}
-
 pub mod prelude {
     pub use super::async_trait;
     pub use super::Action;
-    pub use super::ArgErr;
     pub use super::CreateArg;
     pub use super::Factory;
     pub use super::RunArg;
@@ -39,9 +32,9 @@ pub trait RunArg: Sync + Send {
 
     fn timeout(&self) -> Duration;
 
-    fn args(&self) -> Result<Value, ArgErr>;
+    fn args(&self) -> Result<Value, Box<dyn Error>>;
 
-    fn args_with(&self, context: &Map) -> Result<Value, ArgErr>;
+    fn args_with(&self, context: &Map) -> Result<Value, Box<dyn Error>>;
 }
 
 pub trait CreateArg: Sync + Send {
@@ -51,7 +44,7 @@ pub trait CreateArg: Sync + Send {
 
     fn args_raw(&self) -> &Value;
 
-    fn render_str(&self, text: &str) -> Result<Value, ArgErr>;
+    fn render_str(&self, text: &str) -> Result<Value, Box<dyn Error>>;
 
     /// shared in whole action
     fn is_static(&self, text: &str) -> bool;
@@ -62,7 +55,7 @@ pub trait Action: Sync + Send {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>>;
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Box<dyn Error>> {
-        arg.args().map_err(|e| Box::new(e).into())
+        arg.args()
     }
 }
 

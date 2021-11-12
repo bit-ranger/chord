@@ -17,6 +17,7 @@ use chord_flow::{FlowApp, TaskIdSimple};
 use chord_input::load;
 use chord_output::report::{Factory, ReportFactory};
 use itertools::Itertools;
+use std::error::Error;
 
 pub async fn run<P: AsRef<Path>>(
     app_ctx: Arc<dyn FlowApp>,
@@ -219,7 +220,7 @@ async fn task_run0<P: AsRef<Path>>(
     task_id: Arc<TaskIdSimple>,
     app_ctx: Arc<dyn FlowApp>,
     report_factory: Arc<ReportFactory>,
-) -> Result<TaskState, Error> {
+) -> Result<TaskState, Box<dyn Error>> {
     let task_path = Path::new(task_path.as_ref());
     let flow = load::flow::load(task_path, "flow").await?;
     let flow = Flow::new(flow, task_path)?;

@@ -37,7 +37,7 @@ impl<'a> CreateArg for MapCreateArg<'a> {
         &self.args_raw["exec"]["args"]
     }
 
-    fn render_str(&self, text: &str) -> Result<Value, ArgErr> {
+    fn render_str(&self, text: &str) -> Result<Value, Box<dyn Error>> {
         self.iter_arg.render_str(text)
     }
 
@@ -84,11 +84,11 @@ impl<'a> RunArg for MapRunArg<'a> {
         &self.context
     }
 
-    fn args(&self) -> Result<Value, ArgErr> {
+    fn args(&self) -> Result<Value, Box<dyn Error>> {
         self.args_with(self.context())
     }
 
-    fn args_with(&self, context: &Map) -> Result<Value, ArgErr> {
+    fn args_with(&self, context: &Map) -> Result<Value, Box<dyn Error>> {
         let mut ctx = context.clone();
         ctx.insert("idx".to_string(), Value::Number(Number::from(self.index)));
         ctx.insert("item".to_string(), self.item.clone());

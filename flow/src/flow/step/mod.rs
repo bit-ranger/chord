@@ -1,23 +1,38 @@
+use std::error::Error as StdErr;
 use std::panic::AssertUnwindSafe;
 
 use async_std::future::timeout;
 use chrono::{DateTime, Utc};
 use futures::FutureExt;
+use handlebars::TemplateRenderError;
 use log::{debug, error, info, trace, warn};
 
 use chord::action::{Action, Scope};
 use chord::err;
 use chord::step::StepState;
+use chord::value::{json, to_string_pretty, Value};
 use chord::Error;
 use res::StepAssessStruct;
 
 use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepThen;
+use crate::flow::step::Error::ValueUnexpected;
 use crate::model::app::FlowApp;
-use chord::value::{json, to_string_pretty, Value};
 
 pub mod arg;
 pub mod res;
+
+#[derive(thiserror::Error, Debug)]
+enum Error {
+    #[error("timeout")]
+    Timeout,
+    #[error("unwind")]
+    Unwind,
+    #[error("{0} unexpect value {1}")]
+    ValueUnexpected(String, String),
+    #[error("render error")]
+    Render(TemplateRenderError),
+}
 
 pub async fn run(
     _: &dyn FlowApp,
@@ -46,7 +61,7 @@ fn assess_create(
     arg: &mut RunArgStruct<'_, '_, '_>,
     start: DateTime<Utc>,
     explain: Value,
-    action_value: Result<Box<dyn Scope>, Error>,
+    action_value: Result<Box<dyn Scope>, Box<dyn StdErr>>,
 ) -> StepAssessStruct {
     if let Err(e) = action_value.as_ref() {
         if !arg.catch_err() {
@@ -61,7 +76,7 @@ fn assess_create(
                 start,
                 Utc::now(),
                 explain,
-                StepState::Err(e.clone()),
+                StepState::Err(e),
                 None,
             );
         } else {
@@ -92,7 +107,7 @@ fn assess_create(
                 start,
                 Utc::now(),
                 explain,
-                StepState::Err(e),
+                StepState::Err(e?),
                 None,
             )
         }
@@ -140,7 +155,10 @@ fn assert_and_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<(bool, Option<StepT
     };
 }
 
-fn value_assert(arg: &RunArgStruct<'_, '_, '_>, condition: Option<&str>) -> Result<bool, Error> {
+fn value_assert(
+    arg: &RunArgStruct<'_, '_, '_>,
+    condition: Option<&str>,
+) -> Result<bool, TemplateRenderError> {
     if let Some(condition) = condition {
         assert(arg, condition)
     } else {
@@ -163,11 +181,11 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
             let goto = if goto.is_none() {
                 None
             } else if let Value::String(goto) = goto.unwrap() {
+                let goto = arg.render_str(goto.as_str())?;
                 Some(
-                    arg.render_str(goto.as_str())?
-                        .as_str()
+                    goto.as_str()
                         .map(|s| s.to_string())
-                        .ok_or_else(|| err!("step", "goto must be a step_id"))?,
+                        .ok_or_else(|| ValueUnexpected("then.goto".into(), goto.to_string()))?,
                 )
             } else {
                 None
@@ -187,7 +205,7 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
     return Ok(None);
 }
 
-fn assert(arg: &RunArgStruct<'_, '_, '_>, condition: &str) -> Result<bool, Error> {
+fn assert(arg: &RunArgStruct<'_, '_, '_>, condition: &str) -> Result<bool, TemplateRenderError> {
     let assert_tpl = format!("{{{{{condition}}}}}", condition = condition);
     let assert_result = arg.render_str(assert_tpl.as_str())?;
     Ok(assert_result == "true")

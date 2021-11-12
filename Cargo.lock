@@ -717,6 +717,7 @@ dependencies = [
  "jsonpath-rust",
  "lazy_static",
  "log",
+ "thiserror",
 ]
 
 [[package]]

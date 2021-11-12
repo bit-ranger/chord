@@ -3,7 +3,8 @@ use std::mem::replace;
 
 use async_std::sync::Arc;
 use async_std::task_local;
-use handlebars::Handlebars;
+use handlebars::TemplateRenderError::RenderError as Re;
+use handlebars::{Handlebars, RenderError, TemplateRenderError};
 use log::trace;
 
 use chord::action::prelude::Map;
@@ -32,62 +33,54 @@ fn render_str(
     handlebars: &Handlebars<'_>,
     render_ctx: &RenderContext,
     text: &str,
-) -> Result<Value, Error> {
+) -> Result<Value, TemplateRenderError> {
     if text.starts_with("{{") && text.ends_with("}}") {
         let text_inner_trim = &text[2..text.len() - 2].trim();
         if !text_inner_trim.contains("{{") && !text_inner_trim.contains("}}") {
             let value = if text_inner_trim.starts_with("num ") {
-                let rv = handlebars
-                    .render_template_with_context(text, render_ctx)
-                    .map_err(|e| err!("tpl", format!("{}", e)))?;
-                Value::Number(from_str(rv.as_str()).map_err(|_| err!("001", "invalid args num"))?)
+                let rv = handlebars.render_template_with_context(text, render_ctx)?;
+                Value::Number(
+                    from_str(rv.as_str())
+                        .map_err(|_| Re(RenderError::new("invalid arg of num")))?,
+                )
             } else if text_inner_trim.starts_with("bool ") {
-                let rv = handlebars
-                    .render_template_with_context(text, render_ctx)
-                    .map_err(|e| err!("tpl", format!("{}", e)))?;
-                Value::Bool(from_str(rv.as_str()).map_err(|_| err!("001", "invalid args bool"))?)
+                let rv = handlebars.render_template_with_context(text, render_ctx)?;
+                Value::Bool(
+                    from_str(rv.as_str())
+                        .map_err(|_| Re(RenderError::new("invalid arg of bool")))?,
+                )
             } else if text_inner_trim.starts_with("obj ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
                 trace!("obj real text: {}", real_text);
-                let rv = handlebars
-                    .render_template_with_context(real_text.as_str(), render_ctx)
-                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                let rv = handlebars.render_template_with_context(real_text.as_str(), render_ctx)?;
                 Value::Object(
                     from_str(rv.as_str())
-                        .map_err(|e| err!("001", format!("invalid args obj, {}", e)))?,
+                        .map_err(|e| Re(RenderError::new("invalid arg of obj")))?,
                 )
             } else if text_inner_trim.starts_with("arr ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
                 trace!("arr real text: {}", real_text);
-                let rv = handlebars
-                    .render_template_with_context(real_text.as_str(), render_ctx)
-                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                let rv = handlebars.render_template_with_context(real_text.as_str(), render_ctx)?;
                 Value::Array(
                     from_str(rv.as_str())
-                        .map_err(|e| err!("001", format!("invalid args arr, {}", e)))?,
+                        .map_err(|e| Re(RenderError::new("invalid arg of arr")))?,
                 )
             } else if text_inner_trim.starts_with("json ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
                 trace!("json real text: {}", real_text);
-                let rv = handlebars
-                    .render_template_with_context(real_text.as_str(), render_ctx)
-                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                let rv = handlebars.render_template_with_context(real_text.as_str(), render_ctx)?;
                 let value: Value = from_str(rv.as_str())
-                    .map_err(|e| err!("001", format!("invalid args arr, {}", e)))?;
+                    .map_err(|e| Re(RenderError::new("invalid arg of json")))?;
                 value
             } else {
-                let rv = handlebars
-                    .render_template_with_context(text, render_ctx)
-                    .map_err(|e| err!("tpl", format!("{}", e)))?;
+                let rv = handlebars.render_template_with_context(text, render_ctx)?;
                 Value::String(rv)
             };
             return Ok(value);
         }
     }
 
-    let rv = handlebars
-        .render_template_with_context(text, render_ctx)
-        .map_err(|e| err!("tpl", format!("{}", e)))?;
+    let rv = handlebars.render_template_with_context(text, render_ctx)?;
     Ok(Value::String(rv))
 }
 
@@ -95,7 +88,7 @@ fn render_value(
     handlebars: &Handlebars,
     render_ctx: &RenderContext,
     value: &mut Value,
-) -> Result<(), Error> {
+) -> Result<(), TemplateRenderError> {
     match value {
         Value::String(v) => {
             let vr = render_str(handlebars, render_ctx, v)?;
@@ -125,7 +118,7 @@ fn render_assign_object(
     render_ctx: &RenderContext,
     assign_raw: &Map,
     discard_on_err: bool,
-) -> Result<Map, Error> {
+) -> Result<Map, TemplateRenderError> {
     let mut assign_value = assign_raw.clone();
     let mut let_render_ctx = render_ctx.clone();
     let mut discard_keys = Vec::with_capacity(assign_raw.len());

@@ -241,7 +241,7 @@ async fn task_run0<P: AsRef<Path>>(
     )
     .await?;
 
-    let task_assess = runner.run().await?;
+    let task_assess = runner.run().await;
 
     return match task_assess.state() {
         TaskState::Ok => Ok(TaskState::Ok),

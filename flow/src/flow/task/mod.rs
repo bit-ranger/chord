@@ -22,11 +22,21 @@ use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::render_assign_object;
 use crate::flow::step::arg::CreateArgStruct;
 use crate::flow::task::arg::TaskIdSimple;
+use crate::flow::task::Error::{ActionCreate, DefRender};
 use crate::model::app::{FlowApp, RenderContext};
 use crate::CTX_ID;
 
 pub mod arg;
 pub mod res;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("def render error: {0}")]
+    DefRender(Box<dyn std::error::Error>),
+
+    #[error("action create error: {0}")]
+    ActionCreate(Box<dyn std::error::Error>),
+}
 
 pub struct TaskRunner {
     step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
@@ -63,24 +73,24 @@ impl TaskRunner {
                "__meta__": flow.meta()
             });
             let rc = RenderContext::wraps(rc).unwrap();
-            let rso = render_assign_object(flow_app.get_handlebars(), &rc, def_raw, false)?;
+            let rso = render_assign_object(flow_app.get_handlebars(), &rc, def_raw, false)
+                .map_err(|e| DefRender(Box::new(e)))?;
             Some(Arc::new(rso))
         } else {
             None
         };
 
         let pre_step_vec = match flow.pre_step_id_vec() {
-            Some(pre_ste_id_vec) => {
-                step_vec_create(
-                    flow_app.clone(),
-                    flow.clone(),
-                    def_ctx.clone(),
-                    None,
-                    pre_ste_id_vec.into_iter().map(|s| s.to_owned()).collect(),
-                    id.clone(),
-                )
-                .await?
-            }
+            Some(pre_ste_id_vec) => step_vec_create(
+                flow_app.clone(),
+                flow.clone(),
+                def_ctx.clone(),
+                None,
+                pre_ste_id_vec.into_iter().map(|s| s.to_owned()).collect(),
+                id.clone(),
+            )
+            .await
+            .map_err(|e| ActionCreate(Box::new(e)))?,
             None => vec![],
         };
         let pre_step_vec = Arc::new(TailDropVec::from(pre_step_vec));
@@ -145,10 +155,18 @@ impl TaskRunner {
         self.id.clone()
     }
 
-    pub async fn run(&mut self) -> Result<Box<dyn TaskAssess>, Error> {
+    pub async fn run(mut self) -> Box<dyn TaskAssess> {
         trace!("task run {}", self.id);
         let start = Utc::now();
-        self.assess_report.start(start, self.flow.clone()).await?;
+        if let Err(e) = self.assess_report.start(start, self.flow.clone()).await {
+            error!("task Err {}", self.id);
+            return Box::new(TaskAssessStruct::new(
+                self.id,
+                start,
+                Utc::now(),
+                TaskState::Err(e),
+            ));
+        }
         let result = self.start_run().await;
 
         let task_assess = if let Err(e) = result {
@@ -160,9 +178,9 @@ impl TaskRunner {
                 TaskState::Err(e.clone()),
             )
         } else {
-            match &self.task_state {
+            match self.task_state {
                 TaskState::Ok => {
-                    info!("task Ok {}", self.id);
+                    info!("task Ok {}", self.id.clone());
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok)
                 }
                 TaskState::Fail(c) => {
@@ -176,18 +194,27 @@ impl TaskRunner {
                 }
                 TaskState::Err(e) => {
                     error!("task Err {}", self.id);
-                    TaskAssessStruct::new(
-                        self.id.clone(),
-                        start,
-                        Utc::now(),
-                        TaskState::Err(e.clone()),
-                    )
+                    TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Err(e))
                 }
             }
         };
 
-        self.assess_report.end(&task_assess).await?;
-        Ok(Box::new(task_assess))
+        if let Err(e) = self
+            .assess_report
+            .end(&task_assess)
+            .await
+            .map_err(|e| Error::Report(e))?
+        {
+            error!("task Err {}", self.id);
+            return Box::new(TaskAssessStruct::new(
+                self.id,
+                start,
+                Utc::now(),
+                TaskState::Err(e),
+            ));
+        }
+
+        Box::new(task_assess)
     }
 
     async fn start_run(&mut self) -> Result<(), Error> {

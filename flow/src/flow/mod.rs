@@ -9,9 +9,7 @@ use log::trace;
 
 use chord::action::prelude::Map;
 use chord::action::Factory;
-use chord::err;
 use chord::value::{from_str, Value};
-use chord::Error;
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 

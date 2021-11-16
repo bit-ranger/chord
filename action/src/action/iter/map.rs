@@ -14,7 +14,7 @@ impl IterMapFactory {
     pub async fn new(
         _: Option<Value>,
         table: HashMap<String, Arc<dyn Factory>>,
-    ) -> Result<IterMapFactory, Box<dyn Error>> {
+    ) -> Result<IterMapFactory, Error> {
         Ok(IterMapFactory { table })
     }
 }
@@ -37,7 +37,7 @@ impl<'a> CreateArg for MapCreateArg<'a> {
         &self.args_raw["exec"]["args"]
     }
 
-    fn render_str(&self, text: &str) -> Result<Value, Box<dyn Error>> {
+    fn render_str(&self, text: &str) -> Result<Value, Error> {
         self.iter_arg.render_str(text)
     }
 
@@ -84,11 +84,11 @@ impl<'a> RunArg for MapRunArg<'a> {
         &self.context
     }
 
-    fn args(&self) -> Result<Value, Box<dyn Error>> {
+    fn args(&self) -> Result<Value, Error> {
         self.args_with(self.context())
     }
 
-    fn args_with(&self, context: &Map) -> Result<Value, Box<dyn Error>> {
+    fn args_with(&self, context: &Map) -> Result<Value, Error> {
         let mut ctx = context.clone();
         ctx.insert("idx".to_string(), Value::Number(Number::from(self.index)));
         ctx.insert("item".to_string(), self.item.clone());
@@ -119,7 +119,7 @@ impl<'a> RunArg for MapRunArg<'a> {
 
 #[async_trait]
 impl Factory for IterMapFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let exec = args_raw["exec"]
             .as_object()
@@ -155,7 +155,7 @@ impl Factory for IterMapFactory {
 
 #[async_trait]
 impl Action for IterMap {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let mut context = arg.context().clone();
         context.insert("idx".to_string(), Value::Null);
         context.insert("item".to_string(), Value::Null);

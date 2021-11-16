@@ -14,11 +14,23 @@ pub mod prelude {
     pub use super::async_trait;
     pub use super::Action;
     pub use super::CreateArg;
+    pub use super::Error;
     pub use super::Factory;
     pub use super::RunArg;
     pub use super::Scope;
-    pub use crate::value::*;
-    pub use Error;
+
+    pub use crate::value::from_reader;
+    pub use crate::value::from_slice;
+    pub use crate::value::from_str;
+    pub use crate::value::from_value;
+    pub use crate::value::json;
+    pub use crate::value::to_string;
+    pub use crate::value::to_string_pretty;
+    pub use crate::value::Deserialize;
+    pub use crate::value::Map;
+    pub use crate::value::Number;
+    pub use crate::value::Serialize;
+    pub use crate::value::Value;
 }
 
 pub trait Scope: Sync + Send {

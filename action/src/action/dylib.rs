@@ -11,7 +11,7 @@ pub struct DylibFactory {
 }
 
 impl DylibFactory {
-    pub async fn new(config: Option<Value>) -> Result<DylibFactory, Box<dyn Error>> {
+    pub async fn new(config: Option<Value>) -> Result<DylibFactory, Error> {
         if config.is_none() {
             return Err(err!("100", "missing action.dylib"));
         }
@@ -32,7 +32,7 @@ impl DylibFactory {
 
 #[async_trait]
 impl Factory for DylibFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let lib_name = args_raw.as_str().ok_or(err!("100", "missing lib"))?;
 
@@ -50,8 +50,8 @@ struct Dylib {
 
 #[async_trait]
 impl Action for Dylib {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
-        let action_run: Symbol<fn(args: &str) -> Result<String, Box<dyn Error>>> =
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+        let action_run: Symbol<fn(args: &str) -> Result<String, Error>> =
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();
         ar.insert("id".to_string(), Value::String(arg.id().to_string()));

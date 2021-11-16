@@ -10,14 +10,35 @@ use log::trace;
 use async_recursion::async_recursion;
 use chord::err;
 use chord::flow::{Flow, ID_PATTERN};
-use chord::task::TaskState;
+use chord::task::{TaskId, TaskState};
 use chord::value::Value;
 use chord::Error;
 use chord_flow::{FlowApp, TaskIdSimple};
 use chord_input::load;
 use chord_output::report::{Factory, ReportFactory};
 use itertools::Itertools;
-use std::error::Error;
+use Error::*;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("no task")]
+    NoTask,
+
+    #[error("task {0} flow file error: {1}")]
+    FlowFile(String, load::flow::Error),
+
+    #[error("task {0} flow content error: {1}")]
+    FlowContent(String, load::flow::Error),
+
+    #[error("task {0} case store error: {1}")]
+    CaseStore(String, Box<dyn std::error::Error + Sync + Send>),
+
+    #[error("task {0} report error: {1}")]
+    Report(String, Box<dyn std::error::Error + Sync + Send>),
+
+    #[error("task {0} run error: {1}")]
+    TaskRun(String, String),
+}
 
 pub async fn run<P: AsRef<Path>>(
     app_ctx: Arc<dyn FlowApp>,
@@ -45,7 +66,7 @@ pub async fn run<P: AsRef<Path>>(
         .await
     }?;
     return if task_state_vec.is_empty() {
-        Err(err!("job", "no task to run"))
+        Err(NoTask)
     } else {
         Ok(task_state_vec)
     };
@@ -220,32 +241,43 @@ async fn task_run0<P: AsRef<Path>>(
     task_id: Arc<TaskIdSimple>,
     app_ctx: Arc<dyn FlowApp>,
     report_factory: Arc<ReportFactory>,
-) -> Result<TaskState, Box<dyn Error>> {
+) -> Result<TaskState, Error> {
     let task_path = Path::new(task_path.as_ref());
-    let flow = load::flow::load(task_path, "flow").await?;
+    let flow = load::flow::load(task_path, "flow")
+        .await
+        .map_err(|e| FlowFile(task_id.task().to_string(), e))?;
     let flow = Flow::new(flow, task_path)?;
 
     //read
-    let case_store = Box::new(load::data::Store::new(task_path.clone()).await?);
+    let case_store = Box::new(
+        load::case::Store::new(task_path.clone())
+            .await
+            .map_err(|e| CaseStore(task_id.task().to_string(), e))?,
+    );
 
     //write
-    let assess_reporter = report_factory.create(task_id.clone()).await?;
+    let assess_reporter = report_factory
+        .create(task_id.clone())
+        .await
+        .map_err(|e| Report(task_id.task().to_string(), e))?;
 
     //runner
-    let mut runner = chord_flow::TaskRunner::new(
+    let task_assess = chord_flow::TaskRunner::new(
         case_store,
         assess_reporter,
         app_ctx,
         Arc::new(flow),
         task_id.clone(),
     )
-    .await?;
-
-    let task_assess = runner.run().await;
+    .run()
+    .await;
 
     return match task_assess.state() {
         TaskState::Ok => Ok(TaskState::Ok),
         TaskState::Fail(c) => Ok(TaskState::Fail(c.clone())),
-        TaskState::Err(e) => Ok(TaskState::Err(e.clone())),
+        TaskState::Err(e) => Ok(TaskState::Err(Box::new(TaskRun(
+            task_id.task().to_string(),
+            e.to_string(),
+        )))),
     };
 }

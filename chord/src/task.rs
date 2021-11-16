@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
-use std::error::Error;
+
+pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
 pub trait TaskId: Sync + Send + Display {
     fn task(&self) -> &str;
@@ -12,7 +13,7 @@ pub trait TaskId: Sync + Send + Display {
 pub enum TaskState {
     Ok,
     Fail(String),
-    Err(Box<dyn Error + Sync + Send>),
+    Err(Error),
 }
 
 impl TaskState {

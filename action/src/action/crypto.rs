@@ -4,14 +4,14 @@ use chord::action::prelude::*;
 pub struct CryptoFactory {}
 
 impl CryptoFactory {
-    pub async fn new(_: Option<Value>) -> Result<CryptoFactory, Box<dyn Error>> {
+    pub async fn new(_: Option<Value>) -> Result<CryptoFactory, Error> {
         Ok(CryptoFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for CryptoFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Crypto {}))
     }
 }
@@ -20,12 +20,12 @@ struct Crypto {}
 
 #[async_trait]
 impl Action for Crypto {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }
 
-async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     let args = arg.args()?;
     let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 

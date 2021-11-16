@@ -9,13 +9,12 @@ use csv::Writer;
 use futures::StreamExt;
 
 use chord::case::{CaseAssess, CaseState};
-use chord::err;
 use chord::flow::Flow;
 use chord::output::async_trait;
+use chord::output::Error;
 use chord::output::Report;
 use chord::step::StepState;
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::Error;
 
 use crate::report::Factory;
 use chord::value::{to_string_pretty, Value};
@@ -129,8 +128,7 @@ async fn from_path<P: AsRef<Path>>(
     path: P,
     with_bom: bool,
 ) -> Result<Writer<std::fs::File>, Error> {
-    let mut file =
-        std::fs::File::create(path.as_ref().to_str().ok_or(err!("010", "invalid path"))?)?;
+    let mut file = std::fs::File::create(path.as_ref().to_str().unwrap())?;
     if with_bom {
         file.write_all("\u{feff}".as_bytes())?;
     }
@@ -138,9 +136,8 @@ async fn from_path<P: AsRef<Path>>(
 }
 
 async fn prepare<W: std::io::Write>(writer: &mut Writer<W>) -> Result<(), Error> {
-    writer
-        .write_record(create_head())
-        .map_err(|e| err!("csv", e.to_string()))
+    writer.write_record(create_head())?;
+    Ok(())
 }
 
 fn create_head() -> Vec<String> {

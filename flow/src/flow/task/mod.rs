@@ -69,15 +69,15 @@ pub struct TaskRunner {
 
     def_ctx: Option<Arc<Map>>,
     assess_report: Box<dyn Report>,
-    case_factory: Box<dyn CaseStore>,
+    case_store: Box<dyn CaseStore>,
     id: Arc<TaskIdSimple>,
     flow_app: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
 }
 
 impl TaskRunner {
-    pub async fn new(
-        case_factory: Box<dyn CaseStore>,
+    pub fn new(
+        case_store: Box<dyn CaseStore>,
         assess_report: Box<dyn Report>,
         flow_app: Arc<dyn FlowApp>,
         flow: Arc<Flow>,
@@ -98,7 +98,7 @@ impl TaskRunner {
 
             def_ctx: None,
             assess_report,
-            case_factory,
+            case_store,
             id,
             flow_app,
             flow,
@@ -331,7 +331,7 @@ impl TaskRunner {
     ) -> Result<(), Error> {
         let case_name = self.flow.stage_case_name(stage_id);
         let mut data_load = self
-            .case_factory
+            .case_store
             .create(case_name)
             .await
             .map_err(|e| Load(stage_id.to_string(), e))?;

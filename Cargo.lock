@@ -730,6 +730,7 @@ dependencies = [
  "csv",
  "hocon",
  "log",
+ "thiserror",
 ]
 
 [[package]]
@@ -746,6 +747,7 @@ dependencies = [
  "log",
  "serde",
  "surf",
+ "thiserror",
 ]
 
 [[package]]

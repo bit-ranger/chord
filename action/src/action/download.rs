@@ -16,7 +16,7 @@ pub struct DownloadFactory {
 }
 
 impl DownloadFactory {
-    pub async fn new(config: Option<Value>) -> Result<DownloadFactory, Box<dyn Error>> {
+    pub async fn new(config: Option<Value>) -> Result<DownloadFactory, Error> {
         if config.is_none() {
             return Err(err!("100", "missing config"));
         }
@@ -40,7 +40,7 @@ impl DownloadFactory {
 
 #[async_trait]
 impl Factory for DownloadFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let task_dir = self.workdir.join(arg.id().task_id().to_string());
         async_std::fs::create_dir_all(task_dir.as_path()).await?;
         trace!("tmp create {}", task_dir.as_path().to_str().unwrap());
@@ -55,16 +55,13 @@ struct Download {
 
 #[async_trait]
 impl Action for Download {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let file = run0(self, arg).await?;
         Ok(Box::new(file))
     }
 }
 
-async fn run0(
-    download: &Download,
-    arg: &dyn RunArg,
-) -> std::result::Result<DownloadFile, Box<dyn Error>> {
+async fn run0(download: &Download, arg: &dyn RunArg) -> std::result::Result<DownloadFile, Error> {
     let args = arg.args()?;
     let url = args["url"].as_str().ok_or(err!("102", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("103", format!("invalid url: {}", url))))?;

@@ -13,14 +13,14 @@ use crate::err;
 pub struct RestapiFactory {}
 
 impl RestapiFactory {
-    pub async fn new(_: Option<Value>) -> Result<RestapiFactory, Box<dyn Error>> {
+    pub async fn new(_: Option<Value>) -> Result<RestapiFactory, Error> {
         Ok(RestapiFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for RestapiFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Restapi {}))
     }
 }
@@ -29,11 +29,11 @@ struct Restapi {}
 
 #[async_trait]
 impl Action for Restapi {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Box<dyn Error>> {
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
         let args = arg.args()?;
         let mut curl = Curl::default();
         let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
@@ -69,12 +69,12 @@ impl Action for Restapi {
     }
 }
 
-async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     let value = run0(arg).await?;
     Ok(Box::new(value))
 }
 
-async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Box<dyn Error>> {
+async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
     let args = arg.args()?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;

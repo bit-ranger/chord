@@ -11,7 +11,7 @@ pub struct Docker {
 }
 
 impl Docker {
-    pub async fn new(conf: Option<Value>) -> Result<Docker, Box<dyn Error>> {
+    pub async fn new(conf: Option<Value>) -> Result<Docker, Error> {
         let address: String = conf.map_or("".into(), |v| {
             v["address"].as_str().unwrap_or("127.0.0.1:2375").into()
         });
@@ -23,7 +23,7 @@ impl Docker {
 
 #[async_trait]
 impl Factory for Docker {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let image = args_raw["image"]
             .as_str()
@@ -39,7 +39,7 @@ struct ImageWrapper(Image);
 
 #[async_trait]
 impl Action for ImageWrapper {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let cmd = &args["cmd"];
 

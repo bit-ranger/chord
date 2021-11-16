@@ -5,14 +5,14 @@ use crate::err;
 pub struct LuaFactory {}
 
 impl LuaFactory {
-    pub async fn new(_: Option<Value>) -> Result<LuaFactory, Box<dyn Error>> {
+    pub async fn new(_: Option<Value>) -> Result<LuaFactory, Error> {
         Ok(LuaFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for LuaFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Lua {}))
     }
 }
@@ -21,7 +21,7 @@ struct Lua {}
 
 #[async_trait]
 impl Action for Lua {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let rt = rlua::Lua::new();
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {
@@ -39,7 +39,7 @@ impl Action for Lua {
 }
 
 impl Lua {
-    fn eval(&self, lua: rlua::Context, code: String) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+    fn eval(&self, lua: rlua::Context, code: String) -> Result<Box<dyn Scope>, Error> {
         match lua.load(code.as_str()).eval::<rlua::Value>() {
             Ok(v) => {
                 let v: Value = to_value(&v)?;
@@ -50,7 +50,7 @@ impl Lua {
     }
 }
 
-fn to_value(lua_value: &rlua::Value) -> Result<Value, Box<dyn Error>> {
+fn to_value(lua_value: &rlua::Value) -> Result<Value, Error> {
     match lua_value {
         rlua::Value::Nil => Ok(Value::Null),
         rlua::Value::String(v) => Ok(Value::String(v.to_str()?.to_string())),
@@ -84,7 +84,7 @@ fn to_value(lua_value: &rlua::Value) -> Result<Value, Box<dyn Error>> {
     }
 }
 
-fn is_array(table: &rlua::Table) -> Result<bool, Box<dyn Error>> {
+fn is_array(table: &rlua::Table) -> Result<bool, Error> {
     for pair in table.clone().pairs::<rlua::Value, rlua::Value>() {
         let (k, _) = pair?;
         match k {

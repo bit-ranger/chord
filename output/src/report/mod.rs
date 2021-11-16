@@ -7,12 +7,23 @@ mod webhook;
 
 use async_std::sync::Arc;
 use async_trait::async_trait;
-use chord::err;
-use chord::output::Report;
+use chord::output::{Error, Report};
 use chord::task::TaskId;
 use chord::value::Value;
-use chord::Error;
 use std::borrow::Borrow;
+use ReportError::*;
+
+#[derive(thiserror::Error, Debug)]
+enum ReportError {
+    #[error("conf lost")]
+    ConfLost,
+
+    #[error("conf lost")]
+    ConfInvalid,
+
+    #[error("conf lost {0}")]
+    ConfLostKey(String),
+}
 
 #[async_trait]
 pub trait Factory: Sync + Send {
@@ -31,15 +42,15 @@ impl ReportFactory {
     ) -> Result<ReportFactory, Error> {
         match conf {
             None => {
-                return Err(err!("report", "missing conf"));
+                return Err(Box::new(ConfLost));
             }
             Some(c) => {
                 if !c.is_object() {
-                    return Err(err!("report", "invalid conf"));
+                    return Err(Box::new(ConfInvalid));
                 };
                 let kind = c["kind"]
                     .as_str()
-                    .ok_or(err!("report", "missing report.kind"))?;
+                    .ok_or(ConfLostKey("report.kind".into()))?;
 
                 match kind {
                     #[cfg(feature = "report_csv")]
@@ -48,7 +59,7 @@ impl ReportFactory {
                         let factory = csv::ReportFactory::new(
                             v["dir"]
                                 .as_str()
-                                .ok_or(err!("report", "missing report.csv.dir"))?,
+                                .ok_or(ConfLostKey("report.csv.dir".into()))?,
                             name.to_string(),
                             exec_id.to_string(),
                             v["with_bom"].as_bool().unwrap_or(true),
@@ -64,7 +75,7 @@ impl ReportFactory {
                         let factory = elasticsearch::ReportFactory::new(
                             v["url"]
                                 .as_str()
-                                .ok_or(err!("report", "missing report.elasticsearch.url"))?
+                                .ok_or(ConfLostKey("report.elasticsearch.url".into()))?
                                 .to_string(),
                             name.to_string(),
                             exec_id.to_string(),
@@ -80,7 +91,7 @@ impl ReportFactory {
                         let factory = webhook::ReportFactory::new(
                             v["url"]
                                 .as_str()
-                                .ok_or(err!("report", "missing report.webhook.url"))?
+                                .ok_or(ConfLostKey("report.webhook.url".into()))?
                                 .to_string(),
                             name.to_string(),
                             exec_id.to_string(),
@@ -90,7 +101,7 @@ impl ReportFactory {
                             delegate: Box::new(factory),
                         });
                     }
-                    _ => return Err(err!("report", "invalid conf")),
+                    _ => return Err(Box::new(ConfInvalid)),
                 }
             }
         }

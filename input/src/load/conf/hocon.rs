@@ -1,18 +1,14 @@
 use async_std::path::Path;
-use chord::err;
 use chord::value::{Map, Number, Value};
-use chord::Error;
 use hocon::{Hocon, HoconLoader};
+
+pub type Error = hocon::Error;
 
 pub async fn load<P: AsRef<Path>>(dir_path: P, name: &str) -> Result<Value, Error> {
     let file_path = dir_path.as_ref().join(format!("{}.conf", name));
     let loader = HoconLoader::new();
     let hocon = loader.strict().load_file(file_path)?.hocon()?;
-    let deserialized: Result<Value, Error> = convert(hocon);
-    return match deserialized {
-        Err(e) => return Err(err!("hocon", format!("{:?}", e))),
-        Ok(r) => Ok(r),
-    };
+    convert(hocon)
 }
 
 pub async fn exists<P: AsRef<Path>>(dir_path: P, name: &str) -> bool {
@@ -23,9 +19,11 @@ pub async fn exists<P: AsRef<Path>>(dir_path: P, name: &str) -> bool {
 fn convert(hocon: Hocon) -> Result<Value, Error> {
     let hv = match hocon {
         Hocon::Null => Value::Null,
-        Hocon::Real(v) => Value::Number(
-            Number::from_f64(v).ok_or_else(|| err!("hocon", format!("invalid number {}", v)))?,
-        ),
+        Hocon::Real(v) => {
+            Value::Number(Number::from_f64(v).ok_or_else(|| Error::Deserialization {
+                message: format!("{:?}", hocon),
+            })?)
+        }
         Hocon::Integer(v) => Value::Number(Number::from(v)),
         Hocon::String(v) => Value::String(v),
         Hocon::Boolean(v) => Value::Bool(v),
@@ -45,7 +43,9 @@ fn convert(hocon: Hocon) -> Result<Value, Error> {
             }
             Value::Object(m)
         }
-        Hocon::BadValue(e) => Err(err!("hocon", format!("bad value {}", e)))?,
+        Hocon::BadValue(_) => Err(Error::Deserialization {
+            message: format!("{:?}", hocon),
+        })?,
     };
     Ok(hv)
 }

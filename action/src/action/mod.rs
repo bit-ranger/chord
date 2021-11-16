@@ -51,7 +51,7 @@ macro_rules! register {
 }
 
 impl FactoryComposite {
-    pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Box<dyn Error>> {
+    pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Error> {
         let mut table: HashMap<String, Arc<dyn Factory>> = HashMap::new();
 
         let config_ref = config.as_ref();
@@ -127,7 +127,7 @@ impl FactoryComposite {
 
 #[async_trait]
 impl Factory for FactoryComposite {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let action = arg.action();
         self.table
             .get(action)

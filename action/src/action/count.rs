@@ -5,14 +5,14 @@ use chord::action::prelude::*;
 pub struct CountFactory {}
 
 impl CountFactory {
-    pub async fn new(_: Option<Value>) -> Result<CountFactory, Box<dyn Error>> {
+    pub async fn new(_: Option<Value>) -> Result<CountFactory, Box<Error>> {
         Ok(CountFactory {})
     }
 }
 
 #[async_trait]
 impl Factory for CountFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>> {
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let init = args_raw["init"].as_u64().unwrap_or(1);
         let incr = args_raw["incr"].as_u64().unwrap_or(1);
@@ -30,7 +30,7 @@ struct Count {
 
 #[async_trait]
 impl Action for Count {
-    async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>> {
+    async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         Ok(Box::new(Value::Number(Number::from(
             self.num.fetch_add(self.incr, Ordering::SeqCst),
         ))))

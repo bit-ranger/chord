@@ -2,12 +2,11 @@ use chrono::{DateTime, Utc};
 
 use crate::action::{RunId, Scope};
 use crate::value::Value;
-use std::error::Error;
 
 pub enum StepState {
     Ok(Box<dyn Scope>),
     Fail(Box<dyn Scope>),
-    Err(Box<dyn Error>),
+    Err(crate::action::Error),
 }
 
 impl StepState {

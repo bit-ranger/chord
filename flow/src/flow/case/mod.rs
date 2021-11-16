@@ -3,7 +3,6 @@ use log::{error, info, trace, warn};
 
 use chord::case::CaseState;
 use chord::collection::TailDropVec;
-use chord::err;
 use chord::step::{StepAssess, StepState};
 use res::CaseAssessStruct;
 
@@ -14,10 +13,20 @@ use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
 use chord::action::Action;
 use chord::value::Value;
-use chord::Error;
+use handlebars::TemplateRenderError;
+use Error::*;
 
 pub mod arg;
 pub mod res;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("unrecognized step_id: {0}")]
+    StepId(String),
+
+    #[error("{0} render error: {1}")]
+    Render(String, TemplateRenderError),
+}
 
 pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
@@ -31,7 +40,7 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
             return case_fail_by_step_err(
                 step_id.as_str(),
                 arg,
-                err!("step", format!("unrecognized step_id {}", step_id.as_str())),
+                StepId(step_id.to_string()),
                 step_assess_vec,
                 start,
             );
@@ -104,7 +113,7 @@ fn case_fail_by_step_err(
         Utc::now(),
         Utc::now(),
         Value::Null,
-        StepState::Err(e),
+        StepState::Err(Box::new(e)),
         None,
     );
     step_assess_vec.push(Box::new(step_assess));

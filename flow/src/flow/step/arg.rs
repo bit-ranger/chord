@@ -1,17 +1,16 @@
-use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
 
-use handlebars::{Handlebars, RenderError, TemplateRenderError};
+use handlebars::{Handlebars, TemplateRenderError};
 
+use chord::action::Error;
 use chord::action::RunId;
 use chord::action::{CreateArg, CreateId, RunArg};
 use chord::case::CaseId;
 use chord::flow::Flow;
 use chord::task::TaskId;
 use chord::value::{Map, Value};
-use chord::Error;
 
 use crate::flow;
 use crate::model::app::RenderContext;
@@ -82,7 +81,7 @@ impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
         task_id: Arc<dyn TaskId>,
         action: String,
         step_id: String,
-    ) -> Result<CreateArgStruct<'f, 'h, 'reg>, RenderError> {
+    ) -> CreateArgStruct<'f, 'h, 'reg> {
         let id = CreateIdStruct {
             task_id,
             step: step_id,
@@ -90,7 +89,8 @@ impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
         let context = match context {
             Some(lv) => RenderContext::wraps(lv),
             None => RenderContext::wraps(Map::new()),
-        }?;
+        }
+        .unwrap();
         let arg = CreateArgStruct {
             flow,
             handlebars,
@@ -98,7 +98,7 @@ impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
             action,
             id,
         };
-        return Ok(arg);
+        return arg;
     }
 
     fn render_str(&self, text: &str) -> Result<Value, TemplateRenderError> {
@@ -119,14 +119,8 @@ impl<'f, 'h, 'reg> CreateArg for CreateArgStruct<'f, 'h, 'reg> {
         self.flow.step_exec_args(self.id.step())
     }
 
-    fn render_str(&self, text: &str) -> Result<Value, Box<dyn Error>> {
-        self.render_str(text).map_err(|e| {
-            Box::new(match e {
-                TemplateRenderError::TemplateError(e) => e,
-                TemplateRenderError::RenderError(e) => e,
-                TemplateRenderError::IOError(e, _) => e,
-            })
-        })
+    fn render_str(&self, text: &str) -> Result<Value, Error> {
+        Ok(self.render_str(text)?)
     }
 
     fn is_static(&self, text: &str) -> bool {
@@ -149,7 +143,7 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         context: Option<Map>,
         case_id: Arc<dyn CaseId>,
         step_id: String,
-    ) -> Result<RunArgStruct<'f, 'h, 'reg>, RenderError> {
+    ) -> RunArgStruct<'f, 'h, 'reg> {
         let id = RunIdStruct {
             case_id,
             step: step_id,
@@ -157,14 +151,16 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         let context = match context {
             Some(lv) => RenderContext::wraps(lv),
             None => RenderContext::wraps(Map::new()),
-        }?;
+        }
+        .unwrap();
         let run_arg = RunArgStruct {
             flow,
             handlebars,
             context,
             id,
         };
-        return Ok(run_arg);
+
+        return run_arg;
     }
 
     pub fn id(self: &RunArgStruct<'f, 'h, 'reg>) -> &RunIdStruct {
@@ -233,11 +229,11 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
         self.timeout()
     }
 
-    fn args(&self) -> Result<Value, Box<dyn Error>> {
+    fn args(&self) -> Result<Value, Error> {
         self.args_with(self.context.data().as_object().unwrap())
     }
 
-    fn args_with(&self, context: &Map) -> Result<Value, Box<dyn Error>> {
+    fn args_with(&self, context: &Map) -> Result<Value, Error> {
         let args_raw = self.flow.step_exec_args(self.id().step());
         let mut args_val = args_raw.clone();
         let ctx = RenderContext::wraps(context)?;

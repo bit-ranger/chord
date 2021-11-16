@@ -30,7 +30,7 @@ pub trait CaseAssess: Sync + Send {
 
 pub enum CaseState {
     Ok(TailDropVec<Box<dyn StepAssess>>),
-    Err(Box<dyn Error>),
+    Err(Box<dyn Error + Sync + Send>),
     Fail(TailDropVec<Box<dyn StepAssess>>),
 }
 

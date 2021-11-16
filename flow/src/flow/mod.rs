@@ -53,7 +53,7 @@ fn render_str(
                 let rv = handlebars.render_template_with_context(real_text.as_str(), render_ctx)?;
                 Value::Object(
                     from_str(rv.as_str())
-                        .map_err(|e| Re(RenderError::new("invalid arg of obj")))?,
+                        .map_err(|_| Re(RenderError::new("invalid arg of obj")))?,
                 )
             } else if text_inner_trim.starts_with("arr ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
@@ -61,14 +61,14 @@ fn render_str(
                 let rv = handlebars.render_template_with_context(real_text.as_str(), render_ctx)?;
                 Value::Array(
                     from_str(rv.as_str())
-                        .map_err(|e| Re(RenderError::new("invalid arg of arr")))?,
+                        .map_err(|_| Re(RenderError::new("invalid arg of arr")))?,
                 )
             } else if text_inner_trim.starts_with("json ") {
                 let real_text = format!("{}str ({}) {}", "{{", text_inner_trim, "}}");
                 trace!("json real text: {}", real_text);
                 let rv = handlebars.render_template_with_context(real_text.as_str(), render_ctx)?;
                 let value: Value = from_str(rv.as_str())
-                    .map_err(|e| Re(RenderError::new("invalid arg of json")))?;
+                    .map_err(|_| Re(RenderError::new("invalid arg of json")))?;
                 value
             } else {
                 let rv = handlebars.render_template_with_context(text, render_ctx)?;

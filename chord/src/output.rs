@@ -10,12 +10,19 @@ use crate::task::TaskAssess;
 
 #[async_trait]
 pub trait Report: Sync + Send {
-    async fn start(&mut self, time: DateTime<Utc>, flow: Arc<Flow>) -> Result<(), Box<dyn Error>>;
+    async fn start(
+        &mut self,
+        time: DateTime<Utc>,
+        flow: Arc<Flow>,
+    ) -> Result<(), Box<dyn Error + Sync + Send>>;
 
     async fn report(
         &mut self,
         case_assess_vec: &Vec<Box<dyn CaseAssess>>,
-    ) -> Result<(), Box<dyn Error>>;
+    ) -> Result<(), Box<dyn Error + Sync + Send>>;
 
-    async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Box<dyn Error>>;
+    async fn end(
+        &mut self,
+        task_assess: &dyn TaskAssess,
+    ) -> Result<(), Box<dyn Error + Sync + Send>>;
 }

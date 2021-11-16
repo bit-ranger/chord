@@ -6,8 +6,9 @@ use crate::case::CaseId;
 use crate::task::TaskId;
 use crate::value::Map;
 use crate::value::Value;
-use std::error::Error;
 use std::time::Duration;
+
+pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
 pub mod prelude {
     pub use super::async_trait;
@@ -17,7 +18,7 @@ pub mod prelude {
     pub use super::RunArg;
     pub use super::Scope;
     pub use crate::value::*;
-    pub use std::error::Error;
+    pub use Error;
 }
 
 pub trait Scope: Sync + Send {
@@ -31,9 +32,9 @@ pub trait RunArg: Sync + Send {
 
     fn timeout(&self) -> Duration;
 
-    fn args(&self) -> Result<Value, Box<dyn Error>>;
+    fn args(&self) -> Result<Value, Error>;
 
-    fn args_with(&self, context: &Map) -> Result<Value, Box<dyn Error>>;
+    fn args_with(&self, context: &Map) -> Result<Value, Error>;
 }
 
 pub trait CreateArg: Sync + Send {
@@ -43,7 +44,7 @@ pub trait CreateArg: Sync + Send {
 
     fn args_raw(&self) -> &Value;
 
-    fn render_str(&self, text: &str) -> Result<Value, Box<dyn Error>>;
+    fn render_str(&self, text: &str) -> Result<Value, Error>;
 
     /// shared in whole action
     fn is_static(&self, text: &str) -> bool;
@@ -51,16 +52,16 @@ pub trait CreateArg: Sync + Send {
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Box<dyn Error>>;
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error>;
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Box<dyn Error>> {
+    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
         arg.args()
     }
 }
 
 #[async_trait]
 pub trait Factory: Sync + Send {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Box<dyn Error>>;
+    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error>;
 }
 
 impl Scope for Value {

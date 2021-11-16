@@ -1,7 +1,6 @@
 use async_std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
-use chord::err;
 use chord::task::TaskState;
 use chord::Error;
 use chord_action::FactoryComposite;
@@ -16,6 +15,12 @@ use dirs;
 mod conf;
 mod job;
 mod logger;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("input is not a dir: {0}")]
+    NotDir(String),
+}
 
 #[async_std::main]
 async fn main() -> Result<(), Error> {

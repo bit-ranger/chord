@@ -701,6 +701,7 @@ dependencies = [
  "itertools",
  "log",
  "structopt",
+ "thiserror",
  "time 0.1.44",
 ]
 

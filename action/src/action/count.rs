@@ -5,7 +5,7 @@ use chord::action::prelude::*;
 pub struct CountFactory {}
 
 impl CountFactory {
-    pub async fn new(_: Option<Value>) -> Result<CountFactory, Box<Error>> {
+    pub async fn new(_: Option<Value>) -> Result<CountFactory, Error> {
         Ok(CountFactory {})
     }
 }

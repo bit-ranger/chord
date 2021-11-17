@@ -11,11 +11,12 @@ use async_std::sync::Arc;
 use bean::component::HasComponent;
 use bean::container;
 use chord_input::load;
+use std::fmt::{Debug, Display, Formatter};
 
 pub mod conf;
 mod logger;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error)]
 pub enum Error {
     #[error("config error:\n{0}")]
     Config(load::conf::Error),
@@ -136,4 +137,10 @@ pub async fn init(data: Value) -> Result<(), Error> {
         .await
         .map_err(|e| Error::Web(e))?;
     Ok(())
+}
+
+impl Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self, f)
+    }
 }

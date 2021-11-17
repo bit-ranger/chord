@@ -786,6 +786,7 @@ dependencies = [
  "regex",
  "serde",
  "structopt",
+ "thiserror",
  "tide",
  "time 0.1.44",
  "url",

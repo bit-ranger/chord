@@ -4,17 +4,31 @@ use tide::{Request, Response};
 use validator::{ValidationErrors, ValidationErrorsKind};
 
 use chord::value::Value;
-use chord::Error;
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;
 use async_std::sync::Arc;
-
 use bean::component::HasComponent;
 use bean::container;
+use chord_input::load;
 
 pub mod conf;
 mod logger;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("config error:\n{0}")]
+    Config(load::conf::Error),
+
+    #[error("log error:\n{0}")]
+    Logger(logger::Error),
+
+    #[error("job error:\n{0}")]
+    Job(job::Error),
+
+    #[error("web error:\n{0}")]
+    Web(std::io::Error),
+}
 
 #[derive(Serialize, Deserialize)]
 struct ErrorBody {
@@ -24,8 +38,13 @@ struct ErrorBody {
 
 fn common_error_json(e: &Error) -> Value {
     json!(ErrorBody {
-        code: e.code().into(),
-        message: e.message().into()
+        code: match e {
+            Error::Config(_) => "Config".to_string(),
+            Error::Logger(_) => "Logger".to_string(),
+            Error::Job(_) => "Job".to_string(),
+            Error::Web(_) => "Web".to_string(),
+        },
+        message: e.to_string()
     })
 }
 
@@ -86,9 +105,15 @@ pub async fn init(data: Value) -> Result<(), Error> {
     let config = Arc::new(ConfigImpl::new(data));
 
     let log_file_path = config.log_dir().join("web.log");
-    let _log_handler = logger::init(config.log_level(), &log_file_path).await?;
+    let _log_handler = logger::init(config.log_level(), &log_file_path)
+        .await
+        .map_err(|e| Error::Logger(e))?;
 
-    let job_ctl = Arc::new(job::CtlImpl::new(config.clone()).await?);
+    let job_ctl = Arc::new(
+        job::CtlImpl::new(config.clone())
+            .await
+            .map_err(|e| Error::Job(e))?,
+    );
 
     Web::init()
         .put("default", config.clone())
@@ -99,13 +124,16 @@ pub async fn init(data: Value) -> Result<(), Error> {
     app.at("/job/exec").post(json_handler!(
         (|rb: job::Req| async {
             let job_ctl: Arc<job::CtlImpl> = Web::borrow().get("default").unwrap();
-            job::Ctl::exec(job_ctl.as_ref(), rb).await
+            job::Ctl::exec(job_ctl.as_ref(), rb)
+                .await
+                .map_err(|e| Error::Job(e))
         })
     ));
 
     app.at("/").get(|_| async { Ok("Hello, world!") });
 
     app.listen(format!("{}:{}", config.server_ip(), config.server_port()))
-        .await?;
+        .await
+        .map_err(|e| Error::Web(e))?;
     Ok(())
 }

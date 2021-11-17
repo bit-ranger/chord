@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 use chord::value::Value;
-use chord::Error;
 
 use crate::app::conf::Config;
 use chord::value::Map;
@@ -25,6 +24,12 @@ lazy_static! {
 #[test]
 fn regex() {
     assert!(GIT_URL.is_match("git@github.com:bit-ranger/chord.git"));
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("docker error:\n{0}")]
+    Docker(chord_util::docker::Error),
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -53,8 +58,16 @@ pub struct CtlImpl {
 
 impl CtlImpl {
     pub async fn new(config: Arc<dyn Config>) -> Result<CtlImpl, Error> {
-        let engine = Arc::new(Engine::new(config.docker_address().to_string()).await?);
-        let image = Arc::new(Image::new(engine, config.docker_image()).await?);
+        let engine = Arc::new(
+            Engine::new(config.docker_address().to_string())
+                .await
+                .map_err(|e| Error::Docker(e))?,
+        );
+        let image = Arc::new(
+            Image::new(engine, config.docker_image())
+                .await
+                .map_err(|e| Error::Docker(e))?,
+        );
         Ok(CtlImpl { image, config })
     }
 }
@@ -124,15 +137,24 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
 }
 
 async fn job_run_0(image: Arc<Image>, container_name: String, ca: Arg) -> Result<(), Error> {
-    let mut container = image.container_create(container_name.as_str(), ca).await?;
-    let _ = container.start().await?;
+    let mut container = image
+        .container_create(container_name.as_str(), ca)
+        .await
+        .map_err(|e| Error::Docker(e))?;
+    let _ = container.start().await.map_err(|e| Error::Docker(e))?;
     let wait_res = container.wait().await;
     match wait_res {
         Ok(_) => {
-            let _ = container.tail(false, 100).await?;
+            let _ = container
+                .tail(false, 100)
+                .await
+                .map_err(|e| Error::Docker(e))?;
         }
         Err(_) => {
-            let _ = container.tail(true, 100).await?;
+            let _ = container
+                .tail(true, 100)
+                .await
+                .map_err(|e| Error::Docker(e))?;
         }
     }
     Ok(())

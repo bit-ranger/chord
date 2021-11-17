@@ -48,25 +48,25 @@ enum RunError {
     #[error("input is not a dir: {0}")]
     InputNotDir(String),
 
-    #[error("config error: {0}")]
+    #[error("config error:\n{0}")]
     Config(load::conf::Error),
 
-    #[error("report error: {0}")]
+    #[error("report error:\n{0}")]
     Report(chord::output::Error),
 
-    #[error("action factory error: {0}")]
+    #[error("action factory error:\n{0}")]
     ActionFactory(chord::action::Error),
 
-    #[error("log error: {0}")]
+    #[error("log error:\n{0}")]
     Logger(logger::Error),
 
-    #[error("job error: {0}")]
+    #[error("job error:\n{0}")]
     JobErr(job::Error),
 
     #[error("task fail: `{0}`\n{1}")]
     TaskFail(String, String),
 
-    #[error("task error:`{0}`\n{1}")]
+    #[error("task error: `{0}`\n{1}")]
     TaskErr(String, String),
 }
 

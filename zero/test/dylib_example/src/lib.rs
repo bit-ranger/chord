@@ -1,5 +1,5 @@
+use chord::action::Error;
 use chord::value::{from_str, Map, Value};
-use chord::Error;
 
 #[no_mangle]
 pub fn run(req: &str) -> Result<String, Error> {

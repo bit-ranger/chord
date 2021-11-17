@@ -112,7 +112,7 @@ impl TaskRunner {
     }
 
     pub async fn run(mut self) -> Box<dyn TaskAssess> {
-        trace!("task run start{}", self.id);
+        trace!("task run start {}", self.id);
         let start = Utc::now();
 
         if let Err(e) = self.assess_report.start(start, self.flow.clone()).await {

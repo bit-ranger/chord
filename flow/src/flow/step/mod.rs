@@ -179,6 +179,18 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
             || value_assert(arg, cond.unwrap().as_str())
                 .map_err(|e| Render(format!("then.{}.if", idx), e))?
         {
+            let reg = then.get("reg");
+            let reg = if reg.is_none() {
+                None
+            } else if let Value::Object(m) = reg.unwrap() {
+                Some(
+                    arg.render_object(m)
+                        .map_err(|e| Render(format!("then.{}.reg", idx), e))?,
+                )
+            } else {
+                None
+            };
+
             let goto = then.get("goto");
             let goto = if goto.is_none() {
                 None
@@ -193,17 +205,6 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
                 None
             };
 
-            let reg = then.get("reg");
-            let reg = if reg.is_none() {
-                None
-            } else if let Value::Object(m) = reg.unwrap() {
-                Some(
-                    arg.render_object(m)
-                        .map_err(|e| Render(format!("then.{}.reg", idx), e))?,
-                )
-            } else {
-                None
-            };
             return Ok(Some(StepThen::new(reg, goto)));
         }
     }

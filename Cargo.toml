@@ -6,7 +6,7 @@ members = [
     'input',
     'output',
     'action',
-    'cmd',
+    'cli',
     'web',
     'zero/test/dylib_example'
 ]

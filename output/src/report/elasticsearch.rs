@@ -14,7 +14,7 @@ use chord::output::Report;
 use chord::output::{async_trait, Error};
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::{json, to_string, Value};
+use chord::value::{to_string, Value};
 use chord::value::{Deserialize, Serialize};
 
 pub struct ReportFactory {

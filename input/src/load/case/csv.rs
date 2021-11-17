@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use csv::{Reader, ReaderBuilder};
 
 use chord::input::{async_trait, CaseLoad, CaseStore, Error};
-use chord::value::{to_string, Map, Value};
+use chord::value::{Map, Value};
 
 pub struct Store {
     path: PathBuf,

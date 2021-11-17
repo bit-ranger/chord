@@ -21,10 +21,10 @@ pub mod res;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("unrecognized step_id: {0}")]
+    #[error("unrecognized step_id: `{0}`")]
     StepId(String),
 
-    #[error("{0} render error: {1}")]
+    #[error("`{0}` render error:\n{1}")]
     Render(String, TemplateRenderError),
 }
 
@@ -105,9 +105,9 @@ fn case_fail_by_step_err(
     mut step_assess_vec: Vec<Box<dyn StepAssess>>,
     start: DateTime<Utc>,
 ) -> CaseAssessStruct {
-    error!("step Err {}\n{}", step_id, e);
-
     let step_run_id = RunIdStruct::new(step_id.to_string(), arg.id());
+    error!("step Err {}\n{}", step_run_id, e);
+
     let step_assess = StepAssessStruct::new(
         step_run_id,
         Utc::now(),

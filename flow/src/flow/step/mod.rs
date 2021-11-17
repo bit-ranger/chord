@@ -28,10 +28,10 @@ enum Error {
     #[error("unwind")]
     Unwind,
 
-    #[error("{0} unexpect value {1}")]
+    #[error("`{0}` unexpect value `{1}`")]
     ValueUnexpected(String, String),
 
-    #[error("{0} render error: {1}")]
+    #[error("`{0}` render error:\n{1}")]
     Render(String, TemplateRenderError),
 }
 
@@ -172,27 +172,26 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
     if then_vec.is_none() {
         return Ok(None);
     }
-    for then in then_vec.unwrap() {
+    for (idx, then) in then_vec.unwrap().iter().enumerate() {
         let cond: Option<&Value> = then.get("if");
         if cond.is_none()
             || cond.unwrap().as_str().is_none()
             || value_assert(arg, cond.unwrap().as_str())
-                .map_err(|e| Render("then.if".to_string(), e))?
+                .map_err(|e| Render(format!("then.{}.if", idx), e))?
         {
             let goto = then.get("goto");
-            let goto =
-                if goto.is_none() {
-                    None
-                } else if let Value::String(goto) = goto.unwrap() {
-                    let goto = arg
-                        .render_str(goto.as_str())
-                        .map_err(|e| Render("then.goto".to_string(), e))?;
-                    Some(goto.as_str().map(|s| s.to_string()).ok_or_else(|| {
-                        ValueUnexpected("then.goto".to_string(), goto.to_string())
-                    })?)
-                } else {
-                    None
-                };
+            let goto = if goto.is_none() {
+                None
+            } else if let Value::String(goto) = goto.unwrap() {
+                let goto = arg
+                    .render_str(goto.as_str())
+                    .map_err(|e| Render(format!("then.{}.goto", idx), e))?;
+                Some(goto.as_str().map(|s| s.to_string()).ok_or_else(|| {
+                    ValueUnexpected(format!("then.{}.goto", idx), goto.to_string())
+                })?)
+            } else {
+                None
+            };
 
             let reg = then.get("reg");
             let reg = if reg.is_none() {
@@ -200,7 +199,7 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
             } else if let Value::Object(m) = reg.unwrap() {
                 Some(
                     arg.render_object(m)
-                        .map_err(|e| Render("then.reg".to_string(), e))?,
+                        .map_err(|e| Render(format!("then.{}.reg", idx), e))?,
                 )
             } else {
                 None

@@ -18,11 +18,11 @@ enum ReportError {
     #[error("conf lost")]
     ConfLost,
 
-    #[error("conf lost")]
+    #[error("conf invalid")]
     ConfInvalid,
 
-    #[error("conf lost {0}")]
-    ConfLostKey(String),
+    #[error("conf lost entry `{0}`")]
+    ConfLostEntry(String),
 }
 
 #[async_trait]
@@ -50,7 +50,7 @@ impl ReportFactory {
                 };
                 let kind = c["kind"]
                     .as_str()
-                    .ok_or(ConfLostKey("report.kind".into()))?;
+                    .ok_or(ConfLostEntry("report.kind".into()))?;
 
                 match kind {
                     #[cfg(feature = "report_csv")]
@@ -59,7 +59,7 @@ impl ReportFactory {
                         let factory = csv::ReportFactory::new(
                             v["dir"]
                                 .as_str()
-                                .ok_or(ConfLostKey("report.csv.dir".into()))?,
+                                .ok_or(ConfLostEntry("report.csv.dir".into()))?,
                             name.to_string(),
                             exec_id.to_string(),
                             v["with_bom"].as_bool().unwrap_or(true),
@@ -75,7 +75,7 @@ impl ReportFactory {
                         let factory = elasticsearch::ReportFactory::new(
                             v["url"]
                                 .as_str()
-                                .ok_or(ConfLostKey("report.elasticsearch.url".into()))?
+                                .ok_or(ConfLostEntry("report.elasticsearch.url".into()))?
                                 .to_string(),
                             name.to_string(),
                             exec_id.to_string(),
@@ -91,7 +91,7 @@ impl ReportFactory {
                         let factory = webhook::ReportFactory::new(
                             v["url"]
                                 .as_str()
-                                .ok_or(ConfLostKey("report.webhook.url".into()))?
+                                .ok_or(ConfLostEntry("report.webhook.url".into()))?
                                 .to_string(),
                             name.to_string(),
                             exec_id.to_string(),

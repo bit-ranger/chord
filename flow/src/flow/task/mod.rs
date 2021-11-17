@@ -31,25 +31,25 @@ pub mod res;
 
 #[derive(thiserror::Error, Debug)]
 enum Error {
-    #[error("{0} render error: {1}")]
+    #[error("`{0}` render:\n{1}")]
     Render(String, TemplateRenderError),
 
-    #[error("step create error: {0}")]
+    #[error("step `{0}` create:\n{1}")]
     StepCreate(String, Box<dyn std::error::Error + Sync + Send>),
 
-    #[error("pre run error: {0}")]
-    PreErr(String),
+    #[error("pre:")]
+    PreErr,
 
-    #[error("pre run fail at step: {0}")]
+    #[error("pre step `{0}`")]
     PreFail(String),
 
-    #[error("report assess error: {0}")]
+    #[error("report error:\n{0}")]
     Report(Box<dyn std::error::Error + Sync + Send>),
 
-    #[error("load case error in stage {0}: {1}")]
+    #[error("stage `{0}` load error:\n{1}")]
     Load(String, Box<dyn std::error::Error + Sync + Send>),
 
-    #[error("case empty in stage {0}")]
+    #[error("stage `{0}` case is empty")]
     CaseEmpty(String),
 }
 
@@ -112,11 +112,11 @@ impl TaskRunner {
     }
 
     pub async fn run(mut self) -> Box<dyn TaskAssess> {
-        trace!("task run {}", self.id);
+        trace!("task run start{}", self.id);
         let start = Utc::now();
 
         if let Err(e) = self.assess_report.start(start, self.flow.clone()).await {
-            error!("task Err {}", self.id);
+            error!("task run Err {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id,
                 start,
@@ -132,7 +132,7 @@ impl TaskRunner {
             let rc = RenderContext::wraps(rc).unwrap();
             let rso = render_assign_object(self.flow_app.get_handlebars(), &rc, def_raw, false);
             if let Err(e) = rso {
-                error!("task Err {}", self.id);
+                error!("task run Err {}", self.id);
                 return Box::new(TaskAssessStruct::new(
                     self.id.clone(),
                     start,
@@ -155,7 +155,7 @@ impl TaskRunner {
             )
             .await;
             if let Err(e) = pre_step_vec {
-                error!("task Err {}", self.id);
+                error!("task run Err {}", self.id);
                 return Box::new(TaskAssessStruct::new(
                     self.id.clone(),
                     start,
@@ -173,7 +173,7 @@ impl TaskRunner {
             )
             .await;
             if let Err(e) = pre_arg {
-                error!("task Err {}", self.id);
+                error!("task run Err {}", self.id);
                 return Box::new(TaskAssessStruct::new(
                     self.id,
                     start,
@@ -185,18 +185,18 @@ impl TaskRunner {
             let pre_assess = case_run(self.flow_app.as_ref(), pre_arg.unwrap()).await;
 
             match pre_assess.state() {
-                CaseState::Err(e) => {
-                    error!("task Err {}", self.id);
+                CaseState::Err(_) => {
+                    error!("task run Err {}", self.id);
                     return Box::new(TaskAssessStruct::new(
                         self.id,
                         start,
                         Utc::now(),
-                        TaskState::Err(Box::new(PreErr(e.to_string()))),
+                        TaskState::Err(Box::new(PreErr)),
                     ));
                 }
 
                 CaseState::Fail(v) => {
-                    error!("task Err {}", self.id);
+                    error!("task run Err {}", self.id);
                     return Box::new(TaskAssessStruct::new(
                         self.id,
                         start,
@@ -218,7 +218,7 @@ impl TaskRunner {
         let result = self.start_run().await;
 
         let task_assess = if let Err(e) = result {
-            error!("task Err {}", self.id);
+            error!("task run Err {}", self.id);
             TaskAssessStruct::new(
                 self.id.clone(),
                 start,
@@ -228,11 +228,11 @@ impl TaskRunner {
         } else {
             match self.task_state {
                 TaskState::Ok => {
-                    info!("task Ok {}", self.id.clone());
+                    info!("task run Ok {}", self.id.clone());
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok)
                 }
                 TaskState::Fail(c) => {
-                    warn!("task Fail {}", self.id);
+                    warn!("task run Fail {}", self.id);
                     TaskAssessStruct::new(
                         self.id.clone(),
                         start,
@@ -241,14 +241,14 @@ impl TaskRunner {
                     )
                 }
                 TaskState::Err(e) => {
-                    error!("task Err {}", self.id);
+                    error!("task run Err {}", self.id);
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Err(e))
                 }
             }
         };
 
         if let Err(e) = self.assess_report.end(&task_assess).await {
-            error!("task Err {}", self.id);
+            error!("task run Err {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id,
                 start,
@@ -268,7 +268,7 @@ impl TaskRunner {
             .map(|s| s.to_owned())
             .collect();
         for state_id in stage_id_vec {
-            trace!("task stage {}, {}", self.id, state_id);
+            trace!("task run stage {}, {}", self.id, state_id);
             self.stage_run(state_id.as_str()).await?;
             if let TaskState::Fail(_) = self.stage_state {
                 if "stage_fail" == self.flow.stage_break_on(state_id.as_str()) {
@@ -346,13 +346,13 @@ impl TaskRunner {
                 return if load_times == 1 {
                     Err(CaseEmpty(stage_id.to_string()))
                 } else {
-                    trace!("task exhaust data {}, {}", self.id, stage_id);
+                    trace!("task run exhaust data {}, {}", self.id, stage_id);
                     Ok(())
                 };
             }
 
             trace!(
-                "task load data {}, {}, {}",
+                "task run load data {}, {}, {}",
                 self.id,
                 stage_id,
                 case_data_vec.len()
@@ -363,12 +363,15 @@ impl TaskRunner {
             if first_fail.is_some() {
                 let cause_case = first_fail.unwrap();
                 let cause = match cause_case.state() {
-                    CaseState::Err(_) => cause_case.id().to_string(),
-                    CaseState::Fail(v) => v
-                        .last()
-                        .map(|s| s.id().to_string())
-                        .or_else(|| Some(String::new()))
-                        .unwrap(),
+                    CaseState::Err(_) => format!("case: {}", cause_case.id()),
+                    CaseState::Fail(v) => {
+                        let last_step_id = v
+                            .last()
+                            .map(|s| s.id().to_string())
+                            .or_else(|| Some(String::new()))
+                            .unwrap();
+                        format!("step: {}", last_step_id)
+                    }
                     CaseState::Ok(_) => String::new(),
                 };
                 self.stage_state = TaskState::Fail(cause.clone());

@@ -9,15 +9,13 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use crate::report::Factory;
 use chord::case::{CaseAssess, CaseState};
-use chord::err;
 use chord::flow::Flow;
-use chord::output::async_trait;
 use chord::output::Report;
+use chord::output::{async_trait, Error};
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
 use chord::value::{json, to_value, Value};
 use chord::value::{Deserialize, Serialize};
-use chord::Error;
 
 pub struct ReportFactory {
     url: String,
@@ -136,10 +134,7 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
         value: match ts {
             TaskState::Ok => Value::Null,
             TaskState::Fail(_) => Value::Null,
-            TaskState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
+            TaskState::Err(e) => Value::String(e.to_string()),
         },
     }
 }
@@ -161,10 +156,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
         value: match ca.state() {
             CaseState::Ok(_) => Value::Null,
             CaseState::Fail(_) => Value::Null,
-            CaseState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
+            CaseState::Err(e) => Value::String(e.to_string()),
         },
     }
 }
@@ -185,10 +177,7 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         .to_owned(),
         value: match sa.state() {
             StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().clone(),
-            StepState::Err(e) => json!({
-                "code": e.code(),
-                "message": e.message()
-            }),
+            StepState::Err(e) => Value::String(e.to_string()),
         },
     }
 }
@@ -205,7 +194,7 @@ async fn data_send_batch(url: &str, index: &str, data: Vec<Data>) -> Result<(), 
         }),
     };
     let data = to_value(&event)?;
-    data_send_0(rb, data).await.map_err(|e| e.0)
+    data_send_0(rb, data).await
 }
 
 async fn data_send(url: &str, index: &str, data: Data) -> Result<(), Error> {
@@ -220,7 +209,7 @@ async fn data_send(url: &str, index: &str, data: Data) -> Result<(), Error> {
         }),
     };
     let data = to_value(&event)?;
-    data_send_0(rb, data).await.map_err(|e| e.0)
+    data_send_0(rb, data).await
 }
 
 async fn index_create(url: &str, index_name: &str) -> Result<(), Error> {
@@ -232,10 +221,10 @@ async fn index_create(url: &str, index_name: &str) -> Result<(), Error> {
         object: Value::String(index_name.to_string()),
     };
     let data = to_value(&event)?;
-    data_send_0(rb, data).await.map_err(|e| e.0)
+    data_send_0(rb, data).await
 }
 
-async fn data_send_0(rb: RequestBuilder, data: Value) -> Result<(), ElasticError> {
+async fn data_send_0(rb: RequestBuilder, data: Value) -> Result<(), Error> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -250,29 +239,6 @@ async fn data_send_0(rb: RequestBuilder, data: Value) -> Result<(), ElasticError
         warn!("data_send failure: {}, {}", data, body)
     }
     Ok(())
-}
-
-struct ElasticError(chord::Error);
-
-impl From<surf::Error> for ElasticError {
-    fn from(err: surf::Error) -> ElasticError {
-        ElasticError(err!("webhook", format!("{}", err.status())))
-    }
-}
-
-impl From<chord::value::Error> for ElasticError {
-    fn from(err: chord::value::Error) -> ElasticError {
-        ElasticError(err!(
-            "serde_json",
-            format!("{}:{}", err.line(), err.column())
-        ))
-    }
-}
-
-impl From<chord::Error> for ElasticError {
-    fn from(err: Error) -> Self {
-        ElasticError(err)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

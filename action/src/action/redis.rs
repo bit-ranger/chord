@@ -1,7 +1,8 @@
 use redis::{Client, Value as RedisValue};
 
 use chord::action::prelude::*;
-use chord::value::{from_str, Number};
+
+use crate::err;
 
 pub struct RedisFactory {}
 

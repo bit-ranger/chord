@@ -4,6 +4,8 @@ use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 
 use chord::action::prelude::*;
 
+use crate::err;
+
 pub struct DylibFactory {
     lib_dir: String,
 }

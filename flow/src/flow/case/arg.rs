@@ -11,9 +11,9 @@ use chord::step::{StepAssess, StepState};
 use chord::task::TaskId;
 use chord::value::Map;
 use chord::value::Value;
-use chord::Error;
 
 use crate::flow;
+use crate::flow::case::Error;
 use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
@@ -134,19 +134,20 @@ impl CaseArgStruct {
                     &self.render_ctx,
                     let_raw,
                     false,
-                )?;
+                )
+                .map_err(|e| Error::Render("let".to_string(), e))?;
                 Some(let_value)
             }
             None => None,
         };
 
-        RunArgStruct::new(
+        Ok(RunArgStruct::new(
             self.flow.as_ref(),
             flow_app.get_handlebars(),
             let_value,
             self.id.clone(),
             step_id.to_owned(),
-        )
+        ))
     }
 
     pub fn id(&self) -> Arc<CaseIdStruct> {

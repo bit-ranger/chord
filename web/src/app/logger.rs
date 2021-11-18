@@ -16,8 +16,13 @@ use itertools::Itertools;
 use log;
 use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
+use Error::Create;
 
-use chord::Error;
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("failed to create log file: {0}")]
+    Create(std::io::Error),
+}
 
 struct ChannelLogger {
     target_level: Vec<(String, LevelFilter)>,
@@ -132,7 +137,9 @@ pub async fn init(
     if log_file_parent_path.is_some() {
         let log_file_parent_path = log_file_parent_path.unwrap();
         if !log_file_parent_path.exists().await {
-            async_std::fs::create_dir_all(log_file_parent_path).await?;
+            async_std::fs::create_dir_all(log_file_parent_path)
+                .await
+                .map_err(|e| Create(e))?;
         }
     }
 
@@ -146,7 +153,8 @@ pub async fn init(
         .write(true)
         .append(true)
         .open(&log_file_path)
-        .await?;
+        .await
+        .map_err(|e| Error::Create(e))?;
     let default_log_writer = BufWriter::new(file);
 
     let log_enable = Arc::new(AtomicBool::new(true));
@@ -171,8 +179,7 @@ pub struct LogHandler {
 }
 
 #[allow(dead_code)]
-pub async fn terminal(log_handler: LogHandler) -> Result<(), Error> {
+pub async fn terminal(log_handler: LogHandler) {
     log_handler.log_enable.store(false, Ordering::SeqCst);
     let _ = log_handler.join_handler.join();
-    Ok(())
 }

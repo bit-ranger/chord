@@ -4,6 +4,8 @@ use mongodb::{options::ClientOptions, Client};
 use chord::action::prelude::*;
 use chord::value::from_str;
 
+use crate::err;
+
 pub struct MongodbFactory {}
 
 impl MongodbFactory {

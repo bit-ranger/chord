@@ -1,6 +1,9 @@
 use async_std::process::{Child, Command};
-use chord::action::prelude::*;
 use log::trace;
+
+use chord::action::prelude::*;
+
+use crate::err;
 
 pub struct ProgramFactory {}
 

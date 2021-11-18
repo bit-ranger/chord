@@ -5,15 +5,12 @@ pub use async_trait::async_trait;
 use crate::case::CaseId;
 use crate::task::TaskId;
 use crate::value::Map;
-pub use crate::value::Value;
-pub use crate::Error;
+use crate::value::Value;
 use std::time::Duration;
 
-pub mod prelude {
-    pub use crate::cause;
-    pub use crate::err;
-    pub use crate::value::*;
+pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
+pub mod prelude {
     pub use super::async_trait;
     pub use super::Action;
     pub use super::CreateArg;
@@ -21,6 +18,19 @@ pub mod prelude {
     pub use super::Factory;
     pub use super::RunArg;
     pub use super::Scope;
+
+    pub use crate::value::from_reader;
+    pub use crate::value::from_slice;
+    pub use crate::value::from_str;
+    pub use crate::value::from_value;
+    pub use crate::value::json;
+    pub use crate::value::to_string;
+    pub use crate::value::to_string_pretty;
+    pub use crate::value::Deserialize;
+    pub use crate::value::Map;
+    pub use crate::value::Number;
+    pub use crate::value::Serialize;
+    pub use crate::value::Value;
 }
 
 pub trait Scope: Sync + Send {
@@ -57,7 +67,7 @@ pub trait Action: Sync + Send {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error>;
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
-        return arg.args().clone();
+        arg.args()
     }
 }
 

@@ -5,7 +5,8 @@ use surf::http::Method;
 
 use crate::docker::container::{Arg, Container};
 use crate::docker::engine::Engine;
-use chord::Error;
+use crate::docker::Error;
+use crate::docker::Error::*;
 
 pub struct Image {
     engine: Arc<Engine>,
@@ -48,7 +49,7 @@ impl Drop for Image {
         let f = self.engine.call(uri.as_str(), Method::Delete, None, 1);
         let _ = block_on(f)
             .map_err(|e| {
-                if e.code() == "docker" && e.message() == "404" {
+                if let Status(404) = e {
                     trace!("image not found {}", self.name);
                 } else {
                     warn!("image remove fail {}, {}", self.name, e);

@@ -9,15 +9,13 @@ use surf::{Body, RequestBuilder, Response, Url};
 
 use crate::report::Factory;
 use chord::case::{CaseAssess, CaseState};
-use chord::err;
 use chord::flow::Flow;
-use chord::output::async_trait;
 use chord::output::Report;
+use chord::output::{async_trait, Error};
 use chord::step::{StepAssess, StepState};
 use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::{json, to_string, Value};
+use chord::value::{to_string, Value};
 use chord::value::{Deserialize, Serialize};
-use chord::Error;
 
 pub struct ReportFactory {
     es_url: String,
@@ -130,17 +128,11 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
             TaskState::Err(_) => "E",
         }
         .to_owned(),
-        value: Value::String(
-            match ts {
-                TaskState::Ok => Value::Null,
-                TaskState::Fail(_) => Value::Null,
-                TaskState::Err(e) => json!({
-                    "code": e.code(),
-                    "message": e.message()
-                }),
-            }
-            .to_string(),
-        ),
+        value: Value::String(match ts {
+            TaskState::Ok => Value::Null.to_string(),
+            TaskState::Fail(_) => Value::Null.to_string(),
+            TaskState::Err(e) => e.to_string(),
+        }),
     }
 }
 
@@ -158,17 +150,11 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
             CaseState::Err(_) => "E",
         }
         .to_owned(),
-        value: Value::String(
-            match ca.state() {
-                CaseState::Ok(_) => Value::Null,
-                CaseState::Fail(_) => Value::Null,
-                CaseState::Err(e) => json!({
-                    "code": e.code(),
-                    "message": e.message()
-                }),
-            }
-            .to_string(),
-        ),
+        value: Value::String(match ca.state() {
+            CaseState::Ok(_) => Value::Null.to_string(),
+            CaseState::Fail(_) => Value::Null.to_string(),
+            CaseState::Err(e) => e.to_string(),
+        }),
     }
 }
 
@@ -186,35 +172,29 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
             StepState::Err(_) => "E",
         }
         .to_owned(),
-        value: Value::String(
-            match sa.state() {
-                StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().clone(),
-                StepState::Err(e) => json!({
-                    "code": e.code(),
-                    "message": e.message()
-                }),
-            }
-            .to_string(),
-        ),
+        value: Value::String(match sa.state() {
+            StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().to_string(),
+            StepState::Err(e) => e.to_string(),
+        }),
     }
 }
 
 async fn data_send_all(es_url: &str, es_index: &str, data: Vec<Data>) -> Result<(), Error> {
     let path = format!("{}/{}/_doc/_bulk", es_url, es_index);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
-    data_send_all_0(es_index, rb, data).await.map_err(|e| e.0)
+    data_send_all_0(es_index, rb, data).await
 }
 
 async fn data_send(es_url: &str, es_index: &str, data: Data) -> Result<(), Error> {
     let path = format!("{}/{}/_doc/{}", es_url, es_index, data.id);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
-    data_send_0(es_index, rb, data).await.map_err(|e| e.0)
+    data_send_0(es_index, rb, data).await
 }
 
 async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
     let path = format!("{}/{}", es_url, index_name);
     let rb = RequestBuilder::new(Method::Get, Url::from_str(path.as_str())?);
-    let res = empty_send_0(rb).await.map_err(|e| e.0)?;
+    let res = empty_send_0(rb).await?;
     if res.status().is_success() {
         trace!("index [{}] exist, ignore", index_name);
         return Ok(());
@@ -222,10 +202,10 @@ async fn index_create(es_url: &str, index_name: &str) -> Result<(), Error> {
 
     info!("index_create [{}]", index_name);
     let rb = RequestBuilder::new(Method::Put, Url::from_str(path.as_str())?);
-    index_create_0(rb).await.map_err(|e| e.0)
+    index_create_0(rb).await
 }
 
-async fn data_send_0(index: &str, rb: RequestBuilder, data: Data) -> Result<(), ElasticError> {
+async fn data_send_0(index: &str, rb: RequestBuilder, data: Data) -> Result<(), Error> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -246,11 +226,7 @@ async fn data_send_0(index: &str, rb: RequestBuilder, data: Data) -> Result<(), 
     Ok(())
 }
 
-async fn data_send_all_0(
-    index: &str,
-    rb: RequestBuilder,
-    data: Vec<Data>,
-) -> Result<(), ElasticError> {
+async fn data_send_all_0(index: &str, rb: RequestBuilder, data: Vec<Data>) -> Result<(), Error> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -278,7 +254,7 @@ async fn data_send_all_0(
     Ok(())
 }
 
-async fn empty_send_0(rb: RequestBuilder) -> Result<Response, ElasticError> {
+async fn empty_send_0(rb: RequestBuilder) -> Result<Response, Error> {
     let rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -289,7 +265,7 @@ async fn empty_send_0(rb: RequestBuilder) -> Result<Response, ElasticError> {
     Ok(res)
 }
 
-async fn index_create_0(rb: RequestBuilder) -> Result<(), ElasticError> {
+async fn index_create_0(rb: RequestBuilder) -> Result<(), Error> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json")?,
@@ -341,29 +317,6 @@ async fn index_create_0(rb: RequestBuilder) -> Result<(), ElasticError> {
         error!("index_create_0 failure: {}", to_string(&body)?)
     }
     Ok(())
-}
-
-struct ElasticError(chord::Error);
-
-impl From<surf::Error> for ElasticError {
-    fn from(err: surf::Error) -> ElasticError {
-        ElasticError(err!("elasticsearch", format!("{}", err.status())))
-    }
-}
-
-impl From<chord::value::Error> for ElasticError {
-    fn from(err: chord::value::Error) -> ElasticError {
-        ElasticError(err!(
-            "serde_json",
-            format!("{}:{}", err.line(), err.column())
-        ))
-    }
-}
-
-impl From<chord::Error> for ElasticError {
-    fn from(err: Error) -> Self {
-        ElasticError(err)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

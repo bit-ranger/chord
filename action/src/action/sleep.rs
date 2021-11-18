@@ -1,6 +1,6 @@
-use std::time::Duration;
-
+use crate::err;
 use async_std::task::sleep;
+use std::time::Duration;
 
 use chord::action::prelude::*;
 

@@ -4,6 +4,8 @@ use chord_util::docker::container::Arg;
 use chord_util::docker::engine::Engine;
 use chord_util::docker::image::Image;
 
+use crate::err;
+
 pub struct Docker {
     engine: Arc<Engine>,
 }

@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
 
-use crate::error::Error;
+pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
 pub trait TaskId: Sync + Send + Display {
     fn task(&self) -> &str;

@@ -3,11 +3,11 @@ use futures::executor::block_on;
 use log::{trace, warn};
 use surf::http::Method;
 
-use chord::err;
 use chord::value::{Map, Value};
-use chord::Error;
 
 use crate::docker::engine::Engine;
+use crate::docker::Error;
+use crate::docker::Error::*;
 
 #[derive(Default)]
 pub struct Arg {
@@ -109,7 +109,7 @@ impl Container {
         if res.len() == 1 && res[0].contains("\"StatusCode\":0") {
             return Ok(res);
         } else {
-            return Err(err!("docker", "wait fail"));
+            return Err(Container(res[0].clone()));
         }
     }
 

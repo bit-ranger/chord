@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use surf::http::headers::{HeaderName, HeaderValue};
@@ -6,8 +7,8 @@ use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
 use chord::action::prelude::*;
-use chord::value::{Map, Number};
-use std::fmt::{Display, Formatter};
+
+use crate::err;
 
 pub struct RestapiFactory {}
 
@@ -69,11 +70,11 @@ impl Action for Restapi {
 }
 
 async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-    let value = run0(arg).await.map_err(|e| e.0)?;
+    let value = run0(arg).await?;
     Ok(Box::new(value))
 }
 
-async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
+async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
     let args = arg.args()?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
@@ -136,26 +137,6 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, RestapiError> {
     let body: Value = res.body_json().await?;
     res_data.insert(String::from("body"), body);
     return Ok(Value::Object(res_data));
-}
-
-struct RestapiError(chord::Error);
-
-impl From<surf::Error> for RestapiError {
-    fn from(err: surf::Error) -> RestapiError {
-        RestapiError(err!("107", format!("{}", err.status())))
-    }
-}
-
-impl From<chord::Error> for RestapiError {
-    fn from(err: Error) -> Self {
-        RestapiError(err)
-    }
-}
-
-impl From<chord::value::Error> for RestapiError {
-    fn from(err: chord::value::Error) -> Self {
-        RestapiError(err.into())
-    }
 }
 
 #[derive(Default)]

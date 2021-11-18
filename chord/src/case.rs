@@ -3,10 +3,11 @@ use std::fmt::Display;
 use chrono::{DateTime, Utc};
 
 use crate::collection::TailDropVec;
-use crate::error::Error;
 use crate::step::StepAssess;
 use crate::task::TaskId;
 use crate::value::Value;
+
+pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
 pub trait CaseId: Sync + Send + Display {
     fn case(&self) -> &str;
@@ -30,7 +31,7 @@ pub trait CaseAssess: Sync + Send {
 
 pub enum CaseState {
     Ok(TailDropVec<Box<dyn StepAssess>>),
-    Err(Error),
+    Err(Box<Error>),
     Fail(TailDropVec<Box<dyn StepAssess>>),
 }
 

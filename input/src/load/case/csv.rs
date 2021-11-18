@@ -4,11 +4,8 @@ use std::path::PathBuf;
 
 use csv::{Reader, ReaderBuilder};
 
-use chord::err;
-use chord::input::CaseLoad;
-use chord::input::{async_trait, CaseStore};
-use chord::value::{to_string, Map, Value};
-use chord::Error;
+use chord::input::{async_trait, CaseLoad, CaseStore, Error};
+use chord::value::{Map, Value};
 
 pub struct Store {
     path: PathBuf,
@@ -62,10 +59,7 @@ async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<V
     let mut hashmap_vec = Vec::new();
     let mut curr_size = 0;
     for result in reader.deserialize() {
-        let result: Map = match result {
-            Err(e) => return Err(err!("csv", format!("{:?}", e))),
-            Ok(r) => r,
-        };
+        let result: Map = result?;
 
         let mut record: Map = Map::new();
         //data fields must all be string
@@ -73,7 +67,7 @@ async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<V
             if v.is_string() {
                 record.insert(k, v);
             } else {
-                record.insert(k, Value::String(to_string(&v)?));
+                record.insert(k, Value::String(v.to_string()));
             }
         }
 
@@ -88,7 +82,5 @@ async fn load<R: std::io::Read>(reader: &mut Reader<R>, size: usize) -> Result<V
 }
 
 async fn from_path<P: AsRef<Path>>(path: P) -> Result<Reader<File>, Error> {
-    ReaderBuilder::new()
-        .from_path(path)
-        .map_err(|e| err!("csv", e.to_string()))
+    Ok(ReaderBuilder::new().from_path(path)?)
 }

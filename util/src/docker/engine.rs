@@ -8,8 +8,9 @@ use surf::http::Method;
 use surf::{RequestBuilder, Response, Url};
 
 use chord::value::Value;
-use chord::Error;
-use chord::{cause, err};
+
+use crate::docker::Error;
+use crate::docker::Error::*;
 
 pub struct Engine {
     address: String,
@@ -43,9 +44,9 @@ async fn call0(
     method: Method,
     data: Option<Value>,
     tail_size: usize,
-) -> Result<Vec<String>, DockerError> {
+) -> Result<Vec<String>, Error> {
     let url = format!("http://{}/{}", address, uri);
-    let url = Url::from_str(url.as_str()).or(Err(err!("100", format!("invalid url: {}", url))))?;
+    let url = Url::from_str(url.as_str()).or(Err(Error::Url(url)))?;
     let mut rb = RequestBuilder::new(method, url);
     rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
@@ -64,7 +65,7 @@ async fn call0(
         let size = res
             .read_until(b'\n', &mut line_buf)
             .await
-            .or_else(|e| Err(cause!("021", "read fail", e)))?;
+            .or_else(|e| Err(Io(format!("{}", e))))?;
         if size > 0 {
             let line = if res.content_type().is_some()
                 && res.content_type().unwrap().to_string() == "application/octet-stream"
@@ -86,34 +87,14 @@ async fn call0(
         }
     }
     return if !res.status().is_success() {
-        Err(err!("020", res.status().to_string()))?
+        Err(Status(res.status().into()))
     } else {
         Ok(tail_lines.into())
     };
 }
 
-struct DockerError(chord::Error);
-
-impl From<surf::Error> for DockerError {
-    fn from(err: surf::Error) -> DockerError {
-        DockerError(err!("102", format!("{}", err.status())))
-    }
-}
-
-impl From<chord::Error> for DockerError {
-    fn from(err: Error) -> Self {
-        DockerError(err)
-    }
-}
-
-impl From<chord::value::Error> for DockerError {
-    fn from(err: chord::value::Error) -> Self {
-        DockerError(cause!("103", "parse fail", err))
-    }
-}
-
-impl Into<chord::Error> for DockerError {
-    fn into(self) -> Error {
-        self.0
+impl From<surf::Error> for Error {
+    fn from(err: surf::Error) -> Error {
+        Io(err.to_string())
     }
 }

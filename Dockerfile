@@ -33,7 +33,7 @@ COPY zero/devops/cargo/config /usr/local/cargo/config
 COPY Cargo.toml Cargo.toml
 COPY Cargo.lock Cargo.lock
 COPY chord chord
-COPY cmd cmd
+COPY cli cli
 COPY flow flow
 COPY input input
 COPY output output

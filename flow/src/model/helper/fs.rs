@@ -1,7 +1,10 @@
-use chord::value::Value;
-use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+use std::fs::canonicalize;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+
+use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+
+use chord::value::Value;
 
 pub static READ: ReadHelper = ReadHelper {};
 pub static PATH: PathHelper = PathHelper {};
@@ -30,6 +33,8 @@ impl HelperDef for ReadHelper {
                     .ok_or_else(|| RenderError::new("Param invalid for helper \"fs_read\""))?;
                 let mut file_path = PathBuf::from(task_dir);
                 file_path.push(x);
+                file_path = canonicalize(file_path.as_path())
+                    .map_err(|_| RenderError::new("Param invalid for helper \"fs_read\""))?;
                 let file_string = read_to_string(file_path).map_err(|e| {
                     RenderError::new(format!("Failed for helper \"fs_read\", cause {}", e))
                 })?;
@@ -64,6 +69,8 @@ impl HelperDef for PathHelper {
                     .ok_or_else(|| RenderError::new("Param invalid for helper \"fs_path\""))?;
                 let mut file_path = PathBuf::from(task_dir);
                 file_path.push(x);
+                file_path = canonicalize(file_path.as_path())
+                    .map_err(|_| RenderError::new("Param invalid for helper \"fs_path\""))?;
                 let path_string = file_path
                     .to_str()
                     .ok_or_else(|| RenderError::new("Failed for helper \"fs_path\""))?;

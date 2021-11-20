@@ -218,7 +218,7 @@ async fn task_path_run_cast_vec(
 
 async fn dir_is_task_path(root_path: PathBuf, sub_path: PathBuf) -> bool {
     let task_path = root_path.join(sub_path);
-    load::flow::exists(task_path, "flow").await
+    load::flow::exists(task_path, "task").await
 }
 
 async fn task_path_run(

@@ -8,6 +8,7 @@ use log::{debug, error, info, trace, warn};
 
 use chord::action::{Action, Scope};
 use chord::step::StepState;
+use chord::value::json;
 use chord::value::{to_string_pretty, Value};
 use res::StepAssessStruct;
 use Error::*;
@@ -64,6 +65,7 @@ fn assess_create(
     explain: Value,
     action_value: Result<Box<dyn Scope>, chord::action::Error>,
 ) -> StepAssessStruct {
+    let end = Utc::now();
     if let Err(e) = action_value.as_ref() {
         if !arg.catch_err() {
             error!(
@@ -75,7 +77,7 @@ fn assess_create(
             return StepAssessStruct::new(
                 arg.id().clone(),
                 start,
-                Utc::now(),
+                end,
                 explain,
                 StepState::Err(action_value.err().unwrap()),
                 None,
@@ -84,6 +86,13 @@ fn assess_create(
             let map = arg.context_mut();
             map.insert("state".to_string(), Value::String("Err".to_string()));
             map.insert("value".to_string(), Value::String(e.to_string()));
+            map.insert(
+                "meta".to_string(),
+                json!({
+                    "start": start,
+                    "end": end
+                }),
+            );
         }
     } else {
         let map = arg.context_mut();
@@ -91,6 +100,13 @@ fn assess_create(
         map.insert(
             "value".to_string(),
             action_value.as_ref().unwrap().as_value().clone(),
+        );
+        map.insert(
+            "meta".to_string(),
+            json!({
+                "start": start,
+                "end": end
+            }),
         );
     }
 
@@ -106,7 +122,7 @@ fn assess_create(
             StepAssessStruct::new(
                 arg.id().clone(),
                 start,
-                Utc::now(),
+                end,
                 explain,
                 StepState::Err(Box::new(e)),
                 None,
@@ -118,7 +134,7 @@ fn assess_create(
                 StepAssessStruct::new(
                     arg.id().clone(),
                     start,
-                    Utc::now(),
+                    end,
                     explain,
                     StepState::Ok(action_value.unwrap()),
                     at,
@@ -134,7 +150,7 @@ fn assess_create(
                 StepAssessStruct::new(
                     arg.id().clone(),
                     start,
-                    Utc::now(),
+                    end,
                     explain,
                     StepState::Fail(action_value.unwrap()),
                     None,

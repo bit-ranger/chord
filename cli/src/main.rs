@@ -1,17 +1,19 @@
+use std::fmt::{Debug, Display, Formatter};
+use std::fs::canonicalize;
+
 use async_std::path::{Path, PathBuf};
+use async_std::sync::Arc;
+use dirs;
 use structopt::StructOpt;
 
 use chord::task::TaskState;
+use chord::value::Value;
 use chord_action::FactoryComposite;
+use chord_input::load;
+use chord_output::report::ReportFactory;
 
 use crate::conf::Config;
 use crate::RunError::{InputNotDir, Logger, TaskErr, TaskFail};
-use async_std::sync::Arc;
-use chord::value::Value;
-use chord_input::load;
-use chord_output::report::ReportFactory;
-use dirs;
-use std::fmt::{Debug, Display, Formatter};
 
 mod conf;
 mod job;
@@ -30,7 +32,7 @@ enum Chord {
         exec_id: String,
 
         /// input dir
-        #[structopt(short, long, parse(from_os_str))]
+        #[structopt(short, long, parse(from_os_str), default_value = ".")]
         input: PathBuf,
 
         /// config file path

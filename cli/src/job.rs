@@ -1,13 +1,14 @@
+use async_recursion::async_recursion;
 use async_std::fs::read_dir;
 use async_std::path::{Path, PathBuf};
 use async_std::sync::Arc;
 use async_std::task::Builder;
 use futures::future::join_all;
 use futures::StreamExt;
+use itertools::Itertools;
 use log::error;
 use log::trace;
 
-use async_recursion::async_recursion;
 use chord::flow::{Flow, ID_PATTERN};
 use chord::output::{DateTime, Utc};
 use chord::task::{TaskAssess, TaskId, TaskState};
@@ -15,7 +16,6 @@ use chord::value::Value;
 use chord_flow::{FlowApp, TaskIdSimple};
 use chord_input::load;
 use chord_output::report::{Factory, ReportFactory};
-use itertools::Itertools;
 use Error::*;
 
 #[derive(thiserror::Error, Debug)]
@@ -218,7 +218,7 @@ async fn task_path_run_cast_vec(
 
 async fn dir_is_task_path(root_path: PathBuf, sub_path: PathBuf) -> bool {
     let task_path = root_path.join(sub_path);
-    load::flow::exists(task_path, "flow").await
+    load::flow::exists(task_path, "task").await
 }
 
 async fn task_path_run(
@@ -269,7 +269,7 @@ async fn task_path_run0<P: AsRef<Path>>(
     report_factory: Arc<ReportFactory>,
 ) -> Result<Box<dyn TaskAssess>, Error> {
     let task_path = Path::new(task_path.as_ref());
-    let flow = load::flow::load(task_path, "flow")
+    let flow = load::flow::load(task_path, "task")
         .await
         .map_err(|e| TaskFile(task_path.to_str().unwrap().to_string(), e))?;
     let flow = Flow::new(flow, task_path)

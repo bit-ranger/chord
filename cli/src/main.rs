@@ -93,9 +93,6 @@ async fn run(
     config: Option<PathBuf>,
     verbose: bool,
 ) -> Result<(), RunError> {
-    let input = canonicalize(input.as_path())
-        .map_err(|_| InputNotDir(input.to_str().unwrap().to_string()))?;
-
     let input_dir = Path::new(&input);
     if !input_dir.is_dir().await {
         return Err(InputNotDir(input_dir.to_str().unwrap().to_string()));

@@ -1,5 +1,4 @@
 use std::fmt::{Debug, Display, Formatter};
-use std::fs::canonicalize;
 
 use async_std::path::{Path, PathBuf};
 use async_std::sync::Arc;

@@ -74,7 +74,7 @@ jobs:
           cargo test  --verbose --release
           cargo build --verbose --release
           find $(pwd)
-          cp target/release/libchord_action_dylib_example.so $HOME/.chord/lib/libchord_action_dylib_example.so
+          cp target/release/libchord_action_cdylib_example.so $HOME/.chord/lib/libchord_action_cdylib_example.so
 
       - name: chord-test
         run: |

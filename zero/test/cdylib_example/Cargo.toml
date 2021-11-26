@@ -1,5 +1,5 @@
 [package]
-name = "chord-action-dylib-example"
+name = "chord-action-cdylib-example"
 version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
@@ -10,5 +10,5 @@ edition = "2021"
 chord = { path = "../../../chord" }
 
 [lib]
-name = "chord_action_dylib_example"
-crate-type = ["dylib"]
+name = "chord_action_cdylib_example"
+crate-type = ["cdylib"]

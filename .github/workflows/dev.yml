@@ -73,8 +73,8 @@ jobs:
           cargo --version
           cargo test  --verbose --release
           cargo build --verbose --release
+          make -C zero/test/cdylib_example/bin
           find $(pwd)
-          cp target/release/libchord_action_cdylib_example.so $HOME/.chord/lib/libchord_action_cdylib_example.so
 
       - name: chord-test
         run: |

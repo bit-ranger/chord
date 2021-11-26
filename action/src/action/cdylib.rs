@@ -67,7 +67,6 @@ impl Action for Cdylib {
         let ar = CString::new(ar)?;
         let av: *mut c_char = action_run(ar.as_ptr());
         let av = unsafe { CStr::from_ptr(av) };
-        println!("cdylib_example return {}", av.to_str()?);
         let av: Value = from_str(av.to_str()?)?;
         Ok(Box::new(av))
     }

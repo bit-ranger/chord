@@ -10,6 +10,8 @@ mod log;
 mod nop;
 mod sleep;
 
+#[cfg(feature = "act_cdylib")]
+mod cdylib;
 #[cfg(feature = "act_crypto")]
 mod crypto;
 #[cfg(feature = "act_database")]
@@ -20,8 +22,6 @@ mod docker;
 mod download;
 #[cfg(feature = "act_dubbo")]
 mod dubbo;
-#[cfg(feature = "act_dylib")]
-mod dylib;
 #[cfg(feature = "act_lua")]
 mod lua;
 #[cfg(feature = "act_mongodb")]
@@ -94,8 +94,8 @@ impl FactoryComposite {
         #[cfg(feature = "act_dubbo")]
         register!(table, config_ref, "dubbo", dubbo::DubboFactory::new);
 
-        #[cfg(feature = "act_dylib")]
-        register!(table, config_ref, "dylib", dylib::DylibFactory::new);
+        #[cfg(feature = "act_cdylib")]
+        register!(table, config_ref, "cdylib", cdylib::CdylibFactory::new);
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new);

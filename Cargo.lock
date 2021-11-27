@@ -677,13 +677,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "chord-action-dylib-example"
-version = "0.1.0"
-dependencies = [
- "chord",
-]
-
-[[package]]
 name = "chord-cli"
 version = "0.1.0"
 dependencies = [

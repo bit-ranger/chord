@@ -2,13 +2,13 @@ use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::time::Duration;
 
+use async_std::path::Path;
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::flow::Error::EntryLost;
 use crate::flow::Error::*;
 use crate::value::{Map, Value};
-use async_std::path::Path;
 
 lazy_static! {
     pub static ref ID_PATTERN: Regex = Regex::new(r"^[\w]{1,50}$").unwrap();
@@ -46,6 +46,7 @@ impl Flow {
 
         let flow = Flow { flow, meta };
 
+        flow._root_check()?;
         flow._version()?;
 
         let mut step_id_checked: HashSet<&str> = HashSet::new();
@@ -59,6 +60,8 @@ impl Flow {
             } else {
                 step_id_checked.insert(pre_step_id.into());
             }
+
+            flow._pre_check()?;
         }
 
         let stage_id_vec = flow._stage_id_vec()?;
@@ -71,6 +74,7 @@ impl Flow {
                 return Err(IdInvalid(stage_id.into()));
             }
 
+            flow._stage_check(stage_id)?;
             flow._stage_concurrency(stage_id)?;
             flow._stage_duration(stage_id)?;
             flow._stage_round(stage_id)?;
@@ -198,6 +202,20 @@ impl Flow {
     // -----------------------------------------------
     // private
 
+    fn _root_check(&self) -> Result<(), Error> {
+        let enable_keys = vec!["version", "def", "stage", "pre"];
+        let root = self.flow.borrow();
+        let object = root
+            .as_object()
+            .ok_or_else(|| Violation("root".into(), "be object".into(), "is not".into()))?;
+        for (k, _) in object {
+            if !enable_keys.contains(&k.as_str()) {
+                return Err(EntryUnexpected("root".into(), k.into()));
+            }
+        }
+        return Ok(());
+    }
+
     fn _version(&self) -> Result<&str, Error> {
         let v = self.flow["version"]
             .as_str()
@@ -207,6 +225,118 @@ impl Flow {
             return Err(Violation("version".into(), "0.0.1".into(), v.into()));
         } else {
             Ok(v)
+        }
+    }
+
+    fn _pre_check(&self) -> Result<(), Error> {
+        let enable_keys = vec!["step"];
+        let pre = self.flow["pre"].borrow();
+        let object = pre
+            .as_object()
+            .ok_or_else(|| Violation("pre".into(), "be object".into(), "is not".into()))?;
+        for (k, _) in object {
+            if !enable_keys.contains(&k.as_str()) {
+                return Err(EntryUnexpected("pre".into(), k.into()));
+            }
+        }
+        return Ok(());
+    }
+
+    fn _stage_id_vec(&self) -> Result<Vec<&str>, Error> {
+        let step_id_vec = self.flow["stage"]
+            .as_object()
+            .map(|p| p.keys().map(|k| k.as_str()).collect())
+            .ok_or(EntryLost("root".into(), "stage".into()))?;
+        return Ok(step_id_vec);
+    }
+
+    fn _stage_check(&self, stage_id: &str) -> Result<(), Error> {
+        let enable_keys = vec![
+            "step",
+            "case",
+            "concurrency",
+            "round",
+            "duration",
+            "break_on",
+        ];
+        let stage = self.flow["stage"][stage_id].borrow();
+        let object = stage.as_object().ok_or_else(|| {
+            Violation(
+                format!("stage.{}", stage_id),
+                "be object".into(),
+                "is not".into(),
+            )
+        })?;
+        for (k, _) in object {
+            if !enable_keys.contains(&k.as_str()) {
+                return Err(EntryUnexpected(format!("stage.{}", stage_id), k.into()));
+            }
+        }
+        return Ok(());
+    }
+
+    fn _stage_concurrency(&self, stage_id: &str) -> Result<usize, Error> {
+        let s = self.flow["stage"][stage_id]["concurrency"].as_u64();
+        if s.is_none() {
+            return Ok(10);
+        }
+
+        let s = s.unwrap();
+        if s < 1 {
+            return Err(Violation(
+                format!("stage.{}.concurrency", stage_id),
+                "> 0".into(),
+                format!("is {}", s),
+            ));
+        }
+        Ok(s as usize)
+    }
+
+    fn _stage_round(&self, stage_id: &str) -> Result<usize, Error> {
+        let s = self.flow["stage"][stage_id]["round"].as_u64();
+        if s.is_none() {
+            return Ok(1);
+        }
+
+        let s = s.unwrap();
+        if s < 1 {
+            return Err(Violation(
+                format!("stage.{}.round", stage_id),
+                "> 0".into(),
+                format!("is {}", s),
+            ));
+        }
+        Ok(s as usize)
+    }
+
+    fn _stage_duration(&self, stage_id: &str) -> Result<Duration, Error> {
+        let s = self.flow["stage"][stage_id]["duration"].as_u64();
+        if s.is_none() {
+            return Ok(Duration::from_secs(600));
+        }
+
+        let s = s.unwrap();
+        if s < 1 {
+            return Err(Violation(
+                format!("stage.{}.duration", stage_id),
+                "> 0".into(),
+                format!("is {}", s),
+            ));
+        }
+        Ok(Duration::from_secs(s))
+    }
+
+    fn _stage_break_on(&self, stage_id: &str) -> Result<&str, Error> {
+        let break_on = self.flow["stage"][stage_id]["break_on"]
+            .as_str()
+            .unwrap_or("stage_fail");
+        match break_on {
+            "never" => Ok(break_on),
+            "stage_fail" => Ok(break_on),
+            o => Err(ValueUnexpected(
+                format!("stage.{}.break_on", stage_id),
+                o.into(),
+            )),
         }
     }
 
@@ -375,79 +505,6 @@ impl Flow {
                     .map(|m| m.as_object().unwrap())
                     .collect(),
             ))
-        }
-    }
-
-    fn _stage_id_vec(&self) -> Result<Vec<&str>, Error> {
-        let step_id_vec = self.flow["stage"]
-            .as_object()
-            .map(|p| p.keys().map(|k| k.as_str()).collect())
-            .ok_or(EntryLost("root".into(), "stage".into()))?;
-        return Ok(step_id_vec);
-    }
-
-    fn _stage_concurrency(&self, stage_id: &str) -> Result<usize, Error> {
-        let s = self.flow["stage"][stage_id]["concurrency"].as_u64();
-        if s.is_none() {
-            return Ok(10);
-        }
-
-        let s = s.unwrap();
-        if s < 1 {
-            return Err(Violation(
-                format!("stage.{}.concurrency", stage_id),
-                "> 0".into(),
-                format!("is {}", s),
-            ));
-        }
-        Ok(s as usize)
-    }
-
-    fn _stage_round(&self, stage_id: &str) -> Result<usize, Error> {
-        let s = self.flow["stage"][stage_id]["round"].as_u64();
-        if s.is_none() {
-            return Ok(1);
-        }
-
-        let s = s.unwrap();
-        if s < 1 {
-            return Err(Violation(
-                format!("stage.{}.round", stage_id),
-                "> 0".into(),
-                format!("is {}", s),
-            ));
-        }
-        Ok(s as usize)
-    }
-
-    fn _stage_duration(&self, stage_id: &str) -> Result<Duration, Error> {
-        let s = self.flow["stage"][stage_id]["duration"].as_u64();
-        if s.is_none() {
-            return Ok(Duration::from_secs(600));
-        }
-
-        let s = s.unwrap();
-        if s < 1 {
-            return Err(Violation(
-                format!("stage.{}.duration", stage_id),
-                "> 0".into(),
-                format!("is {}", s),
-            ));
-        }
-        Ok(Duration::from_secs(s))
-    }
-
-    fn _stage_break_on(&self, stage_id: &str) -> Result<&str, Error> {
-        let break_on = self.flow["stage"][stage_id]["break_on"]
-            .as_str()
-            .unwrap_or("stage_fail");
-        match break_on {
-            "never" => Ok(break_on),
-            "stage_fail" => Ok(break_on),
-            o => Err(ValueUnexpected(
-                format!("stage.{}.break_on", stage_id),
-                o.into(),
-            )),
         }
     }
 }

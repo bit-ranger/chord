@@ -6,6 +6,14 @@ WORKDIR /usr/src
 
 COPY zero/devops/apt/sources.list /etc/apt/sources.list
 RUN apt-get update -y
+RUN apt-get install -y locales
+RUN sed -ie 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/g' /etc/locale.gen
+RUN locale-gen
+#RUN mkdir /usr/share/fonts/truetype/deng/
+#COPY zero/devops/fonts/* /usr/share/fonts/truetype/
+#RUN fc-cache -vf
+#RUN fc-list
+ENV LANG zh_CN.UTF-8
 
 
 # maven

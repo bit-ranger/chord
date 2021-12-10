@@ -1,6 +1,6 @@
 [package]
 name = "chord-action"
-version = "0.1.0"
+version = "0.1.13"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 

@@ -10,8 +10,8 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord::action::prelude::*;
-use chord::value::{to_string, Deserialize, Serialize};
+use chord_core::action::prelude::*;
+use chord_core::value::{to_string, Deserialize, Serialize};
 
 use crate::err;
 

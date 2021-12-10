@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
-use chord::value::Value;
+use chord_core::value::Value;
 
 pub static READ: ReadHelper = ReadHelper {};
 pub static PATH: PathHelper = PathHelper {};

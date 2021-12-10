@@ -1,12 +1,12 @@
+use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
 use std::sync::Arc;
 
 use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 
-use chord::action::prelude::*;
+use chord_core::action::prelude::*;
 
 use crate::err;
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
 
 pub struct CdylibFactory {
     lib_dir: String,

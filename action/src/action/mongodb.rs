@@ -1,8 +1,8 @@
 use mongodb::bson::{to_document, Document};
 use mongodb::{options::ClientOptions, Client};
 
-use chord::action::prelude::*;
-use chord::value::from_str;
+use chord_core::action::prelude::*;
+use chord_core::value::from_str;
 
 use crate::err;
 

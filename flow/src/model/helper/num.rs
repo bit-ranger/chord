@@ -1,5 +1,6 @@
-use chord::value::{from_str, Number, Value};
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+
+use chord_core::value::{from_str, Number, Value};
 
 pub static NUM: NumHelper = NumHelper {};
 pub static ADD: AddHelper = AddHelper {};

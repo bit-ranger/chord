@@ -6,7 +6,7 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{Body, RequestBuilder, Response, Url};
 
-use chord::action::prelude::*;
+use chord_core::action::prelude::*;
 
 use crate::err;
 

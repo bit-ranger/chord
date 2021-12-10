@@ -1,7 +1,7 @@
 use async_std::process::{Child, Command};
 use log::trace;
 
-use chord::action::prelude::*;
+use chord_core::action::prelude::*;
 
 use crate::err;
 

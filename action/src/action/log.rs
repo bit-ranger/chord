@@ -1,6 +1,6 @@
 use log::info;
 
-use chord::action::prelude::*;
+use chord_core::action::prelude::*;
 
 pub struct LogFactory {}
 

@@ -1,5 +1,6 @@
-use chord::value::Value;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+
+use chord_core::value::Value;
 
 use crate::model::helper::bool::{ALL, ANY, BOOL};
 

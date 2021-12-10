@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use chord::task::TaskId;
+use chord_core::task::TaskId;
 
 #[derive(Debug, Clone)]
 pub struct TaskIdSimple {

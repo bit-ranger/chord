@@ -2,8 +2,9 @@ use std::borrow::Borrow;
 
 use handlebars::Handlebars;
 
+use chord_core::action::Factory;
+
 use crate::model::helper::register;
-use chord::action::Factory;
 
 pub trait FlowApp: Sync + Send {
     fn get_handlebars(&self) -> &Handlebars;

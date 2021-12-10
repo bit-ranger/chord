@@ -16,7 +16,7 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chord = { path = "../chord" }
+chord-core = { path = "../core" }
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 csv = { version = "1.1.5" }
 chrono = { version = "0.4.19", features = ["serde"] }

@@ -9,13 +9,13 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use chord::value::Value;
-
-use crate::app::conf::Config;
-use chord::value::Map;
+use chord_core::value::Map;
+use chord_core::value::Value;
 use chord_util::docker::container::Arg;
 use chord_util::docker::engine::Engine;
 use chord_util::docker::image::Image;
+
+use crate::app::conf::Config;
 
 lazy_static! {
     static ref GIT_URL: Regex = Regex::new(r"^git@[\w,.]+:[\w/-]+\.git$").unwrap();

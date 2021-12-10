@@ -4,8 +4,8 @@ use std::path::PathBuf;
 
 use csv::{Reader, ReaderBuilder};
 
-use chord::input::{async_trait, CaseLoad, CaseStore, Error};
-use chord::value::{Map, Value};
+use chord_core::input::{async_trait, CaseLoad, CaseStore, Error};
+use chord_core::value::{Map, Value};
 
 pub struct Store {
     path: PathBuf,

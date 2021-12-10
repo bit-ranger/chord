@@ -1,6 +1,7 @@
-use chord::value::{from_str, Number, Value};
 use handlebars::handlebars_helper;
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+
+use chord_core::value::{from_str, Number, Value};
 
 handlebars_helper!(CONTAINS: |x: Json, y: Json|{
     x.is_array() && x.as_array().unwrap().contains(y)

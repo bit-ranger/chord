@@ -1,6 +1,7 @@
 use async_std::path::Path;
-use chord::value::{Map, Number, Value};
 use hocon::{Hocon, HoconLoader};
+
+use chord_core::value::{Map, Number, Value};
 
 pub type Error = hocon::Error;
 

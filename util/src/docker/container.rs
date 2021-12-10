@@ -3,7 +3,7 @@ use futures::executor::block_on;
 use log::{trace, warn};
 use surf::http::Method;
 
-use chord::value::{Map, Value};
+use chord_core::value::{Map, Value};
 
 use crate::docker::engine::Engine;
 use crate::docker::Error;

@@ -1,8 +1,9 @@
-use chord::value::{Number, Value};
 use handlebars::{
     handlebars_helper, Context, Handlebars, Helper, HelperDef, RenderContext, RenderError,
     ScopedJson,
 };
+
+use chord_core::value::{Number, Value};
 
 handlebars_helper!(START_WITH: |x: Json, y: Json|
     x.is_string() && y.is_string() && x.as_str().unwrap().starts_with(y.as_str().unwrap())

@@ -9,10 +9,10 @@ use itertools::Itertools;
 use log::error;
 use log::trace;
 
-use chord::flow::{Flow, ID_PATTERN};
-use chord::output::{DateTime, Utc};
-use chord::task::{TaskAssess, TaskId, TaskState};
-use chord::value::Value;
+use chord_core::flow::{Flow, ID_PATTERN};
+use chord_core::output::{DateTime, Utc};
+use chord_core::task::{TaskAssess, TaskId, TaskState};
+use chord_core::value::Value;
 use chord_flow::{FlowApp, TaskIdSimple};
 use chord_input::load;
 use chord_output::report::{Factory, ReportFactory};

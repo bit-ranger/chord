@@ -1,7 +1,7 @@
 use async_std::path::{Path, PathBuf};
-use chord::value::Value;
-
 use dirs;
+
+use chord_core::value::Value;
 
 pub trait Config: Sync + Send {
     fn server_ip(&self) -> &str;

@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use chord::action::prelude::*;
+use chord_core::action::prelude::*;
 
 pub struct CountFactory {}
 

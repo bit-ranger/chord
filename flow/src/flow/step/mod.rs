@@ -6,10 +6,10 @@ use futures::FutureExt;
 use handlebars::TemplateRenderError;
 use log::{debug, error, info, trace, warn};
 
-use chord::action::{Action, Scope};
-use chord::step::StepState;
-use chord::value::json;
-use chord::value::{to_string_pretty, Value};
+use chord_core::action::{Action, Scope};
+use chord_core::step::StepState;
+use chord_core::value::json;
+use chord_core::value::{to_string_pretty, Value};
 use res::StepAssessStruct;
 use Error::*;
 

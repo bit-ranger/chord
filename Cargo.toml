@@ -1,7 +1,7 @@
 [workspace]
 members = [
     'util',
-    'chord',
+    'core',
     'flow',
     'input',
     'output',

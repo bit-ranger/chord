@@ -5,9 +5,9 @@ use async_std::sync::Arc;
 use dirs;
 use structopt::StructOpt;
 
-use chord::task::TaskState;
-use chord::value::Value;
 use chord_action::FactoryComposite;
+use chord_core::task::TaskState;
+use chord_core::value::Value;
 use chord_input::load;
 use chord_output::report::ReportFactory;
 

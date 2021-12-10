@@ -1,5 +1,6 @@
-use chord::value::{from_str, Value};
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+
+use chord_core::value::{from_str, Value};
 
 pub static OBJ: ObjHelper = ObjHelper {};
 

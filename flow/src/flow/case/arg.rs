@@ -3,14 +3,14 @@ use std::fmt::{Display, Formatter};
 use async_std::sync::Arc;
 use log::trace;
 
-use chord::action::Action;
-use chord::case::CaseId;
-use chord::collection::TailDropVec;
-use chord::flow::Flow;
-use chord::step::{StepAssess, StepState};
-use chord::task::TaskId;
-use chord::value::Map;
-use chord::value::Value;
+use chord_core::action::Action;
+use chord_core::case::CaseId;
+use chord_core::collection::TailDropVec;
+use chord_core::flow::Flow;
+use chord_core::step::{StepAssess, StepState};
+use chord_core::task::TaskId;
+use chord_core::value::Map;
+use chord_core::value::Value;
 
 use crate::flow;
 use crate::flow::case::Error;

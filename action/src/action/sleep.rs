@@ -1,8 +1,10 @@
-use crate::err;
-use async_std::task::sleep;
 use std::time::Duration;
 
-use chord::action::prelude::*;
+use async_std::task::sleep;
+
+use chord_core::action::prelude::*;
+
+use crate::err;
 
 pub struct SleepFactory {}
 

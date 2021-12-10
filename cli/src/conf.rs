@@ -1,9 +1,11 @@
-use async_std::path::{Path, PathBuf};
-use chord::value::json;
-use chord::value::map_merge_deep;
-use chord::value::Value;
-use dirs;
 use std::fmt::{Display, Formatter};
+
+use async_std::path::{Path, PathBuf};
+use dirs;
+
+use chord_core::value::json;
+use chord_core::value::map_merge_deep;
+use chord_core::value::Value;
 
 #[derive(Debug, Clone)]
 pub struct Config {

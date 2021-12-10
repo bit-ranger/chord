@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use chord::case::{CaseAssess, CaseId, CaseState};
-use chord::value::Value;
+use chord_core::case::{CaseAssess, CaseId, CaseState};
+use chord_core::value::Value;
 
 use crate::flow::case::arg::CaseIdStruct;
 

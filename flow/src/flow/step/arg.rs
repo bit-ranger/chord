@@ -4,13 +4,13 @@ use std::time::Duration;
 
 use handlebars::{Handlebars, TemplateRenderError};
 
-use chord::action::Error;
-use chord::action::RunId;
-use chord::action::{CreateArg, CreateId, RunArg};
-use chord::case::CaseId;
-use chord::flow::Flow;
-use chord::task::TaskId;
-use chord::value::{Map, Value};
+use chord_core::action::Error;
+use chord_core::action::RunId;
+use chord_core::action::{CreateArg, CreateId, RunArg};
+use chord_core::case::CaseId;
+use chord_core::flow::Flow;
+use chord_core::task::TaskId;
+use chord_core::value::{Map, Value};
 
 use crate::flow;
 use crate::model::app::RenderContext;

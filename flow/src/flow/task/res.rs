@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use chord::task::{TaskAssess, TaskId, TaskState};
+use chord_core::task::{TaskAssess, TaskId, TaskState};
 
 use crate::flow::task::arg::TaskIdSimple;
 

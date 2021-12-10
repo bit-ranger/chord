@@ -1,4 +1,4 @@
-use chord::action::prelude::*;
+use chord_core::action::prelude::*;
 
 pub struct EchoFactory {}
 

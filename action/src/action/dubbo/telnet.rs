@@ -1,6 +1,6 @@
 use async_std::net::{Shutdown, TcpStream};
-use chord::action::prelude::*;
-use chord::value::to_string;
+use chord_core::action::prelude::*;
+use chord_core::value::to_string;
 use futures::io::{AsyncReadExt, AsyncWriteExt};
 use log::trace;
 use std::str::FromStr;

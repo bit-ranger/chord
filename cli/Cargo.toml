@@ -19,7 +19,7 @@ name = "chord"
 path = "src/main.rs"
 
 [dependencies]
-chord = { path = "../chord" }
+chord-core = { path = "../core" }
 chord-flow = { path = "../flow" }
 chord-input = { path = "../input" }
 chord-output = { path = "../output", features = ["report_csv", "report_elasticsearch", "report_webhook"] }

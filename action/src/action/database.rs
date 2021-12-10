@@ -2,7 +2,7 @@ use log::trace;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 
-use chord::action::prelude::*;
+use chord_core::action::prelude::*;
 
 use crate::err;
 

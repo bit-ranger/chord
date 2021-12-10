@@ -7,9 +7,9 @@ use handlebars::TemplateRenderError::RenderError as Re;
 use handlebars::{Handlebars, RenderError, TemplateRenderError};
 use log::trace;
 
-use chord::action::prelude::Map;
-use chord::action::Factory;
-use chord::value::{from_str, Value};
+use chord_core::action::prelude::Map;
+use chord_core::action::Factory;
+use chord_core::value::{from_str, Value};
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 

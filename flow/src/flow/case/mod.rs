@@ -1,20 +1,20 @@
 use chrono::{DateTime, Utc};
+use handlebars::TemplateRenderError;
 use log::{error, info, trace, warn};
 
-use chord::case::CaseState;
-use chord::collection::TailDropVec;
-use chord::step::{StepAssess, StepState};
+use chord_core::action::Action;
+use chord_core::case::CaseState;
+use chord_core::collection::TailDropVec;
+use chord_core::step::{StepAssess, StepState};
+use chord_core::value::Value;
 use res::CaseAssessStruct;
+use Error::*;
 
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step;
 use crate::flow::step::arg::RunIdStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::model::app::FlowApp;
-use chord::action::Action;
-use chord::value::Value;
-use handlebars::TemplateRenderError;
-use Error::*;
 
 pub mod arg;
 pub mod res;

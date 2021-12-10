@@ -1,6 +1,7 @@
-use chord::value::json;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
+
+use chord_core::value::json;
 
 #[macro_export]
 macro_rules! err {

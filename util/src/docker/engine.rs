@@ -7,7 +7,7 @@ use surf::http::headers::{HeaderName, HeaderValue};
 use surf::http::Method;
 use surf::{RequestBuilder, Response, Url};
 
-use chord::value::Value;
+use chord_core::value::Value;
 
 use crate::docker::Error;
 use crate::docker::Error::*;

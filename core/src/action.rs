@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::time::Duration;
 
 pub use async_trait::async_trait;
 
@@ -6,19 +7,10 @@ use crate::case::CaseId;
 use crate::task::TaskId;
 use crate::value::Map;
 use crate::value::Value;
-use std::time::Duration;
 
 pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
 pub mod prelude {
-    pub use super::async_trait;
-    pub use super::Action;
-    pub use super::CreateArg;
-    pub use super::Error;
-    pub use super::Factory;
-    pub use super::RunArg;
-    pub use super::Scope;
-
     pub use crate::value::from_reader;
     pub use crate::value::from_slice;
     pub use crate::value::from_str;
@@ -31,6 +23,14 @@ pub mod prelude {
     pub use crate::value::Number;
     pub use crate::value::Serialize;
     pub use crate::value::Value;
+
+    pub use super::async_trait;
+    pub use super::Action;
+    pub use super::CreateArg;
+    pub use super::Error;
+    pub use super::Factory;
+    pub use super::RunArg;
+    pub use super::Scope;
 }
 
 pub trait Scope: Sync + Send {

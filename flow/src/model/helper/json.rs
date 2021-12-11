@@ -49,7 +49,7 @@ impl HelperDef for PathHelper {
         let mut finder = JsonPathFinder::from_str("null", path).map_err(|e| {
             RenderError::new(format!("Param invalid for helper \"json_path\": {}", e))
         })?;
-        finder.set_json(value.clone());
+        finder.set_json(Box::new(value.clone()));
 
         let find = finder.find();
         Ok(Some(ScopedJson::Derived(find)))

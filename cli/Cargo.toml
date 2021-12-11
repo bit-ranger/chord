@@ -1,6 +1,6 @@
 [package]
 name = "chord-cli"
-version = "0.1.13"
+version = "0.1.0"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 

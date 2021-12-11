@@ -638,17 +638,17 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chord-action"
-version = "0.1.13"
+version = "0.1.0"
 dependencies = [
- "async-std",
- "chord-core",
- "chord-util",
- "dirs",
- "dynamic_reload",
- "futures",
- "itertools",
- "log",
- "md5",
+    "async-std",
+    "chord-core",
+    "chord-util",
+    "dirs",
+    "dynamic_reload",
+    "futures",
+    "itertools",
+    "log",
+    "md5",
  "mongodb",
  "openssl",
  "rbatis",
@@ -663,17 +663,17 @@ dependencies = [
 
 [[package]]
 name = "chord-cli"
-version = "0.1.13"
+version = "0.1.0"
 dependencies = [
- "async-recursion",
- "async-std",
- "chord-action",
- "chord-core",
- "chord-flow",
- "chord-input",
- "chord-output",
- "colored",
- "dirs",
+    "async-recursion",
+    "async-std",
+    "chord-action",
+    "chord-core",
+    "chord-flow",
+    "chord-input",
+    "chord-output",
+    "colored",
+    "dirs",
  "flume 0.10.5",
  "futures",
  "itertools",
@@ -685,91 +685,91 @@ dependencies = [
 
 [[package]]
 name = "chord-core"
-version = "0.1.13"
+version = "0.1.0"
 dependencies = [
- "async-std",
- "async-trait",
- "chrono",
- "itertools",
- "lazy_static",
- "regex",
- "serde",
- "serde_json",
- "thiserror",
+    "async-std",
+    "async-trait",
+    "chrono",
+    "itertools",
+    "lazy_static",
+    "regex",
+    "serde",
+    "serde_json",
+    "thiserror",
 ]
 
 [[package]]
 name = "chord-flow"
-version = "0.1.13"
+version = "0.1.0"
 dependencies = [
- "async-std",
- "chord-core",
- "chrono",
- "futures",
- "handlebars",
- "itertools",
- "jsonpath-rust",
- "lazy_static",
- "log",
+    "async-std",
+    "chord-core",
+    "chrono",
+    "futures",
+    "handlebars",
+    "itertools",
+    "jsonpath-rust",
+    "lazy_static",
+    "log",
  "thiserror",
 ]
 
 [[package]]
 name = "chord-input"
-version = "0.1.13"
+version = "0.1.0"
 dependencies = [
- "async-std",
- "chord-core",
- "chrono",
- "csv",
- "hocon",
- "log",
- "thiserror",
+    "async-std",
+    "chord-core",
+    "chrono",
+    "csv",
+    "hocon",
+    "log",
+    "thiserror",
 ]
 
 [[package]]
 name = "chord-output"
-version = "0.1.13"
+version = "0.1.0"
 dependencies = [
- "async-std",
- "async-trait",
- "chord-core",
- "chrono",
- "csv",
- "futures",
- "itertools",
- "log",
- "serde",
+    "async-std",
+    "async-trait",
+    "chord-core",
+    "chrono",
+    "csv",
+    "futures",
+    "itertools",
+    "log",
+    "serde",
  "surf",
  "thiserror",
 ]
 
 [[package]]
 name = "chord-util"
-version = "0.1.13"
+version = "0.1.0"
 dependencies = [
- "async-std",
- "chord-core",
- "futures",
- "log",
- "serde",
- "surf",
- "thiserror",
+    "async-std",
+    "chord-core",
+    "futures",
+    "log",
+    "serde",
+    "surf",
+    "thiserror",
 ]
 
 [[package]]
 name = "chord-web"
-version = "0.1.13"
+version = "0.1.0"
 dependencies = [
- "async-std",
- "async-trait",
- "bean",
- "chord-action",
- "chord-core",
- "chord-flow",
- "chord-input",
- "chord-output",
- "chord-util",
+    "async-std",
+    "async-trait",
+    "bean",
+    "chord-action",
+    "chord-core",
+    "chord-flow",
+    "chord-input",
+    "chord-output",
+    "chord-util",
  "dirs",
  "flume 0.10.5",
  "futures",
@@ -2154,7 +2154,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "match_cfg"
-version = "0.1.13"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffbee8634e0d45d258acb448e7eaab3fce7a0a467395d4d9f228e3c1f01fb2e4"
 
@@ -2679,7 +2679,7 @@ checksum = "dc0e1f259c92177c30a4c9d177246edd0a3568b25756a977d0632cf8fa37e905"
 
 [[package]]
 name = "pin-utils"
-version = "0.1.13"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
@@ -3961,7 +3961,7 @@ dependencies = [
 
 [[package]]
 name = "tinyvec_macros"
-version = "0.1.13"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 

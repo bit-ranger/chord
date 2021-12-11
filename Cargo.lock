@@ -638,7 +638,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chord-action"
-version = "0.1.0"
+version = "0.1.13"
 dependencies = [
     "async-std",
     "chord-core",
@@ -649,21 +649,21 @@ dependencies = [
     "itertools",
     "log",
     "md5",
- "mongodb",
- "openssl",
- "rbatis",
- "redis",
- "rlua",
- "rlua_serde",
- "rm_rf",
- "serde",
- "surf",
- "urlencoding",
+    "mongodb",
+    "openssl",
+    "rbatis",
+    "redis",
+    "rlua",
+    "rlua_serde",
+    "rm_rf",
+    "serde",
+    "surf",
+    "urlencoding",
 ]
 
 [[package]]
 name = "chord-cli"
-version = "0.1.0"
+version = "0.1.13"
 dependencies = [
     "async-recursion",
     "async-std",
@@ -674,18 +674,18 @@ dependencies = [
     "chord-output",
     "colored",
     "dirs",
- "flume 0.10.5",
- "futures",
- "itertools",
- "log",
- "structopt",
- "thiserror",
- "time 0.1.44",
+    "flume 0.10.5",
+    "futures",
+    "itertools",
+    "log",
+    "structopt",
+    "thiserror",
+    "time 0.1.44",
 ]
 
 [[package]]
 name = "chord-core"
-version = "0.1.0"
+version = "0.1.13"
 dependencies = [
     "async-std",
     "async-trait",
@@ -700,7 +700,7 @@ dependencies = [
 
 [[package]]
 name = "chord-flow"
-version = "0.1.0"
+version = "0.1.13"
 dependencies = [
     "async-std",
     "chord-core",
@@ -711,12 +711,12 @@ dependencies = [
     "jsonpath-rust",
     "lazy_static",
     "log",
- "thiserror",
+    "thiserror",
 ]
 
 [[package]]
 name = "chord-input"
-version = "0.1.0"
+version = "0.1.13"
 dependencies = [
     "async-std",
     "chord-core",
@@ -729,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "chord-output"
-version = "0.1.0"
+version = "0.1.13"
 dependencies = [
     "async-std",
     "async-trait",
@@ -740,13 +740,13 @@ dependencies = [
     "itertools",
     "log",
     "serde",
- "surf",
- "thiserror",
+    "surf",
+    "thiserror",
 ]
 
 [[package]]
 name = "chord-util"
-version = "0.1.0"
+version = "0.1.13"
 dependencies = [
     "async-std",
     "chord-core",
@@ -759,7 +759,7 @@ dependencies = [
 
 [[package]]
 name = "chord-web"
-version = "0.1.0"
+version = "0.1.13"
 dependencies = [
     "async-std",
     "async-trait",
@@ -770,16 +770,16 @@ dependencies = [
     "chord-input",
     "chord-output",
     "chord-util",
- "dirs",
- "flume 0.10.5",
- "futures",
- "itertools",
- "lazy_static",
- "log",
- "regex",
- "serde",
- "structopt",
- "thiserror",
+    "dirs",
+    "flume 0.10.5",
+    "futures",
+    "itertools",
+    "lazy_static",
+    "log",
+    "regex",
+    "serde",
+    "structopt",
+    "thiserror",
  "tide",
  "time 0.1.44",
  "url",

@@ -63,7 +63,7 @@ fn assess_create(
     arg: &mut RunArgStruct<'_, '_, '_>,
     start: DateTime<Utc>,
     explain: Value,
-    action_value: Result<Box<dyn Scope>, chord::action::Error>,
+    action_value: Result<Box<dyn Scope>, chord_core::action::Error>,
 ) -> StepAssessStruct {
     let end = Utc::now();
     if let Err(e) = action_value.as_ref() {

@@ -53,10 +53,10 @@ enum RunError {
     Config(load::conf::Error),
 
     #[error("report error:\n{0}")]
-    Report(chord::output::Error),
+    Report(chord_core::output::Error),
 
     #[error("action factory error:\n{0}")]
-    ActionFactory(chord::action::Error),
+    ActionFactory(chord_core::action::Error),
 
     #[error("log error:\n{0}")]
     Logger(logger::Error),

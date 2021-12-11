@@ -33,7 +33,7 @@ pub enum Error {
     TaskFile(String, load::flow::Error),
 
     #[error("task flow error: {0}\n{1}")]
-    TaskFlow(String, chord::flow::Error),
+    TaskFlow(String, chord_core::flow::Error),
 
     #[error("task case error: {0}\n{1}")]
     TaskCase(String, Box<dyn std::error::Error + Sync + Send>),

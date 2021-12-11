@@ -22,9 +22,7 @@ pub trait Config: Sync + Send {
 #[derive(Debug, Clone)]
 pub struct ConfigImpl {
     conf: Value,
-    home_dir: PathBuf,
     log_dir: PathBuf,
-    workdir: PathBuf,
 }
 
 impl ConfigImpl {
@@ -33,22 +31,12 @@ impl ConfigImpl {
             .map(|p| PathBuf::from(p).join(".chord"))
             .unwrap_or_else(|| Path::new("/").join("data").join("chord"));
 
-        let workdir = match conf["workdir"].as_str() {
-            Some(p) => Path::new(p).to_path_buf(),
-            None => home_dir.join("web"),
-        };
-
         let log_dir = match conf["log"]["dir"].as_str() {
             Some(p) => Path::new(p).to_path_buf(),
             None => home_dir.join("output"),
         };
 
-        ConfigImpl {
-            conf,
-            home_dir,
-            log_dir,
-            workdir,
-        }
+        ConfigImpl { conf, log_dir }
     }
 }
 

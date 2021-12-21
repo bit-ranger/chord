@@ -71,8 +71,8 @@ jobs:
         run: |
           chmod -R 777 $PWD
           cargo --version
-          cargo test  --verbose --release
-          cargo build --verbose --release
+          cargo test  --all-features --verbose --release
+          cargo build --all-features --verbose --release
           make -C .chord/job/cdylib/cdylib_example/bin
           find $(pwd)
 

@@ -135,12 +135,11 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
     res_data.insert(String::from("header"), Value::Object(header_data));
 
     let body_str = res.body_string().await?;
-    let body: Value = if body_str.is_empty() {
-        Value::Null
-    } else {
-        body_str.parse()?
+    if !body_str.is_empty() {
+        let body = body_str.parse()?;
+        res_data.insert(String::from("body"), body);
     };
-    res_data.insert(String::from("body"), body);
+
     return Ok(Value::Object(res_data));
 }
 

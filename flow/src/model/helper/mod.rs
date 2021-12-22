@@ -34,6 +34,10 @@ pub fn register(handlebars: &mut Handlebars) {
 
     //object
     handlebars.register_helper("obj", Box::new(crate::model::helper::obj::OBJ));
+    handlebars.register_helper(
+        "obj_contains_key",
+        Box::new(crate::model::helper::obj::OBJ_CONTAINS_KEY),
+    );
 
     // bool
     handlebars.register_helper("bool", Box::new(BOOL));

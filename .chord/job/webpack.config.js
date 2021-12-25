@@ -18,11 +18,17 @@ let plugins = [
     new CopyWebpackPlugin({
         patterns: tasks.map(t => {
                 return {
-                    from: `./${t}/*.csv`,
-                    to: `./${t}/[name].csv`
+                    from: `./${t}/*.csv`
                 }
             }
         )
+    }),
+    new CopyWebpackPlugin({
+        patterns: [
+            {
+                from: `./**/chord.conf`
+            }
+        ]
     }),
     new JsToJsonPlugin({
         patterns: tasks.map(e => {

@@ -35,7 +35,7 @@ step.step1 = {
             bool4: "{{json true}}",
             bool5: "{{json lbool}}",
 
-            obj1: `{{obj "{\"x\":\"y\"}" }}`,
+            obj1: `{{obj "{\\"x\\":\\"y\\"}" }}`,
             obj2: `{{obj {"x":"y"} }}`,
             obj3: "{{obj lobj}}",
             obj4: `{{json {"x":"y"} }}`,

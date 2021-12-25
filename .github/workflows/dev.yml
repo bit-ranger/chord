@@ -60,6 +60,12 @@ jobs:
           pwd
           echo "------------------------------------------------"
 
+      - name: task-build
+        run: |
+          cd .chord/job
+          npm install
+          npm run build
+
       - name: chord-build-cache
         uses: actions/cache@v2
         with:
@@ -78,7 +84,7 @@ jobs:
 
       - name: chord-test
         run: |
-          ./target/release/chord run -i$PWD/.chord/job
+          ./target/release/chord run -i$PWD/.chord/job/dist
 
       - name: chord-target-upload
         uses: actions/upload-artifact@v2

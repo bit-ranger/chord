@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "release": "webpack build --progress --mode=production",
-    "build": "NODE_ENV=development webpack build --progress --watch --mode=development --watch-options-stdin"
+    "build": "webpack build --progress --mode=production"
   },
   "devDependencies": {
     "webpack": "^5.65.0",

@@ -81,7 +81,7 @@ jobs:
           cargo --version
           cargo test  --all-features --verbose --release
           cargo build --all-features --verbose --release
-          make -C .chord/job/cdylib/cdylib_example/bin
+          make -C .chord/job/src/cdylib/cdylib_example/bin
           find $(pwd)
 
       - name: chord-test

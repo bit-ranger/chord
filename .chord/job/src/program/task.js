@@ -1,17 +1,32 @@
-version: "0.0.1"
+let conf = {
+  version: "0.0.1",
+  pre: {
+    step: {}
+  },
+  stage: {
+    smoking: {
+      step: {}
+    }
+  }
+};
 
-pre.step.p1 {
+module.exports = () => conf;
+let pre = conf.pre;
+let smoking = conf.stage.smoking;
+
+
+pre.step.p1 = {
   exec: {
     program: {
       cmd: [
-        "python3"
+        "python3",
         "--version"
       ]
     }
   }
 }
 
-pre.step.p2 {
+pre.step.p2 = {
   exec: {
     program: {
       detach: true,
@@ -23,7 +38,7 @@ pre.step.p2 {
   }
 }
 
-stage.smoking.step.s1: {
+smoking.step.step1 = {
   exec: {
     program: {
       cmd: [
@@ -34,7 +49,7 @@ stage.smoking.step.s1: {
   }
 }
 
-stage.smoking.step.s2: {
+smoking.step.step2 = {
   exec: {
     program: {
       detach: true,
@@ -46,7 +61,7 @@ stage.smoking.step.s2: {
   }
 }
 
-stage.smoking.step.s3: {
+smoking.step.s3 = {
   exec: {
     program: {
       cmd: [

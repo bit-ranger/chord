@@ -1,6 +1,16 @@
-version: "0.0.1"
+let conf = {
+  version: "0.0.1",
+  stage: {
+    smoking: {
+      step: {}
+    }
+  }
+};
 
-stage.smoking.step.step1: {
+module.exports = () => conf;
+let step = conf.stage.smoking.step;
+
+step.step1 = {
   let: {
     url: "{{case.url}}"
   },
@@ -9,12 +19,13 @@ stage.smoking.step.step1: {
       url: "{{url}}"
     }
   },
-  assert: """
-    (eq state "Ok")
-  """
-},
+  assert: `
+      (eq state "Ok")
+`
+}
 
-stage.smoking.step.step2: {
+
+step.step2 = {
   let: {
     url: "{{case.url}}"
   },
@@ -30,9 +41,9 @@ stage.smoking.step.step2: {
       url: "{{url}}"
     }
   }
-},
+}
 
-stage.smoking.step.setp3: {
+step.setp3 = {
   let: {
     step1_size: "{{step.step1.value.size}}"
   },

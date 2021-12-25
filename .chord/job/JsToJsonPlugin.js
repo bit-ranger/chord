@@ -24,14 +24,7 @@ JsToJsonPlugin.prototype.apply = function apply(compiler) {
                         const jsModule = require(fullFilePath)
                         let jsonValue = null
 
-                        if (typeof jsModule === 'function') {
-                            jsonValue = jsModule(this.data)
-                        } else if (typeof jsModule === 'object') {
-                            jsonValue = {
-                                ...jsModule,
-                                ...this.data
-                            }
-                        }
+                        jsonValue = jsModule(this.data)
 
                         if (jsonValue) {
                             const json = JSON.stringify(jsonValue, null, 2)

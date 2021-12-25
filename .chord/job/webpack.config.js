@@ -4,8 +4,26 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 
 let tasks = [
+    "cdylib",
+    "count",
+    "database",
+    "docker",
+    "download",
+    "dubbo",
+    "echo",
+    "helper",
+    "log",
     "lua",
-    "restapi"
+    "nodejs",
+    "program",
+    "redis",
+    "restapi",
+    "sleep",
+    "typecast",
+    "z_advance/gen_dml",
+    "z_advance/goto",
+    "z_advance/iter_map",
+    "z_advance/stage_case"
 ]
 
 let entry = {}

@@ -9,6 +9,7 @@ let conf = {
   }
 }
 
+module.exports = () => conf;
 let url_root = "http://127.0.0.1:9200";
 
 let step = conf.stage.smoking.step;
@@ -135,9 +136,4 @@ step.search = {
       (eq value.body.hits.total.value 1)
     )
   `
-}
-
-
-module.exports = () => {
-  return conf;
 }

@@ -1,36 +1,32 @@
-version: "0.0.1"
-def: {
-  es: {
-    url: "http://127.0.0.1:9200"
-  }
-}
-stage: {
-  smoking: {
-    round: 1,
-    duration: 30,
+let conf = {
+  version: "0.0.1",
+  stage: {
+    smoking: {
+      round: 1,
+      duration: 30,
+      step: {}
+    }
   }
 }
 
+let url_root = "http://127.0.0.1:9200";
 
-stage.smoking.step.del_idx: {
-  let: {
-    url: "{{def.es.url}}"
-  },
+let step = conf.stage.smoking.step;
+
+step.del_idx = {
+
   exec: {
     restapi: {
-      url: "{{url}}/article",
+      url: url_root + "/article",
       method: "DELETE"
     }
   }
 }
 
-stage.smoking.step.crt_inx: {
-  let: {
-    url: "{{def.es.url}}"
-  },
+step.crt_inx = {
   exec: {
     restapi: {
-      url: "{{url}}/article",
+      url: url_root + "/article",
       method: "PUT",
       body: {
         "settings": {
@@ -60,25 +56,24 @@ stage.smoking.step.crt_inx: {
       }
     }
   },
-  assert: """
+  assert: `
     (all
       (eq value.status 200)
       (eq value.body.acknowledged true)
     )
-  """
+  `
 }
 
 
-stage.smoking.step.insert: {
+step.insert = {
   let: {
-    url: "{{def.es.url}}",
     author: "{{case.author}}",
     title: "{{case.title}}",
     desc: "{{case.desc}}"
   },
   exec: {
     restapi: {
-      url: "{{url}}/article/_doc/1",
+      url: url_root + "/article/_doc/1",
       method: "PUT",
       body: {
         "author": "{{author}}",
@@ -87,31 +82,30 @@ stage.smoking.step.insert: {
       }
     }
   },
-  assert: """
+  assert: `
     (all
       (eq value.status 201)
       (eq value.body.result "created")
     )
-  """
+  `
 }
 
 
-stage.smoking.step.wait: {
+step.wait = {
   exec: {
     sleep: 9
   }
 }
 
 
-stage.smoking.step.search: {
+step.search = {
   let: {
-    url: "{{def.es.url}}",
     match: "{{case.match}}",
     term: "{{case.term}}"
   },
   exec: {
     restapi: {
-      url: "{{url}}/article/_search",
+      url: url_root + "/article/_search",
       method: "GET",
       body: {
         "size": 10,
@@ -135,10 +129,15 @@ stage.smoking.step.search: {
       }
     }
   },
-  assert: """
+  assert: `
     (all
       (eq value.status 200)
       (eq value.body.hits.total.value 1)
     )
-  """
+  `
+}
+
+
+module.exports = () => {
+  return conf;
 }

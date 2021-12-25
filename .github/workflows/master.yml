@@ -36,6 +36,12 @@ jobs:
           sudo apt-get install curl
           rustup update
 
+      - name: task-build
+        run: |
+          cd .chord/job
+          npm install
+          npm run build
+
       - name: service-boot
         run: |
           docker-compose -f docker-compose.yml up -d
@@ -58,11 +64,7 @@ jobs:
           pwd
           echo "------------------------------------------------"
 
-      - name: task-build
-        run: |
-          cd .chord/job
-          npm install
-          npm run build
+
 
       - name: chord-build-cache
         uses: actions/cache@v2

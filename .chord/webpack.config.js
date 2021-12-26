@@ -1,4 +1,4 @@
-const JsToJsonPlugin = require("./JsToJsonPlugin");
+const JsonFromJsPlugin = require("./JsonFromJsPlugin");
 const path = require("path");
 
 
@@ -32,7 +32,7 @@ tasks.map(t => {
 
 
 let plugins = [
-    new JsToJsonPlugin({
+    new JsonFromJsPlugin({
         patterns: tasks.map(e => {
                 return {
                     from: `./${e}/task.js`,

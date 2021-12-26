@@ -1,20 +1,20 @@
 const path = require('path')
 const {Compilation, sources} = require('webpack');
 
-function JsToJsonPlugin(config = {}) {
+function JsonFromJsPlugin(config = {}) {
     Object.assign(this, {
         ...config,
         patterns: config.patterns
     })
 }
 
-JsToJsonPlugin.prototype.apply = function apply(compiler) {
+JsonFromJsPlugin.prototype.apply = function apply(compiler) {
 
     if (compiler.hooks) {
-        compiler.hooks.thisCompilation.tap("JsToJsonPlugin", (compilation) => {
+        compiler.hooks.thisCompilation.tap("JsonFromJsPlugin", (compilation) => {
             compilation.hooks.processAssets.tap(
                 {
-                    name: 'JsToJsonPlugin',
+                    name: "JsonFromJsPlugin",
                     stage: Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE,
                 },
                 () => {
@@ -41,4 +41,4 @@ JsToJsonPlugin.prototype.apply = function apply(compiler) {
     }
 }
 
-module.exports = JsToJsonPlugin
+module.exports = JsonFromJsPlugin

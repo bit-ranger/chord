@@ -1,8 +1,7 @@
 const JsonFromJsPlugin = require("./JsonFromJsPlugin");
 const path = require("path");
 
-
-let tasks = [
+let allTasks = [
     "cdylib",
     "count",
     "database",
@@ -25,32 +24,39 @@ let tasks = [
     "z_advance/stage_case"
 ]
 
-let entry = {}
-tasks.map(t => {
-    entry[t] = `./${t}/task.js`
-});
+module.exports = (env) => {
+    console.log(env)
+    let enableTasks = allTasks;
+    if (env["task"]) {
+        enableTasks = allTasks.filter(t => t === env["task"]);
+    }
 
-
-let plugins = [
-    new JsonFromJsPlugin({
-        patterns: tasks.map(e => {
-                return {
-                    from: `./${e}/task.js`,
-                    to: `${e}/task.conf`
+    let plugins = [
+        new JsonFromJsPlugin({
+            patterns: enableTasks.map(e => {
+                    return {
+                        from: `./${e}/task.js`,
+                        to: `${e}/task.conf`
+                    }
                 }
-            }
-        )
-    })
-]
+            )
+        })
+    ]
+
+    let entry = {}
+    enableTasks.map(t => {
+        entry[t] = `./${t}/task.js`
+    });
 
 
-module.exports = {
-    target: "node",
-    context: path.join(__dirname, './src'),
-    entry: entry,
-    output: {
-        path: path.join(__dirname, './src'),
-        filename: '[name]/task.conf',
-    },
-    plugins: plugins
+    return {
+        target: "node",
+        context: path.join(__dirname, './src'),
+        entry: entry,
+        output: {
+            path: path.join(__dirname, './src'),
+            filename: '[name]/task.conf',
+        },
+        plugins: plugins
+    }
 };

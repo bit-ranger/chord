@@ -38,7 +38,7 @@ jobs:
 
       - name: task-build
         run: |
-          cd .chord/job
+          cd .chord
           npm install
           npm run build
 
@@ -76,15 +76,15 @@ jobs:
       - name: chord-build
         run: |
           chmod -R 777 $PWD
+          make -C .chord/src/cdylib/cdylib_example/bin
           cargo --version
           cargo test  --all-features --verbose --release
           cargo build --all-features --verbose --release
-          make -C .chord/job/src/cdylib/cdylib_example/bin
           find $(pwd)
 
       - name: chord-test
         run: |
-          ./target/release/chord run -i$PWD/.chord/job
+          ./target/release/chord run -i$PWD/.chord/src
       
       
       - name: chord-target-upload

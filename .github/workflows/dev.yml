@@ -40,7 +40,7 @@ jobs:
 
       - name: task-build
         run: |
-          cd .chord/job
+          cd .chord
           npm install
           npm run build
 

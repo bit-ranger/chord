@@ -1,0 +1,16 @@
+{
+    "name": "nodejs-example",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "release": "webpack build --progress --mode=production",
+        "build": "NODE_ENV=development webpack build --progress --watch --mode=development --watch-options-stdin",
+        "test": "node ./src/main.js"
+    },
+    "dependencies": {
+        "sha1": "^1.1.1"
+    },
+    "devDependencies": {
+        "webpack-cli": "^4.9.1"
+    }
+}

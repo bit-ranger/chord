@@ -38,6 +38,12 @@ jobs:
           sudo apt-get install curl
           rustup update
 
+      - name: task-build
+        run: |
+          cd .chord/job
+          npm install
+          npm run build
+
       - name: service-boot
         run: |
           docker-compose -f docker-compose.yml up -d
@@ -60,6 +66,8 @@ jobs:
           pwd
           echo "------------------------------------------------"
 
+
+
       - name: chord-build-cache
         uses: actions/cache@v2
         with:
@@ -73,12 +81,12 @@ jobs:
           cargo --version
           cargo test  --all-features --verbose --release
           cargo build --all-features --verbose --release
-          make -C .chord/job/cdylib/cdylib_example/bin
+          make -C .chord/job/src/cdylib/cdylib_example/bin
           find $(pwd)
 
       - name: chord-test
         run: |
-          ./target/release/chord run -i$PWD/.chord/job
+          ./target/release/chord run -i$PWD/.chord/job/dist
 
       - name: chord-target-upload
         uses: actions/upload-artifact@v2

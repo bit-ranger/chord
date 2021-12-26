@@ -84,7 +84,7 @@ jobs:
 
       - name: chord-test
         run: |
-          ./target/release/chord run -i$PWD/.chord/job/dist
+          ./target/release/chord run -i$PWD/.chord/job
       
       
       - name: chord-target-upload

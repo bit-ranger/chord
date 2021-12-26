@@ -1,6 +1,5 @@
 const JsToJsonPlugin = require("./JsToJsonPlugin");
 const path = require("path");
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 
 let tasks = [
@@ -33,21 +32,6 @@ tasks.map(t => {
 
 
 let plugins = [
-    new CopyWebpackPlugin({
-        patterns: tasks.map(t => {
-                return {
-                    from: `./${t}/*.csv`
-                }
-            }
-        )
-    }),
-    new CopyWebpackPlugin({
-        patterns: [
-            {
-                from: `./**/chord.conf`
-            }
-        ]
-    }),
     new JsToJsonPlugin({
         patterns: tasks.map(e => {
                 return {
@@ -65,7 +49,7 @@ module.exports = {
     context: path.join(__dirname, './src'),
     entry: entry,
     output: {
-        path: path.join(__dirname, './dist'),
+        path: path.join(__dirname, './src'),
         filename: '[name]/task.conf',
     },
     plugins: plugins

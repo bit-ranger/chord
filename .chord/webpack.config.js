@@ -1,5 +1,6 @@
 const JsonFromJsPlugin = require("./JsonFromJsPlugin");
 const path = require("path");
+const CopyWebpackPlugin = require('copy-webpack-plugin')
 
 let allTasks = [
     "cdylib",
@@ -28,10 +29,29 @@ module.exports = (env) => {
     console.log(env)
     let enableTasks = allTasks;
     if (env["task"]) {
-        enableTasks = allTasks.filter(t => t === env["task"]);
+        let task = env["task"];
+        if (task.startsWith("/")) {
+
+        }
+        enableTasks = allTasks.filter(t => t === task);
     }
 
     let plugins = [
+        new CopyWebpackPlugin({
+            patterns: enableTasks.map(t => {
+                    return {
+                        from: `./${t}/*.csv`
+                    }
+                }
+            )
+        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: `./**/chord.conf`
+                }
+            ]
+        }),
         new JsonFromJsPlugin({
             patterns: enableTasks.map(e => {
                     return {
@@ -54,8 +74,9 @@ module.exports = (env) => {
         context: path.join(__dirname, './src'),
         entry: entry,
         output: {
-            path: path.join(__dirname, './src'),
+            path: path.join(__dirname, './dist'),
             filename: '[name]/task.conf',
+            clean: true
         },
         plugins: plugins
     }

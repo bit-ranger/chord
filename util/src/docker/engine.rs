@@ -1,10 +1,10 @@
 use std::collections::VecDeque;
 use std::str::FromStr;
 
-use futures::AsyncBufReadExt;
+use futures::StreamExt;
 use log::trace;
 use reqwest::header::{HeaderName, HeaderValue};
-use reqwest::{Body, Client, Method, Response, Url};
+use reqwest::{Client, Method, Response, Url};
 
 use chord_core::value::Value;
 
@@ -24,7 +24,7 @@ impl Engine {
             client.clone(),
             address.as_str(),
             "info",
-            Method::Get,
+            Method::GET,
             None,
             999,
         )
@@ -72,42 +72,50 @@ async fn call0(
         rb = rb.body(d.to_string());
     }
 
-    let mut res: Response = rb.send().await.map_err(|e| Error::Io(e.to_string()))?;
+    let res: Response = rb.send().await.map_err(|e| Error::Io(e.to_string()))?;
 
     let mut tail_lines: VecDeque<String> = VecDeque::with_capacity(tail_size);
-    let mut line_buf = vec![];
-    loop {
-        line_buf.clear();
-        let size = res
-            .bytes()
-            .await
-            .map_err(|e| Error::Io(e.to_string()))?
-            .reader()
-            .read_until(b'\n', &mut line_buf)
-            .await
-            .or_else(|e| Err(Io(format!("{}", e))))?;
-        if size > 0 {
-            let line = if res.content_type().is_some()
-                && res.content_type().unwrap().to_string() == "application/octet-stream"
-            {
-                String::from_utf8_lossy(&line_buf[8..]).to_string()
-            } else {
-                String::from_utf8_lossy(&line_buf).to_string()
-            };
-            let line = format!("{}\n", line);
 
-            trace!("{}", line);
+    let is_octet_stream = res.headers().get("Content-Type").is_some()
+        && res.headers().get("Content-Type").unwrap().to_str().unwrap()
+            == "application/octet-stream";
+    let status = res.status();
 
-            tail_lines.push_back(line.clone());
-            if tail_lines.len() > tail_size {
-                tail_lines.pop_front();
-            }
+    let mut stream = res.bytes_stream();
+    let mut line_buf = Vec::new();
+    while let Some(bytes) = stream.next().await {
+        let bytes = bytes.map_err(|e| Error::Io(e.to_string()))?;
+        let bytes: &[u8] = bytes.as_ref();
+
+        let new_line = bytes.windows(1).position(|e| e == b"\n");
+        if let Some(p) = new_line {
+            line_buf.extend_from_slice(&bytes[0..p]);
         } else {
-            break;
+            line_buf.extend_from_slice(bytes);
+        }
+
+        let line = if is_octet_stream {
+            String::from_utf8_lossy(&line_buf[8..]).to_string()
+        } else {
+            String::from_utf8_lossy(&line_buf).to_string()
+        };
+        line_buf.clear();
+        let line = format!("{}\n", line);
+
+        trace!("{}", line);
+
+        tail_lines.push_back(line.clone());
+        if tail_lines.len() > tail_size {
+            tail_lines.pop_front();
+        }
+
+        if let Some(p) = new_line {
+            line_buf.extend_from_slice(&bytes[p..]);
         }
     }
-    return if !res.status().is_success() {
-        Err(Status(res.status().into()))
+
+    return if !status.is_success() {
+        Err(Status(status.into()))
     } else {
         Ok(tail_lines.into())
     };

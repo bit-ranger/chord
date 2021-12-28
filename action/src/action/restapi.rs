@@ -2,11 +2,12 @@ use std::borrow::Borrow;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::{Client, Method, Response, Url};
+
 use chord_core::action::prelude::*;
 
 use crate::err;
-use reqwest::header::{HeaderName, HeaderValue};
-use reqwest::{Body, Client, Method, Response, Url};
 
 pub struct RestapiFactory {
     client: Client,
@@ -118,7 +119,7 @@ async fn run0(client: Client, arg: &dyn RunArg) -> std::result::Result<Value, Er
 
     let body = args["body"].borrow();
     if !body.is_null() {
-        rb = rb.body(body.clone());
+        rb = rb.body(body.to_string());
     }
 
     let res: Response = rb.send().await?;

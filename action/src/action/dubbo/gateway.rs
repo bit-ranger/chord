@@ -6,9 +6,8 @@ use async_std::task::Builder;
 use futures::io::Lines;
 use futures::{AsyncBufReadExt, StreamExt};
 use log::{debug, info, trace};
-use surf::http::headers::{HeaderName, HeaderValue};
-use surf::http::Method;
-use surf::{Body, RequestBuilder, Response, Url};
+use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::{Body, Client, Method, Response, Url};
 
 use chord_core::action::prelude::*;
 use chord_core::value::{to_string, Deserialize, Serialize};
@@ -20,6 +19,7 @@ pub struct DubboFactory {
     registry_address: String,
     port: usize,
     child: Child,
+    client: Client,
 }
 
 impl DubboFactory {
@@ -110,11 +110,13 @@ impl DubboFactory {
             .spawn(loop_out(lines));
 
         child.stdout = None;
+        let client = Client::new();
         Ok(DubboFactory {
             registry_protocol,
             registry_address,
             port,
             child,
+            client,
         })
     }
 }
@@ -126,6 +128,7 @@ impl Factory for DubboFactory {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
             port: self.port,
+            client: self.client.clone(),
         }))
     }
 }
@@ -134,6 +137,7 @@ struct Dubbo {
     registry_protocol: String,
     registry_address: String,
     port: usize,
+    client: Client,
 }
 
 #[async_trait]
@@ -176,7 +180,7 @@ impl Action for Dubbo {
 
         let invoke_str = to_string(&invoke)?;
         trace!("invoke request {}", invoke_str);
-        let value = remote_invoke(self.port, invoke).await?;
+        let value = remote_invoke(self.client.clone(), self.port, invoke).await?;
         trace!("invoke response {}, {}", invoke_str, &value);
         let value = &value;
         if value["success"].as_bool().unwrap_or(false) {
@@ -190,9 +194,13 @@ impl Action for Dubbo {
     }
 }
 
-async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, Error> {
-    let rb = RequestBuilder::new(
-        Method::Post,
+async fn remote_invoke(
+    client: Client,
+    port: usize,
+    remote_arg: GenericInvoke,
+) -> Result<Value, Error> {
+    let rb = client.request(
+        Method::POST,
         Url::from_str(format!("http://127.0.0.1:{}/api/dubbo/generic/invoke", port).as_str())
             .or(Err(err!("114", "invalid url")))?,
     );
@@ -201,13 +209,14 @@ async fn remote_invoke(port: usize, remote_arg: GenericInvoke) -> Result<Value, 
         HeaderValue::from_str("application/json")?,
     );
 
-    rb = rb.body(Body::from_json(&remote_arg)?);
+    rb = rb.body(Body::from(to_string(&remote_arg)?));
 
-    let mut res: Response = rb.send().await?;
+    let res: Response = rb.send().await?;
     if !res.status().is_success() {
         return Err(err!("115", res.status().to_string()))?;
     } else {
-        let body: Value = res.body_json().await?;
+        let body: String = res.text().await?;
+        let body: Value = body.parse()?;
         Ok(body)
     }
 }

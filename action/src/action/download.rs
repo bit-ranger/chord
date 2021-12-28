@@ -3,9 +3,8 @@ use std::str::FromStr;
 use async_std::path::{Path, PathBuf};
 use futures::io::BufWriter;
 use log::{trace, warn};
-use surf::http::headers::{HeaderName, HeaderValue};
-use surf::http::Method;
-use surf::{RequestBuilder, Response, Url};
+use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::{Body, Client, Method, Response, Url};
 
 use chord_core::action::prelude::*;
 
@@ -13,6 +12,7 @@ use crate::err;
 
 pub struct DownloadFactory {
     workdir: PathBuf,
+    client: Client,
 }
 
 impl DownloadFactory {
@@ -33,8 +33,8 @@ impl DownloadFactory {
         let workdir = PathBuf::from_str(workdir)?;
 
         async_std::fs::create_dir_all(workdir.as_path()).await?;
-
-        Ok(DownloadFactory { workdir })
+        let client = Client::new();
+        Ok(DownloadFactory { workdir, client })
     }
 }
 
@@ -45,12 +45,16 @@ impl Factory for DownloadFactory {
         async_std::fs::create_dir_all(task_dir.as_path()).await?;
         trace!("tmp create {}", task_dir.as_path().to_str().unwrap());
         remove_dir(task_dir.as_path()).await;
-        Ok(Box::new(Download { task_dir }))
+        Ok(Box::new(Download {
+            task_dir,
+            client: self.client.clone(),
+        }))
     }
 }
 
 struct Download {
     task_dir: PathBuf,
+    client: Client,
 }
 
 #[async_trait]
@@ -66,26 +70,24 @@ async fn run0(download: &Download, arg: &dyn RunArg) -> std::result::Result<Down
     let url = args["url"].as_str().ok_or(err!("102", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("103", format!("invalid url: {}", url))))?;
 
-    let mut rb = RequestBuilder::new(Method::Get, url);
+    let mut rb = download.client.request(Method::GET, url);
     if let Some(header) = args["header"].as_object() {
         for (k, v) in header.iter() {
-            let hn =
-                HeaderName::from_string(k.clone()).or(Err(err!("104", "invalid header name")))?;
-            let hvs: Vec<HeaderValue> = match v {
+            let hn = HeaderName::from_str(k).or(Err(err!("104", "invalid header name")))?;
+            match v {
                 Value::String(v) => {
-                    vec![HeaderValue::from_str(v).or(Err(err!("105", "invalid header value")))?]
+                    let hv =
+                        HeaderValue::from_str(v).or(Err(err!("105", "invalid header value")))?;
+                    rb = rb.header(hn, hv);
                 }
                 Value::Array(vs) => {
-                    let mut vec = vec![];
                     for v in vs {
-                        let v = HeaderValue::from_str(v.to_string().as_str())?;
-                        vec.push(v)
+                        let hv = HeaderValue::from_str(v.to_string().as_str())?;
+                        rb = rb.header(hn.clone(), hv);
                     }
-                    vec
                 }
                 _ => Err(err!("106", "invalid header value"))?,
             };
-            rb = rb.header(hn, hvs.as_slice());
         }
     }
 
@@ -103,23 +105,20 @@ async fn run0(download: &Download, arg: &dyn RunArg) -> std::result::Result<Down
         .await?;
     let writer = BufWriter::new(file);
 
-    let mut res: Response = rb.send().await?;
+    let res: Response = rb.send().await?;
     let mut value = Map::new();
     value.insert(
         String::from("status"),
-        Value::Number(Number::from_str(res.status().to_string().as_str()).unwrap()),
+        Value::Number(Number::from(res.status().as_u16())),
     );
 
     let mut header_data = Map::new();
-    for (hn, hv) in res.iter() {
-        header_data.insert(
-            hn.to_string(),
-            Value::Array(hv.iter().map(|v| Value::String(v.to_string())).collect()),
-        );
+    for (hn, hv) in res.headers() {
+        header_data.insert(hn.to_string(), Value::String(hv.to_str()?.to_string()));
     }
     value.insert(String::from("header"), Value::Object(header_data));
 
-    let size = async_std::io::copy(res.take_body(), writer).await?;
+    let size = async_std::io::copy(res.bytes_stream(), writer).await?;
     trace!("file create {}, {}", path.as_path().to_str().unwrap(), size);
 
     value.insert(String::from("size"), Value::Number(Number::from(size)));

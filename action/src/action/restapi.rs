@@ -8,19 +8,23 @@ use crate::err;
 use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Body, Client, Method, Response, Url};
 
-pub struct RestapiFactory {}
+pub struct RestapiFactory {
+    client: Client,
+}
 
 impl RestapiFactory {
     pub async fn new(_: Option<Value>) -> Result<RestapiFactory, Error> {
-        Ok(RestapiFactory {})
+        let client = Client::new();
+        Ok(RestapiFactory { client })
     }
 }
 
 #[async_trait]
 impl Factory for RestapiFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let client = Client::new();
-        Ok(Box::new(Restapi { client }))
+        Ok(Box::new(Restapi {
+            client: self.client.clone(),
+        }))
     }
 }
 

@@ -88,7 +88,7 @@ async fn call0(
         let bytes: &[u8] = bytes.as_ref();
 
         for b in bytes {
-            let new_line = b == b"\n";
+            let new_line = *b == 0x0A;
             if !new_line {
                 line_buf.push(b.clone());
             } else {

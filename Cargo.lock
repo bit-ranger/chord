@@ -610,7 +610,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chord-action"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "async-std",
  "chord-core",
@@ -635,7 +635,7 @@ dependencies = [
 
 [[package]]
 name = "chord-cli"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "async-recursion",
  "async-std",
@@ -657,7 +657,7 @@ dependencies = [
 
 [[package]]
 name = "chord-core"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "async-std",
  "async-trait",
@@ -672,7 +672,7 @@ dependencies = [
 
 [[package]]
 name = "chord-flow"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "async-std",
  "chord-core",
@@ -688,7 +688,7 @@ dependencies = [
 
 [[package]]
 name = "chord-input"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "async-std",
  "chord-core",
@@ -701,7 +701,7 @@ dependencies = [
 
 [[package]]
 name = "chord-output"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "async-std",
  "async-trait",
@@ -718,7 +718,7 @@ dependencies = [
 
 [[package]]
 name = "chord-util"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "async-std",
  "chord-core",
@@ -731,7 +731,7 @@ dependencies = [
 
 [[package]]
 name = "chord-web"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "async-std",
  "async-trait",
@@ -3067,9 +3067,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.7"
+version = "0.11.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07bea77bc708afa10e59905c3d4af7c8fd43c9214251673095ff8b14345fcbc5"
+checksum = "7c4e0a76dc12a116108933f6301b95e83634e0c47b0afbed6abbaa0601e99258"
 dependencies = [
  "base64 0.13.0",
  "bytes 1.1.0",

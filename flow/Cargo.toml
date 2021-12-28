@@ -1,6 +1,6 @@
 [package]
 name = "chord-flow"
-version = "0.1.14"
+version = "0.1.15"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 
@@ -15,7 +15,7 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chord-core = { path = "../core", version = "0.1.14" }
+chord-core = { path = "../core", version = "0.1.15" }
 itertools = "0.10.0"
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 futures = "0.3.13"

@@ -118,7 +118,7 @@ async fn run0(client: Client, arg: &dyn RunArg) -> std::result::Result<Value, Er
 
     let body = args["body"].borrow();
     if !body.is_null() {
-        rb = rb.body(Body::from(body.to_string()));
+        rb = rb.body(body.clone());
     }
 
     let res: Response = rb.send().await?;

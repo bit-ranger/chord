@@ -1,7 +1,7 @@
 use async_std::sync::Arc;
 use futures::executor::block_on;
 use log::{trace, warn};
-use surf::http::Method;
+use reqwest::Method;
 
 use chord_core::value::{Map, Value};
 
@@ -72,7 +72,7 @@ impl Container {
         docker
             .call(
                 format!("containers/create?name={}", name).as_str(),
-                Method::Post,
+                Method::POST,
                 Some(arg),
                 1,
             )
@@ -88,7 +88,7 @@ impl Container {
         self.engine
             .call(
                 format!("containers/{}/start", self.name).as_str(),
-                Method::Post,
+                Method::POST,
                 None,
                 1,
             )
@@ -101,7 +101,7 @@ impl Container {
             .engine
             .call(
                 format!("containers/{}/wait", self.name).as_str(),
-                Method::Post,
+                Method::POST,
                 None,
                 1,
             )
@@ -119,7 +119,7 @@ impl Container {
             self.engine
                 .call(
                     format!("containers/{}/logs?stderr=true&tail={}", self.name, tail).as_str(),
-                    Method::Get,
+                    Method::GET,
                     None,
                     tail,
                 )
@@ -128,7 +128,7 @@ impl Container {
             self.engine
                 .call(
                     format!("containers/{}/logs?stdout=true&tail={}", self.name, tail).as_str(),
-                    Method::Get,
+                    Method::GET,
                     None,
                     tail,
                 )

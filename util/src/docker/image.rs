@@ -1,7 +1,7 @@
 use async_std::sync::Arc;
 use futures::executor::block_on;
 use log::{trace, warn};
-use surf::http::Method;
+use reqwest::Method;
 
 use crate::docker::container::{Arg, Container};
 use crate::docker::engine::Engine;

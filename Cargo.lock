@@ -720,11 +720,12 @@ name = "chord-util"
 version = "0.1.15"
 dependencies = [
  "async-std",
+ "bytes 1.1.0",
  "chord-core",
  "futures",
  "log",
+ "reqwest",
  "serde",
- "surf",
  "thiserror",
 ]
 

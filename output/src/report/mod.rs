@@ -10,8 +10,6 @@ use ReportError::*;
 
 #[cfg(feature = "report_csv")]
 mod csv;
-#[cfg(feature = "report_elasticsearch")]
-mod elasticsearch;
 #[cfg(feature = "report_webhook")]
 mod webhook;
 
@@ -65,22 +63,6 @@ impl ReportFactory {
                             name.to_string(),
                             exec_id.to_string(),
                             v["with_bom"].as_bool().unwrap_or(true),
-                        )
-                        .await?;
-                        return Ok(ReportFactory {
-                            delegate: Box::new(factory),
-                        });
-                    }
-                    #[cfg(feature = "report_elasticsearch")]
-                    "elasticsearch" => {
-                        let v = c[kind].borrow();
-                        let factory = elasticsearch::ReportFactory::new(
-                            v["url"]
-                                .as_str()
-                                .ok_or(ConfLostEntry("report.elasticsearch.url".into()))?
-                                .to_string(),
-                            name.to_string(),
-                            exec_id.to_string(),
                         )
                         .await?;
                         return Ok(ReportFactory {

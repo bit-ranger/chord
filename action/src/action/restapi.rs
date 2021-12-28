@@ -19,16 +19,19 @@ impl RestapiFactory {
 #[async_trait]
 impl Factory for RestapiFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Restapi {}))
+        let client = Client::new();
+        Ok(Box::new(Restapi { client }))
     }
 }
 
-struct Restapi {}
+struct Restapi {
+    client: Client,
+}
 
 #[async_trait]
 impl Action for Restapi {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        run(arg).await
+        run(self.client.clone(), arg).await
     }
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
@@ -67,16 +70,15 @@ impl Action for Restapi {
     }
 }
 
-async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-    let value = run0(arg).await?;
+async fn run(client: Client, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    let value = run0(client, arg).await?;
     Ok(Box::new(value))
 }
 
-async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
+async fn run0(client: Client, arg: &dyn RunArg) -> std::result::Result<Value, Error> {
     let args = arg.args()?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
-
     let url = Url::from_str(url).or(Err(err!("101", format!("invalid url: {}", url))))?;
 
     let method = args["method"]
@@ -84,7 +86,6 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
         .ok_or(err!("102", "missing method"))?;
     let method = Method::from_str(method).or(Err(err!("103", "invalid method")))?;
 
-    let client = Client::new();
     let mut rb = client.request(method, url);
     rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),

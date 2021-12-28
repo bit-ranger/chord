@@ -118,10 +118,9 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
 
     let res: Response = rb.send().await?;
     let mut res_data = Map::new();
-    println!("status: {}", res.status().to_string());
     res_data.insert(
         String::from("status"),
-        Value::Number(Number::from_str(res.status().to_string().as_str()).unwrap()),
+        Value::Number(Number::from(res.status().as_u16())),
     );
 
     let mut header_data = Map::new();

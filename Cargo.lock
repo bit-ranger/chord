@@ -714,7 +714,6 @@ name = "chord-util"
 version = "0.1.15"
 dependencies = [
  "async-std",
- "bytes",
  "chord-core",
  "futures",
  "log",

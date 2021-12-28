@@ -87,30 +87,26 @@ async fn call0(
         let bytes = bytes.map_err(|e| Error::Io(e.to_string()))?;
         let bytes: &[u8] = bytes.as_ref();
 
-        let new_line = bytes.windows(1).position(|e| e == b"\n");
-        if let Some(p) = new_line {
-            line_buf.extend_from_slice(&bytes[0..p]);
-        } else {
-            line_buf.extend_from_slice(bytes);
-        }
+        for b in bytes {
+            let new_line = b == b"\n";
+            if !new_line {
+                line_buf.push(b.clone());
+            } else {
+                let line = if is_octet_stream {
+                    String::from_utf8_lossy(&line_buf[8..]).to_string()
+                } else {
+                    String::from_utf8_lossy(&line_buf).to_string()
+                };
+                line_buf.clear();
+                let line = format!("{}\n", line);
 
-        let line = if is_octet_stream {
-            String::from_utf8_lossy(&line_buf[8..]).to_string()
-        } else {
-            String::from_utf8_lossy(&line_buf).to_string()
-        };
-        line_buf.clear();
-        let line = format!("{}\n", line);
+                trace!("{}", line);
 
-        trace!("{}", line);
-
-        tail_lines.push_back(line.clone());
-        if tail_lines.len() > tail_size {
-            tail_lines.pop_front();
-        }
-
-        if let Some(p) = new_line {
-            line_buf.extend_from_slice(&bytes[p..]);
+                tail_lines.push_back(line.clone());
+                if tail_lines.len() > tail_size {
+                    tail_lines.pop_front();
+                }
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 # 基础镜像 
-FROM rust:1.56.0
+FROM rust:1.57.0
 
 WORKDIR /usr/src
 
@@ -9,16 +9,16 @@ RUN apt-get update -y
 RUN apt-get install -y locales
 RUN sed -ie 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/g' /etc/locale.gen
 RUN locale-gen
-#RUN mkdir /usr/share/fonts/truetype/deng/
-#COPY zero/devops/fonts/* /usr/share/fonts/truetype/
-#RUN fc-cache -vf
-#RUN fc-list
-ENV LANG zh_CN.UTF-8
+ENV LANG C.UTF-8
 
 
 # maven
 RUN apt-get install -y maven
 COPY zero/devops/maven/settings.xml /root/.m2/settings.xml
+
+# nodejs
+RUN curl -fsSL https://deb.nodesource.com/setup_17.x | bash -e
+RUN apt-get install -y nodejs
 
 
 # dubbo generic gateway

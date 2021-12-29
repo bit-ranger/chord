@@ -8,21 +8,19 @@ chord - async parallel task executor
 
 可用于自动化测试
 
+### install
+
+    cargo install chord-cli
+
 ### download
 
     https://github.com/bit-ranger/chord/releases
 
-### run command
+### run
 
-    chord run -i$(pwd)/.chord/job/echo
-
-### run command from source code
-
-    git clone https://github.com/bit-ranger/chord.git
-    
-    cargo build --release
-    
-    target/release/chord run -i$(pwd)/.chord/job/echo
+    cd .chord/job
+    npm run build
+    chord run -i$(pwd)/dist/echo
 
 ### help
 
@@ -30,7 +28,7 @@ chord - async parallel task executor
 
 ### rest api testing
 
-[restapi](https://github.com/bit-ranger/chord/tree/master/.chord/job/restapi)
+[restapi](https://github.com/bit-ranger/chord/tree/master/.chord/src/restapi)
 
 ### example
 

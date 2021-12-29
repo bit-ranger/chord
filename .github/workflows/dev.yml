@@ -82,6 +82,7 @@ jobs:
           cargo --version
           cargo test  --all-features --verbose --release
           cargo build --all-features --verbose --release
+          cargo build --verbose --release
           find $(pwd)
 
       - name: chord-test
@@ -126,7 +127,9 @@ jobs:
             ./target
       
       - name: chord-build
-        run: cargo build --verbose --release
+        run: |
+          cargo build --all-features --verbose --release
+          cargo build --verbose --release
         
       - name: chord-target-upload
         uses: actions/upload-artifact@v2
@@ -158,7 +161,9 @@ jobs:
             ./target
 
       - name: chord-build
-        run: cargo build --verbose --release
+        run: |
+          cargo build --all-features --verbose --release
+          cargo build --verbose --release
 
       - name: chord-target-upload
         uses: actions/upload-artifact@v2

@@ -3,9 +3,8 @@ use std::str::FromStr;
 use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use log::{info, trace, warn};
-use surf::http::headers::{HeaderName, HeaderValue};
-use surf::http::Method;
-use surf::{Body, RequestBuilder, Response, Url};
+use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::{Client, Method, RequestBuilder, Response, Url};
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
@@ -21,6 +20,7 @@ use crate::report::Factory;
 pub struct ReportFactory {
     url: String,
     index: String,
+    client: Client,
 }
 
 #[async_trait]
@@ -33,15 +33,23 @@ impl Factory for ReportFactory {
 
 impl ReportFactory {
     pub async fn new(url: String, job_name: String, _: String) -> Result<ReportFactory, Error> {
-        index_create(url.as_str(), job_name.as_str()).await?;
+        let client = Client::new();
+        index_create(client.clone(), url.as_str(), job_name.as_str()).await?;
         Ok(ReportFactory {
             url,
             index: job_name,
+            client,
         })
     }
 
     pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
-        Reporter::new(self.url.clone(), self.index.clone(), task_id).await
+        Reporter::new(
+            self.client.clone(),
+            self.url.clone(),
+            self.index.clone(),
+            task_id,
+        )
+        .await
     }
 }
 
@@ -49,13 +57,20 @@ pub struct Reporter {
     url: String,
     index: String,
     task_id: Arc<dyn TaskId>,
+    client: Client,
 }
 
 #[async_trait]
 impl Report for Reporter {
     async fn start(&mut self, time: DateTime<Utc>, _: Arc<Flow>) -> Result<(), Error> {
         let task_data = ta_doc_init(self.task_id.as_ref(), time);
-        data_send(self.url.as_str(), self.index.as_str(), task_data).await?;
+        data_send(
+            self.client.clone(),
+            self.url.as_str(),
+            self.index.as_str(),
+            task_data,
+        )
+        .await?;
         Ok(())
     }
 
@@ -76,7 +91,13 @@ impl Report for Reporter {
                 }
             }
         }
-        data_send_batch(self.url.as_str(), self.index.as_str(), data_vec).await
+        data_send_batch(
+            self.client.clone(),
+            self.url.as_str(),
+            self.index.as_str(),
+            data_vec,
+        )
+        .await
     }
 
     async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
@@ -86,18 +107,26 @@ impl Report for Reporter {
             task_assess.end(),
             task_assess.state(),
         );
-        data_send(self.url.as_str(), self.index.as_str(), task_data).await?;
+        data_send(
+            self.client.clone(),
+            self.url.as_str(),
+            self.index.as_str(),
+            task_data,
+        )
+        .await?;
         Ok(())
     }
 }
 
 impl Reporter {
     async fn new(
+        client: Client,
         es_url: String,
         es_index: String,
         task_id: Arc<dyn TaskId>,
     ) -> Result<Reporter, Error> {
         Ok(Reporter {
+            client,
             url: es_url,
             index: es_index,
             task_id,
@@ -183,9 +212,14 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
     }
 }
 
-async fn data_send_batch(url: &str, index: &str, data: Vec<Data>) -> Result<(), Error> {
+async fn data_send_batch(
+    client: Client,
+    url: &str,
+    index: &str,
+    data: Vec<Data>,
+) -> Result<(), Error> {
     let path = format!("{}/chord/webhook", url);
-    let rb = RequestBuilder::new(Method::Post, Url::from_str(path.as_str())?);
+    let rb = client.request(Method::POST, Url::from_str(path.as_str())?);
 
     let event = Event {
         kind: "data_send_batch".to_string(),
@@ -198,9 +232,9 @@ async fn data_send_batch(url: &str, index: &str, data: Vec<Data>) -> Result<(), 
     data_send_0(rb, data).await
 }
 
-async fn data_send(url: &str, index: &str, data: Data) -> Result<(), Error> {
+async fn data_send(client: Client, url: &str, index: &str, data: Data) -> Result<(), Error> {
     let path = format!("{}/chord/webhook", url);
-    let rb = RequestBuilder::new(Method::Post, Url::from_str(path.as_str())?);
+    let rb = client.request(Method::POST, Url::from_str(path.as_str())?);
 
     let event = Event {
         kind: "data_send".to_string(),
@@ -213,10 +247,10 @@ async fn data_send(url: &str, index: &str, data: Data) -> Result<(), Error> {
     data_send_0(rb, data).await
 }
 
-async fn index_create(url: &str, index_name: &str) -> Result<(), Error> {
+async fn index_create(client: Client, url: &str, index_name: &str) -> Result<(), Error> {
     info!("index_create [{}]", index_name);
     let path = format!("{}/chord/webhook", url);
-    let rb = RequestBuilder::new(Method::Post, Url::from_str(path.as_str())?);
+    let rb = client.request(Method::POST, Url::from_str(path.as_str())?);
     let event = Event {
         kind: "index_create".to_string(),
         object: Value::String(index_name.to_string()),
@@ -228,15 +262,15 @@ async fn index_create(url: &str, index_name: &str) -> Result<(), Error> {
 async fn data_send_0(rb: RequestBuilder, data: Value) -> Result<(), Error> {
     let mut rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
-        HeaderValue::from_str("application/json")?,
+        HeaderValue::from_str("application/json").unwrap(),
     );
 
     trace!("data_send: {}", &data);
-    rb = rb.body(Body::from_json(&data)?);
+    rb = rb.body(data.to_string());
 
-    let mut res: Response = rb.send().await?;
+    let res: Response = rb.send().await?;
     if !res.status().is_success() {
-        let body = res.body_string().await?;
+        let body = res.text().await?;
         warn!("data_send failure: {}, {}", data, body)
     }
     Ok(())

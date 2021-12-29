@@ -1,7 +1,7 @@
 use async_std::sync::Arc;
 use futures::executor::block_on;
 use log::{trace, warn};
-use surf::http::Method;
+use reqwest::Method;
 
 use chord_core::value::{Map, Value};
 
@@ -72,7 +72,7 @@ impl Container {
         docker
             .call(
                 format!("containers/create?name={}", name).as_str(),
-                Method::Post,
+                Method::POST,
                 Some(arg),
                 1,
             )
@@ -88,7 +88,7 @@ impl Container {
         self.engine
             .call(
                 format!("containers/{}/start", self.name).as_str(),
-                Method::Post,
+                Method::POST,
                 None,
                 1,
             )
@@ -101,7 +101,7 @@ impl Container {
             .engine
             .call(
                 format!("containers/{}/wait", self.name).as_str(),
-                Method::Post,
+                Method::POST,
                 None,
                 1,
             )
@@ -117,20 +117,22 @@ impl Container {
         trace!("container log {}", self.name);
         if stderr {
             self.engine
-                .call(
+                .call_with_op(
                     format!("containers/{}/logs?stderr=true&tail={}", self.name, tail).as_str(),
-                    Method::Get,
+                    Method::GET,
                     None,
                     tail,
+                    |buf| String::from_utf8_lossy(&buf[8..]).to_string(),
                 )
                 .await
         } else {
             self.engine
-                .call(
+                .call_with_op(
                     format!("containers/{}/logs?stdout=true&tail={}", self.name, tail).as_str(),
-                    Method::Get,
+                    Method::GET,
                     None,
                     tail,
+                    |buf| String::from_utf8_lossy(&buf[8..]).to_string(),
                 )
                 .await
         }
@@ -140,7 +142,7 @@ impl Container {
 impl Drop for Container {
     fn drop(&mut self) {
         let uri = format!("containers/{}?force=true", self.name);
-        let f = self.engine.call(uri.as_str(), Method::Delete, None, 1);
+        let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
         let _ = block_on(f)
             .map_err(|_| {
                 warn!("container remove fail {}", self.name);

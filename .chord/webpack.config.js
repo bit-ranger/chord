@@ -7,7 +7,6 @@ let allTasks = [
     "count",
     "database",
     "docker",
-    "download",
     "dubbo",
     "echo",
     "helper",

@@ -1,7 +1,7 @@
 use async_std::sync::Arc;
 use futures::executor::block_on;
 use log::{trace, warn};
-use surf::http::Method;
+use reqwest::Method;
 
 use crate::docker::container::{Arg, Container};
 use crate::docker::engine::Engine;
@@ -29,7 +29,7 @@ impl Image {
         engine
             .call(
                 format!("images/create?fromImage={}", name).as_str(),
-                Method::Post,
+                Method::POST,
                 None,
                 1,
             )
@@ -46,7 +46,7 @@ impl Image {
 impl Drop for Image {
     fn drop(&mut self) {
         let uri = format!("images/{}", self.name);
-        let f = self.engine.call(uri.as_str(), Method::Delete, None, 1);
+        let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
         let _ = block_on(f)
             .map_err(|e| {
                 if let Status(404) = e {

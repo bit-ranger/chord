@@ -1,6 +1,6 @@
 [package]
 name = "chord-util"
-version = "0.1.14"
+version = "0.1.15"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 
@@ -15,9 +15,9 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chord-core = { path = "../core", version = "0.1.14" }
+chord-core = { path = "../core", version = "0.1.15" }
 serde = { version = "1.0" }
-surf = { version = "2.1.0" }
+reqwest = { version = "0.11.8", features = ['stream'] }
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 futures = "0.3.13"
 log = { version = "0.4.14", features = ["std"] }

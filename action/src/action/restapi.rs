@@ -2,35 +2,41 @@ use std::borrow::Borrow;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-use surf::http::headers::{HeaderName, HeaderValue};
-use surf::http::Method;
-use surf::{Body, RequestBuilder, Response, Url};
+use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::{Client, Method, Response, Url};
 
 use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct RestapiFactory {}
+pub struct RestapiFactory {
+    client: Client,
+}
 
 impl RestapiFactory {
     pub async fn new(_: Option<Value>) -> Result<RestapiFactory, Error> {
-        Ok(RestapiFactory {})
+        let client = Client::new();
+        Ok(RestapiFactory { client })
     }
 }
 
 #[async_trait]
 impl Factory for RestapiFactory {
     async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Restapi {}))
+        Ok(Box::new(Restapi {
+            client: self.client.clone(),
+        }))
     }
 }
 
-struct Restapi {}
+struct Restapi {
+    client: Client,
+}
 
 #[async_trait]
 impl Action for Restapi {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        run(arg).await
+        run(self.client.clone(), arg).await
     }
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
@@ -69,12 +75,12 @@ impl Action for Restapi {
     }
 }
 
-async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-    let value = run0(arg).await?;
+async fn run(client: Client, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    let value = run0(client, arg).await?;
     Ok(Box::new(value))
 }
 
-async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
+async fn run0(client: Client, arg: &dyn RunArg) -> std::result::Result<Value, Error> {
     let args = arg.args()?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
@@ -85,7 +91,7 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
         .ok_or(err!("102", "missing method"))?;
     let method = Method::from_str(method).or(Err(err!("103", "invalid method")))?;
 
-    let mut rb = RequestBuilder::new(method, url);
+    let mut rb = client.request(method, url);
     rb = rb.header(
         HeaderName::from_str("Content-Type").unwrap(),
         HeaderValue::from_str("application/json; charset=utf-8")?,
@@ -93,48 +99,43 @@ async fn run0(arg: &dyn RunArg) -> std::result::Result<Value, Error> {
 
     if let Some(header) = args["header"].as_object() {
         for (k, v) in header.iter() {
-            let hn =
-                HeaderName::from_string(k.clone()).or(Err(err!("104", "invalid header name")))?;
-            let hvs: Vec<HeaderValue> = match v {
+            let hn = HeaderName::from_str(k).or(Err(err!("104", "invalid header name")))?;
+            match v {
                 Value::String(v) => {
-                    vec![HeaderValue::from_str(v).or(Err(err!("105", "invalid header value")))?]
+                    let hv =
+                        HeaderValue::from_str(v).or(Err(err!("105", "invalid header value")))?;
+                    rb = rb.header(hn, hv);
                 }
                 Value::Array(vs) => {
-                    let mut vec = vec![];
                     for v in vs {
-                        let v = HeaderValue::from_str(v.to_string().as_str())?;
-                        vec.push(v)
+                        let hv = HeaderValue::from_str(v.to_string().as_str())?;
+                        rb = rb.header(hn.clone(), hv);
                     }
-                    vec
                 }
                 _ => Err(err!("106", "invalid header value"))?,
             };
-            rb = rb.header(hn, hvs.as_slice());
         }
     }
 
     let body = args["body"].borrow();
     if !body.is_null() {
-        rb = rb.body(Body::from(body.clone()));
+        rb = rb.body(body.to_string());
     }
 
-    let mut res: Response = rb.send().await?;
+    let res: Response = rb.send().await?;
     let mut res_data = Map::new();
     res_data.insert(
         String::from("status"),
-        Value::Number(Number::from_str(res.status().to_string().as_str()).unwrap()),
+        Value::Number(Number::from(res.status().as_u16())),
     );
 
     let mut header_data = Map::new();
-    for (hn, hv) in res.iter() {
-        header_data.insert(
-            hn.to_string(),
-            Value::Array(hv.iter().map(|v| Value::String(v.to_string())).collect()),
-        );
+    for (hn, hv) in res.headers() {
+        header_data.insert(hn.to_string(), Value::String(hv.to_str()?.to_string()));
     }
     res_data.insert(String::from("header"), Value::Object(header_data));
 
-    let body_str = res.body_string().await?;
+    let body_str = res.text().await?;
     if !body_str.is_empty() {
         let body = body_str.parse()?;
         res_data.insert(String::from("body"), body);

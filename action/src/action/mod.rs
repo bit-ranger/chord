@@ -21,8 +21,6 @@ mod crypto;
 mod database;
 #[cfg(feature = "act_docker")]
 mod docker;
-#[cfg(feature = "act_download")]
-mod download;
 #[cfg(feature = "act_dubbo")]
 mod dubbo;
 #[cfg(feature = "act_lua")]

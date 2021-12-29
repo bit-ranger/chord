@@ -1,6 +1,6 @@
 [package]
 name = "chord-action"
-version = "0.1.14"
+version = "0.1.15"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 
@@ -16,23 +16,22 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chord-core = { path = "../core", version = "0.1.14" }
-chord-util = { path = "../util", version = "0.1.14", optional = true }
+chord-core = { path = "../core", version = "0.1.15" }
+chord-util = { path = "../util", version = "0.1.15", optional = true }
 serde = { version = "1.0" }
 itertools = "0.10.1"
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
+futures = { version = "0.3.13" }
 log = { version = "0.4.14", features = ["std"] }
-surf = { version = "2.1.0", optional = true }
+reqwest = { version = "0.11.8", features = ['stream'], optional = true }
 md5 = { version = "0.7.0", optional = true }
 redis = { version = "0.20.0", features = ["async-std-comp"], optional = true }
 rbatis = { version = "1.8.87", optional = true, features = ["upper_case_sql_keyword"] }
 mongodb = { version = "2.0.0-alpha.1", default-features = false, features = ["async-std-runtime"], optional = true }
 urlencoding = { version = "1.3.3", optional = true }
 dynamic_reload = { version = "0.4.0", optional = true }
-futures = { version = "0.3.13", optional = true }
-rm_rf = { version = "0.6.1", optional = true }
 rlua = { version = "0.17.0", optional = true }
-rlua_serde  = { version = "0.4", optional = true }
+rlua_serde = { version = "0.4", optional = true }
 dirs = "3.0.2"
 
 
@@ -42,12 +41,11 @@ openssl = { version = "0.10", features = ["vendored"] }
 
 [features]
 default = []
-act_restapi = ["surf"]
+act_restapi = ["reqwest"]
 act_database = ["rbatis"]
 act_dubbo = []
 act_redis = ["redis"]
 act_crypto = ["md5"]
-act_download = ['futures', 'rm_rf', 'surf']
 act_mongodb = ["mongodb"]
 act_url = ["urlencoding"]
 act_cdylib = ["dynamic_reload"]

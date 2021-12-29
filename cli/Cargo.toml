@@ -1,6 +1,6 @@
 [package]
 name = "chord-cli"
-version = "0.1.15"
+version = "0.1.16"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 
@@ -19,11 +19,11 @@ name = "chord"
 path = "src/main.rs"
 
 [dependencies]
-chord-core = { path = "../core", version = "0.1.15" }
-chord-flow = { path = "../flow", version = "0.1.15" }
-chord-input = { path = "../input", version = "0.1.15" }
-chord-output = { path = "../output", version = "0.1.15", features = ["report_csv", "report_webhook"] }
-chord-action = { path = "../action", version = "0.1.15", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_cdylib", "act_docker", "act_lua", "act_program"] }
+chord-core = { path = "../core", version = "0.1.16" }
+chord-flow = { path = "../flow", version = "0.1.16" }
+chord-input = { path = "../input", version = "0.1.16" }
+chord-output = { path = "../output", version = "0.1.16", features = ["report_csv", "report_webhook"] }
+chord-action = { path = "../action", version = "0.1.16", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_cdylib", "act_docker", "act_lua", "act_program"] }
 log = { version = "0.4.14", features = ["std"] }
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 time = "0.1.42"

@@ -27,6 +27,7 @@ impl Engine {
             Method::GET,
             None,
             999,
+            |buf| String::from_utf8_lossy(buf).to_string(),
         )
         .await
         .map_err(|e| e.into())
@@ -40,6 +41,20 @@ impl Engine {
         data: Option<Value>,
         tail_size: usize,
     ) -> Result<Vec<String>, Error> {
+        self.call_with_op(uri, method, data, tail_size, |buf| {
+            String::from_utf8_lossy(buf).to_string()
+        })
+        .await
+    }
+
+    pub async fn call_with_op<O: Fn(&Vec<u8>) -> String>(
+        &self,
+        uri: &str,
+        method: Method,
+        data: Option<Value>,
+        tail_size: usize,
+        op: O,
+    ) -> Result<Vec<String>, Error> {
         call0(
             self.client.clone(),
             self.address.as_str(),
@@ -47,19 +62,24 @@ impl Engine {
             method,
             data,
             tail_size,
+            op,
         )
         .await
         .map_err(|e| e.into())
     }
 }
 
-async fn call0(
+const CR: u8 = 0x0D;
+const LF: u8 = 0x0A;
+
+async fn call0<O: Fn(&Vec<u8>) -> String>(
     client: Client,
     address: &str,
     uri: &str,
     method: Method,
     data: Option<Value>,
     tail_size: usize,
+    op: O,
 ) -> Result<Vec<String>, Error> {
     let url = format!("http://{}/{}", address, uri);
     let url = Url::from_str(url.as_str()).or(Err(Error::Url(url)))?;
@@ -76,43 +96,47 @@ async fn call0(
 
     let mut tail_lines: VecDeque<String> = VecDeque::with_capacity(tail_size);
 
-    let is_octet_stream = res.headers().get("Content-Type").is_some()
-        && res.headers().get("Content-Type").unwrap().to_str().unwrap()
-            == "application/octet-stream";
     let status = res.status();
 
     let mut stream = res.bytes_stream();
     let mut line_buf = Vec::new();
     while let Some(bytes) = stream.next().await {
         let bytes = bytes.map_err(|e| Error::Io(e.to_string()))?;
-        let bytes: &[u8] = bytes.as_ref();
-
         for b in bytes {
-            let new_line = *b == 0x0A;
-            if !new_line {
-                line_buf.push(b.clone());
+            if b == CR {
+                // ignore
+            } else if b == LF {
+                end_of_line(&mut line_buf, &mut tail_lines, tail_size, &op);
             } else {
-                let line = if is_octet_stream {
-                    String::from_utf8_lossy(&line_buf[8..]).to_string()
-                } else {
-                    String::from_utf8_lossy(&line_buf).to_string()
-                };
-                line_buf.clear();
-                let line = format!("{}\n", line);
-
-                trace!("{}", line);
-
-                tail_lines.push_back(line.clone());
-                if tail_lines.len() > tail_size {
-                    tail_lines.pop_front();
-                }
+                line_buf.push(b);
             }
         }
     }
+    end_of_line(&mut line_buf, &mut tail_lines, tail_size, &op);
 
     return if !status.is_success() {
         Err(Status(status.into()))
     } else {
         Ok(tail_lines.into())
     };
+}
+
+fn end_of_line<O: Fn(&Vec<u8>) -> String>(
+    line_buf: &mut Vec<u8>,
+    tail_lines: &mut VecDeque<String>,
+    tail_size: usize,
+    op: &O,
+) {
+    if line_buf.is_empty() {
+        return;
+    }
+    let line: String = op(line_buf);
+    line_buf.clear();
+
+    trace!("{}", line);
+
+    tail_lines.push_back(line.clone());
+    if tail_lines.len() > tail_size {
+        tail_lines.pop_front();
+    }
 }

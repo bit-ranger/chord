@@ -117,20 +117,22 @@ impl Container {
         trace!("container log {}", self.name);
         if stderr {
             self.engine
-                .call(
+                .call_with_op(
                     format!("containers/{}/logs?stderr=true&tail={}", self.name, tail).as_str(),
                     Method::GET,
                     None,
                     tail,
+                    |buf| String::from_utf8_lossy(&buf[8..]).to_string(),
                 )
                 .await
         } else {
             self.engine
-                .call(
+                .call_with_op(
                     format!("containers/{}/logs?stdout=true&tail={}", self.name, tail).as_str(),
                     Method::GET,
                     None,
                     tail,
+                    |buf| String::from_utf8_lossy(&buf[8..]).to_string(),
                 )
                 .await
         }

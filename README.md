@@ -28,7 +28,7 @@ chord - async parallel task executor
 
 ### rest api testing
 
-[restapi](https://github.com/bit-ranger/chord/tree/master/.chord/job/src/restapi)
+[restapi](https://github.com/bit-ranger/chord/tree/master/.chord/src/restapi)
 
 ### example
 

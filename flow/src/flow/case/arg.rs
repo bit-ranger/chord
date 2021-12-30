@@ -96,12 +96,16 @@ impl CaseArgStruct {
         if let Some(def_ctx) = def_ctx {
             render_data.insert(String::from("def"), Value::Object(def_ctx.as_ref().clone()));
         }
-        if let Some(pre_ctx) = pre_ctx.as_ref() {
-            render_data.insert(String::from("pre"), Value::Object(pre_ctx.as_ref().clone()));
-        }
-        render_data.insert(String::from("case"), data.clone());
-        render_data.insert(String::from("step"), Value::Object(Map::new()));
         render_data.insert(String::from("reg"), Value::Object(Map::new()));
+        render_data.insert(String::from("case"), data.clone());
+        if let Some(pre_ctx) = pre_ctx.as_ref() {
+            if let Some(pre_step) = pre_ctx.get("step") {
+                render_data.insert(String::from("step"), pre_step.clone());
+            }
+        }
+        if !render_data.contains_key("step") {
+            render_data.insert(String::from("step"), Value::Object(Map::new()));
+        }
 
         let render_ctx = RenderContext::wraps(render_data).unwrap();
         return CaseArgStruct {

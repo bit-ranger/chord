@@ -486,17 +486,13 @@ async fn step_vec_create(
 fn render_context_create(
     flow: Arc<Flow>,
     def_ctx: Option<Arc<Map>>,
-    pre_ctx: Option<Arc<Map>>,
+    _pre_ctx: Option<Arc<Map>>,
 ) -> RenderContext {
     let mut render_data: Map = Map::new();
 
     render_data.insert("__meta__".to_owned(), Value::Object(flow.meta().clone()));
     if let Some(def_ctx) = def_ctx {
         render_data.insert("def".to_owned(), Value::Object(def_ctx.as_ref().clone()));
-    }
-
-    if let Some(pre_ctx) = pre_ctx {
-        render_data.insert("pre".to_owned(), Value::Object(pre_ctx.as_ref().clone()));
     }
 
     return RenderContext::wraps(render_data).unwrap();

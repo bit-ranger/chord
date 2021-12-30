@@ -1,6 +1,6 @@
 let conf = {
   version: "0.0.1",
-  pre: {
+  prelude: {
     step: {}
   },
   stage: {
@@ -11,11 +11,11 @@ let conf = {
 };
 
 module.exports = () => conf;
-let pre = conf.pre;
+let prelude = conf.prelude;
 let smoking = conf.stage.smoking;
 
 
-pre.step.p1 = {
+prelude.step.p1 = {
   exec: {
     program: {
       cmd: [
@@ -26,7 +26,7 @@ pre.step.p1 = {
   }
 }
 
-pre.step.p2 = {
+prelude.step.p2 = {
   exec: {
     program: {
       detach: true,

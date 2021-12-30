@@ -133,7 +133,7 @@ impl Flow {
     }
 
     pub fn pre_step_id_vec(&self) -> Option<Vec<&str>> {
-        let task_step_chain_arr = self.flow["pre"]["step"]
+        let task_step_chain_arr = self.flow["prelude"]["step"]
             .as_object()
             .map(|p| p.keys().map(|k| k.as_str()).collect());
         if task_step_chain_arr.is_none() {

@@ -26,15 +26,14 @@ step.step1 = {
     let: {
         arg2: def.arg.arg2
     },
-    exec: {
-        echo: [
-            "hello",
-            {
-                hello: "world"
-            },
-            "{{arr arg2}}"
-        ]
-    },
+
+    echo: [
+        "hello",
+        {
+            hello: "world"
+        },
+        "{{arr arg2}}"
+    ],
     assert: `
       (all
         (eq value.0 "hello")

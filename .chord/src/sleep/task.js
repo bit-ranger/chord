@@ -14,9 +14,8 @@ step.step1 = {
     let: {
         duration: "{{case.seconds}}"
     },
-    exec: {
-        sleep: "{{duration}}"
-    },
+
+    sleep: "{{duration}}",
     assert: `
       (all
         (eq 1 1)

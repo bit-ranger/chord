@@ -15,40 +15,38 @@ let step = conf.stage.smoking.step;
 let prefix = path.join(__dirname, "nodejs-example");
 
 step.step1 = {
-    exec: {
-        program: {
-            cmd: [
-                "npm",
-                "--prefix",
-                prefix,
-                "install"
-            ],
-            value_to_json: false
-        }
+
+    program: {
+        cmd: [
+            "npm",
+            "--prefix",
+            prefix,
+            "install"
+        ],
+        value_to_json: false
     }
 }
+
 
 step.step2 = {
     let: {
         case: "{{obj case}}"
     },
-    exec: {
-        program: {
-            cmd: [
-                "npm",
-                "--prefix",
-                prefix,
-                "run",
-                "test",
-                "{{obj case}}"
-            ],
-            value_to_json: true
-        }
+
+    program: {
+        cmd: [
+            "npm",
+            "--prefix",
+            prefix,
+            "run",
+            "test",
+            "{{obj case}}"
+        ],
+        value_to_json: true
     },
     assert: `
-        (eq value.case_args.foo "bar"
-)
-`
+        (eq value.case_args.foo "bar")
+        `
 }
 
 

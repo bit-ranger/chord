@@ -18,12 +18,11 @@ step.step1 = {
         foo: "{{case.foo}}",
         bar: "{{case.bar}}"
     },
-    exec: {
-        lua: fs.readFileSync(path.join(__dirname, "step1.lua"), {
-                encoding: "utf-8"
-            }
-        )
-    },
+
+    lua: fs.readFileSync(path.join(__dirname, "step1.lua"), {
+            encoding: "utf-8"
+        }
+    ),
     assert: `
     (all
       (eq value.1.bar (num bar))
@@ -36,28 +35,28 @@ step.step2 = {
         foo: "{{case.foo}}",
         bar: "{{case.bar}}",
     },
-    exec: {
-        // language=Lua
-        lua: `
-            r = os.time();
-            t = "CHORD-" .. tostring(r);
-            print(t);
-            return
+
+    // language=Lua
+    lua: `
+        r = os.time();
+        t = "CHORD-" .. tostring(r);
+        print(t);
+        return
+        {
             {
-                {
-                    ['foo'] = foo
-                }
-            ,
-                {
-                    ['bar'] = tonumber(bar)
-                },
-                {
-                    ['tag'] = t
-                }
+                ['foo'] = foo
             }
+        ,
+            {
+                ['bar'] = tonumber(bar)
+            },
+            {
+                ['tag'] = t
+            }
+        }
+    `,
+    assert:
         `
-    },
-    assert: `
     (all
       (eq value.1.bar (num bar))
     )

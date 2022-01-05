@@ -101,7 +101,6 @@ impl Flow {
 
         for step_id in step_id_checked.iter() {
             flow._step_check(step_id)?;
-            flow._step_exec_check(step_id)?;
             flow._step_spec_check(step_id)?;
 
             let _ = flow._step_let(step_id)?;
@@ -361,20 +360,14 @@ impl Flow {
     }
 
     fn _step_check(&self, step_id: &str) -> Result<(), Error> {
-        let enable_keys = vec!["let", "spec", "exec", "assert", "then"];
         let step = self._step(step_id);
-        let object = step.as_object().ok_or_else(|| {
+        let _ = step.as_object().ok_or_else(|| {
             Violation(
                 format!("step.{}", step_id),
                 "be a object".into(),
                 "is not".into(),
             )
         })?;
-        for (k, _) in object {
-            if !enable_keys.contains(&k.as_str()) {
-                return Err(EntryUnexpected(format!("step.{}", step_id), k.into()));
-            }
-        }
         return Ok(());
     }
 
@@ -399,47 +392,39 @@ impl Flow {
             .ok_or(EntryLost(format!("step.{}", step_id), "let".into()))
     }
 
-    fn _step_exec_check(&self, step_id: &str) -> Result<(), Error> {
-        let exec = self._step(step_id)["exec"].as_object().ok_or(Violation(
+    fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
+        let step = self._step(step_id).as_object().ok_or(Violation(
             step_id.into(),
             "be a object".into(),
             "is not".into(),
         ))?;
 
-        if exec.is_empty() {
-            return Err(EntryLost(format!("step.{}", step_id), "exec.action".into()));
-        }
+        let fixed_keys = vec!["let", "spec", "assert", "then"];
+        let action: Vec<&str> = step
+            .iter()
+            .filter(|(k, _)| !fixed_keys.contains(&k.as_str()))
+            .map(|(k, _)| k.as_str())
+            .collect();
 
-        if exec.len() != 1 {
+        if action.len() != 1 {
             return Err(Violation(
-                format!("step.{}.exec.action", step_id),
-                "have only 1 entry".into(),
-                format!("has {}", exec.len()),
+                format!("step.{}", step_id),
+                "have only 1 action".into(),
+                format!("has {}", action.len()),
             ));
         }
 
-        Ok(())
-    }
-
-    fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
-        let exec = &self._step(step_id)["exec"].as_object().ok_or(Violation(
-            format!("step.{}.exec.action", step_id),
-            "be a object".into(),
-            "is not".into(),
-        ))?;
-
-        return exec
-            .keys()
-            .nth(0)
-            .map(|s| s.as_str())
-            .ok_or(EntryLost(format!("step.{}", step_id), "exec.action".into()));
+        Ok(action[0])
     }
 
     pub fn _step_exec_args(&self, step_id: &str) -> Result<&Value, Error> {
         let action = self._step_exec_action(step_id)?;
-        let args = &self._step(step_id)["exec"][action];
+        let args = &self._step(step_id)[action];
         return if args.is_null() {
-            Err(EntryLost(format!("step.{}", step_id), "exec.args".into()))
+            Err(EntryLost(
+                format!("step.{}.{}", step_id, action),
+                "args".into(),
+            ))
         } else {
             Ok(args)
         };

@@ -1,10 +1,10 @@
 let conf = {
-  version: "0.0.1",
-  stage: {
-    smoking: {
-      step: {}
+    version: "0.0.1",
+    stage: {
+        smoking: {
+            step: {}
+        }
     }
-  }
 };
 
 module.exports = () => conf;
@@ -12,10 +12,9 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-  exec: {
-    cdylib: "cdylib_example"
-  },
-  assert: `
+
+    cdylib: "cdylib_example",
+    assert: `
     (all
       (eq value.run 1)
     )

@@ -15,11 +15,10 @@ step.step1 = {
         lon: "{{case.origin_lon}}",
         lat: "{{case.origin_lat}}"
     },
-    exec: {
-        echo: `
-            update coord
-            set x = '{{lon}}',
-                y = '{{lat}}'
-        `
-    }
+
+    echo: `
+        update coord
+        set x = '{{lon}}',
+            y = '{{lat}}'
+    `
 }

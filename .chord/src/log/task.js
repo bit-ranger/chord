@@ -16,7 +16,7 @@ step.step1 = {
         lat: "{{case.origin_lat}}",
         lon_lat: "{{lon}},{{lat}}"
     },
-    exec: {
-        log: "dml >>> update some_table set column1 = '{{lon_lat}}' where id = 1'"
-    }
+
+    log: "dml >>> update some_table set column1 = '{{lon_lat}}' where id = 1'"
+
 }

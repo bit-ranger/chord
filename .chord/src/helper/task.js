@@ -11,15 +11,12 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-    exec: {
-        log: "{{(num_sub 2.1 1.1)}}"
-    }
+    log: "{{(num_sub 2.1 1.1)}}"
 }
 
 step.step2 = {
-    exec: {
-        nop: {}
-    },
+
+    nop: {},
     assert: `
       (all
         (eq (num_add 1 1) 2)

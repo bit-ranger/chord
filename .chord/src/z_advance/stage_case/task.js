@@ -30,15 +30,14 @@ smoking.step.step1 = {
     let: {
         arg2: def.arg.arg2
     },
-    exec: {
-        echo: [
-            "hello",
-            {
-                hello: "world"
-            },
-            "{{arr arg2}}"
-        ]
-    },
+
+    echo: [
+        "hello",
+        {
+            hello: "world"
+        },
+        "{{arr arg2}}"
+    ],
     assert: `
       (all
 (eq value.0 "hello")
@@ -54,10 +53,10 @@ smoking.step.step2 = {
         lon: "{{case.origin_lon}}",
         lat: "{{case.origin_lat}}"
     },
-    exec: {
-        echo: "update bas set a = '{{lon}}' where b = '{{lat}}'"
-    },
-    assert: `
+
+    echo: "update bas set a = '{{lon}}' where b = '{{lat}}'",
+    assert:
+        `
     (all
       (str_start_with arg1 "12")
       (str_end_with arg1 "23")
@@ -80,10 +79,10 @@ stage2.step.step3 = {
         foo: "{{case.foo}}",
         bar: "{{case.bar}}"
     },
-    exec: {
-        echo: "update bas set a = '{{foo}}' where b = '{{bar}}'"
-    },
-    assert: `
+
+    echo: "update bas set a = '{{foo}}' where b = '{{bar}}'",
+    assert:
+        `
     (all
       (str_start_with arg1 "12")
       (str_end_with arg1 "23")

@@ -139,7 +139,12 @@ impl Flow {
         if task_step_chain_arr.is_none() {
             return None;
         }
-        return Some(task_step_chain_arr.unwrap());
+        let id_vec: Vec<&str> = task_step_chain_arr.unwrap();
+        return if id_vec.is_empty() {
+            None
+        } else {
+            Some(id_vec)
+        };
     }
 
     pub fn stage_id_vec(&self) -> Vec<&str> {
@@ -207,7 +212,7 @@ impl Flow {
         let root = self.flow.borrow();
         let object = root
             .as_object()
-            .ok_or_else(|| Violation("root".into(), "be object".into(), "is not".into()))?;
+            .ok_or_else(|| Violation("root".into(), "be a object".into(), "is not".into()))?;
         for (k, _) in object {
             if !enable_keys.contains(&k.as_str()) {
                 return Err(EntryUnexpected("root".into(), k.into()));
@@ -233,7 +238,7 @@ impl Flow {
         let pre = self.flow["pre"].borrow();
         let object = pre
             .as_object()
-            .ok_or_else(|| Violation("pre".into(), "be object".into(), "is not".into()))?;
+            .ok_or_else(|| Violation("pre".into(), "be a object".into(), "is not".into()))?;
         for (k, _) in object {
             if !enable_keys.contains(&k.as_str()) {
                 return Err(EntryUnexpected("pre".into(), k.into()));
@@ -263,7 +268,7 @@ impl Flow {
         let object = stage.as_object().ok_or_else(|| {
             Violation(
                 format!("stage.{}", stage_id),
-                "be object".into(),
+                "be a object".into(),
                 "is not".into(),
             )
         })?;
@@ -341,10 +346,17 @@ impl Flow {
     }
 
     fn _stage_step_id_vec(&self, stage_id: &str) -> Result<Vec<&str>, Error> {
-        let step_id_vec = self.flow["stage"][stage_id]["step"]
+        let step_id_vec: Vec<&str> = self.flow["stage"][stage_id]["step"]
             .as_object()
             .map(|p| p.keys().map(|k| k.as_str()).collect())
             .ok_or(EntryLost(stage_id.into(), "step".into()))?;
+        if step_id_vec.is_empty() {
+            return Err(Violation(
+                format!("step.{}", step_id),
+                "not empty".into(),
+                "is empty".into(),
+            ));
+        }
         return Ok(step_id_vec);
     }
 
@@ -354,7 +366,7 @@ impl Flow {
         let object = step.as_object().ok_or_else(|| {
             Violation(
                 format!("step.{}", step_id),
-                "be object".into(),
+                "be a object".into(),
                 "is not".into(),
             )
         })?;
@@ -390,7 +402,7 @@ impl Flow {
     fn _step_exec_check(&self, step_id: &str) -> Result<(), Error> {
         let exec = self._step(step_id)["exec"].as_object().ok_or(Violation(
             step_id.into(),
-            "be object".into(),
+            "be a object".into(),
             "is not".into(),
         ))?;
 
@@ -412,7 +424,7 @@ impl Flow {
     fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
         let exec = &self._step(step_id)["exec"].as_object().ok_or(Violation(
             format!("step.{}.exec.action", step_id),
-            "be object".into(),
+            "be a object".into(),
             "is not".into(),
         ))?;
 
@@ -441,7 +453,7 @@ impl Flow {
             let enable_keys = vec!["timeout", "catch_err"];
             let object = spec.as_object().ok_or(Violation(
                 format!("step.{}.spec", step_id),
-                "be object".into(),
+                "be a object".into(),
                 "is not".into(),
             ))?;
 
@@ -485,7 +497,7 @@ impl Flow {
             _ => {
                 return Err(Violation(
                     format!("step.{}.assert", step_id),
-                    "be string".into(),
+                    "be a string".into(),
                     "is not".into(),
                 ));
             }

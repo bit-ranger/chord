@@ -21,12 +21,12 @@ step.step1 = {
         map: {
             echo: [
                 {
-                    idx: "0-{{idx}}",
-                    item: "0-{{item}}"
+                    x: "0-{{idx}}",
+                    y: "0-{{item}}"
                 },
                 {
-                    idx: "1-{{idx}}",
-                    item: "1-{{item}}"
+                    x: "1-{{idx}}",
+                    y: "1-{{item}}"
                 }
             ]
         }
@@ -35,7 +35,7 @@ step.step1 = {
         `
     (all
       (eq state "Ok")
-      (eq value.2.1.item "1-c")
+      (eq value.2.1.y "1-c")
     )
   `
 }

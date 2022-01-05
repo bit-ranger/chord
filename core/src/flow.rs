@@ -352,9 +352,9 @@ impl Flow {
             .ok_or(EntryLost(stage_id.into(), "step".into()))?;
         if step_id_vec.is_empty() {
             return Err(Violation(
-                format!("step.{}", step_id),
+                format!("stage.{}.step", stage_id),
                 "not empty".into(),
-                "is empty".into(),
+                "is".into(),
             ));
         }
         return Ok(step_id_vec);

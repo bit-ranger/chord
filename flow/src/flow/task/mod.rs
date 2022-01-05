@@ -17,9 +17,9 @@ use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::{json, Map, Value};
 use res::TaskAssessStruct;
 
+use crate::flow::assign_by_render;
 use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
-use crate::flow::render_assign_object;
 use crate::flow::step::arg::CreateArgStruct;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::flow::task::Error::*;
@@ -130,7 +130,7 @@ impl TaskRunner {
                "__meta__": self.flow.meta()
             });
             let rc = RenderContext::wraps(rc).unwrap();
-            let rso = render_assign_object(self.flow_app.get_handlebars(), &rc, def_raw, false);
+            let rso = assign_by_render(self.flow_app.get_handlebars(), &rc, def_raw, false);
             if let Err(e) = rso {
                 error!("task run Err {}", self.id);
                 return Box::new(TaskAssessStruct::new(
@@ -510,9 +510,8 @@ async fn step_create(
     let let_raw = flow.step_let(step_id.as_ref());
     let let_value = match let_raw {
         Some(let_raw) => {
-            let let_value =
-                render_assign_object(flow_app.get_handlebars(), render_ctx, let_raw, true)
-                    .map_err(|e| Render(format!("step.{}.let", step_id), e))?;
+            let let_value = assign_by_render(flow_app.get_handlebars(), render_ctx, let_raw, true)
+                .map_err(|e| Render(format!("step.{}.let", step_id), e))?;
             Some(let_value)
         }
         None => None,

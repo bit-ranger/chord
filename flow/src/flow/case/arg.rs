@@ -133,7 +133,7 @@ impl CaseArgStruct {
         let let_raw = self.flow.step_let(step_id);
         let let_value = match let_raw {
             Some(let_raw) => {
-                let let_value = flow::render_assign_object(
+                let let_value = flow::assign_by_render(
                     flow_app.get_handlebars(),
                     &self.render_ctx,
                     let_raw,

@@ -13,22 +13,23 @@ let step = conf.stage.smoking.step;
 step.step1 = {
 
     iter_map: {
-        arr: [
+        iter: [
             "a",
             "b",
             "c"
         ],
-
-        echo: [
-            {
-                idx: "0-{{idx}}",
-                item: "0-{{item}}"
-            },
-            {
-                idx: "1-{{idx}}",
-                item: "1-{{item}}"
-            }
-        ]
+        map: {
+            echo: [
+                {
+                    idx: "0-{{idx}}",
+                    item: "0-{{item}}"
+                },
+                {
+                    idx: "1-{{idx}}",
+                    item: "1-{{item}}"
+                }
+            ]
+        }
     },
     assert:
         `

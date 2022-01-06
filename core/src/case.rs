@@ -14,6 +14,8 @@ pub trait CaseId: Sync + Send + Display {
 
     fn exec_id(&self) -> &str;
 
+    fn stage_id(&self) -> &str;
+
     fn task_id(&self) -> &dyn TaskId;
 }
 

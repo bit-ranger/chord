@@ -52,6 +52,10 @@ impl CaseId for CaseIdStruct {
         self.exec_id.as_str()
     }
 
+    fn stage_id(&self) -> &str {
+        self.stage_id.as_str()
+    }
+
     fn task_id(&self) -> &dyn TaskId {
         self.task_id.as_ref()
     }

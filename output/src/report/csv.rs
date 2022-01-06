@@ -125,10 +125,10 @@ impl Report for Reporter {
 
         let report_file = self
             .report_dir
-            .join(format!("{}_R.csv", self.task_id.task()));
+            .join(format!("R.{}.csv", self.task_id.task()));
         let report_file_new =
             self.report_dir
-                .join(format!("{}_{}.csv", self.task_id.task(), task_state_view));
+                .join(format!("{}.{}.csv", task_state_view, self.task_id.task()));
         rename(report_file, report_file_new).await?;
         Ok(())
     }
@@ -142,7 +142,7 @@ impl Reporter {
         with_bom: bool,
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
-        let task_state_file = report_dir.join(format!("{}_R.csv", task_id.task()));
+        let task_state_file = report_dir.join(format!("R.{}.csv", task_id.task()));
         let report = Reporter {
             report_dir,
             task_id,

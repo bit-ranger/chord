@@ -260,8 +260,15 @@ fn to_value_vec(ca: &dyn CaseAssess, header: &Vec<String>) -> Vec<String> {
         }
     }
 
-    for _ in 0..header.len() - value_vec.len() {
-        value_vec.push(String::new());
+    if header.len() > value_vec.len() {
+        let vacancy = header.len() - value_vec.len();
+        for _ in 0..vacancy {
+            value_vec.push(String::new());
+        }
+    }
+
+    if value_vec.len() > header.len() {
+        let _ = value_vec.split_off(header.len());
     }
 
     value_vec

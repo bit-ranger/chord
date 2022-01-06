@@ -115,7 +115,7 @@ impl TaskRunner {
         trace!("task run start {}", self.id);
         let start = Utc::now();
 
-        if let Err(e) = self.assess_report.start(start, self.flow.clone()).await {
+        if let Err(e) = self.assess_report.start(start).await {
             error!("task run Err {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id,

@@ -64,9 +64,17 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> 
 async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
     let args = arg.args()?;
     let sql = args["sql"].as_str().ok_or(err!("101", "missing sql"))?;
+    let sql = sql.trim();
+    if sql.to_uppercase().starts_with("SELECT ") {
+        let mut sql = sql;
+        if sql.ends_with(";") {
+            sql = &sql[0..sql.len() - 1];
+        }
 
-    if sql.trim_start().to_uppercase().starts_with("SELECT ") {
-        let pr = PageRequest::new(1, 20);
+        let page_no = args["page_no"].as_u64().unwrap_or(1);
+        let page_size = args["page_size"].as_u64().unwrap_or(100);
+
+        let pr = PageRequest::new(page_no, page_size);
         let args = vec![];
         let page: Page<Value> = rb.fetch_page("", sql, &args, &pr).await?;
         let mut map = Map::new();

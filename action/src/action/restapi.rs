@@ -41,14 +41,16 @@ impl Action for Restapi {
 
     async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
         let args = arg.args()?;
-        let mut curl = Curl::default();
         let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
-        curl.url = url.to_string();
+
+        let url = Url::from_str(url).map_err(|_| err!("101", format!("invalid url: {}", url)))?;
         let method = args["method"]
             .as_str()
-            .ok_or(err!("102", "missing method"))?;
-        curl.method = method.to_string();
-        curl.headers.push((
+            .ok_or(err!("102", "missing method"))?
+            .to_string();
+
+        let mut headers = Vec::new();
+        headers.push((
             "Content-Type".to_string(),
             "application/json; charset=utf-8".to_string(),
         ));
@@ -56,21 +58,30 @@ impl Action for Restapi {
             for (k, v) in header.iter() {
                 match v {
                     Value::String(v) => {
-                        curl.headers.push((k.clone(), v.clone()));
+                        headers.push((k.clone(), v.clone()));
                     }
                     Value::Array(vs) => {
                         for v in vs {
-                            curl.headers.push((k.clone(), v.to_string()));
+                            headers.push((k.clone(), v.to_string()));
                         }
                     }
                     _ => Err(err!("106", "invalid header value"))?,
                 };
             }
         };
-        let body = args["body"].borrow();
-        if !body.is_null() {
-            curl.body = Some(body.clone());
-        }
+        let body_raw = args["body"].borrow();
+        let mut body = None;
+        if !body_raw.is_null() {
+            body = Some(body_raw.clone());
+        };
+
+        let curl = Curl {
+            method,
+            url,
+            headers,
+            body,
+        };
+
         Ok(Value::String(curl.to_string()))
     }
 }
@@ -144,10 +155,9 @@ async fn run0(client: Client, arg: &dyn RunArg) -> std::result::Result<Value, Er
     return Ok(Value::Object(res_data));
 }
 
-#[derive(Default)]
 struct Curl {
     method: String,
-    url: String,
+    url: Url,
     headers: Vec<(String, String)>,
     body: Option<Value>,
 }
@@ -157,8 +167,9 @@ impl Display for Curl {
         let mut curl = format!(
             r#"curl -X {} --location "{}" "#,
             self.method.to_uppercase(),
-            self.url.escape_debug()
+            self.url
         );
+
         for (k, v) in &self.headers {
             curl.push_str(format!(r#"-H "{}:{}" "#, k.escape_debug(), v.escape_debug()).as_str());
         }

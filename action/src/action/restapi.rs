@@ -148,7 +148,7 @@ async fn run0(client: Client, arg: &dyn RunArg) -> std::result::Result<Value, Er
 
     let body_str = res.text().await?;
     if !body_str.is_empty() {
-        let body = body_str.parse()?;
+        let body = body_str.parse().unwrap_or_else(|_| Value::String(body_str));
         res_data.insert(String::from("body"), body);
     };
 

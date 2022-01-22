@@ -25,7 +25,11 @@ pub struct ReportFactory {
 
 #[async_trait]
 impl Factory for ReportFactory {
-    async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Box<dyn Report>, Error> {
+    async fn create(
+        &self,
+        task_id: Arc<dyn TaskId>,
+        _: Arc<Flow>,
+    ) -> Result<Box<dyn Report>, Error> {
         let reporter = ReportFactory::create(self, task_id).await?;
         Ok(Box::new(reporter))
     }
@@ -62,7 +66,7 @@ pub struct Reporter {
 
 #[async_trait]
 impl Report for Reporter {
-    async fn start(&mut self, time: DateTime<Utc>, _: Arc<Flow>) -> Result<(), Error> {
+    async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error> {
         let task_data = ta_doc_init(self.task_id.as_ref(), time);
         data_send(
             self.client.clone(),

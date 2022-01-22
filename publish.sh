@@ -4,7 +4,7 @@ set -e
 
 entry="$(pwd)"
 
-for mod in "core" "action" "input" "output" "flow" "cli" "web"
+for mod in "core" "util" "action" "input" "output" "flow" "cli" "web"
 do
   cd "$mod"
   echo "entering $(pwd)"

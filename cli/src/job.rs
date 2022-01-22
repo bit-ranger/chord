@@ -282,22 +282,19 @@ async fn task_path_run0<P: AsRef<Path>>(
             .map_err(|e| TaskCase(task_id.task().to_string(), e))?,
     );
 
+    let flow = Arc::new(flow);
+
     //write
     let assess_reporter = report_factory
-        .create(task_id.clone())
+        .create(task_id.clone(), flow.clone())
         .await
         .map_err(|e| Report(task_id.task().to_string(), e))?;
 
     //runner
-    let task_assess = chord_flow::TaskRunner::new(
-        case_store,
-        assess_reporter,
-        app_ctx,
-        Arc::new(flow),
-        task_id.clone(),
-    )
-    .run()
-    .await;
+    let task_assess =
+        chord_flow::TaskRunner::new(case_store, assess_reporter, app_ctx, flow, task_id.clone())
+            .run()
+            .await;
 
     Ok(task_assess)
 }

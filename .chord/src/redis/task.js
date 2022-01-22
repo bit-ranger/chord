@@ -16,15 +16,14 @@ step.set_redis = {
     let: {
         arg0: "{{case.arg0}}"
     },
-    exec: {
-        redis: {
-            url: url,
-            cmd: "SET",
-            args: [
-                "CHORD:TEST:0123456789",
-                "{{arg0}}"
-            ]
-        }
+
+    redis: {
+        url: url,
+        cmd: "SET",
+        args: [
+            "CHORD:TEST:0123456789",
+            "{{arg0}}"
+        ]
     }
 }
 
@@ -32,14 +31,13 @@ step.et_redis = {
     let: {
         arg0: "{{case.arg0}}"
     },
-    exec: {
-        redis: {
-            url: url,
-            cmd: "GET",
-            args: [
-                "CHORD:TEST:0123456789"
-            ]
-        }
+
+    redis: {
+        url: url,
+        cmd: "GET",
+        args: [
+            "CHORD:TEST:0123456789"
+        ]
     },
     assert: "(eq value arg0)"
 }

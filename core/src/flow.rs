@@ -101,7 +101,6 @@ impl Flow {
 
         for step_id in step_id_checked.iter() {
             flow._step_check(step_id)?;
-            flow._step_exec_check(step_id)?;
             flow._step_spec_check(step_id)?;
 
             let _ = flow._step_let(step_id)?;
@@ -139,7 +138,12 @@ impl Flow {
         if task_step_chain_arr.is_none() {
             return None;
         }
-        return Some(task_step_chain_arr.unwrap());
+        let id_vec: Vec<&str> = task_step_chain_arr.unwrap();
+        return if id_vec.is_empty() {
+            None
+        } else {
+            Some(id_vec)
+        };
     }
 
     pub fn stage_id_vec(&self) -> Vec<&str> {
@@ -207,7 +211,7 @@ impl Flow {
         let root = self.flow.borrow();
         let object = root
             .as_object()
-            .ok_or_else(|| Violation("root".into(), "be object".into(), "is not".into()))?;
+            .ok_or_else(|| Violation("root".into(), "be a object".into(), "is not".into()))?;
         for (k, _) in object {
             if !enable_keys.contains(&k.as_str()) {
                 return Err(EntryUnexpected("root".into(), k.into()));
@@ -233,7 +237,7 @@ impl Flow {
         let pre = self.flow["pre"].borrow();
         let object = pre
             .as_object()
-            .ok_or_else(|| Violation("pre".into(), "be object".into(), "is not".into()))?;
+            .ok_or_else(|| Violation("pre".into(), "be a object".into(), "is not".into()))?;
         for (k, _) in object {
             if !enable_keys.contains(&k.as_str()) {
                 return Err(EntryUnexpected("pre".into(), k.into()));
@@ -263,7 +267,7 @@ impl Flow {
         let object = stage.as_object().ok_or_else(|| {
             Violation(
                 format!("stage.{}", stage_id),
-                "be object".into(),
+                "be a object".into(),
                 "is not".into(),
             )
         })?;
@@ -341,28 +345,29 @@ impl Flow {
     }
 
     fn _stage_step_id_vec(&self, stage_id: &str) -> Result<Vec<&str>, Error> {
-        let step_id_vec = self.flow["stage"][stage_id]["step"]
+        let step_id_vec: Vec<&str> = self.flow["stage"][stage_id]["step"]
             .as_object()
             .map(|p| p.keys().map(|k| k.as_str()).collect())
             .ok_or(EntryLost(stage_id.into(), "step".into()))?;
+        if step_id_vec.is_empty() {
+            return Err(Violation(
+                format!("stage.{}.step", stage_id),
+                "not empty".into(),
+                "is".into(),
+            ));
+        }
         return Ok(step_id_vec);
     }
 
     fn _step_check(&self, step_id: &str) -> Result<(), Error> {
-        let enable_keys = vec!["let", "spec", "exec", "assert", "then"];
         let step = self._step(step_id);
-        let object = step.as_object().ok_or_else(|| {
+        let _ = step.as_object().ok_or_else(|| {
             Violation(
                 format!("step.{}", step_id),
-                "be object".into(),
+                "be a object".into(),
                 "is not".into(),
             )
         })?;
-        for (k, _) in object {
-            if !enable_keys.contains(&k.as_str()) {
-                return Err(EntryUnexpected(format!("step.{}", step_id), k.into()));
-            }
-        }
         return Ok(());
     }
 
@@ -387,47 +392,39 @@ impl Flow {
             .ok_or(EntryLost(format!("step.{}", step_id), "let".into()))
     }
 
-    fn _step_exec_check(&self, step_id: &str) -> Result<(), Error> {
-        let exec = self._step(step_id)["exec"].as_object().ok_or(Violation(
+    fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
+        let step = self._step(step_id).as_object().ok_or(Violation(
             step_id.into(),
-            "be object".into(),
+            "be a object".into(),
             "is not".into(),
         ))?;
 
-        if exec.is_empty() {
-            return Err(EntryLost(format!("step.{}", step_id), "exec.action".into()));
-        }
+        let fixed_keys = vec!["let", "spec", "assert", "then"];
+        let action: Vec<&str> = step
+            .iter()
+            .filter(|(k, _)| !fixed_keys.contains(&k.as_str()))
+            .map(|(k, _)| k.as_str())
+            .collect();
 
-        if exec.len() != 1 {
+        if action.len() != 1 {
             return Err(Violation(
-                format!("step.{}.exec.action", step_id),
-                "have only 1 entry".into(),
-                format!("has {}", exec.len()),
+                format!("step.{}", step_id),
+                "have only 1 action".into(),
+                format!("has {}", action.len()),
             ));
         }
 
-        Ok(())
-    }
-
-    fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
-        let exec = &self._step(step_id)["exec"].as_object().ok_or(Violation(
-            format!("step.{}.exec.action", step_id),
-            "be object".into(),
-            "is not".into(),
-        ))?;
-
-        return exec
-            .keys()
-            .nth(0)
-            .map(|s| s.as_str())
-            .ok_or(EntryLost(format!("step.{}", step_id), "exec.action".into()));
+        Ok(action[0])
     }
 
     pub fn _step_exec_args(&self, step_id: &str) -> Result<&Value, Error> {
         let action = self._step_exec_action(step_id)?;
-        let args = &self._step(step_id)["exec"][action];
+        let args = &self._step(step_id)[action];
         return if args.is_null() {
-            Err(EntryLost(format!("step.{}", step_id), "exec.args".into()))
+            Err(EntryLost(
+                format!("step.{}.{}", step_id, action),
+                "args".into(),
+            ))
         } else {
             Ok(args)
         };
@@ -441,7 +438,7 @@ impl Flow {
             let enable_keys = vec!["timeout", "catch_err"];
             let object = spec.as_object().ok_or(Violation(
                 format!("step.{}.spec", step_id),
-                "be object".into(),
+                "be a object".into(),
                 "is not".into(),
             ))?;
 
@@ -485,7 +482,7 @@ impl Flow {
             _ => {
                 return Err(Violation(
                     format!("step.{}.assert", step_id),
-                    "be string".into(),
+                    "be a string".into(),
                     "is not".into(),
                 ));
             }

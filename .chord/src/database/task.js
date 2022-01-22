@@ -17,11 +17,10 @@ step.step1 = {
         url: url,
         user: "{{case.user}}"
     },
-    exec: {
-        database: {
-            url: "{{url}}",
-            sql: "SELECT * FROM user WHERE user = '{{user}}'"
-        }
+
+    database: {
+        url: "{{url}}",
+        sql: "SELECT * FROM user WHERE user = '{{user}}'"
     },
     assert: "(eq value.records.0.User user)"
 }

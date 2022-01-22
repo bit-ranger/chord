@@ -11,11 +11,10 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-    exec: {
-        count: {
-            init: 10,
-            incr: 2
-        }
+
+    count: {
+        init: 10,
+        incr: 2
     },
     assert: `
       (all

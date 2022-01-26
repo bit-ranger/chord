@@ -19,8 +19,8 @@ enum ReportError {
     #[error("conf lost")]
     ConfLost,
 
-    #[error("conf invalid")]
-    ConfInvalid,
+    #[error("invalid {0}: {1}")]
+    ConfInvalid(String, String),
 
     #[error("conf lost entry `{0}`")]
     ConfLostEntry(String),
@@ -51,7 +51,7 @@ impl ReportFactory {
             }
             Some(c) => {
                 if !c.is_object() {
-                    return Err(Box::new(ConfInvalid));
+                    return Err(Box::new(ConfInvalid("conf".into(), c.to_string())));
                 };
                 let kind = c["kind"]
                     .as_str()
@@ -90,7 +90,9 @@ impl ReportFactory {
                             delegate: Box::new(factory),
                         });
                     }
-                    _ => return Err(Box::new(ConfInvalid)),
+                    other => {
+                        return Err(Box::new(ConfInvalid("kind".to_string(), other.to_string())))
+                    }
                 }
             }
         }

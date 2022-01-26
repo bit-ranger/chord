@@ -9,6 +9,7 @@ use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 use futures::StreamExt;
+use log::error;
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
@@ -20,6 +21,7 @@ use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
 
 use crate::report::Factory;
+use crate::report::ReportError::ConfInvalid;
 
 pub struct ReportFactory {
     dir: PathBuf,
@@ -33,6 +35,24 @@ impl Factory for ReportFactory {
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
     ) -> Result<Box<dyn Report>, Error> {
+        let step_id_iter = flow
+            .stage_id_vec()
+            .into_iter()
+            .flat_map(|stage_id| flow.stage_step_id_vec(stage_id).into_iter());
+        for step_id in step_id_iter {
+            if let Some(then) = flow.step_then(step_id) {
+                for th in then {
+                    if th.goto().is_some() {
+                        error!(
+                            "goto detected in step {}, goto is incompatible with csv reporter",
+                            step_id
+                        );
+                        return Err(ConfInvalid("kind".to_string(), "csv".to_string()))?;
+                    }
+                }
+            }
+        }
+
         let factory = ReportFactory::create(self, task_id, flow).await?;
         Ok(Box::new(factory))
     }

@@ -19,7 +19,7 @@ let allTasks = [
     "sleep",
     "typecast",
     "z_advance/gen_dml",
-    "z_advance/goto",
+    // "z_advance/goto",
     "z_advance/iter_map",
     "z_advance/stage_case"
 ]

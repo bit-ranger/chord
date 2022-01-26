@@ -36,6 +36,25 @@ pub struct Flow {
     meta: Map,
 }
 
+#[derive(Debug, Clone)]
+pub struct Then {
+    cond: Option<String>,
+    reg: Option<Map>,
+    goto: Option<String>,
+}
+
+impl Then {
+    pub fn cond(&self) -> Option<&str> {
+        self.cond.as_ref().map(|s| s.as_str())
+    }
+    pub fn reg(&self) -> Option<&Map> {
+        self.reg.as_ref()
+    }
+    pub fn goto(&self) -> Option<&str> {
+        self.goto.as_ref().map(|g| g.as_str())
+    }
+}
+
 impl Flow {
     pub fn new(flow: Value, dir: &Path) -> Result<Flow, Error> {
         let mut meta = Map::new();
@@ -199,7 +218,7 @@ impl Flow {
         self._step_assert(step_id).unwrap()
     }
 
-    pub fn step_then(&self, step_id: &str) -> Option<Vec<&Map>> {
+    pub fn step_then(&self, step_id: &str) -> Option<Vec<Then>> {
         self._step_then(step_id).unwrap()
     }
 
@@ -489,7 +508,7 @@ impl Flow {
         }
     }
 
-    pub fn _step_then(&self, step_id: &str) -> Result<Option<Vec<&Map>>, Error> {
+    pub fn _step_then(&self, step_id: &str) -> Result<Option<Vec<Then>>, Error> {
         let array = self._step(step_id)["then"].as_array();
         if array.is_none() {
             return Ok(None);
@@ -499,7 +518,11 @@ impl Flow {
                 array
                     .iter()
                     .filter(|v| v.is_object())
-                    .map(|m| m.as_object().unwrap())
+                    .map(|m| Then {
+                        cond: m["if"].as_str().map(|c| c.to_string()),
+                        reg: m["reg"].as_object().map(|r| r.clone()),
+                        goto: m["goto"].as_str().map(|g| g.to_string()),
+                    })
                     .collect(),
             ))
         }

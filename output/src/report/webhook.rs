@@ -8,14 +8,14 @@ use reqwest::{Client, Method, RequestBuilder, Response, Url};
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
-use chord_core::output::Report;
+use chord_core::output::StageReporter;
 use chord_core::output::{async_trait, Error};
 use chord_core::step::{StepAssess, StepState};
-use chord_core::task::{TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAssess, TaskAssess, TaskId, TaskState};
 use chord_core::value::{json, to_value, Value};
 use chord_core::value::{Deserialize, Serialize};
 
-use chord_core::output::Factory;
+use chord_core::output::JobReporter;
 
 pub struct ReportFactory {
     url: String,
@@ -24,12 +24,12 @@ pub struct ReportFactory {
 }
 
 #[async_trait]
-impl Factory for ReportFactory {
+impl JobReporter for ReportFactory {
     async fn create(
         &self,
         task_id: Arc<dyn TaskId>,
         _: Arc<Flow>,
-    ) -> Result<Box<dyn Report>, Error> {
+    ) -> Result<Box<dyn StageReporter>, Error> {
         let reporter = ReportFactory::create(self, task_id).await?;
         Ok(Box::new(reporter))
     }
@@ -65,7 +65,7 @@ pub struct Reporter {
 }
 
 #[async_trait]
-impl Report for Reporter {
+impl StageReporter for Reporter {
     async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error> {
         let task_data = ta_doc_init(self.task_id.as_ref(), time);
         data_send(
@@ -104,7 +104,7 @@ impl Report for Reporter {
         .await
     }
 
-    async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+    async fn end(&mut self, task_assess: &dyn StageAssess) -> Result<(), Error> {
         let task_data = ta_doc(
             self.task_id.as_ref(),
             task_assess.start(),

@@ -4,7 +4,7 @@ use async_std::sync::Arc;
 use async_trait::async_trait;
 
 use chord_core::flow::Flow;
-use chord_core::output::{Error, Factory, Report};
+use chord_core::output::{Error, JobReporter, StageReporter};
 use chord_core::task::TaskId;
 use chord_core::value::Value;
 use ReportError::*;
@@ -27,7 +27,7 @@ enum ReportError {
 }
 
 pub struct ReportFactory {
-    delegate: Box<dyn Factory>,
+    delegate: Box<dyn JobReporter>,
 }
 
 impl ReportFactory {
@@ -52,7 +52,7 @@ impl ReportFactory {
                     #[cfg(feature = "report_csv")]
                     "csv" => {
                         let v = c[kind].borrow();
-                        let factory = csv::ReportFactory::new(
+                        let factory = csv::CsvJobReporter::new(
                             v["dir"]
                                 .as_str()
                                 .ok_or(ConfLostEntry("report.csv.dir".into()))?,
@@ -91,12 +91,12 @@ impl ReportFactory {
 }
 
 #[async_trait]
-impl Factory for ReportFactory {
+impl JobReporter for ReportFactory {
     async fn create(
         &self,
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
-    ) -> Result<Box<dyn Report>, Error> {
+    ) -> Result<Box<dyn StageReporter>, Error> {
         self.delegate.create(task_id, flow).await
     }
 }

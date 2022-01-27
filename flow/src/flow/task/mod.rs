@@ -9,11 +9,11 @@ use chord_core::action::Action;
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
-use chord_core::input::{JobLoader, TaskLoader};
-use chord_core::output::Report;
+use chord_core::input::{JobLoader, StageLoader, TaskLoader};
 use chord_core::output::Utc;
+use chord_core::output::{StageReporter, TaskReporter};
 use chord_core::step::{StepAssess, StepState};
-use chord_core::task::{TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAssess, StageState, TaskAssess, TaskId, TaskState};
 use chord_core::value::{json, Map, Value};
 use res::TaskAssessStruct;
 
@@ -22,6 +22,7 @@ use crate::flow::case;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step::arg::CreateArgStruct;
 use crate::flow::task::arg::TaskIdSimple;
+use crate::flow::task::res::StageAssessStruct;
 use crate::flow::task::Error::*;
 use crate::model::app::{FlowApp, RenderContext};
 use crate::CTX_ID;
@@ -43,11 +44,11 @@ enum Error {
     #[error("pre step `{0}`")]
     PreFail(String),
 
-    #[error("report error:\n{0}")]
-    Report(Box<dyn std::error::Error + Sync + Send>),
+    #[error("{0} `{1}` reporter error:\n{2}")]
+    Reporter(String, String, Box<dyn std::error::Error + Sync + Send>),
 
-    #[error("stage `{0}` load error:\n{1}")]
-    Load(String, Box<dyn std::error::Error + Sync + Send>),
+    #[error("{0} `{1}` loader error:\n{2}")]
+    Loader(String, String, Box<dyn std::error::Error + Sync + Send>),
 
     #[error("stage `{0}` case is empty")]
     CaseEmpty(String),
@@ -57,7 +58,7 @@ pub struct TaskRunner {
     step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
     stage_round_no: usize,
     stage_id: Arc<String>,
-    stage_state: TaskState,
+    stage_state: StageState,
 
     pre_ctx: Option<Arc<Map>>,
     #[allow(dead_code)]
@@ -68,7 +69,7 @@ pub struct TaskRunner {
     task_state: TaskState,
 
     def_ctx: Option<Arc<Map>>,
-    reporter: Box<dyn Report>,
+    reporter: Box<dyn TaskReporter>,
     loader: Box<dyn TaskLoader>,
     id: Arc<TaskIdSimple>,
     flow_app: Arc<dyn FlowApp>,
@@ -78,7 +79,7 @@ pub struct TaskRunner {
 impl TaskRunner {
     pub fn new(
         loader: Box<dyn TaskLoader>,
-        reporter: Box<dyn Report>,
+        reporter: Box<dyn TaskReporter>,
         flow_app: Arc<dyn FlowApp>,
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
@@ -88,7 +89,7 @@ impl TaskRunner {
             stage_id: Arc::new("".into()),
             stage_round_no: 0,
 
-            stage_state: TaskState::Ok,
+            stage_state: StageState::Ok,
 
             pre_ctx: None,
             pre_assess: None,
@@ -121,7 +122,11 @@ impl TaskRunner {
                 self.id,
                 start,
                 Utc::now(),
-                TaskState::Err(Box::new(Report(e))),
+                TaskState::Err(Box::new(Reporter(
+                    "task".to_string(),
+                    self.id.task().to_string(),
+                    e,
+                ))),
             ));
         }
 
@@ -217,7 +222,7 @@ impl TaskRunner {
             }
         };
 
-        let result = self.start_run().await;
+        let result = self.task_run().await;
 
         let task_assess = if let Err(e) = result {
             error!("task run Err {}", self.id);
@@ -255,14 +260,18 @@ impl TaskRunner {
                 self.id,
                 start,
                 Utc::now(),
-                TaskState::Err(Box::new(Report(e))),
+                TaskState::Err(Box::new(Reporter(
+                    "task".to_string(),
+                    self.id.task().to_string(),
+                    e,
+                ))),
             ));
         }
 
         Box::new(task_assess)
     }
 
-    async fn start_run(&mut self) -> Result<(), Error> {
+    async fn task_run(&mut self) -> Result<(), Error> {
         let stage_id_vec: Vec<String> = self
             .flow
             .stage_id_vec()
@@ -272,7 +281,7 @@ impl TaskRunner {
         for state_id in stage_id_vec {
             trace!("task run stage {}, {}", self.id, state_id);
             self.stage_run(state_id.as_str()).await?;
-            if let TaskState::Fail(_) = self.stage_state {
+            if let StageState::Fail(_) = self.stage_state {
                 if "stage_fail" == self.flow.stage_break_on(state_id.as_str()) {
                     break;
                 }
@@ -283,7 +292,7 @@ impl TaskRunner {
 
     async fn stage_run(&mut self, stage_id: &str) -> Result<(), Error> {
         self.stage_id = Arc::new(stage_id.to_string());
-        self.stage_state = TaskState::Ok;
+        self.stage_state = StageState::Ok;
         let step_id_vec: Vec<String> = self
             .flow
             .stage_step_id_vec(stage_id)
@@ -316,8 +325,7 @@ impl TaskRunner {
         let mut round_count = 0;
         loop {
             self.stage_round_no = round_count;
-            self.stage_data_vec_run_remaining(stage_id, concurrency)
-                .await?;
+            self.stage_once_run_remaining(stage_id, concurrency).await?;
             round_count += 1;
             if round_count >= round_max {
                 break;
@@ -326,22 +334,86 @@ impl TaskRunner {
         return Ok(());
     }
 
-    async fn stage_data_vec_run_remaining(
+    async fn stage_once_run_remaining(
         &mut self,
         stage_id: &str,
         concurrency: usize,
     ) -> Result<(), Error> {
+        let start = Utc::now();
+
         let mut loader = self
             .loader
             .create(stage_id)
             .await
-            .map_err(|e| Load(stage_id.to_string(), e))?;
+            .map_err(|e| Loader("stage".to_string(), stage_id.to_string(), e))?;
+
+        let mut reporter = self
+            .reporter
+            .create(stage_id)
+            .await
+            .map_err(|e| Reporter("stage".to_string(), stage_id.to_string(), e))?;
+
+        reporter
+            .start(Utc::now())
+            .await
+            .map_err(|e| Reporter("stage".to_string(), stage_id.to_string(), e))?;
+
+        let result = self
+            .stage_io_run_remaining(stage_id, loader.as_mut(), reporter.as_mut(), concurrency)
+            .await;
+
+        let stage_assess = if let Err(e) = result {
+            error!("task run Err {}", self.id);
+            StageAssessStruct::new(
+                stage_id.to_string(),
+                start,
+                Utc::now(),
+                StageState::Err(Box::new(e)),
+            )
+        } else {
+            match &self.stage_state {
+                StageState::Ok => {
+                    info!("stage run Ok {}.{}", self.id.clone(), stage_id);
+                    StageAssessStruct::new(stage_id.to_string(), start, Utc::now(), StageState::Ok)
+                }
+                StageState::Fail(c) => {
+                    warn!("stage run Fail {}.{}", self.id.clone(), stage_id);
+                    StageAssessStruct::new(
+                        stage_id.to_string(),
+                        start,
+                        Utc::now(),
+                        StageState::Fail(c.clone()),
+                    )
+                }
+                StageState::Err(e) => e?,
+            }
+        };
+
+        reporter
+            .end(&stage_assess)
+            .await
+            .map_err(|e| Reporter("stage".to_string(), stage_id.to_string(), e))?;
+
+        match stage_assess.state() {
+            StageState::Ok => Ok(()),
+            StageState::Fail(_) => Ok(()),
+            StageState::Err(e) => e?,
+        }
+    }
+
+    async fn stage_io_run_remaining(
+        &mut self,
+        stage_id: &str,
+        loader: &mut dyn StageLoader,
+        reporter: &mut dyn StageReporter,
+        concurrency: usize,
+    ) -> Result<(), Error> {
         let mut load_times = 0;
         loop {
             let case_data_vec: Vec<(String, Value)> = loader
                 .load(concurrency)
                 .await
-                .map_err(|e| Load(stage_id.to_string(), e))?;
+                .map_err(|e| Loader("stage".to_string(), stage_id.to_string(), e))?;
             load_times = load_times + 1;
             if case_data_vec.len() == 0 {
                 return if load_times == 1 {
@@ -375,13 +447,13 @@ impl TaskRunner {
                     }
                     CaseState::Ok(_) => String::new(),
                 };
-                self.stage_state = TaskState::Fail(cause.clone());
-                self.task_state = TaskState::Fail(cause);
+                self.stage_state = StageState::Fail(cause.clone());
+                self.task_state = TaskState::Fail(cause.clone());
             }
-            self.reporter
+            reporter
                 .report(&case_assess_vec)
                 .await
-                .map_err(|e| Report(e))?;
+                .map_err(|e| Reporter("stage".to_string(), stage_id.to_string(), e))?;
         }
     }
 

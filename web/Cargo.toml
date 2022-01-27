@@ -16,11 +16,10 @@ repository = "https://github.com/bit-ranger/chord"
 
 [dependencies]
 chord-core = { path = "../core", version = "0.1.17" }
-serde = { version = "1.0" }
+chord-util = { path = "../util", version = "0.1.17" }
 chord-flow = { path = "../flow", version = "0.1.17" }
 chord-input = { path = "../input", version = "0.1.17" }
-chord-output = { path = "../output", version = "0.1.17", features = ["report_csv"] }
-chord-util = { path = "../util", version = "0.1.17" }
+serde = { version = "1.0" }
 async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
 time = "0.1.42"
 futures = "0.3.13"

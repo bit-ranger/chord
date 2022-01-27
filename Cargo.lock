@@ -732,7 +732,6 @@ dependencies = [
  "chord-core",
  "chord-flow",
  "chord-input",
- "chord-output",
  "chord-util",
  "dirs",
  "flume",

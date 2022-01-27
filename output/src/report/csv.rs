@@ -9,7 +9,7 @@ use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 use futures::StreamExt;
-use log::error;
+use log::warn;
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
@@ -21,7 +21,6 @@ use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
 
 use crate::report::Factory;
-use crate::report::ReportError::ConfInvalid;
 
 pub struct ReportFactory {
     dir: PathBuf,
@@ -35,24 +34,6 @@ impl Factory for ReportFactory {
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
     ) -> Result<Box<dyn Report>, Error> {
-        let step_id_iter = flow
-            .stage_id_vec()
-            .into_iter()
-            .flat_map(|stage_id| flow.stage_step_id_vec(stage_id).into_iter());
-        for step_id in step_id_iter {
-            if let Some(then) = flow.step_then(step_id) {
-                for th in then {
-                    if th.goto().is_some() {
-                        error!(
-                            "goto detected in step {}, goto is incompatible with csv reporter",
-                            step_id
-                        );
-                        return Err(ConfInvalid("kind".to_string(), "csv".to_string()))?;
-                    }
-                }
-            }
-        }
-
         let factory = ReportFactory::create(self, task_id, flow).await?;
         Ok(Box::new(factory))
     }
@@ -101,9 +82,10 @@ pub struct Reporter {
     report_dir: PathBuf,
     task_id: Arc<dyn TaskId>,
     with_bom: bool,
-    stage_id: Option<String>,
+    stage_id: String,
     writer: Writer<std::fs::File>,
     flow: Arc<Flow>,
+    head: Vec<String>,
 }
 
 #[async_trait]
@@ -118,22 +100,11 @@ impl Report for Reporter {
         }
         // stage_id 变化了
         let stage_id = ca_vec[0].id().stage_id();
-        if self.stage_id.is_none() || self.stage_id.as_ref().unwrap().as_str() != stage_id {
-            //close old
-            self.writer.flush()?;
-
-            //create new
-            let report_file =
-                self.report_dir
-                    .join(format!("{}.{}.csv", self.task_id.task(), stage_id));
-            let mut writer: Writer<std::fs::File> = from_path(report_file, self.with_bom).await?;
-
-            writer.write_record(create_head(self.flow.stage_step_id_vec(stage_id)))?;
-            self.writer = writer;
+        if self.stage_id.is_empty() || self.stage_id.as_str() != stage_id {
+            self.stage_switch(stage_id).await?;
         }
 
-        let header = create_head(self.flow.stage_step_id_vec(stage_id));
-        return Ok(report(&mut self.writer, ca_vec, &header).await?);
+        return Ok(report(&mut self.writer, ca_vec, &self.head).await?);
     }
 
     async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
@@ -163,15 +134,53 @@ impl Reporter {
     ) -> Result<Reporter, Error> {
         let report_dir = PathBuf::from(report_dir.as_ref());
         let task_state_file = report_dir.join(format!("R.{}.csv", task_id.task()));
+
         let report = Reporter {
             report_dir,
             task_id,
             with_bom,
-            stage_id: None,
+            stage_id: String::new(),
             writer: from_path(task_state_file, with_bom).await?,
             flow,
+            head: vec![],
         };
         Ok(report)
+    }
+
+    async fn stage_switch(&mut self, stage_id: &str) -> Result<(), Error> {
+        //close old
+        self.writer.flush()?;
+
+        //create new
+        let report_file = self
+            .report_dir
+            .join(format!("{}.{}.csv", self.task_id.task(), stage_id));
+        let mut writer: Writer<std::fs::File> = from_path(report_file, self.with_bom).await?;
+
+        let report_step = {
+            let mut v = true;
+            for step_id in self.flow.stage_step_id_vec(stage_id) {
+                if let Some(then) = self.flow.step_then(step_id) {
+                    for th in then {
+                        if th.goto().is_some() {
+                            warn!("goto detected in step {}, step result ignored", step_id);
+                            v = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            v
+        };
+
+        self.head = if report_step {
+            create_head(self.flow.stage_step_id_vec(stage_id))
+        } else {
+            create_head(vec![])
+        };
+        writer.write_record(&self.head)?;
+        self.writer = writer;
+        Ok(())
     }
 }
 

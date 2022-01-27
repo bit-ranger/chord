@@ -19,7 +19,7 @@ let allTasks = [
     "sleep",
     "typecast",
     "z_advance/gen_dml",
-    // "z_advance/goto",
+    "z_advance/goto",
     "z_advance/iter_map",
     "z_advance/stage_case"
 ]
@@ -29,9 +29,6 @@ module.exports = (env) => {
     let enableTasks = allTasks;
     if (env["task"]) {
         let task = env["task"];
-        if (task.startsWith("/")) {
-
-        }
         enableTasks = allTasks.filter(t => t === task);
     }
 

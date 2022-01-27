@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use csv::{Reader, ReaderBuilder};
 
@@ -8,7 +9,6 @@ use chord_core::flow::Flow;
 use chord_core::input::{async_trait, Error, JobLoader, StageLoader, TaskLoader};
 use chord_core::task::TaskId;
 use chord_core::value::{Map, Value};
-use std::sync::Arc;
 
 pub struct CsvJobLoader {
     path: PathBuf,
@@ -34,28 +34,19 @@ impl JobLoader for CsvJobLoader {
             buf.push(p);
         }
 
-        let loader = CsvTaskLoader::new(task_id.clone(), flow, buf).await?;
+        let loader = CsvTaskLoader::new(flow, buf).await?;
         Ok(Box::new(loader))
     }
 }
 
 pub struct CsvTaskLoader {
-    task_id: Arc<dyn TaskId>,
     flow: Arc<Flow>,
     path: PathBuf,
 }
 
 impl CsvTaskLoader {
-    async fn new(
-        task_id: Arc<dyn TaskId>,
-        flow: Arc<Flow>,
-        path: PathBuf,
-    ) -> Result<CsvTaskLoader, Error> {
-        let loader = CsvTaskLoader {
-            task_id,
-            flow,
-            path,
-        };
+    async fn new(flow: Arc<Flow>, path: PathBuf) -> Result<CsvTaskLoader, Error> {
+        let loader = CsvTaskLoader { flow, path };
         Ok(loader)
     }
 }

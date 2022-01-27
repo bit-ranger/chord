@@ -9,12 +9,11 @@ use chord_action::FactoryComposite;
 use chord_core::task::TaskState;
 use chord_core::value::Value;
 use chord_input::load;
-use chord_output::report::ReportFactory;
+use chord_input::load::case::DefaultJobLoader;
+use chord_output::report::DefaultJobReporter;
 
 use crate::conf::Config;
 use crate::RunError::{InputNotDir, Logger, TaskErr, TaskFail};
-use chord_core::input::JobLoader;
-use chord_input::load::case::DefaultJobLoader;
 
 mod conf;
 mod job;
@@ -125,9 +124,10 @@ async fn run(
         .map_err(|e| RunError::Report(e))?;
     let job_loader = Arc::new(job_loader);
 
-    let job_reporter = ReportFactory::new(config.reporter(), job_name.as_str(), exec_id.as_str())
-        .await
-        .map_err(|e| RunError::Report(e))?;
+    let job_reporter =
+        DefaultJobReporter::new(config.reporter(), job_name.as_str(), exec_id.as_str())
+            .await
+            .map_err(|e| RunError::Report(e))?;
     let job_reporter = Arc::new(job_reporter);
 
     let log_file_path = config

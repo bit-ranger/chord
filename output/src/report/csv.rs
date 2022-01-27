@@ -14,13 +14,12 @@ use log::warn;
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
 use chord_core::output::Error;
+use chord_core::output::JobReporter;
 use chord_core::output::StageReporter;
 use chord_core::output::{async_trait, TaskReporter};
 use chord_core::step::StepState;
-use chord_core::task::{StageAssess, StageState, TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAssess, TaskAssess, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
-
-use chord_core::output::JobReporter;
 
 pub struct CsvJobReporter {
     dir: PathBuf,
@@ -71,30 +70,26 @@ impl CsvJobReporter {
 }
 
 pub struct CsvTaskReporter {
-    report_dir: PathBuf,
+    dir: PathBuf,
     task_id: Arc<dyn TaskId>,
     with_bom: bool,
-    stage_id: String,
-    writer: Writer<std::fs::File>,
     flow: Arc<Flow>,
 }
 
 impl CsvTaskReporter {
     pub async fn new<P: AsRef<Path>>(
-        report_dir: P,
+        dir: P,
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
         with_bom: bool,
     ) -> Result<CsvTaskReporter, Error> {
-        let report_dir = PathBuf::from(report_dir.as_ref());
-        let task_state_file = report_dir.join(format!("R.{}.csv", task_id.task()));
-
+        let dir = PathBuf::from(dir.as_ref());
+        let task_state_file = dir.join(format!("R.{}.csv", task_id.task()));
+        from_path(task_state_file, with_bom).await?;
         let report = CsvTaskReporter {
-            report_dir,
+            dir,
             task_id,
             with_bom,
-            stage_id: String::new(),
-            writer: from_path(task_state_file, with_bom).await?,
             flow,
         };
         Ok(report)
@@ -115,7 +110,7 @@ impl TaskReporter for CsvTaskReporter {
         Ok(Box::new(reporter))
     }
 
-    async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error> {
+    async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
         Ok(())
     }
 
@@ -126,11 +121,9 @@ impl TaskReporter for CsvTaskReporter {
             TaskState::Fail(_) => "F",
         };
 
-        let report_file = self
-            .report_dir
-            .join(format!("R.{}.csv", self.task_id.task()));
+        let report_file = self.dir.join(format!("R.{}.csv", self.task_id.task()));
         let report_file_new =
-            self.report_dir
+            self.dir
                 .join(format!("{}.{}.csv", task_state_view, self.task_id.task()));
         rename(report_file, report_file_new).await?;
         Ok(())
@@ -138,25 +131,20 @@ impl TaskReporter for CsvTaskReporter {
 }
 
 pub struct CsvStageReporter {
-    report_dir: PathBuf,
-    task_id: Arc<dyn TaskId>,
-    with_bom: bool,
-    stage_id: String,
     writer: Writer<std::fs::File>,
-    flow: Arc<Flow>,
     head: Vec<String>,
 }
 
 impl CsvStageReporter {
     pub async fn new<P: AsRef<Path>>(
-        report_dir: P,
+        dir: P,
         task_id: Arc<dyn TaskId>,
         stage_id: &str,
         flow: Arc<Flow>,
         with_bom: bool,
     ) -> Result<CsvStageReporter, Error> {
-        let report_dir = PathBuf::from(report_dir.as_ref());
-        let report_file = report_dir.join(format!("{}.{}.csv", task_id.task(), stage_id));
+        let dir = PathBuf::from(dir.as_ref());
+        let report_file = dir.join(format!("{}.{}.csv", task_id.task(), stage_id));
         let mut writer: Writer<std::fs::File> = from_path(report_file, with_bom).await?;
 
         let report_step = {
@@ -182,15 +170,7 @@ impl CsvStageReporter {
         };
         writer.write_record(&head)?;
 
-        let report = CsvStageReporter {
-            report_dir,
-            task_id,
-            with_bom,
-            stage_id: stage_id.to_string(),
-            writer,
-            flow,
-            head,
-        };
+        let report = CsvStageReporter { writer, head };
         Ok(report)
     }
 }
@@ -208,7 +188,7 @@ impl StageReporter for CsvStageReporter {
         return Ok(report(&mut self.writer, ca_vec, &self.head).await?);
     }
 
-    async fn end(&mut self, stage_assess: &dyn StageAssess) -> Result<(), Error> {
+    async fn end(&mut self, _: &dyn StageAssess) -> Result<(), Error> {
         self.writer.flush()?;
         Ok(())
     }

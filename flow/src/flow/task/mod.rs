@@ -9,7 +9,7 @@ use chord_core::action::Action;
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
-use chord_core::input::{JobLoader, StageLoader, TaskLoader};
+use chord_core::input::{StageLoader, TaskLoader};
 use chord_core::output::Utc;
 use chord_core::output::{StageReporter, TaskReporter};
 use chord_core::step::{StepAssess, StepState};
@@ -119,7 +119,7 @@ impl TaskRunner {
         if let Err(e) = self.reporter.start(start).await {
             error!("task run Err {}", self.id);
             return Box::new(TaskAssessStruct::new(
-                self.id,
+                self.id.clone(),
                 start,
                 Utc::now(),
                 TaskState::Err(Box::new(Reporter(
@@ -192,7 +192,7 @@ impl TaskRunner {
 
                 match pre_assess.state() {
                     CaseState::Err(_) => {
-                        error!("task run Err {}", self.id);
+                        error!("task run Err {}", self.id.clone());
                         return Box::new(TaskAssessStruct::new(
                             self.id,
                             start,
@@ -204,7 +204,7 @@ impl TaskRunner {
                     CaseState::Fail(v) => {
                         error!("task run Err {}", self.id);
                         return Box::new(TaskAssessStruct::new(
-                            self.id,
+                            self.id.clone(),
                             start,
                             Utc::now(),
                             TaskState::Err(Box::new(PreFail(
@@ -257,7 +257,7 @@ impl TaskRunner {
         if let Err(e) = self.reporter.end(&task_assess).await {
             error!("task run Err {}", self.id);
             return Box::new(TaskAssessStruct::new(
-                self.id,
+                self.id.clone(),
                 start,
                 Utc::now(),
                 TaskState::Err(Box::new(Reporter(
@@ -385,7 +385,7 @@ impl TaskRunner {
                         StageState::Fail(c.clone()),
                     )
                 }
-                StageState::Err(e) => e?,
+                StageState::Err(_) => unreachable!(),
             }
         };
 
@@ -397,7 +397,7 @@ impl TaskRunner {
         match stage_assess.state() {
             StageState::Ok => Ok(()),
             StageState::Fail(_) => Ok(()),
-            StageState::Err(e) => e?,
+            StageState::Err(_) => unreachable!(),
         }
     }
 

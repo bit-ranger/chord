@@ -4,7 +4,7 @@ use async_std::sync::Arc;
 use async_trait::async_trait;
 
 use chord_core::flow::Flow;
-use chord_core::output::{Error, JobReporter, StageReporter};
+use chord_core::output::{Error, JobReporter, TaskReporter};
 use chord_core::task::TaskId;
 use chord_core::value::Value;
 use ReportError::*;
@@ -26,16 +26,16 @@ enum ReportError {
     ConfLostEntry(String),
 }
 
-pub struct ReportFactory {
+pub struct DefaultJobReporter {
     delegate: Box<dyn JobReporter>,
 }
 
-impl ReportFactory {
+impl DefaultJobReporter {
     pub async fn new(
         conf: Option<&Value>,
         name: &str,
         exec_id: &str,
-    ) -> Result<ReportFactory, Error> {
+    ) -> Result<DefaultJobReporter, Error> {
         match conf {
             None => {
                 return Err(Box::new(ConfLost));
@@ -61,14 +61,14 @@ impl ReportFactory {
                             v["with_bom"].as_bool().unwrap_or(true),
                         )
                         .await?;
-                        return Ok(ReportFactory {
+                        return Ok(DefaultJobReporter {
                             delegate: Box::new(factory),
                         });
                     }
                     #[cfg(feature = "report_webhook")]
                     "webhook" => {
                         let v = c[kind].borrow();
-                        let factory = webhook::ReportFactory::new(
+                        let factory = webhook::WebhookJobReporter::new(
                             v["url"]
                                 .as_str()
                                 .ok_or(ConfLostEntry("report.webhook.url".into()))?
@@ -77,7 +77,7 @@ impl ReportFactory {
                             exec_id.to_string(),
                         )
                         .await?;
-                        return Ok(ReportFactory {
+                        return Ok(DefaultJobReporter {
                             delegate: Box::new(factory),
                         });
                     }
@@ -91,12 +91,12 @@ impl ReportFactory {
 }
 
 #[async_trait]
-impl JobReporter for ReportFactory {
+impl JobReporter for DefaultJobReporter {
     async fn create(
         &self,
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
-    ) -> Result<Box<dyn StageReporter>, Error> {
+    ) -> Result<Box<dyn TaskReporter>, Error> {
         self.delegate.create(task_id, flow).await
     }
 }

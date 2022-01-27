@@ -15,7 +15,7 @@ use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::{json, to_value, Value};
 use chord_core::value::{Deserialize, Serialize};
 
-use crate::report::Factory;
+use chord_core::output::Factory;
 
 pub struct ReportFactory {
     url: String,

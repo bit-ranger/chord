@@ -20,7 +20,7 @@ use chord_core::step::StepState;
 use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
 
-use crate::report::Factory;
+use chord_core::output::Factory;
 
 pub struct ReportFactory {
     dir: PathBuf,

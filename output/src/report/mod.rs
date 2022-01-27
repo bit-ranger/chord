@@ -4,7 +4,7 @@ use async_std::sync::Arc;
 use async_trait::async_trait;
 
 use chord_core::flow::Flow;
-use chord_core::output::{Error, Report};
+use chord_core::output::{Error, Factory, Report};
 use chord_core::task::TaskId;
 use chord_core::value::Value;
 use ReportError::*;
@@ -24,15 +24,6 @@ enum ReportError {
 
     #[error("conf lost entry `{0}`")]
     ConfLostEntry(String),
-}
-
-#[async_trait]
-pub trait Factory: Sync + Send {
-    async fn create(
-        &self,
-        task_id: Arc<dyn TaskId>,
-        flow: Arc<Flow>,
-    ) -> Result<Box<dyn Report>, Error>;
 }
 
 pub struct ReportFactory {

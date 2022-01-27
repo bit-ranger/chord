@@ -10,12 +10,11 @@ use log::error;
 use log::trace;
 
 use chord_core::flow::{Flow, ID_PATTERN};
-use chord_core::output::{DateTime, Utc};
+use chord_core::output::{DateTime, Factory, Utc};
 use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::Value;
 use chord_flow::{FlowApp, TaskIdSimple};
 use chord_input::load;
-use chord_output::report::{Factory, ReportFactory};
 use Error::*;
 
 #[derive(thiserror::Error, Debug)]
@@ -44,7 +43,7 @@ pub enum Error {
 
 pub async fn run<P: AsRef<Path>>(
     app_ctx: Arc<dyn FlowApp>,
-    report_factory: Arc<ReportFactory>,
+    report_factory: Arc<dyn Factory>,
     exec_id: String,
     job_path: P,
 ) -> Result<Vec<Box<dyn TaskAssess>>, Error> {
@@ -78,7 +77,7 @@ pub async fn run<P: AsRef<Path>>(
 #[async_recursion]
 async fn job_path_run_recur(
     app_ctx: Arc<dyn FlowApp>,
-    report_factory: Arc<ReportFactory>,
+    report_factory: Arc<dyn Factory>,
     exec_id: String,
     root_path: PathBuf,
     job_sub_path: PathBuf,
@@ -206,7 +205,7 @@ async fn job_path_run_recur(
 
 async fn task_path_run_cast_vec(
     app_ctx: Arc<dyn FlowApp>,
-    report_factory: Arc<ReportFactory>,
+    report_factory: Arc<dyn Factory>,
     exec_id: String,
     root_path: PathBuf,
     task_sub_path: PathBuf,
@@ -223,7 +222,7 @@ async fn dir_is_task_path(root_path: PathBuf, sub_path: PathBuf) -> bool {
 
 async fn task_path_run(
     app_ctx: Arc<dyn FlowApp>,
-    report_factory: Arc<ReportFactory>,
+    report_factory: Arc<dyn Factory>,
     exec_id: String,
     root_path: PathBuf,
     task_sub_path: PathBuf,
@@ -266,7 +265,7 @@ async fn task_path_run0<P: AsRef<Path>>(
     task_path: P,
     task_id: Arc<TaskIdSimple>,
     app_ctx: Arc<dyn FlowApp>,
-    report_factory: Arc<ReportFactory>,
+    report_factory: Arc<dyn Factory>,
 ) -> Result<Box<dyn TaskAssess>, Error> {
     let task_path = Path::new(task_path.as_ref());
     let flow = load::flow::load(task_path, "task")

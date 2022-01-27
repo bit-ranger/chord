@@ -311,7 +311,7 @@ impl TaskRunner {
         self.step_vec = Arc::new(TailDropVec::from(action_vec));
 
         let duration = self.flow.stage_duration(stage_id);
-        let srr = self.stage_round_run(stage_id);
+        let srr = self.stage_run_round(stage_id);
         match timeout(duration, srr).await {
             Ok(r) => r?,
             Err(_) => (),
@@ -319,13 +319,13 @@ impl TaskRunner {
         return Ok(());
     }
 
-    async fn stage_round_run(&mut self, stage_id: &str) -> Result<(), Error> {
+    async fn stage_run_round(&mut self, stage_id: &str) -> Result<(), Error> {
         let concurrency = self.flow.stage_concurrency(stage_id);
         let round_max = self.flow.stage_round(stage_id);
         let mut round_count = 0;
         loop {
             self.stage_round_no = round_count;
-            self.stage_once_run_remaining(stage_id, concurrency).await?;
+            self.stage_run_once(stage_id, concurrency).await?;
             round_count += 1;
             if round_count >= round_max {
                 break;
@@ -334,11 +334,7 @@ impl TaskRunner {
         return Ok(());
     }
 
-    async fn stage_once_run_remaining(
-        &mut self,
-        stage_id: &str,
-        concurrency: usize,
-    ) -> Result<(), Error> {
+    async fn stage_run_once(&mut self, stage_id: &str, concurrency: usize) -> Result<(), Error> {
         let start = Utc::now();
 
         let mut loader = self
@@ -359,11 +355,11 @@ impl TaskRunner {
             .map_err(|e| Reporter("stage".to_string(), stage_id.to_string(), e))?;
 
         let result = self
-            .stage_io_run_remaining(stage_id, loader.as_mut(), reporter.as_mut(), concurrency)
+            .stage_run_io(stage_id, loader.as_mut(), reporter.as_mut(), concurrency)
             .await;
 
         let stage_assess = if let Err(e) = result {
-            error!("task run Err {}", self.id);
+            error!("stage run Err {}", self.id);
             StageAssessStruct::new(
                 stage_id.to_string(),
                 start,
@@ -401,7 +397,7 @@ impl TaskRunner {
         }
     }
 
-    async fn stage_io_run_remaining(
+    async fn stage_run_io(
         &mut self,
         stage_id: &str,
         loader: &mut dyn StageLoader,
@@ -419,13 +415,13 @@ impl TaskRunner {
                 return if load_times == 1 {
                     Err(CaseEmpty(stage_id.to_string()))
                 } else {
-                    trace!("task run exhaust data {}, {}", self.id, stage_id);
+                    trace!("stage exhaust data {}, {}", self.id, stage_id);
                     Ok(())
                 };
             }
 
             trace!(
-                "task run load data {}, {}, {}",
+                "stage load data {}, {}, {}",
                 self.id,
                 stage_id,
                 case_data_vec.len()

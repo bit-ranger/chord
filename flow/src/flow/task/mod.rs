@@ -9,7 +9,7 @@ use chord_core::action::Action;
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
-use chord_core::input::CaseStore;
+use chord_core::input::{JobLoader, TaskLoader};
 use chord_core::output::Report;
 use chord_core::output::Utc;
 use chord_core::step::{StepAssess, StepState};
@@ -68,8 +68,8 @@ pub struct TaskRunner {
     task_state: TaskState,
 
     def_ctx: Option<Arc<Map>>,
-    assess_report: Box<dyn Report>,
-    case_store: Box<dyn CaseStore>,
+    reporter: Box<dyn Report>,
+    loader: Box<dyn TaskLoader>,
     id: Arc<TaskIdSimple>,
     flow_app: Arc<dyn FlowApp>,
     flow: Arc<Flow>,
@@ -77,8 +77,8 @@ pub struct TaskRunner {
 
 impl TaskRunner {
     pub fn new(
-        case_store: Box<dyn CaseStore>,
-        assess_report: Box<dyn Report>,
+        loader: Box<dyn TaskLoader>,
+        reporter: Box<dyn Report>,
         flow_app: Arc<dyn FlowApp>,
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
@@ -97,8 +97,8 @@ impl TaskRunner {
             task_state: TaskState::Ok,
 
             def_ctx: None,
-            assess_report,
-            case_store,
+            reporter,
+            loader,
             id,
             flow_app,
             flow,
@@ -115,7 +115,7 @@ impl TaskRunner {
         trace!("task run start {}", self.id);
         let start = Utc::now();
 
-        if let Err(e) = self.assess_report.start(start).await {
+        if let Err(e) = self.reporter.start(start).await {
             error!("task run Err {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id,
@@ -249,7 +249,7 @@ impl TaskRunner {
             }
         };
 
-        if let Err(e) = self.assess_report.end(&task_assess).await {
+        if let Err(e) = self.reporter.end(&task_assess).await {
             error!("task run Err {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id,
@@ -331,15 +331,14 @@ impl TaskRunner {
         stage_id: &str,
         concurrency: usize,
     ) -> Result<(), Error> {
-        let case_name = self.flow.stage_case_name(stage_id);
-        let mut data_load = self
-            .case_store
-            .create(case_name)
+        let mut loader = self
+            .loader
+            .create(stage_id)
             .await
             .map_err(|e| Load(stage_id.to_string(), e))?;
         let mut load_times = 0;
         loop {
-            let case_data_vec: Vec<(String, Value)> = data_load
+            let case_data_vec: Vec<(String, Value)> = loader
                 .load(concurrency)
                 .await
                 .map_err(|e| Load(stage_id.to_string(), e))?;
@@ -379,7 +378,7 @@ impl TaskRunner {
                 self.stage_state = TaskState::Fail(cause.clone());
                 self.task_state = TaskState::Fail(cause);
             }
-            self.assess_report
+            self.reporter
                 .report(&case_assess_vec)
                 .await
                 .map_err(|e| Report(e))?;

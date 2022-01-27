@@ -1,2 +1,2 @@
 mod csv;
-pub use self::csv::Store;
+pub use self::csv::CsvJobLoader as DefaultJobLoader;

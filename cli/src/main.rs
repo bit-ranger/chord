@@ -13,6 +13,8 @@ use chord_output::report::ReportFactory;
 
 use crate::conf::Config;
 use crate::RunError::{InputNotDir, Logger, TaskErr, TaskFail};
+use chord_core::input::JobLoader;
+use chord_input::load::case::DefaultJobLoader;
 
 mod conf;
 mod job;
@@ -118,10 +120,15 @@ async fn run(
         println!("config loaded: {}", config);
     }
 
-    let report_factory = ReportFactory::new(config.report(), job_name.as_str(), exec_id.as_str())
+    let job_loader = DefaultJobLoader::new(config.loader(), input_dir.clone())
         .await
         .map_err(|e| RunError::Report(e))?;
-    let report_factory = Arc::new(report_factory);
+    let job_loader = Arc::new(job_loader);
+
+    let job_reporter = ReportFactory::new(config.reporter(), job_name.as_str(), exec_id.as_str())
+        .await
+        .map_err(|e| RunError::Report(e))?;
+    let job_reporter = Arc::new(job_reporter);
 
     let log_file_path = config
         .log_dir()
@@ -138,9 +145,15 @@ async fn run(
             .map_err(|e| RunError::ActionFactory(e))?,
     ))
     .await;
-    let task_state_vec = job::run(app_ctx, report_factory, exec_id.clone(), input_dir)
-        .await
-        .map_err(|e| RunError::JobErr(e))?;
+    let task_state_vec = job::run(
+        app_ctx,
+        job_loader,
+        job_reporter,
+        exec_id.clone(),
+        input_dir,
+    )
+    .await
+    .map_err(|e| RunError::JobErr(e))?;
     logger::terminal(log_handler).await;
     let et = task_state_vec.iter().filter(|t| !t.state().is_ok()).nth(0);
     return match et {

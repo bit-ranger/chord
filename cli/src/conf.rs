@@ -27,7 +27,7 @@ impl Config {
                 }
             },
 
-            "report": {
+            "reporter": {
                 "kind": "csv",
                 "csv": {
                     "dir": home_dir.join("output").to_str().unwrap().to_string()
@@ -93,8 +93,12 @@ impl Config {
         self.conf.get("action")
     }
 
-    pub fn report(&self) -> Option<&Value> {
-        self.conf.get("report")
+    pub fn loader(&self) -> Option<&Value> {
+        self.conf.get("loader")
+    }
+
+    pub fn reporter(&self) -> Option<&Value> {
+        self.conf.get("reporter")
     }
 }
 

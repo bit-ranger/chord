@@ -2,21 +2,20 @@ const path = require("path")
 
 let conf = {
     version: "0.0.1",
+    pre: {
+        step: {}
+    },
     stage: {
         smoking: {
-            concurrency: 1,
             step: {}
         }
     }
 };
 
 module.exports = () => conf;
-let step = conf.stage.smoking.step;
 
 let prefix = path.join(__dirname, "nodejs-example");
-
-step.step1 = {
-
+conf.pre.step.install = {
     program: {
         cmd: [
             "npm",
@@ -28,8 +27,9 @@ step.step1 = {
     }
 }
 
+let step = conf.stage.smoking.step;
 
-step.step2 = {
+step.step1 = {
     let: {
         case: "{{obj case}}"
     },

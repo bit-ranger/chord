@@ -27,7 +27,7 @@ step.set_redis = {
     }
 }
 
-step.et_redis = {
+step.get_redis = {
     let: {
         arg0: "{{case.arg0}}"
     },

@@ -24,7 +24,7 @@ pub struct WebhookJobReporter {
 
 #[async_trait]
 impl JobReporter for WebhookJobReporter {
-    async fn create(
+    async fn task(
         &self,
         task_id: Arc<dyn TaskId>,
         _: Arc<Flow>,
@@ -81,7 +81,7 @@ impl WebhookTaskReporter {
 
 #[async_trait]
 impl TaskReporter for WebhookTaskReporter {
-    async fn create(&self, _: &str) -> Result<Box<dyn StageReporter>, Error> {
+    async fn stage(&self, _: &str) -> Result<Box<dyn StageReporter>, Error> {
         let reporter =
             WebhookStageReporter::new(self.client.clone(), self.url.clone(), self.index.clone())
                 .await?;

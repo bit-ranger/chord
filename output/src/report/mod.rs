@@ -92,11 +92,11 @@ impl DefaultJobReporter {
 
 #[async_trait]
 impl JobReporter for DefaultJobReporter {
-    async fn create(
+    async fn task(
         &self,
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
     ) -> Result<Box<dyn TaskReporter>, Error> {
-        self.delegate.create(task_id, flow).await
+        self.delegate.task(task_id, flow).await
     }
 }

@@ -24,7 +24,7 @@ impl CsvJobLoader {
 
 #[async_trait]
 impl JobLoader for CsvJobLoader {
-    async fn create(
+    async fn task(
         &self,
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
@@ -53,7 +53,7 @@ impl CsvTaskLoader {
 
 #[async_trait]
 impl TaskLoader for CsvTaskLoader {
-    async fn create(&self, stage_id: &str) -> Result<Box<dyn StageLoader>, Error> {
+    async fn stage(&self, stage_id: &str) -> Result<Box<dyn StageLoader>, Error> {
         let case_name = self.flow.stage_case_name(stage_id);
         let path = self.path.join(format!("{}.csv", case_name));
         let loader = CsvStageLoader::new(path).await?;

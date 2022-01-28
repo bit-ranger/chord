@@ -339,13 +339,13 @@ impl TaskRunner {
 
         let mut loader = self
             .loader
-            .create(stage_id)
+            .stage(stage_id)
             .await
             .map_err(|e| Loader("stage".to_string(), stage_id.to_string(), e))?;
 
         let mut reporter = self
             .reporter
-            .create(stage_id)
+            .stage(stage_id)
             .await
             .map_err(|e| Reporter("stage".to_string(), stage_id.to_string(), e))?;
 

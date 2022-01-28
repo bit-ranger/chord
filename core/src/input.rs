@@ -9,7 +9,7 @@ pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
 #[async_trait]
 pub trait JobLoader: Sync + Send {
-    async fn create(
+    async fn task(
         &self,
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
@@ -18,7 +18,7 @@ pub trait JobLoader: Sync + Send {
 
 #[async_trait]
 pub trait TaskLoader: Sync + Send {
-    async fn create(&self, stage_id: &str) -> Result<Box<dyn StageLoader>, Error>;
+    async fn stage(&self, stage_id: &str) -> Result<Box<dyn StageLoader>, Error>;
 }
 
 #[async_trait]

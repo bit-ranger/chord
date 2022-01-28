@@ -305,13 +305,13 @@ async fn task_path_run0<P: AsRef<Path>>(
 
     //loader
     let loader = job_loader
-        .create(task_id.clone(), flow.clone())
+        .task(task_id.clone(), flow.clone())
         .await
         .map_err(|e| TaskCase(task_id.task().to_string(), e))?;
 
     //reporter
     let reporter = job_reporter
-        .create(task_id.clone(), flow.clone())
+        .task(task_id.clone(), flow.clone())
         .await
         .map_err(|e| Report(task_id.task().to_string(), e))?;
 

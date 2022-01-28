@@ -28,7 +28,7 @@ pub struct CsvJobReporter {
 
 #[async_trait]
 impl JobReporter for CsvJobReporter {
-    async fn create(
+    async fn task(
         &self,
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
@@ -98,7 +98,7 @@ impl CsvTaskReporter {
 
 #[async_trait]
 impl TaskReporter for CsvTaskReporter {
-    async fn create(&self, stage_id: &str) -> Result<Box<dyn StageReporter>, Error> {
+    async fn stage(&self, stage_id: &str) -> Result<Box<dyn StageReporter>, Error> {
         let reporter = CsvStageReporter::new(
             self.dir.clone(),
             self.task_id.clone(),

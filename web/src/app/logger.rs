@@ -73,18 +73,13 @@ impl log::Log for ChannelLogger {
             let date = strftime("%F %T", &now).unwrap();
             let ms = now.tm_nsec / 1000000;
 
-            let ctx_id = chord_flow::CTX_ID
-                .try_with(|c| c.borrow().clone())
-                .unwrap_or("".to_owned());
-
             let data = format!(
-                "{}.{:03}  {:<5} {:<5} --- {:<30} : [{}] {}\n",
+                "{}.{:03}  {:<5} {:<5} --- {:<30} : {}\n",
                 date,
                 ms,
                 record.level(),
                 std::process::id(),
                 format!("{}:{}", record.target(), record.line().unwrap_or(0)),
-                ctx_id,
                 record.args()
             );
 

@@ -115,8 +115,10 @@ impl StageLoader for CsvStageLoader {
                     let last_page = result.clone();
                     for i in 0..size - result.len() {
                         let offset = i % last_page.len();
-                        let fake_row =
-                            ((self.row_num + i).to_string(), last_page[offset].1.clone());
+                        let fake_row = (
+                            (self.row_num + 1 + i).to_string(),
+                            last_page[offset].1.clone(),
+                        );
                         result.push(fake_row);
                     }
                 }

@@ -111,10 +111,13 @@ impl StageLoader for CsvStageLoader {
 
         if (!result.is_empty()) && result.len() < size {
             match self.load_strategy.as_str() {
-                "fix_size_repeat_last" => {
-                    let last = result.last().unwrap().clone();
-                    for _ in 0..size - result.len() {
-                        result.push(last.clone());
+                "fix_size_repeat_last_page" => {
+                    let last_page = result.clone();
+                    for i in 0..size - result.len() {
+                        let offset = i % last_page.len();
+                        let fake_row =
+                            ((self.row_num + i).to_string(), last_page[offset].1.clone());
+                        result.push(fake_row);
                     }
                 }
                 _ => {}

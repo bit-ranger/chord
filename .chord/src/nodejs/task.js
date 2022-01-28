@@ -4,6 +4,7 @@ let conf = {
     version: "0.0.1",
     stage: {
         smoking: {
+            concurrency: 1,
             step: {}
         }
     }

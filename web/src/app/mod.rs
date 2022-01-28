@@ -9,7 +9,6 @@ use tide::{Request, Response};
 use validator::{ValidationErrors, ValidationErrorsKind};
 
 use chord_core::value::Value;
-use chord_input::load;
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;
@@ -20,7 +19,7 @@ mod logger;
 #[derive(thiserror::Error)]
 pub enum Error {
     #[error("config error:\n{0}")]
-    Config(load::conf::Error),
+    Config(chord_input::layout::Error),
 
     #[error("log error:\n{0}")]
     Logger(logger::Error),

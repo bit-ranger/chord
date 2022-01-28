@@ -8,8 +8,7 @@ use structopt::StructOpt;
 use chord_action::FactoryComposite;
 use chord_core::task::TaskState;
 use chord_core::value::Value;
-use chord_input::load;
-use chord_input::load::case::DefaultJobLoader;
+use chord_input::load::DefaultJobLoader;
 use chord_output::report::DefaultJobReporter;
 
 use crate::conf::Config;
@@ -51,7 +50,7 @@ enum RunError {
     InputNotDir(String),
 
     #[error("config error:\n{0}")]
-    Config(load::conf::Error),
+    Config(chord_input::layout::Error),
 
     #[error("report error:\n{0}")]
     Report(chord_core::output::Error),
@@ -106,8 +105,8 @@ async fn run(
         .map(|p| PathBuf::from(p))
         .unwrap_or_else(|| PathBuf::from(dirs::home_dir().unwrap().join(".chord").join("conf")));
 
-    let conf_data = if load::conf::exists(conf_dir_path.as_path(), "cmd").await {
-        load::conf::load(conf_dir_path.as_path(), "cmd")
+    let conf_data = if chord_input::layout::exists(conf_dir_path.as_path(), "cmd").await {
+        chord_input::layout::load(conf_dir_path.as_path(), "cmd")
             .await
             .map_err(|e| RunError::Config(e))?
     } else {

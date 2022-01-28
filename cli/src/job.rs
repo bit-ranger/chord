@@ -15,7 +15,6 @@ use chord_core::output::{DateTime, JobReporter, Utc};
 use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::Value;
 use chord_flow::{FlowApp, TaskIdSimple};
-use chord_input::load;
 use Error::*;
 
 #[derive(thiserror::Error, Debug)]
@@ -27,10 +26,10 @@ pub enum Error {
     JobDir(String, std::io::Error),
 
     #[error("job file error: {0}\n{1}")]
-    JobFile(String, load::conf::Error),
+    JobFile(String, chord_input::layout::Error),
 
     #[error("task file error: {0}\n{1}")]
-    TaskFile(String, load::flow::Error),
+    TaskFile(String, chord_input::flow::Error),
 
     #[error("task flow error: {0}\n{1}")]
     TaskFlow(String, chord_core::flow::Error),
@@ -91,8 +90,8 @@ async fn job_path_run_recur(
     let job_path_str = job_path.to_str().unwrap();
     trace!("job path start {}", job_path_str);
 
-    let ctrl_data = if load::conf::exists(&job_path, "chord").await {
-        load::conf::load(&job_path, "chord")
+    let ctrl_data = if chord_input::layout::exists(&job_path, "chord").await {
+        chord_input::layout::load(&job_path, "chord")
             .await
             .map_err(|e| JobFile(job_path.to_str().unwrap().to_string(), e))?
     } else {
@@ -235,7 +234,7 @@ async fn task_path_run_cast_vec(
 
 async fn dir_is_task_path(root_path: PathBuf, sub_path: PathBuf) -> bool {
     let task_path = root_path.join(sub_path);
-    load::flow::exists(task_path, "task").await
+    chord_input::flow::exists(task_path, "task").await
 }
 
 async fn task_path_run(
@@ -295,7 +294,7 @@ async fn task_path_run0<P: AsRef<Path>>(
     job_reporter: Arc<dyn JobReporter>,
 ) -> Result<Box<dyn TaskAssess>, Error> {
     let task_path = Path::new(task_path.as_ref());
-    let flow = load::flow::load(task_path, "task")
+    let flow = chord_input::flow::load(task_path, "task")
         .await
         .map_err(|e| TaskFile(task_path.to_str().unwrap().to_string(), e))?;
     let flow = Flow::new(flow, task_path)

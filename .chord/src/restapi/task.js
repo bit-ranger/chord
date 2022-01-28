@@ -7,6 +7,7 @@ let conf = {
         smoking: {
             round: 1,
             duration: 30,
+            concurrency: 1,
             step: {}
         }
     }
@@ -15,7 +16,7 @@ let conf = {
 module.exports = () => conf;
 let url_root = "http://127.0.0.1:9200";
 
-let step = conf.pre.step;
+let step = conf.stage.smoking.step;
 
 step.del_idx = {
 
@@ -98,8 +99,6 @@ step.wait = {
     sleep: 9
 }
 
-
-step = conf.stage.smoking.step;
 
 step.search = {
     let: {

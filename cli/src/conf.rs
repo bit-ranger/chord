@@ -26,7 +26,12 @@ impl Config {
                     "chord": "trace"
                 }
             },
-
+            "loader": {
+                "kind": "csv",
+                "csv": {
+                    "load_strategy": "actual"
+                }
+            },
             "reporter": {
                 "kind": "csv",
                 "csv": {

@@ -169,13 +169,11 @@ impl Flow {
         self._stage_id_vec().unwrap()
     }
 
-    pub fn stage_case_name<'a, 's>(&'s self, stage_id: &'a str) -> &'a str
+    pub fn stage_loader<'a, 's>(&'s self, stage_id: &'a str) -> &'a Value
     where
         's: 'a,
     {
-        self.flow["stage"][stage_id]["case"]["name"]
-            .as_str()
-            .unwrap_or(stage_id)
+        &self.flow["stage"][stage_id]["loader"]
     }
 
     pub fn stage_concurrency(&self, stage_id: &str) -> usize {
@@ -276,7 +274,7 @@ impl Flow {
     fn _stage_check(&self, stage_id: &str) -> Result<(), Error> {
         let enable_keys = vec![
             "step",
-            "case",
+            "loader",
             "concurrency",
             "round",
             "duration",

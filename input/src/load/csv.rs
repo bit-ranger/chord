@@ -14,14 +14,14 @@ static LOAD_STRATEGY_DEFAULT: &str = "actual";
 
 pub struct CsvJobLoader {
     path: PathBuf,
-    load_strategy: String,
+    strategy: String,
 }
 
 impl CsvJobLoader {
     pub async fn new<P: AsRef<Path>>(conf: Option<&Value>, path: P) -> Result<CsvJobLoader, Error> {
         let ls = conf
             .map(|c| {
-                c["csv"]["load_strategy"]
+                c["csv"]["strategy"]
                     .as_str()
                     .unwrap_or(LOAD_STRATEGY_DEFAULT)
             })
@@ -29,7 +29,7 @@ impl CsvJobLoader {
 
         Ok(CsvJobLoader {
             path: path.as_ref().to_path_buf(),
-            load_strategy: ls.to_string(),
+            strategy: ls.to_string(),
         })
     }
 }
@@ -46,7 +46,7 @@ impl JobLoader for CsvJobLoader {
             buf.push(p);
         }
 
-        let loader = CsvTaskLoader::new(flow, buf, self.load_strategy.clone()).await?;
+        let loader = CsvTaskLoader::new(flow, buf, self.strategy.clone()).await?;
         Ok(Box::new(loader))
     }
 }
@@ -54,19 +54,15 @@ impl JobLoader for CsvJobLoader {
 pub struct CsvTaskLoader {
     flow: Arc<Flow>,
     path: PathBuf,
-    load_strategy: String,
+    strategy: String,
 }
 
 impl CsvTaskLoader {
-    async fn new(
-        flow: Arc<Flow>,
-        path: PathBuf,
-        load_strategy: String,
-    ) -> Result<CsvTaskLoader, Error> {
+    async fn new(flow: Arc<Flow>, path: PathBuf, strategy: String) -> Result<CsvTaskLoader, Error> {
         let loader = CsvTaskLoader {
             flow,
             path,
-            load_strategy,
+            strategy,
         };
         Ok(loader)
     }
@@ -75,9 +71,12 @@ impl CsvTaskLoader {
 #[async_trait]
 impl TaskLoader for CsvTaskLoader {
     async fn stage(&self, stage_id: &str) -> Result<Box<dyn StageLoader>, Error> {
-        let case_name = self.flow.stage_case_name(stage_id);
-        let path = self.path.join(format!("{}.csv", case_name));
-        let loader = CsvStageLoader::new(path, self.load_strategy.clone()).await?;
+        let path = self.path.join(format!("{}.csv", stage_id));
+
+        let strategy = self.flow.stage_loader(stage_id)["strategy"]
+            .as_str()
+            .unwrap_or(self.strategy.as_str());
+        let loader = CsvStageLoader::new(path, strategy.to_string()).await?;
         Ok(Box::new(loader))
     }
 }
@@ -85,15 +84,15 @@ impl TaskLoader for CsvTaskLoader {
 struct CsvStageLoader {
     row_num: usize,
     reader: Reader<File>,
-    load_strategy: String,
+    strategy: String,
 }
 
 impl CsvStageLoader {
-    async fn new<P: AsRef<Path>>(path: P, load_strategy: String) -> Result<CsvStageLoader, Error> {
+    async fn new<P: AsRef<Path>>(path: P, strategy: String) -> Result<CsvStageLoader, Error> {
         let loader = CsvStageLoader {
             row_num: 1,
             reader: from_path(path.as_ref()).await?,
-            load_strategy,
+            strategy,
         };
         Ok(loader)
     }
@@ -110,7 +109,7 @@ impl StageLoader for CsvStageLoader {
         }
 
         if (!result.is_empty()) && result.len() < size {
-            match self.load_strategy.as_str() {
+            match self.strategy.as_str() {
                 "fix_size_repeat_last_page" => {
                     let last_page = result.clone();
                     for i in 0..size - result.len() {

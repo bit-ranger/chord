@@ -2,6 +2,9 @@ let conf = {
     version: "0.0.1",
     stage: {
         smoking: {
+            loader: {
+                strategy: "fix_size_repeat_last_page"
+            },
             step: {}
         }
     }

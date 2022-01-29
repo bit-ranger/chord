@@ -8,6 +8,9 @@ let conf = {
             round: 1,
             duration: 30,
             concurrency: 1,
+            loader: {
+                strategy: "fix_size_repeat_last_page"
+            },
             step: {}
         }
     }

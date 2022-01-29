@@ -9,7 +9,7 @@ use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 use futures::StreamExt;
-use log::warn;
+use log::info;
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
@@ -85,7 +85,7 @@ impl CsvTaskReporter {
     ) -> Result<CsvTaskReporter, Error> {
         let dir = PathBuf::from(dir.as_ref());
         let task_state_file = dir.join(format!("R.{}.csv", task_id.task()));
-        from_path(task_state_file, with_bom).await?;
+        from_path(task_state_file, with_bom, false).await?;
         let report = CsvTaskReporter {
             dir,
             task_id,
@@ -143,17 +143,13 @@ impl CsvStageReporter {
         flow: Arc<Flow>,
         with_bom: bool,
     ) -> Result<CsvStageReporter, Error> {
-        let dir = PathBuf::from(dir.as_ref());
-        let report_file = dir.join(format!("{}.{}.csv", task_id.task(), stage_id));
-        let mut writer: Writer<std::fs::File> = from_path(report_file, with_bom).await?;
-
-        let report_step = {
+        let fixed_step = {
             let mut v = true;
             for step_id in flow.stage_step_id_vec(stage_id) {
                 if let Some(then) = flow.step_then(step_id) {
                     for th in then {
                         if th.goto().is_some() {
-                            warn!("goto detected in step {}, step result ignored", step_id);
+                            info!("step goto detected {}, result will be flexible", step_id);
                             v = false;
                             break;
                         }
@@ -163,7 +159,12 @@ impl CsvStageReporter {
             v
         };
 
-        let head = if report_step {
+        let dir = PathBuf::from(dir.as_ref());
+        let report_file = dir.join(format!("{}.{}.csv", task_id.task(), stage_id));
+        let mut writer: Writer<std::fs::File> =
+            from_path(report_file, with_bom, !fixed_step).await?;
+
+        let head = if fixed_step {
             create_head(flow.stage_step_id_vec(stage_id))
         } else {
             create_head(vec![])
@@ -197,12 +198,15 @@ impl StageReporter for CsvStageReporter {
 async fn from_path<P: AsRef<Path>>(
     path: P,
     with_bom: bool,
+    flexible: bool,
 ) -> Result<Writer<std::fs::File>, Error> {
     let mut file = std::fs::File::create(path.as_ref().to_str().unwrap())?;
     if with_bom {
         file.write_all("\u{feff}".as_bytes())?;
     }
-    Ok(csv::WriterBuilder::new().from_writer(file))
+    Ok(csv::WriterBuilder::new()
+        .flexible(flexible)
+        .from_writer(file))
 }
 
 fn create_head(step_id_vec: Vec<&str>) -> Vec<String> {
@@ -304,10 +308,6 @@ fn to_value_vec(ca: &dyn CaseAssess, header: &Vec<String>) -> Vec<String> {
         for _ in 0..vacancy {
             value_vec.push(String::new());
         }
-    }
-
-    if value_vec.len() > header.len() {
-        let _ = value_vec.split_off(header.len());
     }
 
     value_vec

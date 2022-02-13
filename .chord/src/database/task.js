@@ -1,4 +1,4 @@
-let url = "mysql://root:example@127.0.0.1:3306/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai"
+let url = "mysql://root:example@10.10.139.79:3306/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai"
 
 let conf = {
     version: "0.0.1",
@@ -15,12 +15,12 @@ let step = conf.stage.smoking.step;
 step.step1 = {
     let: {
         url: url,
-        user: "{{case.user}}"
+        db: "{{case.db}}"
     },
 
     database: {
         url: "{{url}}",
-        sql: "SELECT * FROM user WHERE user = '{{user}}'"
+        sql: "SELECT * FROM db where Db='{{db}}'"
     },
-    assert: "(eq value.records.0.User user)"
+    assert: "(eq value.records.0.Db db)"
 }

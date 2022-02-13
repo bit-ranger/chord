@@ -13,6 +13,7 @@ use chord_input::load::DefaultJobLoader;
 use chord_output::report::DefaultJobReporter;
 
 use crate::conf::Config;
+use crate::job::dir_is_task_path;
 use crate::RunError::{InputNotDir, Logger, TaskErr, TaskFail};
 
 mod conf;
@@ -128,7 +129,8 @@ async fn run(
         .await
         .map_err(|e| Logger(e))?;
 
-    let job_loader = DefaultJobLoader::new(config.loader(), input_dir.clone())
+    let path_is_task = dir_is_task_path(input_dir.to_path_buf()).await;
+    let job_loader = DefaultJobLoader::new(config.loader(), input_dir.clone(), path_is_task)
         .await
         .map_err(|e| RunError::Report(e))?;
     let job_loader = Arc::new(job_loader);
@@ -151,6 +153,7 @@ async fn run(
         job_reporter,
         exec_id.clone(),
         input_dir,
+        path_is_task,
     )
     .await
     .map_err(|e| RunError::JobErr(e))?;

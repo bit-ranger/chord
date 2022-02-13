@@ -48,9 +48,9 @@ pub async fn run<P: AsRef<Path>>(
     job_reporter: Arc<dyn JobReporter>,
     exec_id: String,
     job_path: P,
+    job_path_is_task: bool,
 ) -> Result<Vec<Box<dyn TaskAssess>>, Error> {
-    let task_state_vec = if dir_is_task_path(job_path.as_ref().to_path_buf(), PathBuf::new()).await
-    {
+    let task_state_vec = if job_path_is_task {
         task_path_run_cast_vec(
             app_ctx,
             job_loader,
@@ -132,7 +132,7 @@ async fn job_path_run_recur(
     for sub_name in sub_name_vec {
         let child_sub_path = job_sub_path.join(sub_name.as_str());
         if serial {
-            if dir_is_task_path(root_path.clone(), child_sub_path.clone()).await {
+            if sub_dir_is_task_path(root_path.clone(), child_sub_path.clone()).await {
                 let asses = task_path_run(
                     app_ctx.clone(),
                     job_loader.clone(),
@@ -165,7 +165,7 @@ async fn job_path_run_recur(
             }
         } else {
             let mut futures = Vec::new();
-            if dir_is_task_path(root_path.clone(), child_sub_path.clone()).await {
+            if sub_dir_is_task_path(root_path.clone(), child_sub_path.clone()).await {
                 let jh = spawn(task_path_run_cast_vec(
                     app_ctx.clone(),
                     job_loader.clone(),
@@ -221,7 +221,11 @@ async fn task_path_run_cast_vec(
     ])
 }
 
-async fn dir_is_task_path(root_path: PathBuf, sub_path: PathBuf) -> bool {
+pub async fn dir_is_task_path(path: PathBuf) -> bool {
+    sub_dir_is_task_path(path, PathBuf::new()).await
+}
+
+async fn sub_dir_is_task_path(root_path: PathBuf, sub_path: PathBuf) -> bool {
     let task_path = root_path.join(sub_path);
     chord_input::flow::exists(task_path, "task").await
 }

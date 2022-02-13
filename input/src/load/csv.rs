@@ -16,10 +16,15 @@ static LOAD_STRATEGY_DEFAULT: &str = "actual";
 pub struct CsvJobLoader {
     path: PathBuf,
     strategy: String,
+    path_is_task: bool,
 }
 
 impl CsvJobLoader {
-    pub async fn new<P: AsRef<Path>>(conf: Option<&Value>, path: P) -> Result<CsvJobLoader, Error> {
+    pub async fn new<P: AsRef<Path>>(
+        conf: Option<&Value>,
+        path: P,
+        path_is_task: bool,
+    ) -> Result<CsvJobLoader, Error> {
         let ls = conf
             .map(|c| {
                 c["csv"]["strategy"]
@@ -31,6 +36,7 @@ impl CsvJobLoader {
         Ok(CsvJobLoader {
             path: path.as_ref().to_path_buf(),
             strategy: ls.to_string(),
+            path_is_task,
         })
     }
 }
@@ -43,8 +49,10 @@ impl JobLoader for CsvJobLoader {
         flow: Arc<Flow>,
     ) -> Result<Box<dyn TaskLoader>, Error> {
         let mut buf = self.path.clone();
-        for p in task_id.task().split(".") {
-            buf.push(p);
+        if !self.path_is_task {
+            for p in task_id.task().split(".") {
+                buf.push(p);
+            }
         }
 
         let loader = CsvTaskLoader::new(flow, buf, self.strategy.clone()).await?;

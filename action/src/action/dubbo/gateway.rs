@@ -1,3 +1,4 @@
+use std::process::Stdio;
 use std::str::FromStr;
 
 use log::{debug, info, trace};
@@ -76,6 +77,7 @@ impl DubboFactory {
             .parse()?;
 
         let mut command = Command::new("java");
+        command.kill_on_drop(true);
         command.arg("-jar").arg(gateway_lib);
         for arg in gateway_args {
             command.arg(arg);
@@ -84,8 +86,8 @@ impl DubboFactory {
         trace!("command {:?}", command);
 
         let mut child = command
-            // .stdout(Stdio::piped())
-            // .stderr(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()?;
 
         let std_out = child.stdout.ok_or(err!("107", "missing stdout"))?;
@@ -247,7 +249,9 @@ async fn log_line(line: &str) {
 
 impl Drop for DubboFactory {
     fn drop(&mut self) {
+        //todo this kill not work
         let _ = self.child.kill();
+        trace!("kill dubbo generic gateway")
     }
 }
 

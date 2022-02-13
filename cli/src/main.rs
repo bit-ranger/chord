@@ -119,6 +119,15 @@ async fn run(
         println!("config loaded: {}", config);
     }
 
+    let log_file_path = config
+        .log_dir()
+        .join(job_name.clone())
+        .join(exec_id.clone())
+        .join("cmd.log");
+    let log_handler = logger::init(config.log_level(), log_file_path.as_path())
+        .await
+        .map_err(|e| Logger(e))?;
+
     let job_loader = DefaultJobLoader::new(config.loader(), input_dir.clone())
         .await
         .map_err(|e| RunError::Report(e))?;
@@ -129,15 +138,6 @@ async fn run(
             .await
             .map_err(|e| RunError::Report(e))?;
     let job_reporter = Arc::new(job_reporter);
-
-    let log_file_path = config
-        .log_dir()
-        .join(job_name.clone())
-        .join(exec_id.clone())
-        .join("cmd.log");
-    let log_handler = logger::init(config.log_level(), log_file_path.as_path())
-        .await
-        .map_err(|e| Logger(e))?;
 
     let app_ctx = chord_flow::context_create(Box::new(
         FactoryComposite::new(config.action().map(|c| c.clone()))

@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use csv::{Reader, ReaderBuilder};
+use log::trace;
 
 use chord_core::flow::Flow;
 use chord_core::input::{async_trait, Error, JobLoader, StageLoader, TaskLoader};
@@ -89,6 +90,7 @@ struct CsvStageLoader {
 
 impl CsvStageLoader {
     async fn new<P: AsRef<Path>>(path: P, strategy: String) -> Result<CsvStageLoader, Error> {
+        trace!("new CsvStageLoader {}", path.as_ref().to_str().unwrap());
         let loader = CsvStageLoader {
             row_num: 1,
             reader: from_path(path.as_ref()).await?,

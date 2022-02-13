@@ -38,11 +38,7 @@ impl Config {
                     "dir": home_dir.join("output").to_str().unwrap().to_string()
                 }
             },
-
            "action": {
-               "download": {
-                   "workdir": home_dir.join("output").join("download").to_str().unwrap().to_string()
-               },
                "dubbo": {
                    "enable": false,
                    "mode": "gateway",

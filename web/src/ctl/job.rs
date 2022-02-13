@@ -1,12 +1,12 @@
+use std::sync::Arc;
 use std::time::SystemTime;
 
-use async_std::sync::Arc;
-use async_std::task::spawn;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use log::warn;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use tokio::task::spawn;
 use validator::Validate;
 
 use chord_core::value::Map;

@@ -1,8 +1,8 @@
 use std::borrow::Borrow;
 use std::collections::HashSet;
+use std::path::Path;
 use std::time::Duration;
 
-use async_std::path::Path;
 use lazy_static::lazy_static;
 use regex::Regex;
 

@@ -1,20 +1,17 @@
 use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use async_std::fs::create_dir_all;
-use async_std::fs::read_dir;
-use async_std::fs::remove_file;
-use async_std::fs::rename;
-use async_std::path::{Path, PathBuf};
-use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
-use futures::StreamExt;
+use tokio::fs::{create_dir_all, metadata, read_dir, remove_file, rename, DirEntry};
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
 use chord_core::output::async_trait;
 use chord_core::output::Error;
 use chord_core::output::Report;
+use chord_core::path::exists;
 use chord_core::step::StepState;
 use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
@@ -46,17 +43,18 @@ impl ReportFactory {
         with_bom: bool,
     ) -> Result<ReportFactory, Error> {
         let report_dir = report_dir.as_ref().join(name).join(exec_id);
-        if !report_dir.exists().await {
+        if !exists(report_dir.as_path()).await {
             create_dir_all(report_dir.as_path()).await?;
         } else {
             let mut rd = read_dir(report_dir.clone()).await?;
             loop {
-                let rf = rd.next().await;
+                let rf: Option<DirEntry> = rd.next_entry().await?;
                 if rf.is_none() {
                     break;
                 }
-                let rf = rf.unwrap()?;
-                if rf.path().is_file().await {
+                let rf = rf.unwrap();
+                let meta = metadata(rf.path()).await;
+                if meta.is_ok() && meta.unwrap().is_file() {
                     remove_file(rf.path()).await?;
                 }
             }

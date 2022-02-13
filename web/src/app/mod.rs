@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display, Formatter};
+use std::sync::Arc;
 
-use async_std::sync::Arc;
 use bean::component::HasComponent;
 use bean::container;
 use tide::http::StatusCode;

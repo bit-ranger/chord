@@ -1,11 +1,12 @@
 use std::fmt::{Debug, Display, Formatter};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use async_std::path::{Path, PathBuf};
-use async_std::sync::Arc;
 use dirs;
 use structopt::StructOpt;
 
 use chord_action::FactoryComposite;
+use chord_core::path::is_dir;
 use chord_core::task::TaskState;
 use chord_core::value::Value;
 use chord_input::load;
@@ -71,7 +72,7 @@ enum RunError {
     TaskErr(String, String),
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<(), RunError> {
     let opt = Chord::from_args();
     match opt {
@@ -93,7 +94,7 @@ async fn run(
     verbose: bool,
 ) -> Result<(), RunError> {
     let input_dir = Path::new(&input);
-    if !input_dir.is_dir().await {
+    if !is_dir(input_dir).await {
         return Err(InputNotDir(input_dir.to_str().unwrap().to_string()));
     }
 

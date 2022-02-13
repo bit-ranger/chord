@@ -1,16 +1,15 @@
-use async_std::path::PathBuf;
+use std::path::PathBuf;
 
 use structopt::StructOpt;
 
+use app::Error;
 use chord_input::load;
 
 mod ctl;
 
 mod app;
 
-use app::Error;
-
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
     let conf_dir_path = opt

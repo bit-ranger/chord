@@ -1,4 +1,5 @@
-use async_std::path::{Path, PathBuf};
+use std::path::{Path, PathBuf};
+
 use dirs;
 
 use chord_core::value::Value;

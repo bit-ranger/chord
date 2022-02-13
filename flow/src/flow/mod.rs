@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 use std::mem::replace;
+use std::sync::Arc;
 
-use async_std::sync::Arc;
-use async_std::task_local;
 use handlebars::TemplateRenderError::RenderError as Re;
 use handlebars::{Handlebars, RenderError, TemplateRenderError};
 use log::trace;
+use tokio::task_local;
 
 use chord_core::action::prelude::Map;
 use chord_core::action::Factory;
@@ -20,7 +20,7 @@ mod step;
 mod task;
 
 task_local! {
-    pub static CTX_ID: RefCell<String> = RefCell::new(String::new());
+    pub static CTX_ID: RefCell<String>;
 }
 
 pub async fn context_create(action_factory: Box<dyn Factory>) -> Arc<dyn FlowApp> {

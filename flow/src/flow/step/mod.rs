@@ -1,10 +1,10 @@
 use std::panic::AssertUnwindSafe;
 
-use async_std::future::timeout;
 use chrono::{DateTime, Utc};
 use futures::FutureExt;
 use handlebars::TemplateRenderError;
 use log::{debug, error, info, trace, warn};
+use tokio::time::timeout;
 
 use chord_core::action::{Action, Scope};
 use chord_core::step::StepState;

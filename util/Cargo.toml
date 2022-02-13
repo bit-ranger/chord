@@ -18,7 +18,7 @@ repository = "https://github.com/bit-ranger/chord"
 chord-core = { path = "../core", version = "0.1.16" }
 serde = { version = "1.0" }
 reqwest = { version = "0.11.8", features = ['stream'] }
-async-std = { version = "1.9.0", features = ["std", "attributes", "tokio1"] }
+tokio = { version = "1.16", features = ["fs", "time", "tracing", "process"] }
 futures = "0.3.13"
 log = { version = "0.4.14", features = ["std"] }
 thiserror = "1.0"

@@ -1,5 +1,7 @@
-use async_std::path::Path;
+use std::path::Path;
+
 use hocon::{Hocon, HoconLoader};
+use tokio::fs::metadata;
 
 use chord_core::value::{Map, Number, Value};
 
@@ -14,7 +16,7 @@ pub async fn load<P: AsRef<Path>>(dir_path: P, name: &str) -> Result<Value, Erro
 
 pub async fn exists<P: AsRef<Path>>(dir_path: P, name: &str) -> bool {
     let file_path = dir_path.as_ref().join(format!("{}.conf", name));
-    file_path.exists().await
+    metadata(file_path).await.is_ok()
 }
 
 fn convert(hocon: Hocon) -> Result<Value, Error> {

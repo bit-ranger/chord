@@ -1,6 +1,6 @@
 use std::str::FromStr;
+use std::sync::Arc;
 
-use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use log::{info, trace, warn};
 use reqwest::header::{HeaderName, HeaderValue};

@@ -1,13 +1,12 @@
 use std::str::FromStr;
 
-use async_std::io::BufReader;
-use async_std::process::{Child, ChildStdout, Command, Stdio};
-use async_std::task::Builder;
-use futures::io::Lines;
-use futures::{AsyncBufReadExt, StreamExt};
 use log::{debug, info, trace};
 use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Body, Client, Method, Response, Url};
+use tokio::io::BufReader;
+use tokio::io::{AsyncBufReadExt, Lines};
+use tokio::process::{Child, ChildStdout, Command};
+use tokio::task::spawn;
 
 use chord_core::action::prelude::*;
 use chord_core::value::{to_string, Deserialize, Serialize};
@@ -86,28 +85,26 @@ impl DubboFactory {
         trace!("command {:?}", command);
 
         let mut child = command
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            // .stdout(Stdio::piped())
+            // .stderr(Stdio::piped())
             .spawn()?;
 
         let std_out = child.stdout.ok_or(err!("107", "missing stdout"))?;
         let std_out = BufReader::new(std_out);
         let mut lines = std_out.lines();
         loop {
-            let line = lines.next().await;
+            let line = lines.next_line().await?;
             if line.is_none() {
                 return Err(err!("108", "failed to start dubbo-generic-gateway"));
             }
-            let line = line.unwrap()?;
+            let line = line.unwrap();
             log_line(&line).await;
             if line == "----dubbo-generic-gateway-started----" {
                 break;
             }
         }
 
-        let _ = Builder::new()
-            .name("dubbo-gateway-output".into())
-            .spawn(loop_out(lines));
+        let _ = spawn(loop_out(lines));
 
         child.stdout = None;
         let client = Client::new();
@@ -223,11 +220,11 @@ async fn remote_invoke(
 
 async fn loop_out(mut lines: Lines<BufReader<ChildStdout>>) {
     loop {
-        let line = lines.next().await;
+        let line = lines.next_line().await.unwrap();
         if line.is_none() {
             break;
         }
-        if let Ok(line) = line.unwrap() {
+        if let Some(line) = line {
             log_line(&line).await;
         } else {
             break;

@@ -1,16 +1,17 @@
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
 use async_recursion::async_recursion;
-use async_std::fs::read_dir;
-use async_std::path::{Path, PathBuf};
-use async_std::sync::Arc;
-use async_std::task::Builder;
 use futures::future::join_all;
-use futures::StreamExt;
 use itertools::Itertools;
 use log::error;
 use log::trace;
+use tokio::fs::read_dir;
+use tokio::task::spawn;
 
 use chord_core::flow::{Flow, ID_PATTERN};
 use chord_core::output::{DateTime, Utc};
+use chord_core::path::is_dir;
 use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::Value;
 use chord_flow::{FlowApp, TaskIdSimple};
@@ -102,15 +103,16 @@ async fn job_path_run_recur(
         .map_err(|e| JobDir(job_path.to_str().unwrap().to_string(), e))?;
     let mut sub_name_vec = Vec::new();
     loop {
-        let sub_dir = job_dir.next().await;
+        let sub_dir = job_dir
+            .next_entry()
+            .await
+            .map_err(|e| JobDir(job_path.to_str().unwrap().to_string(), e))?;
         if sub_dir.is_none() {
             break;
         }
-        let sub_dir = sub_dir
-            .unwrap()
-            .map_err(|e| JobDir(job_path.to_str().unwrap().to_string(), e))?;
+        let sub_dir = sub_dir.unwrap();
 
-        if !sub_dir.path().is_dir().await {
+        if !is_dir(sub_dir.path()).await {
             continue;
         }
 
@@ -158,43 +160,30 @@ async fn job_path_run_recur(
             }
         } else {
             let mut futures = Vec::new();
-            let builder = Builder::new().name(sub_name.clone());
             if dir_is_task_path(root_path.clone(), child_sub_path.clone()).await {
-                let jh = builder
-                    .spawn(task_path_run_cast_vec(
-                        app_ctx.clone(),
-                        report_factory.clone(),
-                        exec_id.clone(),
-                        root_path.clone(),
-                        child_sub_path.clone(),
-                    ))
-                    .expect(
-                        format!(
-                            "task path Err {}, spawn",
-                            child_sub_path.to_str().unwrap_or("")
-                        )
-                        .as_str(),
-                    );
+                let jh = spawn(task_path_run_cast_vec(
+                    app_ctx.clone(),
+                    report_factory.clone(),
+                    exec_id.clone(),
+                    root_path.clone(),
+                    child_sub_path.clone(),
+                ));
                 futures.push(jh);
             } else {
-                let jh = builder
-                    .spawn(job_path_run_recur(
-                        app_ctx.clone(),
-                        report_factory.clone(),
-                        exec_id.clone(),
-                        root_path.clone(),
-                        child_sub_path.clone(),
-                    ))
-                    .expect(
-                        format!(
-                            "job path Err {}, spawn",
-                            child_sub_path.to_str().unwrap_or("")
-                        )
-                        .as_str(),
-                    );
+                let jh = spawn(job_path_run_recur(
+                    app_ctx.clone(),
+                    report_factory.clone(),
+                    exec_id.clone(),
+                    root_path.clone(),
+                    child_sub_path.clone(),
+                ));
                 futures.push(jh);
             }
             for state in join_all(futures).await {
+                let state = state.expect(
+                    format!("spawn Err {}, ", child_sub_path.to_str().unwrap_or("")).as_str(),
+                );
+
                 task_assess_vec.extend(state?);
             }
         }

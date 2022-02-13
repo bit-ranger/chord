@@ -1,5 +1,5 @@
-use async_std::process::{Child, Command};
 use log::trace;
+use tokio::process::{Child, Command};
 
 use chord_core::action::prelude::*;
 
@@ -112,7 +112,7 @@ struct ChildHolder {
 impl ChildHolder {
     fn new(child: Child) -> ChildHolder {
         ChildHolder {
-            value: Value::Number(Number::from(child.id())),
+            value: Value::Number(Number::from(child.id().unwrap())),
             child,
         }
     }

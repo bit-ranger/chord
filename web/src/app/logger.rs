@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -6,16 +7,17 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 use std::vec::Vec;
 
-use async_std::fs::File;
-use async_std::io::BufWriter;
-use async_std::path::Path;
 use flume::{bounded, Receiver, Sender};
 use futures::executor::block_on;
-use futures::AsyncWriteExt;
 use itertools::Itertools;
 use log;
 use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+use tokio::io::BufWriter;
+
+use chord_core::path::exists;
 use Error::Create;
 
 #[derive(thiserror::Error, Debug)]
@@ -136,8 +138,8 @@ pub async fn init(
     let log_file_parent_path = log_file_path.parent();
     if log_file_parent_path.is_some() {
         let log_file_parent_path = log_file_parent_path.unwrap();
-        if !log_file_parent_path.exists().await {
-            async_std::fs::create_dir_all(log_file_parent_path)
+        if exists(log_file_parent_path).await {
+            tokio::fs::create_dir_all(log_file_parent_path)
                 .await
                 .map_err(|e| Create(e))?;
         }
@@ -148,7 +150,7 @@ pub async fn init(
     log::set_max_level(LevelFilter::Trace);
     let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
 
-    let file = async_std::fs::OpenOptions::new()
+    let file = tokio::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .append(true)

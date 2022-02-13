@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
+use std::sync::Arc;
 
-use async_std::sync::Arc;
 use async_trait::async_trait;
 
 use chord_core::flow::Flow;

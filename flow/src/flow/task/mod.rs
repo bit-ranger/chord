@@ -1,6 +1,5 @@
-use async_std::future::timeout;
-use async_std::sync::Arc;
-use async_std::task::{Builder, JoinHandle};
+use std::sync::Arc;
+
 use futures::future::join_all;
 use handlebars::TemplateRenderError;
 use log::{error, info, trace, warn};
@@ -9,7 +8,11 @@ use chord_core::action::Action;
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
+use chord_core::future::task::{spawn, JoinError, JoinHandle};
+use chord_core::future::time::timeout;
+use chord_core::input::CaseStore;
 use chord_core::input::{StageLoader, TaskLoader};
+use chord_core::output::Report;
 use chord_core::output::Utc;
 use chord_core::output::{StageReporter, TaskReporter};
 use chord_core::step::{StepAssess, StepState};
@@ -460,19 +463,24 @@ impl TaskRunner {
     ) -> Vec<Box<dyn CaseAssess>> {
         let ca_vec = self.case_arg_vec(case_vec);
 
-        let mut case_assess_vec = Vec::<Box<dyn CaseAssess>>::new();
+        let mut case_join_result_vec = Vec::<Result<Box<dyn CaseAssess>, JoinError>>::new();
         let mut futures = vec![];
         for ca in ca_vec {
             let f = case_spawn(self.flow_app.clone(), ca);
             futures.push(f);
             if futures.len() >= concurrency {
                 let case_assess = join_all(futures.split_off(0)).await;
-                case_assess_vec.extend(case_assess);
+                case_join_result_vec.extend(case_assess);
             }
         }
         if !futures.is_empty() {
             let case_assess = join_all(futures).await;
-            case_assess_vec.extend(case_assess);
+            case_join_result_vec.extend(case_assess);
+        }
+
+        let mut case_assess_vec = Vec::with_capacity(case_join_result_vec.len());
+        for res in case_join_result_vec {
+            case_assess_vec.push(res.unwrap());
         }
         case_assess_vec
     }
@@ -609,13 +617,14 @@ fn case_spawn(
     flow_ctx: Arc<dyn FlowApp>,
     case_arg: CaseArgStruct,
 ) -> JoinHandle<Box<dyn CaseAssess>> {
-    let builder = Builder::new()
-        .name(format!("case_{}", case_arg.id()))
-        .spawn(case_run_arc(flow_ctx, case_arg));
-    return builder.unwrap();
+    spawn(case_run_arc(flow_ctx, case_arg))
 }
 
 async fn case_run_arc(flow_ctx: Arc<dyn FlowApp>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
-    CTX_ID.with(|cid| cid.replace(case_arg.id().to_string()));
-    case_run(flow_ctx.as_ref(), case_arg).await
+    CTX_ID
+        .scope(
+            case_arg.id().to_string(),
+            case_run(flow_ctx.as_ref(), case_arg),
+        )
+        .await
 }

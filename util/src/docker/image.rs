@@ -1,4 +1,5 @@
-use async_std::sync::Arc;
+use std::sync::Arc;
+
 use futures::executor::block_on;
 use log::{trace, warn};
 use reqwest::Method;

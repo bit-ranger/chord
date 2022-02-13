@@ -1,8 +1,9 @@
-use async_std::sync::Arc;
-use futures::executor::block_on;
+use std::sync::Arc;
+
 use log::{trace, warn};
 use reqwest::Method;
 
+use chord_core::future::runtime::Handle;
 use chord_core::value::{Map, Value};
 
 use crate::docker::engine::Engine;
@@ -143,7 +144,9 @@ impl Drop for Container {
     fn drop(&mut self) {
         let uri = format!("containers/{}?force=true", self.name);
         let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
-        let _ = block_on(f)
+        let current = Handle::current();
+        let _ = current
+            .block_on(f)
             .map_err(|_| {
                 warn!("container remove fail {}", self.name);
             })

@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
+use std::path::{Path, PathBuf};
 
-use async_std::path::{Path, PathBuf};
 use dirs;
 
 use chord_core::value::json;

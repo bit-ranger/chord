@@ -1,4 +1,4 @@
-use async_std::sync::Arc;
+use std::sync::Arc;
 
 use chord_core::action::prelude::*;
 use chord_util::docker::container::Arg;

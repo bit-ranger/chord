@@ -1,12 +1,12 @@
 use std::panic::AssertUnwindSafe;
 
-use async_std::future::timeout;
 use chrono::{DateTime, Utc};
 use futures::FutureExt;
 use handlebars::TemplateRenderError;
 use log::{debug, error, info, trace, warn};
 
 use chord_core::action::{Action, Scope};
+use chord_core::future::time::timeout;
 use chord_core::step::StepState;
 use chord_core::value::json;
 use chord_core::value::{to_string_pretty, Value};

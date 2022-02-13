@@ -1,7 +1,7 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 
-use async_std::sync::Arc;
 use log::trace;
 
 use chord_core::action::prelude::*;

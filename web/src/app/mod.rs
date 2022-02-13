@@ -1,14 +1,13 @@
 use std::fmt::{Debug, Display, Formatter};
+use std::sync::Arc;
 
-use async_std::sync::Arc;
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use bean::component::HasComponent;
 use bean::container;
-use tide::http::StatusCode;
-use tide::prelude::*;
-use tide::{Request, Response};
-use validator::{ValidationErrors, ValidationErrorsKind};
 
 use chord_core::value::Value;
+use chord_core::value::{Deserialize, Serialize};
+use chord_input::load;
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;
@@ -37,68 +36,68 @@ struct ErrorBody {
     message: String,
 }
 
-fn common_error_json(e: &Error) -> Value {
-    json!(ErrorBody {
-        code: match e {
-            Error::Config(_) => "Config".to_string(),
-            Error::Logger(_) => "Logger".to_string(),
-            Error::Job(_) => "Job".to_string(),
-            Error::Web(_) => "Web".to_string(),
-        },
-        message: e.to_string()
-    })
-}
+// fn common_error_json(e: &Error) -> Value {
+//     json!(ErrorBody {
+//         code: match e {
+//             Error::Config(_) => "Config".to_string(),
+//             Error::Logger(_) => "Logger".to_string(),
+//             Error::Job(_) => "Job".to_string(),
+//             Error::Web(_) => "Web".to_string(),
+//         },
+//         message: e.to_string()
+//     })
+// }
 
-fn validator_error_json_nested(e: &ValidationErrors) -> Vec<String> {
-    return e
-        .errors()
-        .iter()
-        .map(|(k, e)| match e {
-            ValidationErrorsKind::Field(ev) => ev
-                .iter()
-                .map(|e| format!("[{}] {}", k, e.to_string()))
-                .collect(),
-            ValidationErrorsKind::Struct(f) => validator_error_json_nested(f.as_ref()),
-            ValidationErrorsKind::List(m) => m
-                .iter()
-                .map(|(_i, e)| validator_error_json_nested(e.as_ref()))
-                .fold(Vec::new(), |mut l, e| {
-                    l.extend(e);
-                    return l;
-                }),
-        })
-        .fold(Vec::new(), |mut l, e| {
-            l.extend(e);
-            return l;
-        });
-}
+// fn validator_error_json_nested(e: &ValidationErrors) -> Vec<String> {
+//     return e
+//         .errors()
+//         .iter()
+//         .map(|(k, e)| match e {
+//             ValidationErrorsKind::Field(ev) => ev
+//                 .iter()
+//                 .map(|e| format!("[{}] {}", k, e.to_string()))
+//                 .collect(),
+//             ValidationErrorsKind::Struct(f) => validator_error_json_nested(f.as_ref()),
+//             ValidationErrorsKind::List(m) => m
+//                 .iter()
+//                 .map(|(_i, e)| validator_error_json_nested(e.as_ref()))
+//                 .fold(Vec::new(), |mut l, e| {
+//                     l.extend(e);
+//                     return l;
+//                 }),
+//         })
+//         .fold(Vec::new(), |mut l, e| {
+//             l.extend(e);
+//             return l;
+//         });
+// }
 
-fn validator_error_json(e: &ValidationErrors) -> Value {
-    json!(ErrorBody {
-        code: "400".into(),
-        message: validator_error_json_nested(e).into_iter().last().unwrap()
-    })
-}
+// fn validator_error_json(e: &ValidationErrors) -> Value {
+//     json!(ErrorBody {
+//         code: "400".into(),
+//         message: validator_error_json_nested(e).into_iter().last().unwrap()
+//     })
+// }
 
-#[macro_export]
-macro_rules! json_handler {
-    ($closure:tt) => {{
-        |mut req: Request<()>| async move {
-            let rb = req.body_json().await?;
-            if let Err(e) = validator::Validate::validate(&rb) {
-                return Ok(Response::builder(StatusCode::BadRequest).body(validator_error_json(&e)));
-            };
-            let rst = $closure(rb).await;
-            match rst {
-                Ok(r) => Ok(Response::builder(StatusCode::Ok).body(json!(r))),
-                Err(e) => {
-                    Ok(Response::builder(StatusCode::InternalServerError)
-                        .body(common_error_json(&e)))
-                }
-            }
-        }
-    }};
-}
+// #[macro_export]
+// macro_rules! json_handler {
+//     ($closure:tt) => {{
+//         |mut req: Request<()>| async move {
+//             let rb = req.body_json().await?;
+//             if let Err(e) = validator::Validate::validate(&rb) {
+//                 return Ok(Response::builder(StatusCode::BadRequest).body(validator_error_json(&e)));
+//             };
+//             let rst = $closure(rb).await;
+//             match rst {
+//                 Ok(r) => Ok(Response::builder(StatusCode::Ok).body(json!(r))),
+//                 Err(e) => {
+//                     Ok(Response::builder(StatusCode::InternalServerError)
+//                         .body(common_error_json(&e)))
+//                 }
+//             }
+//         }
+//     }};
+// }
 
 container!(Web {ConfigImpl, job::CtlImpl});
 
@@ -120,22 +119,13 @@ pub async fn init(data: Value) -> Result<(), Error> {
         .put("default", config.clone())
         .put("default", job_ctl.clone());
 
-    let mut app = tide::new();
-
-    app.at("/job/exec").post(json_handler!(
-        (|rb: job::Req| async {
-            let job_ctl: Arc<job::CtlImpl> = Web::borrow().get("default").unwrap();
-            job::Ctl::exec(job_ctl.as_ref(), rb)
-                .await
-                .map_err(|e| Error::Job(e))
-        })
-    ));
-
-    app.at("/").get(|_| async { Ok("Hello, world!") });
-
-    app.listen(format!("{}:{}", config.server_ip(), config.server_port()))
+    HttpServer::new(|| App::new().service(root).service(job_exec))
+        .bind((config.server_ip(), config.server_port() as u16))
+        .map_err(|e| Error::Web(e))?
+        .run()
         .await
-        .map_err(|e| Error::Web(e))?;
+        .unwrap();
+
     Ok(())
 }
 
@@ -143,4 +133,19 @@ impl Debug for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Display::fmt(self, f)
     }
+}
+
+#[get("/")]
+async fn root() -> impl Responder {
+    "Hello, world!"
+}
+
+#[post("/job/exec")]
+async fn job_exec(param: web::Json<job::Req>) -> HttpResponse {
+    let job_ctl: Arc<job::CtlImpl> = Web::borrow().get("default").unwrap();
+    let result = job::Ctl::exec(job_ctl.as_ref(), param.0)
+        .await
+        .map_err(|e| Error::Job(e))
+        .unwrap();
+    HttpResponse::Ok().json(result)
 }

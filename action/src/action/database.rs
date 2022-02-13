@@ -1,4 +1,6 @@
 use log::trace;
+use rbatis::crud::CRUD;
+use rbatis::executor::Executor;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 
@@ -75,8 +77,7 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
         let page_size = args["page_size"].as_u64().unwrap_or(100);
 
         let pr = PageRequest::new(page_no, page_size);
-        let args = vec![];
-        let page: Page<Value> = rb.fetch_page("", sql, &args, &pr).await?;
+        let page: Page<Value> = rb.fetch_page(sql, vec![], &pr).await?;
         let mut map = Map::new();
         map.insert(
             String::from("total"),
@@ -99,7 +100,7 @@ async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
         trace!("select: {} >>> {}", arg.id(), page);
         return Ok(Box::new(page));
     } else {
-        let exec = rb.exec("", sql).await?;
+        let exec = rb.exec(sql, vec![]).await?;
         let mut map = Map::new();
         map.insert(
             String::from("rows_affected"),

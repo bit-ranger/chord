@@ -2,6 +2,7 @@ pub mod action;
 pub mod case;
 pub mod collection;
 pub mod flow;
+pub mod future;
 pub mod input;
 pub mod output;
 pub mod step;

@@ -25,7 +25,7 @@ chord-input = { path = "../input", version = "0.1.16" }
 chord-output = { path = "../output", version = "0.1.16", features = ["report_csv", "report_webhook"] }
 chord-action = { path = "../action", version = "0.1.16", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_cdylib", "act_docker", "act_lua", "act_program"] }
 log = { version = "0.4.14", features = ["std"] }
-tokio = { version = "1.16", features = ["fs", "time", "tracing", "process"] }
+tokio = { version = "1.16", features = ["fs", "time", "tracing", "process", "macros"] }
 time = "0.1.42"
 futures = "0.3.13"
 itertools = "0.10.0"

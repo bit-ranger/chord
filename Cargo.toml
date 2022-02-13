@@ -7,7 +7,7 @@ members = [
     'output',
     'action',
     'cli',
-#    'web'
+    'web'
 ]
 
 

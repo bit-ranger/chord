@@ -1,13 +1,15 @@
+use std::path::PathBuf;
+
+use structopt::StructOpt;
+
 use app::Error;
 use chord_input::load;
-use std::path::PathBuf;
-use structopt::StructOpt;
 
 mod ctl;
 
 mod app;
 
-#[use chord_core::future::main]
+#[chord_core::future::main]
 async fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
     let conf_dir_path = opt

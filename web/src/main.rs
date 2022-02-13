@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 use app::Error;
-use chord_input::load;
 
 mod ctl;
 

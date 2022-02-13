@@ -249,20 +249,21 @@ async fn task_path_run(
     chord_flow::CTX_ID
         .scope(
             id.to_string(),
-            task_path_run_scope(app_ctx, report_factory, task_path, id),
+            task_path_run_scope(app_ctx, job_loader, job_reporter, task_path, id),
         )
         .await
 }
 
 async fn task_path_run_scope(
     app_ctx: Arc<dyn FlowApp>,
-    report_factory: Arc<ReportFactory>,
+    job_loader: Arc<dyn JobLoader>,
+    job_reporter: Arc<dyn JobReporter>,
     task_path: PathBuf,
     id: Arc<TaskIdSimple>,
 ) -> Box<dyn TaskAssess> {
     trace!("task path start {}", task_path.to_str().unwrap());
     let start = Utc::now();
-    let task_assess = task_path_run0(
+    let task_assess = task_path_run_do(
         task_path.clone(),
         id.clone(),
         app_ctx,

@@ -7,7 +7,6 @@ use bean::container;
 
 use chord_core::value::Value;
 use chord_core::value::{Deserialize, Serialize};
-use chord_input::load;
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;

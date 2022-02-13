@@ -1,3 +1,9 @@
+use chord_core::path::exists;
+use flume::{bounded, Receiver, Sender};
+use futures::executor::block_on;
+use itertools::Itertools;
+use log;
+use log::{LevelFilter, Metadata, Record};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -6,18 +12,10 @@ use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
 use std::vec::Vec;
-
-use flume::{bounded, Receiver, Sender};
-use futures::executor::block_on;
-use itertools::Itertools;
-use log;
-use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::io::BufWriter;
-
-use chord_core::path::exists;
 use Error::Create;
 
 #[derive(thiserror::Error, Debug)]
@@ -76,7 +74,7 @@ impl log::Log for ChannelLogger {
             let ms = now.tm_nsec / 1000000;
 
             let ctx_id = chord_flow::CTX_ID
-                .try_with(|c| c.borrow().clone())
+                .try_with(|c| c.clone())
                 .unwrap_or("".to_owned());
 
             let data = format!(

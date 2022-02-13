@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::mem::replace;
 use std::sync::Arc;
 
@@ -20,7 +19,7 @@ mod step;
 mod task;
 
 task_local! {
-    pub static CTX_ID: RefCell<String>;
+    pub static CTX_ID: String;
 }
 
 pub async fn context_create(action_factory: Box<dyn Factory>) -> Arc<dyn FlowApp> {

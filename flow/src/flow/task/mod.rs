@@ -552,6 +552,10 @@ fn case_spawn(
 }
 
 async fn case_run_arc(flow_ctx: Arc<dyn FlowApp>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
-    CTX_ID.with(|cid| cid.replace(case_arg.id().to_string()));
-    case_run(flow_ctx.as_ref(), case_arg).await
+    CTX_ID
+        .scope(
+            case_arg.id().to_string(),
+            case_run(flow_ctx.as_ref(), case_arg),
+        )
+        .await
 }

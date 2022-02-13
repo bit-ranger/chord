@@ -229,10 +229,24 @@ async fn task_path_run(
     }
     let id = Arc::new(TaskIdSimple::new(exec_id, task_id.to_owned()));
     let task_path = root_path.join(task_sub_path);
-    chord_flow::CTX_ID.with(|tid| tid.replace(id.to_string()));
+    chord_flow::CTX_ID
+        .scope(
+            id.to_string(),
+            task_path_run_scope(app_ctx, report_factory, task_path, id),
+        )
+        .await
+}
+
+async fn task_path_run_scope(
+    app_ctx: Arc<dyn FlowApp>,
+    report_factory: Arc<ReportFactory>,
+    task_path: PathBuf,
+    id: Arc<TaskIdSimple>,
+) -> Box<dyn TaskAssess> {
     trace!("task path start {}", task_path.to_str().unwrap());
     let start = Utc::now();
-    let task_assess = task_path_run0(task_path.clone(), id.clone(), app_ctx, report_factory).await;
+    let task_assess =
+        task_path_run_do(task_path.clone(), id.clone(), app_ctx, report_factory).await;
     return match task_assess {
         Err(e) => {
             error!("task path Err {}, {}", task_path.to_str().unwrap(), e);
@@ -251,7 +265,7 @@ async fn task_path_run(
     };
 }
 
-async fn task_path_run0<P: AsRef<Path>>(
+async fn task_path_run_do<P: AsRef<Path>>(
     task_path: P,
     task_id: Arc<TaskIdSimple>,
     app_ctx: Arc<dyn FlowApp>,

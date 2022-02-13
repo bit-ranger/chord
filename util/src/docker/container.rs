@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use futures::executor::block_on;
 use log::{trace, warn};
 use reqwest::Method;
+use tokio::runtime::Handle;
 
 use chord_core::value::{Map, Value};
 
@@ -144,7 +144,9 @@ impl Drop for Container {
     fn drop(&mut self) {
         let uri = format!("containers/{}?force=true", self.name);
         let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
-        let _ = block_on(f)
+        let handle = Handle::current();
+        let _ = handle
+            .block_on(f)
             .map_err(|_| {
                 warn!("container remove fail {}", self.name);
             })

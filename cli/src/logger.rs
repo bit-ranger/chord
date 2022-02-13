@@ -9,7 +9,6 @@ use std::vec::Vec;
 
 use colored::*;
 use flume::{bounded, Receiver, Sender};
-use futures::executor::block_on;
 use itertools::Itertools;
 use log;
 use log::{Level, LevelFilter, Metadata, Record};
@@ -17,6 +16,7 @@ use time::{at, get_time, strftime};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::io::BufWriter;
+use tokio::runtime::Handle;
 
 use chord_core::path::exists;
 
@@ -81,7 +81,7 @@ impl log::Log for ChannelLogger {
             let ms = now.tm_nsec / 1000000;
 
             let ctx_id = chord_flow::CTX_ID
-                .try_with(|c| c.borrow().clone())
+                .try_with(|c| c.clone())
                 .unwrap_or("".to_owned());
 
             let data = format!(
@@ -176,8 +176,9 @@ pub async fn init(
 
     let log_enable = Arc::new(AtomicBool::new(true));
     let log_enable_move = log_enable.clone();
+    let handle = Handle::current();
     let join_handler = thread::spawn(move || {
-        block_on(log_thread_func(
+        handle.block_on(log_thread_func(
             receiver,
             default_log_writer,
             log_enable_move,

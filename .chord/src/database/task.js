@@ -1,4 +1,4 @@
-let url = "mysql://root:example@10.10.139.79:3306/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai"
+let url = "mysql://root:example@127.0.0.1:3306/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai"
 
 let conf = {
     version: "0.0.1",

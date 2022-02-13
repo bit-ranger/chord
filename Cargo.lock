@@ -259,7 +259,6 @@ dependencies = [
  "rlua",
  "rlua_serde",
  "serde",
- "tokio",
  "urlencoding",
 ]
 
@@ -313,7 +312,6 @@ dependencies = [
  "lazy_static",
  "log",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -326,7 +324,6 @@ dependencies = [
  "hocon",
  "log",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -343,7 +340,6 @@ dependencies = [
  "reqwest",
  "serde",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -356,7 +352,6 @@ dependencies = [
  "reqwest",
  "serde",
  "thiserror",
- "tokio",
 ]
 
 [[package]]

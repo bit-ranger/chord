@@ -13,12 +13,13 @@ use itertools::Itertools;
 use log;
 use log::{Level, LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
-use tokio::io::BufWriter;
-use tokio::runtime::Handle;
 
-use chord_core::path::exists;
+use chord_core::future::fs::create_dir_all;
+use chord_core::future::fs::{File, OpenOptions};
+use chord_core::future::io::AsyncWriteExt;
+use chord_core::future::io::BufWriter;
+use chord_core::future::path::exists;
+use chord_core::future::runtime::Handle;
 
 use crate::logger::Error::Create;
 
@@ -154,7 +155,7 @@ pub async fn init(
     if log_file_parent_path.is_some() {
         let log_file_parent_path = log_file_parent_path.unwrap();
         if !exists(log_file_parent_path).await {
-            tokio::fs::create_dir_all(log_file_parent_path)
+            create_dir_all(log_file_parent_path)
                 .await
                 .map_err(|e| Create(e))?;
         }
@@ -165,7 +166,7 @@ pub async fn init(
     log::set_max_level(LevelFilter::Trace);
     let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
 
-    let file = tokio::fs::OpenOptions::new()
+    let file = OpenOptions::new()
         .create(true)
         .write(true)
         .append(true)
@@ -176,6 +177,7 @@ pub async fn init(
 
     let log_enable = Arc::new(AtomicBool::new(true));
     let log_enable_move = log_enable.clone();
+
     let handle = Handle::current();
     let join_handler = thread::spawn(move || {
         handle.block_on(log_thread_func(

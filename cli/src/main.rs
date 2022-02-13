@@ -6,7 +6,7 @@ use dirs;
 use structopt::StructOpt;
 
 use chord_action::FactoryComposite;
-use chord_core::path::is_dir;
+use chord_core::future::path::is_dir;
 use chord_core::task::TaskState;
 use chord_core::value::Value;
 use chord_input::load;
@@ -72,7 +72,7 @@ enum RunError {
     TaskErr(String, String),
 }
 
-#[tokio::main]
+#[chord_core::future::main]
 async fn main() -> Result<(), RunError> {
     let opt = Chord::from_args();
     match opt {

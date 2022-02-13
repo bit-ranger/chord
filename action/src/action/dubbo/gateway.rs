@@ -3,12 +3,11 @@ use std::str::FromStr;
 use log::{debug, info, trace};
 use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Body, Client, Method, Response, Url};
-use tokio::io::BufReader;
-use tokio::io::{AsyncBufReadExt, Lines};
-use tokio::process::{Child, ChildStdout, Command};
-use tokio::task::spawn;
 
 use chord_core::action::prelude::*;
+use chord_core::future::io::{AsyncBufReadExt, BufReader, Lines};
+use chord_core::future::process::{Child, ChildStdout, Command};
+use chord_core::future::task::spawn;
 use chord_core::value::{to_string, Deserialize, Serialize};
 
 use crate::err;

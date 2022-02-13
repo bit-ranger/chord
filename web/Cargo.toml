@@ -21,7 +21,6 @@ chord-flow = { path = "../flow", version = "0.1.16" }
 chord-input = { path = "../input", version = "0.1.16" }
 chord-output = { path = "../output", version = "0.1.16", features = ["report_csv"] }
 chord-util = { path = "../util", version = "0.1.16" }
-tokio = { version = "1.16", features = ["fs", "time", "tracing", "process"] }
 time = "0.1.42"
 futures = "0.3.13"
 itertools = "0.10.0"

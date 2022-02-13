@@ -1,8 +1,8 @@
 use std::path::Path;
 
 use hocon::{Hocon, HoconLoader};
-use tokio::fs::metadata;
 
+use chord_core::future::fs::metadata;
 use chord_core::value::{Map, Number, Value};
 
 pub type Error = hocon::Error;

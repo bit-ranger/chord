@@ -4,10 +4,10 @@ use std::sync::Arc;
 use handlebars::TemplateRenderError::RenderError as Re;
 use handlebars::{Handlebars, RenderError, TemplateRenderError};
 use log::trace;
-use tokio::task_local;
 
 use chord_core::action::prelude::Map;
 use chord_core::action::Factory;
+use chord_core::future::task::task_local;
 use chord_core::value::{from_str, Value};
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;

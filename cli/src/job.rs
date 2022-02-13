@@ -6,12 +6,12 @@ use futures::future::join_all;
 use itertools::Itertools;
 use log::error;
 use log::trace;
-use tokio::fs::read_dir;
-use tokio::task::spawn;
 
 use chord_core::flow::{Flow, ID_PATTERN};
+use chord_core::future::fs::read_dir;
+use chord_core::future::path::is_dir;
+use chord_core::future::task::spawn;
 use chord_core::output::{DateTime, Utc};
-use chord_core::path::is_dir;
 use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::Value;
 use chord_flow::{FlowApp, TaskIdSimple};

@@ -1,4 +1,8 @@
-use chord_core::path::exists;
+use chord_core::future::fs::File;
+use chord_core::future::io::AsyncWriteExt;
+use chord_core::future::io::BufWriter;
+use chord_core::future::path::exists;
+use Error::Create;
 use flume::{bounded, Receiver, Sender};
 use futures::executor::block_on;
 use itertools::Itertools;
@@ -6,17 +10,13 @@ use log;
 use log::{LevelFilter, Metadata, Record};
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
 use std::vec::Vec;
 use time::{at, get_time, strftime};
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
-use tokio::io::BufWriter;
-use Error::Create;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -137,7 +137,8 @@ pub async fn init(
     if log_file_parent_path.is_some() {
         let log_file_parent_path = log_file_parent_path.unwrap();
         if exists(log_file_parent_path).await {
-            tokio::fs::create_dir_all(log_file_parent_path)
+            use chord_core::future::fs::create_dir_all
+            (log_file_parent_path)
                 .await
                 .map_err(|e| Create(e))?;
         }
@@ -148,7 +149,8 @@ pub async fn init(
     log::set_max_level(LevelFilter::Trace);
     let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
 
-    let file = tokio::fs::OpenOptions::new()
+    let file = use chord_core::future::fs::OpenOptions::new
+    ()
         .create(true)
         .write(true)
         .append(true)

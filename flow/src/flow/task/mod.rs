@@ -3,13 +3,13 @@ use std::sync::Arc;
 use futures::future::join_all;
 use handlebars::TemplateRenderError;
 use log::{error, info, trace, warn};
-use tokio::task::{spawn, JoinError, JoinHandle};
-use tokio::time::timeout;
 
 use chord_core::action::Action;
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
+use chord_core::future::task::{spawn, JoinError, JoinHandle};
+use chord_core::future::time::timeout;
 use chord_core::input::CaseStore;
 use chord_core::output::Report;
 use chord_core::output::Utc;

@@ -20,7 +20,6 @@ chord-core = { path = "../core", version = "0.1.16" }
 chord-util = { path = "../util", version = "0.1.16", optional = true }
 serde = { version = "1.0" }
 itertools = "0.10.1"
-tokio = { version = "1.16", features = ["fs", "time", "tracing", "process"] }
 futures = { version = "0.3.13" }
 log = { version = "0.4.14", features = ["std"] }
 reqwest = { version = "0.11.8", features = ['stream'], optional = true }

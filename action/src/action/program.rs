@@ -1,7 +1,7 @@
 use log::trace;
-use tokio::process::{Child, Command};
 
 use chord_core::action::prelude::*;
+use chord_core::future::process::{Child, Command};
 
 use crate::err;
 

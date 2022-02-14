@@ -140,18 +140,18 @@ impl Container {
     }
 }
 
-impl Drop for Container {
-    fn drop(&mut self) {
-        let uri = format!("containers/{}?force=true", self.name);
-        let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
-        let current = Handle::current();
-        let _ = current
-            .block_on(f)
-            .map_err(|_| {
-                warn!("container remove fail {}", self.name);
-            })
-            .map(|_| {
-                trace!("container remove {}", self.name);
-            });
-    }
-}
+// impl Drop for Container {
+//     fn drop(&mut self) {
+//         let uri = format!("containers/{}?force=true", self.name);
+//         let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
+//         let current = Handle::current();
+//         let _ = current
+//             .block_on(f)
+//             .map_err(|_| {
+//                 warn!("container remove fail {}", self.name);
+//             })
+//             .map(|_| {
+//                 trace!("container remove {}", self.name);
+//             });
+//     }
+// }

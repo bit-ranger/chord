@@ -44,20 +44,20 @@ impl Image {
     }
 }
 
-impl Drop for Image {
-    fn drop(&mut self) {
-        let uri = format!("images/{}", self.name);
-        let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
-        let _ = block_on(f)
-            .map_err(|e| {
-                if let Status(404) = e {
-                    trace!("image not found {}", self.name);
-                } else {
-                    warn!("image remove fail {}, {}", self.name, e);
-                }
-            })
-            .map(|_| {
-                trace!("image remove {}", self.name);
-            });
-    }
-}
+// impl Drop for Image {
+//     fn drop(&mut self) {
+//         let uri = format!("images/{}", self.name);
+//         let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
+//         let _ = block_on(f)
+//             .map_err(|e| {
+//                 if let Status(404) = e {
+//                     trace!("image not found {}", self.name);
+//                 } else {
+//                     warn!("image remove fail {}, {}", self.name, e);
+//                 }
+//             })
+//             .map(|_| {
+//                 trace!("image remove {}", self.name);
+//             });
+//     }
+// }

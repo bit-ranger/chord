@@ -148,8 +148,8 @@ impl Log {
         })
     }
 
-    pub async fn drop(self, force: bool) {
-        self.enable.store(!force, Ordering::SeqCst);
+    pub async fn drop(self) {
+        self.enable.store(false, Ordering::SeqCst);
         let _ = self.join_handle.join();
     }
 }

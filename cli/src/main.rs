@@ -152,7 +152,7 @@ async fn run(
     )
     .await
     .map_err(|e| RunError::JobErr(e))?;
-    log.drop(false).await;
+    log.drop().await;
     let et = task_state_vec.iter().filter(|t| !t.state().is_ok()).nth(0);
     return match et {
         Some(et) => match et.state() {

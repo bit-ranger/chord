@@ -249,8 +249,6 @@ async fn log_line(line: &str) {
 
 impl Drop for DubboFactory {
     fn drop(&mut self) {
-        //todo this kill not work
-        let _ = self.child.kill();
         trace!("kill dubbo generic gateway")
     }
 }

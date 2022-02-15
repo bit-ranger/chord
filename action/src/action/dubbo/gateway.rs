@@ -7,7 +7,7 @@ use reqwest::{Body, Client, Method, Response, Url};
 
 use chord_core::action::prelude::*;
 use chord_core::future::io::{AsyncBufReadExt, BufReader, Lines};
-use chord_core::future::process::{ChildStdout, Command};
+use chord_core::future::process::{Child, ChildStdout, Command};
 use chord_core::future::task::spawn;
 use chord_core::value::{to_string, Deserialize, Serialize};
 
@@ -17,6 +17,7 @@ pub struct DubboFactory {
     registry_protocol: String,
     registry_address: String,
     port: usize,
+    child: Child,
     client: Client,
 }
 
@@ -84,7 +85,7 @@ impl DubboFactory {
 
         trace!("command {:?}", command);
 
-        let child = command
+        let mut child = command
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
@@ -106,11 +107,13 @@ impl DubboFactory {
 
         let _ = spawn(loop_out(lines));
 
+        child.stdout = None;
         let client = Client::new();
         Ok(DubboFactory {
             registry_protocol,
             registry_address,
             port,
+            child,
             client,
         })
     }
@@ -246,7 +249,10 @@ async fn log_line(line: &str) {
 
 impl Drop for DubboFactory {
     fn drop(&mut self) {
-        trace!("kill dubbo generic gateway")
+        trace!(
+            "kill [{}] dubbo generic gateway",
+            self.child.id().unwrap_or(0)
+        );
     }
 }
 

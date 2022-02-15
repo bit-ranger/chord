@@ -72,11 +72,6 @@ impl Config {
 }
 
 impl Config {
-    pub fn log_dir(&self) -> &Path {
-        let log_dir = self.conf["log"]["dir"].as_str().expect("invalid log.dir");
-        Path::new(log_dir)
-    }
-
     pub fn log_level(&self) -> Vec<(String, String)> {
         let target_level: Vec<(String, String)> = match self.conf["log"]["level"].as_object() {
             None => vec![],

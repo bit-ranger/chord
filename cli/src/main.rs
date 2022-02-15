@@ -120,12 +120,7 @@ async fn run(
         println!("config loaded: {}", config);
     }
 
-    let log_file_path = config
-        .log_dir()
-        .join(job_name.clone())
-        .join(exec_id.clone())
-        .join("cmd.log");
-    let log_handler = logger::init(config.log_level(), log_file_path.as_path())
+    let log = logger::Log::new(config.log_level())
         .await
         .map_err(|e| Logger(e))?;
 
@@ -157,7 +152,7 @@ async fn run(
     )
     .await
     .map_err(|e| RunError::JobErr(e))?;
-    logger::terminal(log_handler).await;
+    log.drop(false).await;
     let et = task_state_vec.iter().filter(|t| !t.state().is_ok()).nth(0);
     return match et {
         Some(et) => match et.state() {

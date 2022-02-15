@@ -1,4 +1,3 @@
-use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -14,20 +13,10 @@ use log;
 use log::{Level, LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
 
-use chord_core::future::fs::create_dir_all;
-use chord_core::future::fs::{File, OpenOptions};
-use chord_core::future::io::AsyncWriteExt;
-use chord_core::future::io::BufWriter;
-use chord_core::future::path::exists;
 use chord_core::future::runtime::Handle;
 
-use crate::logger::Error::Create;
-
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("failed to create log file: {0}")]
-    Create(std::io::Error),
-}
+pub enum Error {}
 
 struct ChannelLogger {
     target_level: Vec<(String, LevelFilter)>,
@@ -103,21 +92,11 @@ impl log::Log for ChannelLogger {
     fn flush(&self) {}
 }
 
-async fn log_thread_func(
-    receiver: Receiver<(log::Level, String)>,
-    mut default_log_writer: BufWriter<File>,
-    enable: Arc<AtomicBool>,
-) {
-    loop_write(receiver, &mut default_log_writer, enable).await;
-
-    // let _ = default_log_writer.flush().await;
+async fn log_thread_func(receiver: Receiver<(log::Level, String)>, enable: Arc<AtomicBool>) {
+    loop_write(receiver, enable).await;
 }
 
-async fn loop_write(
-    receiver: Receiver<(log::Level, String)>,
-    default_log_writer: &mut BufWriter<File>,
-    enable: Arc<AtomicBool>,
-) {
+async fn loop_write(receiver: Receiver<(log::Level, String)>, enable: Arc<AtomicBool>) {
     let recv_timeout = Duration::from_secs(2);
     loop {
         let recv = receiver.recv_timeout(recv_timeout);
@@ -130,9 +109,6 @@ async fn loop_write(
         }
 
         let (level, data) = recv.unwrap();
-
-        let _ = default_log_writer.write_all(data.as_bytes()).await;
-
         println!("{}", color_level(level, data));
     }
 }
@@ -147,58 +123,33 @@ fn color_level(level: log::Level, data: String) -> ColoredString {
     }
 }
 
-pub async fn init(
-    target_level: Vec<(String, String)>,
-    log_file_path: &Path,
-) -> Result<LogHandler, Error> {
-    let log_file_parent_path = log_file_path.parent();
-    if log_file_parent_path.is_some() {
-        let log_file_parent_path = log_file_parent_path.unwrap();
-        if !exists(log_file_parent_path).await {
-            create_dir_all(log_file_parent_path)
-                .await
-                .map_err(|e| Create(e))?;
-        }
+pub struct Log {
+    enable: Arc<AtomicBool>,
+    join_handle: JoinHandle<()>,
+}
+
+impl Log {
+    pub async fn new(target_level: Vec<(String, String)>) -> Result<Log, Error> {
+        let (sender, receiver) = bounded(999999);
+
+        log::set_max_level(LevelFilter::Trace);
+        let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
+
+        let enable = Arc::new(AtomicBool::new(true));
+        let enable_clone = enable.clone();
+
+        let handle = Handle::current();
+        let join_handler =
+            thread::spawn(move || handle.block_on(log_thread_func(receiver, enable_clone)));
+
+        Ok(Log {
+            enable: enable.clone(),
+            join_handle: join_handler,
+        })
     }
 
-    let (sender, receiver) = bounded(999999);
-
-    log::set_max_level(LevelFilter::Trace);
-    let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
-
-    let file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(true)
-        .open(&log_file_path)
-        .await
-        .map_err(|e| Error::Create(e))?;
-    let default_log_writer = BufWriter::new(file);
-
-    let log_enable = Arc::new(AtomicBool::new(true));
-    let log_enable_move = log_enable.clone();
-
-    let handle = Handle::current();
-    let join_handler = thread::spawn(move || {
-        handle.block_on(log_thread_func(
-            receiver,
-            default_log_writer,
-            log_enable_move,
-        ))
-    });
-
-    Ok(LogHandler {
-        log_enable: log_enable.clone(),
-        join_handler,
-    })
-}
-
-pub struct LogHandler {
-    log_enable: Arc<AtomicBool>,
-    join_handler: JoinHandle<()>,
-}
-
-pub async fn terminal(log_handler: LogHandler) {
-    log_handler.log_enable.store(false, Ordering::SeqCst);
-    let _ = log_handler.join_handler.join();
+    pub async fn drop(self, force: bool) {
+        self.enable.store(!force, Ordering::SeqCst);
+        let _ = self.join_handle.join();
+    }
 }

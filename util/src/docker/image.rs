@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use futures::executor::block_on;
 use log::{trace, warn};
 use reqwest::Method;
+
+use chord_core::future::task::spawn;
 
 use crate::docker::container::{Arg, Container};
 use crate::docker::engine::Engine;
@@ -44,20 +45,25 @@ impl Image {
     }
 }
 
-// impl Drop for Image {
-//     fn drop(&mut self) {
-//         let uri = format!("images/{}", self.name);
-//         let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
-//         let _ = block_on(f)
-//             .map_err(|e| {
-//                 if let Status(404) = e {
-//                     trace!("image not found {}", self.name);
-//                 } else {
-//                     warn!("image remove fail {}, {}", self.name, e);
-//                 }
-//             })
-//             .map(|_| {
-//                 trace!("image remove {}", self.name);
-//             });
-//     }
-// }
+impl Drop for Image {
+    fn drop(&mut self) {
+        let uri = format!("images/{}", self.name);
+        let name = self.name.clone();
+        let engine = self.engine.clone();
+        let _ = spawn(async move {
+            engine
+                .call(uri.as_str(), Method::DELETE, None, 1)
+                .await
+                .map_err(|e| {
+                    if let Status(404) = e {
+                        trace!("image not found {}", name);
+                    } else {
+                        warn!("image remove fail {}, {}", name, e);
+                    }
+                })
+                .map(|_| {
+                    trace!("image remove {}", name);
+                })
+        });
+    }
+}

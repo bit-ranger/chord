@@ -3,7 +3,7 @@ use std::sync::Arc;
 use log::{trace, warn};
 use reqwest::Method;
 
-use chord_core::future::runtime::Handle;
+use chord_core::future::task::spawn;
 use chord_core::value::{Map, Value};
 
 use crate::docker::engine::Engine;
@@ -140,18 +140,21 @@ impl Container {
     }
 }
 
-// impl Drop for Container {
-//     fn drop(&mut self) {
-//         let uri = format!("containers/{}?force=true", self.name);
-//         let f = self.engine.call(uri.as_str(), Method::DELETE, None, 1);
-//         let current = Handle::current();
-//         let _ = current
-//             .block_on(f)
-//             .map_err(|_| {
-//                 warn!("container remove fail {}", self.name);
-//             })
-//             .map(|_| {
-//                 trace!("container remove {}", self.name);
-//             });
-//     }
-// }
+impl Drop for Container {
+    fn drop(&mut self) {
+        let uri = format!("containers/{}?force=true", self.name);
+        let engine = self.engine.clone();
+        let name = self.name.clone();
+        let _ = spawn(async move {
+            engine
+                .call(uri.as_str(), Method::DELETE, None, 1)
+                .await
+                .map_err(|_| {
+                    warn!("container remove fail {}", name);
+                })
+                .map(|_| {
+                    trace!("container remove {}", name);
+                })
+        });
+    }
+}

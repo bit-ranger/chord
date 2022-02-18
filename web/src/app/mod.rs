@@ -5,11 +5,15 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use bean::component::HasComponent;
 use bean::container;
 
+// use chord_core::value::json;
 use chord_core::value::Value;
-use chord_core::value::{Deserialize, Serialize};
 
 use crate::app::conf::{Config, ConfigImpl};
 use crate::ctl::job;
+
+// use validator::{Validate, ValidationErrors, ValidationErrorsKind};
+
+// use chord_core::value::{Deserialize, Serialize};
 
 pub mod conf;
 mod logger;
@@ -29,12 +33,12 @@ pub enum Error {
     Web(std::io::Error),
 }
 
-#[derive(Serialize, Deserialize)]
-struct ErrorBody {
-    code: String,
-    message: String,
-}
-
+// #[derive(Serialize, Deserialize)]
+// struct ErrorBody {
+//     code: String,
+//     message: String,
+// }
+//
 // fn common_error_json(e: &Error) -> Value {
 //     json!(ErrorBody {
 //         code: match e {
@@ -46,7 +50,7 @@ struct ErrorBody {
 //         message: e.to_string()
 //     })
 // }
-
+//
 // fn validator_error_json_nested(e: &ValidationErrors) -> Vec<String> {
 //     return e
 //         .errors()
@@ -70,7 +74,7 @@ struct ErrorBody {
 //             return l;
 //         });
 // }
-
+//
 // fn validator_error_json(e: &ValidationErrors) -> Value {
 //     json!(ErrorBody {
 //         code: "400".into(),
@@ -118,12 +122,24 @@ pub async fn init(data: Value) -> Result<(), Error> {
         .put("default", config.clone())
         .put("default", job_ctl.clone());
 
-    HttpServer::new(|| App::new().service(root).service(job_exec))
-        .bind((config.server_ip(), config.server_port() as u16))
-        .map_err(|e| Error::Web(e))?
-        .run()
-        .await
-        .unwrap();
+    HttpServer::new(|| {
+        App::new()
+            // .wrap_fn(|req, srv| {
+            //
+            // let rb = req.body_json().await?;
+            // match Validate::validate(&rb) {
+            //     Ok(_) => srv.call(req),
+            //     Error(e) => validator_error_json(e),
+            // }
+            // })
+            .service(root)
+            .service(job_exec)
+    })
+    .bind((config.server_ip(), config.server_port() as u16))
+    .map_err(|e| Error::Web(e))?
+    .run()
+    .await
+    .unwrap();
 
     Ok(())
 }
@@ -140,7 +156,7 @@ async fn root() -> impl Responder {
 }
 
 #[post("/job/exec")]
-async fn job_exec(param: web::Json<job::Req>) -> HttpResponse {
+async fn job_exec(param: web::Json<job::Arg>) -> HttpResponse {
     let job_ctl: Arc<job::CtlImpl> = Web::borrow().get("default").unwrap();
     let result = job::Ctl::exec(job_ctl.as_ref(), param.0)
         .await

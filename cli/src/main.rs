@@ -52,7 +52,7 @@ enum RunError {
     InputNotDir(String),
 
     #[error("config error:\n{0}")]
-    Config(chord_input::layout::Error),
+    Config(chord_input::conf::Error),
 
     #[error("report error:\n{0}")]
     Report(chord_core::output::Error),
@@ -107,8 +107,8 @@ async fn run(
         .map(|p| PathBuf::from(p))
         .unwrap_or_else(|| PathBuf::from(dirs::home_dir().unwrap().join(".chord").join("conf")));
 
-    let conf_data = if chord_input::layout::exists(conf_dir_path.as_path(), "cmd").await {
-        chord_input::layout::load(conf_dir_path.as_path(), "cmd")
+    let conf_data = if chord_input::conf::exists(conf_dir_path.as_path(), "cmd").await {
+        chord_input::conf::load(conf_dir_path.as_path(), "cmd")
             .await
             .map_err(|e| RunError::Config(e))?
     } else {

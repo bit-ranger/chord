@@ -23,7 +23,7 @@ mod logger;
 #[derive(thiserror::Error)]
 pub enum Error {
     #[error("config error:\n{0}")]
-    Config(chord_input::layout::Error),
+    Config(chord_input::conf::Error),
 
     #[error("log error:\n{0}")]
     Logger(logger::Error),

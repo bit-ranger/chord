@@ -132,8 +132,8 @@ pub async fn init(data: Value) -> Result<(), Error> {
     );
 
     Web::init()
-        .put("default", config.clone())
-        .put("default", job_ctl.clone());
+        .put("conf", config.clone())
+        .put("jobCtl", job_ctl.clone());
 
     HttpServer::new(|| App::new().service(root).service(job_exec))
         .bind((config.server_ip(), config.server_port() as u16))
@@ -152,7 +152,7 @@ async fn root() -> impl Responder {
 
 #[post("/job/exec")]
 async fn job_exec(param: Json<job::Arg>) -> Result<Json<Val>, Error> {
-    let job_ctl: Arc<job::CtlImpl> = Web::borrow().get("default").unwrap();
+    let job_ctl: Arc<job::CtlImpl> = Web::borrow().get("jobCtl").unwrap();
     let result = job::Ctl::exec(job_ctl.as_ref(), param.0).await?;
     Ok(Json(result))
 }

@@ -6,7 +6,7 @@ use lazy_static::lazy_static;
 use log::warn;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use validator::Validate;
+use validator::{Validate, ValidationErrors};
 
 use chord_core::future::task::spawn;
 use chord_core::value::Map;
@@ -30,6 +30,15 @@ fn regex() {
 pub enum Error {
     #[error("docker error:\n{0}")]
     Docker(chord_util::docker::Error),
+
+    #[error("{0}")]
+    Validation(ValidationErrors),
+}
+
+impl From<ValidationErrors> for Error {
+    fn from(e: ValidationErrors) -> Self {
+        Error::Validation(e)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -75,6 +84,7 @@ impl CtlImpl {
 #[async_trait]
 impl Ctl for CtlImpl {
     async fn exec(&self, arg: Arg) -> Result<Val, Error> {
+        arg.validate()?;
         let arg = Arg {
             git_url: arg.git_url,
             git_branch: Some(arg.git_branch.unwrap_or("master".to_owned())),

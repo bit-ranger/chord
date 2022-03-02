@@ -15,12 +15,12 @@ let step = conf.stage.smoking.step;
 step.step1 = {
     let: {
         url: url,
-        user: "{{case.user}}"
+        db: "{{case.db}}"
     },
 
     database: {
         url: "{{url}}",
-        sql: "SELECT * FROM user WHERE user = '{{user}}'"
+        sql: "SELECT * FROM db where Db='{{db}}'"
     },
-    assert: "(eq value.records.0.User user)"
+    assert: "(eq value.records.0.Db db)"
 }

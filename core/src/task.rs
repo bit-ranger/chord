@@ -35,3 +35,29 @@ pub trait TaskAssess: Sync + Send {
 
     fn state(&self) -> &TaskState;
 }
+
+pub enum StageState {
+    Ok,
+    Fail(String),
+    Err(Error),
+}
+
+impl StageState {
+    #[allow(dead_code)]
+    pub fn is_ok(&self) -> bool {
+        match self {
+            StageState::Ok => true,
+            _ => false,
+        }
+    }
+}
+
+pub trait StageAssess: Sync + Send {
+    fn id(&self) -> &str;
+
+    fn start(&self) -> DateTime<Utc>;
+
+    fn end(&self) -> DateTime<Utc>;
+
+    fn state(&self) -> &StageState;
+}

@@ -8,7 +8,7 @@ use chord_core::action::Error;
 use chord_core::action::RunId;
 use chord_core::action::{CreateArg, CreateId, RunArg};
 use chord_core::case::CaseId;
-use chord_core::flow::Flow;
+use chord_core::flow::{Flow, Then};
 use chord_core::task::TaskId;
 use chord_core::value::{Map, Value};
 
@@ -179,7 +179,7 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         self.flow.step_spec_catch_err(self.id().step())
     }
 
-    pub fn then(&self) -> Option<Vec<&Map>> {
+    pub fn then(&self) -> Option<Vec<Then>> {
         self.flow.step_then(self.id().step())
     }
 

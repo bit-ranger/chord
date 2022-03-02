@@ -14,6 +14,10 @@ let conf = {
     version: "0.0.1",
     stage: {
         smoking: {
+            concurrency: 10,
+            loader: {
+                strategy: "fix_size_repeat_last_page"
+            },
             step: {}
         }
     }

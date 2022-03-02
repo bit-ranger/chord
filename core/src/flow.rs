@@ -1,8 +1,8 @@
 use std::borrow::Borrow;
 use std::collections::HashSet;
+use std::path::Path;
 use std::time::Duration;
 
-use async_std::path::Path;
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -34,6 +34,25 @@ pub enum Error {
 pub struct Flow {
     flow: Value,
     meta: Map,
+}
+
+#[derive(Debug, Clone)]
+pub struct Then {
+    cond: Option<String>,
+    reg: Option<Map>,
+    goto: Option<String>,
+}
+
+impl Then {
+    pub fn cond(&self) -> Option<&str> {
+        self.cond.as_ref().map(|s| s.as_str())
+    }
+    pub fn reg(&self) -> Option<&Map> {
+        self.reg.as_ref()
+    }
+    pub fn goto(&self) -> Option<&str> {
+        self.goto.as_ref().map(|g| g.as_str())
+    }
 }
 
 impl Flow {
@@ -150,13 +169,11 @@ impl Flow {
         self._stage_id_vec().unwrap()
     }
 
-    pub fn stage_case_name<'a, 's>(&'s self, stage_id: &'a str) -> &'a str
+    pub fn stage_loader<'a, 's>(&'s self, stage_id: &'a str) -> &'a Value
     where
         's: 'a,
     {
-        self.flow["stage"][stage_id]["case"]["name"]
-            .as_str()
-            .unwrap_or(stage_id)
+        &self.flow["stage"][stage_id]["loader"]
     }
 
     pub fn stage_concurrency(&self, stage_id: &str) -> usize {
@@ -199,7 +216,7 @@ impl Flow {
         self._step_assert(step_id).unwrap()
     }
 
-    pub fn step_then(&self, step_id: &str) -> Option<Vec<&Map>> {
+    pub fn step_then(&self, step_id: &str) -> Option<Vec<Then>> {
         self._step_then(step_id).unwrap()
     }
 
@@ -257,7 +274,7 @@ impl Flow {
     fn _stage_check(&self, stage_id: &str) -> Result<(), Error> {
         let enable_keys = vec![
             "step",
-            "case",
+            "loader",
             "concurrency",
             "round",
             "duration",
@@ -489,7 +506,7 @@ impl Flow {
         }
     }
 
-    pub fn _step_then(&self, step_id: &str) -> Result<Option<Vec<&Map>>, Error> {
+    pub fn _step_then(&self, step_id: &str) -> Result<Option<Vec<Then>>, Error> {
         let array = self._step(step_id)["then"].as_array();
         if array.is_none() {
             return Ok(None);
@@ -499,7 +516,11 @@ impl Flow {
                 array
                     .iter()
                     .filter(|v| v.is_object())
-                    .map(|m| m.as_object().unwrap())
+                    .map(|m| Then {
+                        cond: m["if"].as_str().map(|c| c.to_string()),
+                        reg: m["reg"].as_object().map(|r| r.clone()),
+                        goto: m["goto"].as_str().map(|g| g.to_string()),
+                    })
                     .collect(),
             ))
         }

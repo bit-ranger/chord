@@ -1,16 +1,14 @@
-use async_std::path::PathBuf;
+use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use chord_input::load;
+use app::Error;
 
 mod ctl;
 
 mod app;
 
-use app::Error;
-
-#[async_std::main]
+#[chord_core::future::main]
 async fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
     let conf_dir_path = opt
@@ -18,7 +16,7 @@ async fn main() -> Result<(), Error> {
         .clone()
         .map(|p| PathBuf::from(p))
         .unwrap_or_else(|| PathBuf::from(dirs::home_dir().unwrap().join(".chord").join("conf")));
-    let conf = load::conf::load(conf_dir_path, "web")
+    let conf = chord_input::conf::load(conf_dir_path, "web")
         .await
         .map_err(|e| Error::Config(e))?;
     app::init(conf).await?;

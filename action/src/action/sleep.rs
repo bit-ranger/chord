@@ -1,8 +1,7 @@
 use std::time::Duration;
 
-use async_std::task::sleep;
-
 use chord_core::action::prelude::*;
+use chord_core::future::time::sleep;
 
 use crate::err;
 

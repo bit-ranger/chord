@@ -1,119 +1,115 @@
 use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use async_std::fs::create_dir_all;
-use async_std::fs::read_dir;
-use async_std::fs::remove_file;
-use async_std::fs::rename;
-use async_std::path::{Path, PathBuf};
-use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
-use futures::StreamExt;
+use log::info;
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
-use chord_core::output::async_trait;
+use chord_core::future::fs::{create_dir_all, metadata, read_dir, remove_file, rename, DirEntry};
+use chord_core::future::path::exists;
 use chord_core::output::Error;
-use chord_core::output::Report;
+use chord_core::output::JobReporter;
+use chord_core::output::StageReporter;
+use chord_core::output::{async_trait, TaskReporter};
 use chord_core::step::StepState;
-use chord_core::task::{TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAssess, TaskAssess, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
 
-use crate::report::Factory;
-
-pub struct ReportFactory {
+pub struct CsvJobReporter {
     dir: PathBuf,
     with_bom: bool,
 }
 
 #[async_trait]
-impl Factory for ReportFactory {
-    async fn create(
+impl JobReporter for CsvJobReporter {
+    async fn task(
         &self,
         task_id: Arc<dyn TaskId>,
         flow: Arc<Flow>,
-    ) -> Result<Box<dyn Report>, Error> {
-        let factory = ReportFactory::create(self, task_id, flow).await?;
-        Ok(Box::new(factory))
+    ) -> Result<Box<dyn TaskReporter>, Error> {
+        let reporter = CsvTaskReporter::new(self.dir.clone(), task_id, flow, self.with_bom).await?;
+        Ok(Box::new(reporter))
     }
 }
 
-impl ReportFactory {
+impl CsvJobReporter {
     pub async fn new<P: AsRef<Path>>(
         report_dir: P,
         name: String,
         exec_id: String,
         with_bom: bool,
-    ) -> Result<ReportFactory, Error> {
+    ) -> Result<CsvJobReporter, Error> {
         let report_dir = report_dir.as_ref().join(name).join(exec_id);
-        if !report_dir.exists().await {
+        if !exists(report_dir.as_path()).await {
             create_dir_all(report_dir.as_path()).await?;
         } else {
             let mut rd = read_dir(report_dir.clone()).await?;
             loop {
-                let rf = rd.next().await;
+                let rf: Option<DirEntry> = rd.next_entry().await?;
                 if rf.is_none() {
                     break;
                 }
-                let rf = rf.unwrap()?;
-                if rf.path().is_file().await {
+                let rf = rf.unwrap();
+                let meta = metadata(rf.path()).await;
+                if meta.is_ok() && meta.unwrap().is_file() {
                     remove_file(rf.path()).await?;
                 }
             }
         }
 
-        Ok(ReportFactory {
+        Ok(CsvJobReporter {
             dir: report_dir.clone(),
             with_bom,
         })
     }
-
-    pub async fn create(
-        &self,
-        task_id: Arc<dyn TaskId>,
-        flow: Arc<Flow>,
-    ) -> Result<Reporter, Error> {
-        Reporter::new(self.dir.clone(), task_id, flow, self.with_bom).await
-    }
 }
 
-pub struct Reporter {
-    report_dir: PathBuf,
+pub struct CsvTaskReporter {
+    dir: PathBuf,
     task_id: Arc<dyn TaskId>,
     with_bom: bool,
-    stage_id: Option<String>,
-    writer: Writer<std::fs::File>,
     flow: Arc<Flow>,
 }
 
+impl CsvTaskReporter {
+    pub async fn new<P: AsRef<Path>>(
+        dir: P,
+        task_id: Arc<dyn TaskId>,
+        flow: Arc<Flow>,
+        with_bom: bool,
+    ) -> Result<CsvTaskReporter, Error> {
+        let dir = PathBuf::from(dir.as_ref());
+        let task_state_file = dir.join(format!("R.{}.csv", task_id.task()));
+        from_path(task_state_file, with_bom, false).await?;
+        let report = CsvTaskReporter {
+            dir,
+            task_id,
+            with_bom,
+            flow,
+        };
+        Ok(report)
+    }
+}
+
 #[async_trait]
-impl Report for Reporter {
-    async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
-        Ok(())
+impl TaskReporter for CsvTaskReporter {
+    async fn stage(&self, stage_id: &str) -> Result<Box<dyn StageReporter>, Error> {
+        let reporter = CsvStageReporter::new(
+            self.dir.clone(),
+            self.task_id.clone(),
+            stage_id,
+            self.flow.clone(),
+            self.with_bom,
+        )
+        .await?;
+        Ok(Box::new(reporter))
     }
 
-    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
-        if ca_vec.is_empty() {
-            return Ok(());
-        }
-        // stage_id 变化了
-        let stage_id = ca_vec[0].id().stage_id();
-        if self.stage_id.is_none() || self.stage_id.as_ref().unwrap().as_str() != stage_id {
-            //close old
-            self.writer.flush()?;
-
-            //create new
-            let report_file =
-                self.report_dir
-                    .join(format!("{}.{}.csv", self.task_id.task(), stage_id));
-            let mut writer: Writer<std::fs::File> = from_path(report_file, self.with_bom).await?;
-
-            writer.write_record(create_head(self.flow.stage_step_id_vec(stage_id)))?;
-            self.writer = writer;
-        }
-
-        let header = create_head(self.flow.stage_step_id_vec(stage_id));
-        return Ok(report(&mut self.writer, ca_vec, &header).await?);
+    async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
+        Ok(())
     }
 
     async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
@@ -123,47 +119,92 @@ impl Report for Reporter {
             TaskState::Fail(_) => "F",
         };
 
-        let report_file = self
-            .report_dir
-            .join(format!("R.{}.csv", self.task_id.task()));
+        let report_file = self.dir.join(format!("R.{}.csv", self.task_id.task()));
         let report_file_new =
-            self.report_dir
+            self.dir
                 .join(format!("{}.{}.csv", task_state_view, self.task_id.task()));
         rename(report_file, report_file_new).await?;
         Ok(())
     }
 }
 
-impl Reporter {
+pub struct CsvStageReporter {
+    writer: Writer<std::fs::File>,
+    head: Vec<String>,
+}
+
+impl CsvStageReporter {
     pub async fn new<P: AsRef<Path>>(
-        report_dir: P,
+        dir: P,
         task_id: Arc<dyn TaskId>,
+        stage_id: &str,
         flow: Arc<Flow>,
         with_bom: bool,
-    ) -> Result<Reporter, Error> {
-        let report_dir = PathBuf::from(report_dir.as_ref());
-        let task_state_file = report_dir.join(format!("R.{}.csv", task_id.task()));
-        let report = Reporter {
-            report_dir,
-            task_id,
-            with_bom,
-            stage_id: None,
-            writer: from_path(task_state_file, with_bom).await?,
-            flow,
+    ) -> Result<CsvStageReporter, Error> {
+        let fixed_step = {
+            let mut v = true;
+            for step_id in flow.stage_step_id_vec(stage_id) {
+                if let Some(then) = flow.step_then(step_id) {
+                    for th in then {
+                        if th.goto().is_some() {
+                            info!("step goto detected {}, result will be flexible", step_id);
+                            v = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            v
         };
+
+        let dir = PathBuf::from(dir.as_ref());
+        let report_file = dir.join(format!("{}.{}.csv", task_id.task(), stage_id));
+        let mut writer: Writer<std::fs::File> =
+            from_path(report_file, with_bom, !fixed_step).await?;
+
+        let head = if fixed_step {
+            create_head(flow.stage_step_id_vec(stage_id))
+        } else {
+            create_head(vec![])
+        };
+        writer.write_record(&head)?;
+
+        let report = CsvStageReporter { writer, head };
         Ok(report)
+    }
+}
+
+#[async_trait]
+impl StageReporter for CsvStageReporter {
+    async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
+        Ok(())
+    }
+
+    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
+        if ca_vec.is_empty() {
+            return Ok(());
+        }
+        return Ok(report(&mut self.writer, ca_vec, &self.head).await?);
+    }
+
+    async fn end(&mut self, _: &dyn StageAssess) -> Result<(), Error> {
+        self.writer.flush()?;
+        Ok(())
     }
 }
 
 async fn from_path<P: AsRef<Path>>(
     path: P,
     with_bom: bool,
+    flexible: bool,
 ) -> Result<Writer<std::fs::File>, Error> {
     let mut file = std::fs::File::create(path.as_ref().to_str().unwrap())?;
     if with_bom {
         file.write_all("\u{feff}".as_bytes())?;
     }
-    Ok(csv::WriterBuilder::new().from_writer(file))
+    Ok(csv::WriterBuilder::new()
+        .flexible(flexible)
+        .from_writer(file))
 }
 
 fn create_head(step_id_vec: Vec<&str>) -> Vec<String> {
@@ -265,10 +306,6 @@ fn to_value_vec(ca: &dyn CaseAssess, header: &Vec<String>) -> Vec<String> {
         for _ in 0..vacancy {
             value_vec.push(String::new());
         }
-    }
-
-    if value_vec.len() > header.len() {
-        let _ = value_vec.split_off(header.len());
     }
 
     value_vec

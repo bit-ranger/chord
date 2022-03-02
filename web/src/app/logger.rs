@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -6,16 +7,18 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 use std::vec::Vec;
 
-use async_std::fs::File;
-use async_std::io::BufWriter;
-use async_std::path::Path;
 use flume::{bounded, Receiver, Sender};
-use futures::executor::block_on;
-use futures::AsyncWriteExt;
 use itertools::Itertools;
 use log;
 use log::{LevelFilter, Metadata, Record};
 use time::{at, get_time, strftime};
+
+use chord_core::future::fs::create_dir_all;
+use chord_core::future::fs::{File, OpenOptions};
+use chord_core::future::io::AsyncWriteExt;
+use chord_core::future::io::BufWriter;
+use chord_core::future::path::exists;
+use chord_core::future::runtime::Handle;
 use Error::Create;
 
 #[derive(thiserror::Error, Debug)]
@@ -73,18 +76,17 @@ impl log::Log for ChannelLogger {
             let date = strftime("%F %T", &now).unwrap();
             let ms = now.tm_nsec / 1000000;
 
-            let ctx_id = chord_flow::CTX_ID
-                .try_with(|c| c.borrow().clone())
-                .unwrap_or("".to_owned());
+            // let ctx_id = chord_flow::CTX_ID
+            //     .try_with(|c| c.clone())
+            //     .unwrap_or("".to_owned());
 
             let data = format!(
-                "{}.{:03}  {:<5} {:<5} --- {:<30} : [{}] {}\n",
+                "{}.{:03}  {:<5} {:<5} --- {:<30} : {}\n",
                 date,
                 ms,
                 record.level(),
                 std::process::id(),
                 format!("{}:{}", record.target(), record.line().unwrap_or(0)),
-                ctx_id,
                 record.args()
             );
 
@@ -136,8 +138,8 @@ pub async fn init(
     let log_file_parent_path = log_file_path.parent();
     if log_file_parent_path.is_some() {
         let log_file_parent_path = log_file_parent_path.unwrap();
-        if !log_file_parent_path.exists().await {
-            async_std::fs::create_dir_all(log_file_parent_path)
+        if exists(log_file_parent_path).await {
+            create_dir_all(log_file_parent_path)
                 .await
                 .map_err(|e| Create(e))?;
         }
@@ -148,7 +150,7 @@ pub async fn init(
     log::set_max_level(LevelFilter::Trace);
     let _ = log::set_boxed_logger(Box::new(ChannelLogger::new(target_level, sender)));
 
-    let file = async_std::fs::OpenOptions::new()
+    let file = OpenOptions::new()
         .create(true)
         .write(true)
         .append(true)
@@ -159,8 +161,9 @@ pub async fn init(
 
     let log_enable = Arc::new(AtomicBool::new(true));
     let log_enable_move = log_enable.clone();
+    let handle = Handle::current();
     let join_handler = thread::spawn(move || {
-        block_on(log_thread_func(
+        handle.block_on(log_thread_func(
             receiver,
             default_log_writer,
             log_enable_move,

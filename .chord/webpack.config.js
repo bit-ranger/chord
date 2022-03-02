@@ -29,9 +29,6 @@ module.exports = (env) => {
     let enableTasks = allTasks;
     if (env["task"]) {
         let task = env["task"];
-        if (task.startsWith("/")) {
-
-        }
         enableTasks = allTasks.filter(t => t === task);
     }
 

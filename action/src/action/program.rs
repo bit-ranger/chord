@@ -1,7 +1,7 @@
-use async_std::process::{Child, Command};
 use log::trace;
 
 use chord_core::action::prelude::*;
+use chord_core::future::process::{Child, Command};
 
 use crate::err;
 
@@ -112,7 +112,7 @@ struct ChildHolder {
 impl ChildHolder {
     fn new(child: Child) -> ChildHolder {
         ChildHolder {
-            value: Value::Number(Number::from(child.id())),
+            value: Value::Number(Number::from(child.id().unwrap())),
             child,
         }
     }

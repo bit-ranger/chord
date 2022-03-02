@@ -1,12 +1,12 @@
 use std::panic::AssertUnwindSafe;
 
-use async_std::future::timeout;
 use chrono::{DateTime, Utc};
 use futures::FutureExt;
 use handlebars::TemplateRenderError;
 use log::{debug, error, info, trace, warn};
 
 use chord_core::action::{Action, Scope};
+use chord_core::future::time::timeout;
 use chord_core::step::StepState;
 use chord_core::value::json;
 use chord_core::value::{to_string_pretty, Value};
@@ -189,30 +189,22 @@ fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error
         return Ok(None);
     }
     for (idx, then) in then_vec.unwrap().iter().enumerate() {
-        let cond: Option<&Value> = then.get("if");
+        let cond: Option<&str> = then.cond();
         if cond.is_none()
-            || cond.unwrap().as_str().is_none()
-            || value_assert(arg, cond.unwrap().as_str())
-                .map_err(|e| Render(format!("then.{}.if", idx), e))?
+            || value_assert(arg, cond).map_err(|e| Render(format!("then.{}.if", idx), e))?
         {
-            let reg = then.get("reg");
-            let reg = if reg.is_none() {
-                None
-            } else if let Value::Object(m) = reg.unwrap() {
+            let reg = if let Some(r) = then.reg() {
                 Some(
-                    arg.render_object(m)
+                    arg.render_object(r)
                         .map_err(|e| Render(format!("then.{}.reg", idx), e))?,
                 )
             } else {
                 None
             };
 
-            let goto = then.get("goto");
-            let goto = if goto.is_none() {
-                None
-            } else if let Value::String(goto) = goto.unwrap() {
+            let goto = if let Some(g) = then.goto() {
                 let goto = arg
-                    .render_str(goto.as_str())
+                    .render_str(g)
                     .map_err(|e| Render(format!("then.{}.goto", idx), e))?;
                 Some(goto.as_str().map(|s| s.to_string()).ok_or_else(|| {
                     ValueUnexpected(format!("then.{}.goto", idx), goto.to_string())

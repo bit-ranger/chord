@@ -1,6 +1,6 @@
 use std::str::FromStr;
+use std::sync::Arc;
 
-use async_std::sync::Arc;
 use chrono::{DateTime, Utc};
 use log::{info, trace, warn};
 use reqwest::header::{HeaderName, HeaderValue};
@@ -8,64 +8,86 @@ use reqwest::{Client, Method, RequestBuilder, Response, Url};
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
-use chord_core::output::Report;
+use chord_core::output::JobReporter;
 use chord_core::output::{async_trait, Error};
+use chord_core::output::{StageReporter, TaskReporter};
 use chord_core::step::{StepAssess, StepState};
-use chord_core::task::{TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAssess, TaskAssess, TaskId, TaskState};
 use chord_core::value::{json, to_value, Value};
 use chord_core::value::{Deserialize, Serialize};
 
-use crate::report::Factory;
-
-pub struct ReportFactory {
+pub struct WebhookJobReporter {
     url: String,
     index: String,
     client: Client,
 }
 
 #[async_trait]
-impl Factory for ReportFactory {
-    async fn create(
+impl JobReporter for WebhookJobReporter {
+    async fn task(
         &self,
         task_id: Arc<dyn TaskId>,
         _: Arc<Flow>,
-    ) -> Result<Box<dyn Report>, Error> {
-        let reporter = ReportFactory::create(self, task_id).await?;
-        Ok(Box::new(reporter))
-    }
-}
-
-impl ReportFactory {
-    pub async fn new(url: String, job_name: String, _: String) -> Result<ReportFactory, Error> {
-        let client = Client::new();
-        index_create(client.clone(), url.as_str(), job_name.as_str()).await?;
-        Ok(ReportFactory {
-            url,
-            index: job_name,
-            client,
-        })
-    }
-
-    pub async fn create(&self, task_id: Arc<dyn TaskId>) -> Result<Reporter, Error> {
-        Reporter::new(
+    ) -> Result<Box<dyn TaskReporter>, Error> {
+        let reporter = WebhookTaskReporter::new(
             self.client.clone(),
             self.url.clone(),
             self.index.clone(),
             task_id,
         )
-        .await
+        .await?;
+        Ok(Box::new(reporter))
     }
 }
 
-pub struct Reporter {
+impl WebhookJobReporter {
+    pub async fn new(
+        url: String,
+        job_name: String,
+        _: String,
+    ) -> Result<WebhookJobReporter, Error> {
+        let client = Client::new();
+        index_create(client.clone(), url.as_str(), job_name.as_str()).await?;
+        Ok(WebhookJobReporter {
+            url,
+            index: job_name,
+            client,
+        })
+    }
+}
+
+pub struct WebhookTaskReporter {
     url: String,
     index: String,
     task_id: Arc<dyn TaskId>,
     client: Client,
 }
 
+impl WebhookTaskReporter {
+    async fn new(
+        client: Client,
+        es_url: String,
+        es_index: String,
+        task_id: Arc<dyn TaskId>,
+    ) -> Result<WebhookTaskReporter, Error> {
+        Ok(WebhookTaskReporter {
+            client,
+            url: es_url,
+            index: es_index,
+            task_id,
+        })
+    }
+}
+
 #[async_trait]
-impl Report for Reporter {
+impl TaskReporter for WebhookTaskReporter {
+    async fn stage(&self, _: &str) -> Result<Box<dyn StageReporter>, Error> {
+        let reporter =
+            WebhookStageReporter::new(self.client.clone(), self.url.clone(), self.index.clone())
+                .await?;
+        Ok(Box::new(reporter))
+    }
+
     async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error> {
         let task_data = ta_doc_init(self.task_id.as_ref(), time);
         data_send(
@@ -75,6 +97,50 @@ impl Report for Reporter {
             task_data,
         )
         .await?;
+        Ok(())
+    }
+
+    async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+        let task_data = ta_doc(
+            self.task_id.as_ref(),
+            task_assess.start(),
+            task_assess.end(),
+            task_assess.state(),
+        );
+        data_send(
+            self.client.clone(),
+            self.url.as_str(),
+            self.index.as_str(),
+            task_data,
+        )
+        .await?;
+        Ok(())
+    }
+}
+
+pub struct WebhookStageReporter {
+    url: String,
+    index: String,
+    client: Client,
+}
+
+impl WebhookStageReporter {
+    async fn new(
+        client: Client,
+        es_url: String,
+        es_index: String,
+    ) -> Result<WebhookStageReporter, Error> {
+        Ok(WebhookStageReporter {
+            client,
+            url: es_url,
+            index: es_index,
+        })
+    }
+}
+
+#[async_trait]
+impl StageReporter for WebhookStageReporter {
+    async fn start(&mut self, _: DateTime<Utc>) -> Result<(), Error> {
         Ok(())
     }
 
@@ -104,37 +170,8 @@ impl Report for Reporter {
         .await
     }
 
-    async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
-        let task_data = ta_doc(
-            self.task_id.as_ref(),
-            task_assess.start(),
-            task_assess.end(),
-            task_assess.state(),
-        );
-        data_send(
-            self.client.clone(),
-            self.url.as_str(),
-            self.index.as_str(),
-            task_data,
-        )
-        .await?;
+    async fn end(&mut self, _: &dyn StageAssess) -> Result<(), Error> {
         Ok(())
-    }
-}
-
-impl Reporter {
-    async fn new(
-        client: Client,
-        es_url: String,
-        es_index: String,
-        task_id: Arc<dyn TaskId>,
-    ) -> Result<Reporter, Error> {
-        Ok(Reporter {
-            client,
-            url: es_url,
-            index: es_index,
-            task_id,
-        })
     }
 }
 

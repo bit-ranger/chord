@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
+use std::path::{Path, PathBuf};
 
-use async_std::path::{Path, PathBuf};
 use dirs;
 
 use chord_core::value::json;
@@ -26,18 +26,19 @@ impl Config {
                     "chord": "trace"
                 }
             },
-
-            "report": {
+            "loader": {
+                "kind": "csv",
+                "csv": {
+                    "load_strategy": "actual"
+                }
+            },
+            "reporter": {
                 "kind": "csv",
                 "csv": {
                     "dir": home_dir.join("output").to_str().unwrap().to_string()
                 }
             },
-
            "action": {
-               "download": {
-                   "workdir": home_dir.join("output").join("download").to_str().unwrap().to_string()
-               },
                "dubbo": {
                    "enable": false,
                    "mode": "gateway",
@@ -71,11 +72,6 @@ impl Config {
 }
 
 impl Config {
-    pub fn log_dir(&self) -> &Path {
-        let log_dir = self.conf["log"]["dir"].as_str().expect("invalid log.dir");
-        Path::new(log_dir)
-    }
-
     pub fn log_level(&self) -> Vec<(String, String)> {
         let target_level: Vec<(String, String)> = match self.conf["log"]["level"].as_object() {
             None => vec![],
@@ -93,8 +89,12 @@ impl Config {
         self.conf.get("action")
     }
 
-    pub fn report(&self) -> Option<&Value> {
-        self.conf.get("report")
+    pub fn loader(&self) -> Option<&Value> {
+        self.conf.get("loader")
+    }
+
+    pub fn reporter(&self) -> Option<&Value> {
+        self.conf.get("reporter")
     }
 }
 

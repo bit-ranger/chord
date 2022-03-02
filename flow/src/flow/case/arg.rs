@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
+use std::sync::Arc;
 
-use async_std::sync::Arc;
 use log::trace;
 
 use chord_core::action::Action;

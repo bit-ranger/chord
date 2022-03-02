@@ -1,17 +1,17 @@
+use std::sync::Arc;
 use std::time::SystemTime;
 
-use async_std::sync::Arc;
-use async_std::task::spawn;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use log::warn;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use validator::Validate;
+use validator::{Validate, ValidationErrors};
 
+use chord_core::future::task::spawn;
 use chord_core::value::Map;
 use chord_core::value::Value;
-use chord_util::docker::container::Arg;
+use chord_util::docker::container::Arg as CArg;
 use chord_util::docker::engine::Engine;
 use chord_util::docker::image::Image;
 
@@ -30,10 +30,19 @@ fn regex() {
 pub enum Error {
     #[error("docker error:\n{0}")]
     Docker(chord_util::docker::Error),
+
+    #[error("{0}")]
+    Validation(ValidationErrors),
+}
+
+impl From<ValidationErrors> for Error {
+    fn from(e: ValidationErrors) -> Self {
+        Error::Validation(e)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
-pub struct Req {
+pub struct Arg {
     #[validate(regex = "GIT_URL")]
     git_url: String,
 
@@ -42,13 +51,13 @@ pub struct Req {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Rep {
+pub struct Val {
     exec_id: String,
 }
 
 #[async_trait]
 pub trait Ctl {
-    async fn exec(&self, req: Req) -> Result<Rep, Error>;
+    async fn exec(&self, arg: Arg) -> Result<Val, Error>;
 }
 
 pub struct CtlImpl {
@@ -74,10 +83,11 @@ impl CtlImpl {
 
 #[async_trait]
 impl Ctl for CtlImpl {
-    async fn exec(&self, req: Req) -> Result<Rep, Error> {
-        let req = Req {
-            git_url: req.git_url,
-            git_branch: Some(req.git_branch.unwrap_or("master".to_owned())),
+    async fn exec(&self, arg: Arg) -> Result<Val, Error> {
+        arg.validate()?;
+        let arg = Arg {
+            git_url: arg.git_url,
+            git_branch: Some(arg.git_branch.unwrap_or("master".to_owned())),
         };
 
         let exec_id = (SystemTime::now()
@@ -88,16 +98,16 @@ impl Ctl for CtlImpl {
             .to_string();
         let exec_id_0 = exec_id.clone();
         spawn(job_run(
-            req,
+            arg,
             exec_id_0,
             self.config.clone(),
             self.image.clone(),
         ));
-        return Ok(Rep { exec_id });
+        return Ok(Val { exec_id });
     }
 }
 
-async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Image>) {
+async fn job_run(req: Arg, exec_id: String, conf: Arc<dyn Config>, image: Arc<Image>) {
     let is_delimiter = |c: char| ['@', ':', '/'].contains(&c);
     let git_url_splits = split(is_delimiter, req.git_url.as_str());
     let host = git_url_splits[1];
@@ -108,7 +118,7 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
     let job_name = format!("{}@{}@{}", repo_name, group_name, host).to_lowercase();
 
     let container_name = format!("chord-web-{}", exec_id);
-    let ca = Arg::default();
+    let ca = CArg::default();
     let env: Vec<String> = vec![
         format!("chord_exec_id={}", exec_id),
         format!("chord_job_name={}", job_name),
@@ -136,7 +146,7 @@ async fn job_run(req: Req, exec_id: String, conf: Arc<dyn Config>, image: Arc<Im
     }
 }
 
-async fn job_run_0(image: Arc<Image>, container_name: String, ca: Arg) -> Result<(), Error> {
+async fn job_run_0(image: Arc<Image>, container_name: String, ca: CArg) -> Result<(), Error> {
     let mut container = image
         .container_create(container_name.as_str(), ca)
         .await

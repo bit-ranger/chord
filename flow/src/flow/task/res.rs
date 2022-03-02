@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use chord_core::task::{TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAssess, StageState, TaskAssess, TaskId, TaskState};
 
 use crate::flow::task::arg::TaskIdSimple;
 
@@ -43,6 +43,47 @@ impl TaskAssess for TaskAssessStruct {
     }
 
     fn state(&self) -> &TaskState {
+        &self.state
+    }
+}
+
+pub struct StageAssessStruct {
+    id: String,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    state: StageState,
+}
+
+impl StageAssessStruct {
+    pub fn new(
+        id: String,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+        state: StageState,
+    ) -> StageAssessStruct {
+        StageAssessStruct {
+            id,
+            start,
+            end,
+            state,
+        }
+    }
+}
+
+impl StageAssess for StageAssessStruct {
+    fn id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    fn start(&self) -> DateTime<Utc> {
+        self.start
+    }
+
+    fn end(&self) -> DateTime<Utc> {
+        self.end
+    }
+
+    fn state(&self) -> &StageState {
         &self.state
     }
 }

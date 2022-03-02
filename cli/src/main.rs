@@ -1,17 +1,19 @@
 use std::fmt::{Debug, Display, Formatter};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use async_std::path::{Path, PathBuf};
-use async_std::sync::Arc;
 use dirs;
 use structopt::StructOpt;
 
 use chord_action::FactoryComposite;
+use chord_core::future::path::is_dir;
 use chord_core::task::TaskState;
 use chord_core::value::Value;
-use chord_input::load;
-use chord_output::report::ReportFactory;
+use chord_input::load::DefaultJobLoader;
+use chord_output::report::DefaultJobReporter;
 
 use crate::conf::Config;
+use crate::job::dir_is_task_path;
 use crate::RunError::{InputNotDir, Logger, TaskErr, TaskFail};
 
 mod conf;
@@ -50,7 +52,7 @@ enum RunError {
     InputNotDir(String),
 
     #[error("config error:\n{0}")]
-    Config(load::conf::Error),
+    Config(chord_input::conf::Error),
 
     #[error("report error:\n{0}")]
     Report(chord_core::output::Error),
@@ -71,7 +73,7 @@ enum RunError {
     TaskErr(String, String),
 }
 
-#[async_std::main]
+#[chord_core::future::main]
 async fn main() -> Result<(), RunError> {
     let opt = Chord::from_args();
     match opt {
@@ -93,7 +95,7 @@ async fn run(
     verbose: bool,
 ) -> Result<(), RunError> {
     let input_dir = Path::new(&input);
-    if !input_dir.is_dir().await {
+    if !is_dir(input_dir).await {
         return Err(InputNotDir(input_dir.to_str().unwrap().to_string()));
     }
 
@@ -105,8 +107,8 @@ async fn run(
         .map(|p| PathBuf::from(p))
         .unwrap_or_else(|| PathBuf::from(dirs::home_dir().unwrap().join(".chord").join("conf")));
 
-    let conf_data = if load::conf::exists(conf_dir_path.as_path(), "cmd").await {
-        load::conf::load(conf_dir_path.as_path(), "cmd")
+    let conf_data = if chord_input::conf::exists(conf_dir_path.as_path(), "cmd").await {
+        chord_input::conf::load(conf_dir_path.as_path(), "cmd")
             .await
             .map_err(|e| RunError::Config(e))?
     } else {
@@ -118,19 +120,21 @@ async fn run(
         println!("config loaded: {}", config);
     }
 
-    let report_factory = ReportFactory::new(config.report(), job_name.as_str(), exec_id.as_str())
-        .await
-        .map_err(|e| RunError::Report(e))?;
-    let report_factory = Arc::new(report_factory);
-
-    let log_file_path = config
-        .log_dir()
-        .join(job_name.clone())
-        .join(exec_id.clone())
-        .join("cmd.log");
-    let log_handler = logger::init(config.log_level(), log_file_path.as_path())
+    let log = logger::Log::new(config.log_level())
         .await
         .map_err(|e| Logger(e))?;
+
+    let path_is_task = dir_is_task_path(input_dir.to_path_buf()).await;
+    let job_loader = DefaultJobLoader::new(config.loader(), input_dir.clone(), path_is_task)
+        .await
+        .map_err(|e| RunError::Report(e))?;
+    let job_loader = Arc::new(job_loader);
+
+    let job_reporter =
+        DefaultJobReporter::new(config.reporter(), job_name.as_str(), exec_id.as_str())
+            .await
+            .map_err(|e| RunError::Report(e))?;
+    let job_reporter = Arc::new(job_reporter);
 
     let app_ctx = chord_flow::context_create(Box::new(
         FactoryComposite::new(config.action().map(|c| c.clone()))
@@ -138,10 +142,17 @@ async fn run(
             .map_err(|e| RunError::ActionFactory(e))?,
     ))
     .await;
-    let task_state_vec = job::run(app_ctx, report_factory, exec_id.clone(), input_dir)
-        .await
-        .map_err(|e| RunError::JobErr(e))?;
-    logger::terminal(log_handler).await;
+    let task_state_vec = job::run(
+        app_ctx,
+        job_loader,
+        job_reporter,
+        exec_id.clone(),
+        input_dir,
+        path_is_task,
+    )
+    .await
+    .map_err(|e| RunError::JobErr(e))?;
+    log.drop().await;
     let et = task_state_vec.iter().filter(|t| !t.state().is_ok()).nth(0);
     return match et {
         Some(et) => match et.state() {

@@ -21,12 +21,12 @@ struct Crypto {}
 
 #[async_trait]
 impl Action for Crypto {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }
 
-async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+async fn run(arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
     let args = arg.args()?;
     let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 

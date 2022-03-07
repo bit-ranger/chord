@@ -36,7 +36,7 @@ struct Redis {
 
 #[async_trait]
 impl Action for Redis {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
@@ -50,7 +50,7 @@ impl Action for Redis {
     }
 }
 
-async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error> {
+async fn run0(arg: &mut dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error> {
     let args = arg.args()?;
     let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 

@@ -21,7 +21,7 @@ struct Log {}
 
 #[async_trait]
 impl Action for Log {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         info!("{}", args);
         return Ok(Box::new(Value::Null));

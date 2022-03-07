@@ -61,7 +61,7 @@ struct MapRunArg<'a> {
 }
 
 impl<'a> MapRunArg<'a> {
-    fn new(delegate: &'a dyn RunArg, index: usize, item: Value) -> MapRunArg {
+    fn new(delegate: &'a mut dyn RunArg, index: usize, item: Value) -> MapRunArg {
         let mut context = delegate.context().clone();
         context.insert("idx".to_string(), Value::Number(Number::from(index)));
         context.insert("item".to_string(), item.clone());
@@ -83,12 +83,12 @@ impl<'a> RunArg for MapRunArg<'a> {
         self.delegate.timeout()
     }
 
-    fn context(&self) -> &Map {
-        &self.context
+    fn context(&mut self) -> &mut Map {
+        &mut self.context
     }
 
     fn args(&self) -> Result<Value, Error> {
-        self.args_with(self.context())
+        self.args_with(&self.context)
     }
 
     fn args_with(&self, context: &Map) -> Result<Value, Error> {
@@ -152,7 +152,7 @@ impl Factory for IterMapFactory {
 
 #[async_trait]
 impl Action for IterMap {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let mut context = arg.context().clone();
         context.insert("idx".to_string(), Value::Null);
         context.insert("item".to_string(), Value::Null);
@@ -163,8 +163,8 @@ impl Action for IterMap {
 
         let mut map_val_vec = Vec::with_capacity(array.len());
         for (index, item) in array.iter().enumerate() {
-            let mra = MapRunArg::new(arg, index, item.clone());
-            let val = self.map_action.run(&mra).await?;
+            let mut mra = MapRunArg::new(arg, index, item.clone());
+            let val = self.map_action.run(&mut mra).await?;
             map_val_vec.push(val.as_value().clone());
         }
         Ok(Box::new(Value::Array(map_val_vec)))

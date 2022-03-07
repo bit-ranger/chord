@@ -44,8 +44,10 @@ pub async fn run(
     trace!("step start {}", arg.id());
     let start = Utc::now();
     let explain = action.explain(arg).await.unwrap_or(Value::Null);
+
+    let duration = arg.timeout();
     let future = AssertUnwindSafe(action.run(arg)).catch_unwind();
-    let timeout_value = timeout(arg.timeout(), future).await;
+    let timeout_value = timeout(duration, future).await;
     if let Err(_) = timeout_value {
         warn!("step timeout {}", arg.id());
         return assess_create(arg, start, explain, Err(Box::new(Timeout)));

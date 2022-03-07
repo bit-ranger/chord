@@ -221,8 +221,8 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
         &self.id
     }
 
-    fn context(&self) -> &Map {
-        &self.context.data().as_object().unwrap()
+    fn context(&mut self) -> &mut Map {
+        self.context.data_mut().as_object_mut().unwrap()
     }
 
     fn timeout(&self) -> Duration {

@@ -34,7 +34,7 @@ impl AttachProgram {
 
 #[async_trait]
 impl Action for AttachProgram {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let mut command = program_command(&args)?;
         trace!("program attach command {:?}", command);
@@ -70,7 +70,7 @@ impl Action for AttachProgram {
         }
     }
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+    async fn explain(&self, arg: &mut dyn RunArg) -> Result<Value, Error> {
         let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))
@@ -87,7 +87,7 @@ impl DetachProgram {
 
 #[async_trait]
 impl Action for DetachProgram {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
 
         let mut command = program_command(&args)?;
@@ -97,7 +97,7 @@ impl Action for DetachProgram {
         Ok(Box::new(ChildHolder::new(child)))
     }
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+    async fn explain(&self, arg: &mut dyn RunArg) -> Result<Value, Error> {
         let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))

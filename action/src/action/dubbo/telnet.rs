@@ -41,7 +41,7 @@ struct Dubbo {
 
 #[async_trait]
 impl Action for Dubbo {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let mut stream = TcpStream::connect(self.address.as_str())
             .await
             .map_err(|e| err!("connection error", format!("{}", e)))?;

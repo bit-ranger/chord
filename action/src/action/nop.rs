@@ -19,7 +19,7 @@ struct Nop {}
 
 #[async_trait]
 impl Action for Nop {
-    async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, _: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         return Ok(Box::new(Value::Null));
     }
 }

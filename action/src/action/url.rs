@@ -21,7 +21,7 @@ struct Url {}
 
 #[async_trait]
 impl Action for Url {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 

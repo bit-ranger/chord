@@ -40,7 +40,7 @@ pub trait Scope: Sync + Send {
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &dyn RunId;
 
-    fn context(&self) -> &Map;
+    fn context(&mut self) -> &mut Map;
 
     fn timeout(&self) -> Duration;
 
@@ -64,9 +64,9 @@ pub trait CreateArg: Sync + Send {
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error>;
+    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error>;
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+    async fn explain(&self, arg: &mut dyn RunArg) -> Result<Value, Error> {
         arg.args()
     }
 }

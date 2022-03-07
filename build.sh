@@ -6,21 +6,21 @@ entry="$(pwd)"
 
 members=("core" "util" "action" "input" "output" "flow" "cli" "web")
 
-echo "check members"
+echo "build members"
 for mod in "${members[@]}"
 do
   cd "$mod"
   echo "entering $(pwd)"
-  cargo check
+  cargo build --all-features --verbose --release
   cd "$entry"
 done
 
-echo "publish members"
+
+echo "test members"
 for mod in "${members[@]}"
 do
   cd "$mod"
   echo "entering $(pwd)"
-  cargo publish
+  cargo test --all-features --verbose --release
   cd "$entry"
-  sleep 1m
 done

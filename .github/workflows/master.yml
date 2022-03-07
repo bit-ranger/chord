@@ -74,6 +74,7 @@ jobs:
       - name: chord-build-simple
         run: |
           chmod -R 777 $PWD
+          make -C .chord/src/cdylib/cdylib_example/bin
           cargo --version
           ./build.sh
           find $(pwd)
@@ -122,6 +123,8 @@ jobs:
 
       - name: chord-build-simple
         run: |
+          chmod -R 777 $PWD
+          cargo --version
           ./build.sh
 
       - name: chord-target-upload
@@ -155,6 +158,8 @@ jobs:
 
       - name: chord-build-simple
         run: |
+          chmod -R 777 $PWD
+          cargo --version
           ./build.sh
 
       - name: chord-target-upload

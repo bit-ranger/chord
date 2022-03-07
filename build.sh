@@ -14,6 +14,7 @@ do
   cargo build --all-features --verbose --release
   cd "$entry"
 done
+cargo build --all-features --verbose --release
 
 
 echo "test members"
@@ -24,3 +25,4 @@ do
   cargo test --all-features --verbose --release
   cd "$entry"
 done
+cargo test --all-features --verbose --release

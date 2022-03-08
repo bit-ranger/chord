@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
 use chord_core::action::RunId;
+use chord_core::collection::TailDropVec;
 use chord_core::step::{StepAssess, StepState};
 use chord_core::value::{Map, Value};
 
@@ -10,27 +11,29 @@ pub struct StepAssessStruct {
     id: RunIdStruct,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
+    action_assess_vec: TailDropVec<ActionAssessStruct>,
+}
+
+pub struct ActionAssessStruct {
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
     explain: Value,
     state: StepState,
-    then: Option<StepThen>,
 }
 
-pub struct StepThen {
-    reg: Option<Map>,
-    goto: Option<String>,
-}
-
-impl StepThen {
-    pub fn reg(&self) -> Option<&Map> {
-        self.reg.as_ref()
-    }
-
-    pub fn goto(&self) -> Option<&str> {
-        self.goto.as_ref().map(|g| g.as_str())
-    }
-
-    pub fn new(reg: Option<Map>, goto: Option<String>) -> StepThen {
-        StepThen { reg, goto }
+impl ActionAssessStruct {
+    pub fn new(
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+        explain: Value,
+        state: StepState,
+    ) -> ActionAssessStruct {
+        ActionAssessStruct {
+            start,
+            end,
+            explain,
+            state,
+        }
     }
 }
 
@@ -39,22 +42,14 @@ impl StepAssessStruct {
         id: RunIdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
-        explain: Value,
-        state: StepState,
-        then: Option<StepThen>,
+        action_assess_vec: Vec<ActionAssessStruct>,
     ) -> StepAssessStruct {
         StepAssessStruct {
             id,
             start,
             end,
-            explain,
-            state,
-            then,
+            action_assess_vec: TailDropVec::from(action_assess_vec),
         }
-    }
-
-    pub fn then(&self) -> Option<&StepThen> {
-        self.then.as_ref()
     }
 }
 
@@ -72,10 +67,10 @@ impl StepAssess for StepAssessStruct {
     }
 
     fn explain(&self) -> &Value {
-        &self.explain
+        &self.action_assess_vec.last().unwrap().explain
     }
 
     fn state(&self) -> &StepState {
-        &self.state
+        &self.action_assess_vec.last().unwrap().state
     }
 }

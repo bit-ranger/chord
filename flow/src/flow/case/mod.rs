@@ -13,7 +13,8 @@ use res::CaseAssessStruct;
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step;
 use crate::flow::step::arg::RunIdStruct;
-use crate::flow::step::res::StepAssessStruct;
+use crate::flow::step::res::{ActionAssessStruct, StepAssessStruct};
+use crate::flow::step::StepRunner;
 use crate::model::app::FlowApp;
 
 pub mod arg;
@@ -35,19 +36,9 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
     let step_vec = arg.step_vec().clone();
 
     for (step_id, step_runner) in step_vec.iter() {
-        let step_arg = arg.step_arg_create(step_id, flow_ctx);
+        let step_runner: &StepRunner = step_runner;
 
-        // let action = get_action_by_step_id(step_vec.as_ref(), step_id.as_str());
-        // if action.is_none() {
-        //     return case_fail_by_step_err(
-        //         step_id.as_str(),
-        //         arg,
-        //         StepId(step_id.to_string()),
-        //         step_assess_vec,
-        //         start,
-        //     );
-        // }
-        // let action = action.unwrap();
+        let step_arg = arg.step_arg_create(step_id, flow_ctx);
 
 
         if let Err(e) = step_arg {
@@ -97,9 +88,12 @@ fn case_fail_by_step_err(
         step_run_id,
         Utc::now(),
         Utc::now(),
-        Value::Null,
-        StepState::Err(Box::new(e)),
-        None,
+        vec![ActionAssessStruct::new(
+            Utc::now(),
+            Utc::now(),
+            Value::Null,
+            StepState::Err(Box::new(e)),
+        )],
     );
     step_assess_vec.push(Box::new(step_assess));
     warn!("case Fail {}", arg.id());

@@ -135,25 +135,10 @@ impl CaseArgStruct {
         'app: 'h,
         'app: 'reg,
     {
-        let let_raw = self.flow.step_let(step_id);
-        let let_value = match let_raw {
-            Some(let_raw) => {
-                let let_value = flow::assign_by_render(
-                    flow_app.get_handlebars(),
-                    &self.render_ctx,
-                    let_raw,
-                    false,
-                )
-                .map_err(|e| Error::Render("let".to_string(), e))?;
-                Some(let_value)
-            }
-            None => None,
-        };
-
         Ok(RunArgStruct::new(
             self.flow.as_ref(),
             flow_app.get_handlebars(),
-            let_value,
+            self.render_ctx.clone(),
             self.id.clone(),
             step_id.to_owned(),
         ))
@@ -165,21 +150,5 @@ impl CaseArgStruct {
 
     pub fn take_data(self) -> Value {
         self.data
-    }
-
-    pub async fn step_ok_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
-        if let StepState::Ok(scope) = step_assess.state() {
-            if let Value::Object(reg) = self.render_ctx.data_mut() {
-                reg["step"][sid]["value"] = scope.as_value().clone();
-                if let Some(then) = step_assess.then() {
-                    if let Some(r) = then.reg() {
-                        for (k, v) in r {
-                            trace!("step reg {} {} {}", sid, k, v);
-                            reg["reg"][k] = v.clone()
-                        }
-                    }
-                }
-            }
-        }
     }
 }

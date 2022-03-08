@@ -134,13 +134,14 @@ pub struct RunArgStruct<'f, 'h, 'reg> {
     handlebars: &'h Handlebars<'reg>,
     context: RenderContext,
     id: RunIdStruct,
+    aid: String,
 }
 
 impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
     pub fn new(
         flow: &'f Flow,
         handlebars: &'h Handlebars<'reg>,
-        context: Option<Map>,
+        context: RenderContext,
         case_id: Arc<dyn CaseId>,
         step_id: String,
     ) -> RunArgStruct<'f, 'h, 'reg> {
@@ -148,16 +149,13 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
             case_id,
             step: step_id,
         };
-        let context = match context {
-            Some(lv) => RenderContext::wraps(lv),
-            None => RenderContext::wraps(Map::new()),
-        }
-        .unwrap();
+
         let run_arg = RunArgStruct {
             flow,
             handlebars,
             context,
             id,
+            aid: "".to_string(),
         };
 
         return run_arg;
@@ -181,10 +179,6 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
 
     pub fn then(&self) -> Option<Vec<Then>> {
         self.flow.step_then(self.id().step())
-    }
-
-    pub fn context_mut(&mut self) -> &mut Map {
-        self.context.data_mut().as_object_mut().unwrap()
     }
 
     pub fn render_str(&self, txt: &str) -> Result<Value, TemplateRenderError> {
@@ -213,6 +207,10 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
 
     pub fn render_object(&self, raw: &Map) -> Result<Map, TemplateRenderError> {
         self.render_object_with(raw, &self.context)
+    }
+
+    pub fn aid(&mut self, aid: &str) {
+        self.aid = aid.to_string();
     }
 }
 

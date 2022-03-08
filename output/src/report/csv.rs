@@ -8,12 +8,12 @@ use log::info;
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
-use chord_core::future::fs::{create_dir_all, metadata, read_dir, remove_file, rename, DirEntry};
+use chord_core::future::fs::{create_dir_all, DirEntry, metadata, read_dir, remove_file, rename};
 use chord_core::future::path::exists;
+use chord_core::output::{async_trait, TaskReporter};
 use chord_core::output::Error;
 use chord_core::output::JobReporter;
 use chord_core::output::StageReporter;
-use chord_core::output::{async_trait, TaskReporter};
 use chord_core::step::StepState;
 use chord_core::task::{StageAssess, TaskAssess, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
@@ -141,21 +141,7 @@ impl CsvStageReporter {
         flow: Arc<Flow>,
         with_bom: bool,
     ) -> Result<CsvStageReporter, Error> {
-        let fixed_step = {
-            let mut v = true;
-            for step_id in flow.stage_step_id_vec(stage_id) {
-                if let Some(then) = flow.step_then(step_id) {
-                    for th in then {
-                        if th.goto().is_some() {
-                            info!("step goto detected {}, result will be flexible", step_id);
-                            v = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            v
-        };
+        let fixed_step = true;
 
         let dir = PathBuf::from(dir.as_ref());
         let report_file = dir.join(format!("{}.{}.csv", task_id.task(), stage_id));

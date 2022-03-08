@@ -71,6 +71,7 @@ pub struct CreateArgStruct<'f, 'h, 'reg> {
     context: RenderContext,
     action: String,
     id: CreateIdStruct,
+    aid: String,
 }
 
 impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
@@ -81,6 +82,7 @@ impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
         task_id: Arc<dyn TaskId>,
         action: String,
         step_id: String,
+        aid: &str,
     ) -> CreateArgStruct<'f, 'h, 'reg> {
         let id = CreateIdStruct {
             task_id,
@@ -97,6 +99,7 @@ impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
             context,
             action,
             id,
+            aid: aid.to_string(),
         };
         return arg;
     }
@@ -116,7 +119,8 @@ impl<'f, 'h, 'reg> CreateArg for CreateArgStruct<'f, 'h, 'reg> {
     }
 
     fn args_raw(&self) -> &Value {
-        self.flow.step_exec_args(self.id.step())
+        self.flow
+            .step_action_args(self.id.step(), self.aid.as_str())
     }
 
     fn render_str(&self, text: &str) -> Result<Value, Error> {
@@ -163,22 +167,6 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
 
     pub fn id(self: &RunArgStruct<'f, 'h, 'reg>) -> &RunIdStruct {
         return &self.id;
-    }
-
-    pub fn assert(&self) -> Option<&str> {
-        self.flow.step_assert(self.id().step())
-    }
-
-    pub fn timeout(&self) -> Duration {
-        self.flow.step_spec_timeout(self.id().step())
-    }
-
-    pub fn catch_err(&self) -> bool {
-        self.flow.step_spec_catch_err(self.id().step())
-    }
-
-    pub fn then(&self) -> Option<Vec<Then>> {
-        self.flow.step_then(self.id().step())
     }
 
     pub fn render_str(&self, txt: &str) -> Result<Value, TemplateRenderError> {
@@ -232,7 +220,9 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
     }
 
     fn args_with(&self, context: &Map) -> Result<Value, Error> {
-        let args_raw = self.flow.step_exec_args(self.id().step());
+        let args_raw = self
+            .flow
+            .step_action_args(self.id().step(), self.aid.as_str());
         let mut args_val = args_raw.clone();
         let ctx = RenderContext::wraps(context)?;
         flow::render_value(self.handlebars, &ctx, &mut args_val)?;

@@ -60,16 +60,17 @@ impl StepRunner {
 
         let mut action_vec = Vec::with_capacity(obj.len());
 
-        for (k, v) in obj.iter() {
-            let action = flow.step_exec_action(step_id.as_ref());
+        for (aid, _) in obj.iter() {
+            let func = flow.step_action_func(step_id.as_str(), aid);
 
             let create_arg = CreateArgStruct::new(
                 flow,
                 flow_app.get_handlebars(),
                 None,
                 task_id.clone(),
-                action.into(),
+                func.into(),
                 step_id.clone(),
+                aid,
             );
 
             let action = flow_app
@@ -77,7 +78,7 @@ impl StepRunner {
                 .create(&create_arg)
                 .await
                 .map_err(|e| Create(step_id.clone(), e))?;
-            action_vec.push((k.to_string(), action));
+            action_vec.push((aid.to_string(), action));
         }
 
         Ok(StepRunner {

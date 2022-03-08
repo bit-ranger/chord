@@ -122,6 +122,7 @@ impl Flow {
             flow._step_check(step_id)?;
             flow._step_spec_check(step_id)?;
 
+            let _ = flow._step_obj(step_id)?;
             let _ = flow._step_let(step_id)?;
             let _ = flow._step_assert(step_id)?;
             let _ = flow._step_then(step_id)?;
@@ -218,6 +219,10 @@ impl Flow {
 
     pub fn step_then(&self, step_id: &str) -> Option<Vec<Then>> {
         self._step_then(step_id).unwrap()
+    }
+
+    pub fn step_obj(&self, step_id: &str) -> &Map {
+        self._step_obj(step_id).unwrap()
     }
 
     // -----------------------------------------------
@@ -397,6 +402,17 @@ impl Flow {
         }
 
         return self.flow["pre"]["step"][step_id].borrow();
+    }
+
+    fn _step_obj(&self, step_id: &str) -> Result<&Map, Error> {
+        let step = self._step(step_id);
+        step.as_object().ok_or_else(|| {
+            Violation(
+                format!("step.{}", step_id),
+                "be a object".into(),
+                "is not".into(),
+            )
+        })
     }
 
     fn _step_let(&self, step_id: &str) -> Result<Option<&Map>, Error> {

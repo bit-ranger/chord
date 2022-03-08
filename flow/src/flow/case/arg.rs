@@ -16,6 +16,7 @@ use crate::flow;
 use crate::flow::case::Error;
 use crate::flow::step::arg::RunArgStruct;
 use crate::flow::step::res::StepAssessStruct;
+use crate::flow::step::StepRunner;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
 
@@ -75,7 +76,7 @@ impl Display for CaseIdStruct {
 
 pub struct CaseArgStruct {
     flow: Arc<Flow>,
-    step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
+    step_vec: Arc<TailDropVec<(String, StepRunner)>>,
     id: Arc<CaseIdStruct>,
     data: Value,
     render_ctx: RenderContext,
@@ -84,7 +85,7 @@ pub struct CaseArgStruct {
 impl CaseArgStruct {
     pub fn new(
         flow: Arc<Flow>,
-        step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
+        step_vec: Arc<TailDropVec<(String, StepRunner)>>,
         data: Value,
         pre_ctx: Option<Arc<Map>>,
         def_ctx: Option<Arc<Map>>,
@@ -121,7 +122,7 @@ impl CaseArgStruct {
         };
     }
 
-    pub fn step_vec(self: &CaseArgStruct) -> Arc<TailDropVec<(String, Box<dyn Action>)>> {
+    pub fn step_vec(self: &CaseArgStruct) -> Arc<TailDropVec<(String, StepRunner)>> {
         self.step_vec.clone()
     }
 

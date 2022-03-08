@@ -1,28 +1,34 @@
 use std::panic::AssertUnwindSafe;
+use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use futures::FutureExt;
 use handlebars::TemplateRenderError;
+use itertools::Step;
 use log::{debug, error, info, trace, warn};
 
-use chord_core::action::{Action, Scope};
+use chord_core::action::{Action, Factory, Scope};
+use chord_core::collection::TailDropVec;
+use chord_core::flow::Flow;
 use chord_core::future::time::timeout;
 use chord_core::step::StepState;
-use chord_core::value::json;
 use chord_core::value::{to_string_pretty, Value};
-use res::StepAssessStruct;
+use chord_core::value::json;
 use Error::*;
+use res::StepAssessStruct;
 
-use crate::flow::step::arg::RunArgStruct;
-use crate::flow::step::res::StepThen;
+use crate::flow::{assign_by_render, task};
+use crate::flow::step::arg::{CreateArgStruct, RunArgStruct};
 use crate::flow::step::Error::ValueUnexpected;
-use crate::model::app::FlowApp;
+use crate::flow::step::res::StepThen;
+use crate::model::app::{FlowApp, RenderContext};
+use crate::TaskIdSimple;
 
 pub mod arg;
 pub mod res;
 
 #[derive(thiserror::Error, Debug)]
-enum Error {
+pub enum Error {
     #[error("timeout")]
     Timeout,
 
@@ -34,9 +40,65 @@ enum Error {
 
     #[error("`{0}` render error:\n{1}")]
     Render(String, TemplateRenderError),
+
+    #[error("step `{0}` create:\n{1}")]
+    Create(String, Box<dyn std::error::Error + Sync + Send>),
 }
 
-pub async fn run(
+pub struct StepRunner {
+    action_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
+}
+
+impl StepRunner {
+    pub async fn new(
+        flow_app: &dyn FlowApp,
+        flow: &Flow,
+        task_id: Arc<TaskIdSimple>,
+        step_id: String,
+    ) -> Result<StepRunner, Error> {
+        let obj = flow.step_obj(step_id.as_str());
+
+        let mut action_vec = Vec::with_capacity(obj.len());
+
+        for (k, v) in obj.iter() {
+            let action = flow.step_exec_action(step_id.as_ref());
+
+            let create_arg = CreateArgStruct::new(
+                flow,
+                flow_app.get_handlebars(),
+                None,
+                task_id.clone(),
+                action.into(),
+                step_id.clone(),
+            );
+
+            let action = flow_app
+                .get_action_factory()
+                .create(&create_arg)
+                .await
+                .map_err(|e| Create(step_id.clone(), e))?;
+            action_vec.push((k.to_string(), action));
+        }
+
+        Ok(StepRunner {
+            action_vec: Arc::new(TailDropVec::from(action_vec))
+        })
+    }
+
+
+    pub async fn run(&self, arg: &mut RunArgStruct<'_, '_, '_>) -> StepAssessStruct {
+        return StepAssessStruct::new(
+            arg.id().clone(),
+            Utc::now(),
+            Utc::now(),
+            Value::Null,
+            StepState::Ok(Box::new(Value::Null)),
+            None,
+        );
+    }
+}
+
+async fn run(
     _: &dyn FlowApp,
     arg: &mut RunArgStruct<'_, '_, '_>,
     action: &dyn Action,
@@ -234,3 +296,4 @@ fn explain_to_string(explain: &Value) -> String {
         to_string_pretty(&explain).unwrap_or("".to_string())
     }
 }
+

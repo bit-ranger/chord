@@ -7,8 +7,8 @@ use chord_core::case::CaseState;
 use chord_core::collection::TailDropVec;
 use chord_core::step::{StepAssess, StepState};
 use chord_core::value::Value;
-use res::CaseAssessStruct;
 use Error::*;
+use res::CaseAssessStruct;
 
 use crate::flow::case::arg::CaseArgStruct;
 use crate::flow::step;
@@ -33,27 +33,30 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
     let start = Utc::now();
     let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
     let step_vec = arg.step_vec().clone();
-    let mut step_id = step_vec[0].0.clone();
-    loop {
-        let action = get_action_by_step_id(step_vec.as_ref(), step_id.as_str());
-        if action.is_none() {
-            return case_fail_by_step_err(
-                step_id.as_str(),
-                arg,
-                StepId(step_id.to_string()),
-                step_assess_vec,
-                start,
-            );
-        }
-        let action = action.unwrap();
 
-        let step_arg = arg.step_arg_create(step_id.as_str(), flow_ctx);
+    for (step_id, step_runner) in step_vec.iter() {
+        let step_arg = arg.step_arg_create(step_id, flow_ctx);
+
+        // let action = get_action_by_step_id(step_vec.as_ref(), step_id.as_str());
+        // if action.is_none() {
+        //     return case_fail_by_step_err(
+        //         step_id.as_str(),
+        //         arg,
+        //         StepId(step_id.to_string()),
+        //         step_assess_vec,
+        //         start,
+        //     );
+        // }
+        // let action = action.unwrap();
+
+
         if let Err(e) = step_arg {
             return case_fail_by_step_err(step_id.as_str(), arg, e, step_assess_vec, start);
         }
         let mut step_arg = step_arg.unwrap();
 
-        let step_assess = step::run(flow_ctx, &mut step_arg, action).await;
+
+        let step_assess = step_runner.run(&mut step_arg).await;
 
         if !step_assess.state().is_ok() {
             step_assess_vec.push(Box::new(step_assess));
@@ -66,25 +69,7 @@ pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessSt
                 CaseState::Fail(TailDropVec::from(step_assess_vec)),
             );
         } else {
-            arg.step_ok_register(step_assess.id().step(), &step_assess)
-                .await;
-
-            let step_then = step_assess.then();
-            if let Some(step_then) = step_then {
-                if let Some(goto) = step_then.goto() {
-                    step_id = goto.to_string();
-                    step_assess_vec.push(Box::new(step_assess));
-                    continue;
-                }
-            }
-
             step_assess_vec.push(Box::new(step_assess));
-            let next = next_step_id(step_vec.as_ref(), step_id.as_str());
-            if next.is_none() {
-                break;
-            } else {
-                step_id = next.unwrap().to_string()
-            }
         }
     }
 

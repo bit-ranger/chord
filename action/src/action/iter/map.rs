@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use log::trace;
 
-use chord_core::action::prelude::*;
 use chord_core::action::{CreateId, RunId};
+use chord_core::action::prelude::*;
 
 use crate::err;
 
@@ -79,38 +79,13 @@ impl<'a> RunArg for MapRunArg<'a> {
         self.delegate.id()
     }
 
-    fn timeout(&self) -> Duration {
-        self.delegate.timeout()
-    }
 
     fn context(&mut self) -> &mut Map {
         &mut self.context
     }
 
     fn args(&self) -> Result<Value, Error> {
-        self.args_with(&self.context)
-    }
-
-    fn args_with(&self, context: &Map) -> Result<Value, Error> {
-        let mut ctx = context.clone();
-        ctx.insert("idx".to_string(), Value::Number(Number::from(self.index)));
-        ctx.insert("item".to_string(), self.item.clone());
-        let args = self.delegate.args_with(&ctx)?;
-        if let Some(map) = args.get("map") {
-            if let Value::Object(map) = map {
-                let step_id = self.id().step();
-                if map.is_empty() {
-                    return Err(err!("flow", format!("step {} missing map", step_id)));
-                }
-
-                if map.len() != 1 {
-                    return Err(err!("flow", format!("step {} invalid map", step_id)));
-                }
-
-                return Ok(map.values().nth(0).unwrap().clone());
-            }
-        }
-        return Ok(Value::Null);
+        self.delegate.args()
     }
 }
 
@@ -153,11 +128,11 @@ impl Factory for IterMapFactory {
 #[async_trait]
 impl Action for IterMap {
     async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let mut context = arg.context().clone();
-        context.insert("idx".to_string(), Value::Null);
-        context.insert("item".to_string(), Value::Null);
+        // let mut context = arg.context().clone();
+        // context.insert("idx".to_string(), Value::Null);
+        // context.insert("item".to_string(), Value::Null);
 
-        let args = arg.args_with(&context)?;
+        let args = arg.args()?;
         trace!("{}", args);
         let array = args["iter"].as_array().ok_or(err!("103", "missing iter"))?;
 

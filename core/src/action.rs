@@ -11,21 +11,21 @@ use crate::value::Value;
 pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
 pub mod prelude {
+    pub use crate::value::Deserialize;
     pub use crate::value::from_reader;
     pub use crate::value::from_slice;
     pub use crate::value::from_str;
     pub use crate::value::from_value;
     pub use crate::value::json;
-    pub use crate::value::to_string;
-    pub use crate::value::to_string_pretty;
-    pub use crate::value::Deserialize;
     pub use crate::value::Map;
     pub use crate::value::Number;
     pub use crate::value::Serialize;
+    pub use crate::value::to_string;
+    pub use crate::value::to_string_pretty;
     pub use crate::value::Value;
 
-    pub use super::async_trait;
     pub use super::Action;
+    pub use super::async_trait;
     pub use super::CreateArg;
     pub use super::Error;
     pub use super::Factory;
@@ -42,11 +42,7 @@ pub trait RunArg: Sync + Send {
 
     fn context(&mut self) -> &mut Map;
 
-    fn timeout(&self) -> Duration;
-
     fn args(&self) -> Result<Value, Error>;
-
-    fn args_with(&self, context: &Map) -> Result<Value, Error>;
 }
 
 pub trait CreateArg: Sync + Send {

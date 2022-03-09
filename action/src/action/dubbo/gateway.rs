@@ -2,14 +2,14 @@ use std::process::Stdio;
 use std::str::FromStr;
 
 use log::{debug, info, trace};
-use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Body, Client, Method, Response, Url};
+use reqwest::header::{HeaderName, HeaderValue};
 
 use chord_core::action::prelude::*;
 use chord_core::future::io::{AsyncBufReadExt, BufReader, Lines};
 use chord_core::future::process::{Child, ChildStdout, Command};
 use chord_core::future::task::spawn;
-use chord_core::value::{to_string, Deserialize, Serialize};
+use chord_core::value::{Deserialize, Serialize, to_string};
 
 use crate::err;
 
@@ -168,7 +168,7 @@ impl Action for Dubbo {
                     address: self.registry_address.clone(),
                 },
                 interface: parts[0].to_owned(),
-                timeout: arg.timeout().as_millis() as usize,
+                timeout: 60000,
             },
 
             method: parts[1].to_owned(),

@@ -12,15 +12,15 @@ use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::future::time::timeout;
 use chord_core::step::StepState;
-use chord_core::value::{to_string_pretty, Value};
 use chord_core::value::json;
-use Error::*;
+use chord_core::value::{to_string_pretty, Value};
 use res::StepAssessStruct;
+use Error::*;
 
-use crate::flow::{assign_by_render, task};
 use crate::flow::step::arg::{CreateArgStruct, RunArgStruct};
-use crate::flow::step::Error::ValueUnexpected;
 use crate::flow::step::res::ActionAssessStruct;
+use crate::flow::step::Error::ValueUnexpected;
+use crate::flow::{assign_by_render, task};
 use crate::model::app::{FlowApp, RenderContext};
 use crate::TaskIdSimple;
 
@@ -82,10 +82,9 @@ impl StepRunner {
         }
 
         Ok(StepRunner {
-            action_vec: Arc::new(TailDropVec::from(action_vec))
+            action_vec: Arc::new(TailDropVec::from(action_vec)),
         })
     }
-
 
     pub async fn run(&self, arg: &mut RunArgStruct<'_, '_, '_>) -> StepAssessStruct {
         trace!("step start {}", arg.id());
@@ -105,7 +104,7 @@ impl StepRunner {
                     arg.context().insert(key.to_string(), v.as_value().clone());
                     let assess = assess_create(arg, start, explain, value);
                     assess_vec.push(assess);
-                },
+                }
 
                 Err(e) => {
                     error!(
@@ -114,17 +113,14 @@ impl StepRunner {
                         e,
                         explain_to_string(&explain)
                     );
+                    let assess = assess_create(arg, start, explain, value);
+                    assess_vec.push(assess);
                     break;
                 }
             }
         }
 
-        StepAssessStruct::new(
-            arg.id().clone(),
-            start,
-            Utc::now(),
-            assess_vec,
-        )
+        StepAssessStruct::new(arg.id().clone(), start, Utc::now(), assess_vec)
     }
 }
 
@@ -137,26 +133,16 @@ fn assess_create(
     let end = Utc::now();
     return if let Err(e) = value.as_ref() {
         error!(
-                "step action Err  {}\n{}\n<<<\n{}",
-                arg.id(),
-                e,
-                explain_to_string(&explain),
-            );
-        ActionAssessStruct::new(
-            start,
-            end,
-            explain,
-            StepState::Err(value.err().unwrap()),
-        )
+            "step action Err  {}\n{}\n<<<\n{}",
+            arg.id(),
+            e,
+            explain_to_string(&explain),
+        );
+        ActionAssessStruct::new(start, end, explain, StepState::Err(value.err().unwrap()))
     } else {
         info!("step action Ok   {}", arg.id());
-        ActionAssessStruct::new(
-            start,
-            end,
-            explain,
-            StepState::Ok(value.unwrap()),
-        )
-    }
+        ActionAssessStruct::new(start, end, explain, StepState::Ok(value.unwrap()))
+    };
 }
 
 // fn assert_and_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<(bool, Option<StepThen>), Error> {
@@ -231,4 +217,3 @@ fn explain_to_string(explain: &Value) -> String {
         to_string_pretty(&explain).unwrap_or("".to_string())
     }
 }
-

@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use chord_core::action::RunId;
 use chord_core::collection::TailDropVec;
 use chord_core::step::{StepAssess, StepState};
-use chord_core::value::{Map, Value};
+use chord_core::value::Value;
 
 use crate::flow::step::arg::RunIdStruct;
 
@@ -15,25 +15,13 @@ pub struct StepAssessStruct {
 }
 
 pub struct ActionAssessStruct {
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
     explain: Value,
     state: StepState,
 }
 
 impl ActionAssessStruct {
-    pub fn new(
-        start: DateTime<Utc>,
-        end: DateTime<Utc>,
-        explain: Value,
-        state: StepState,
-    ) -> ActionAssessStruct {
-        ActionAssessStruct {
-            start,
-            end,
-            explain,
-            state,
-        }
+    pub fn new(explain: Value, state: StepState) -> ActionAssessStruct {
+        ActionAssessStruct { explain, state }
     }
 }
 

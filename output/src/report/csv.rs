@@ -4,16 +4,15 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use csv::Writer;
-use log::info;
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
-use chord_core::future::fs::{create_dir_all, DirEntry, metadata, read_dir, remove_file, rename};
+use chord_core::future::fs::{create_dir_all, metadata, read_dir, remove_file, rename, DirEntry};
 use chord_core::future::path::exists;
-use chord_core::output::{async_trait, TaskReporter};
 use chord_core::output::Error;
 use chord_core::output::JobReporter;
 use chord_core::output::StageReporter;
+use chord_core::output::{async_trait, TaskReporter};
 use chord_core::step::StepState;
 use chord_core::task::{StageAssess, TaskAssess, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};

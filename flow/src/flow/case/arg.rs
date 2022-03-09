@@ -1,21 +1,14 @@
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use log::trace;
-
-use chord_core::action::Action;
 use chord_core::case::CaseId;
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
-use chord_core::step::{StepAssess, StepState};
 use chord_core::task::TaskId;
 use chord_core::value::Map;
 use chord_core::value::Value;
 
-use crate::flow;
-use crate::flow::case::Error;
 use crate::flow::step::arg::RunArgStruct;
-use crate::flow::step::res::StepAssessStruct;
 use crate::flow::step::StepRunner;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
@@ -130,18 +123,18 @@ impl CaseArgStruct {
         self: &CaseArgStruct,
         step_id: &str,
         flow_app: &'app dyn FlowApp,
-    ) -> Result<RunArgStruct<'_, 'h, 'reg>, Error>
+    ) -> RunArgStruct<'_, 'h, 'reg>
     where
         'app: 'h,
         'app: 'reg,
     {
-        Ok(RunArgStruct::new(
+        RunArgStruct::new(
             self.flow.as_ref(),
             flow_app.get_handlebars(),
             self.render_ctx.clone(),
             self.id.clone(),
             step_id.to_owned(),
-        ))
+        )
     }
 
     pub fn id(&self) -> Arc<CaseIdStruct> {

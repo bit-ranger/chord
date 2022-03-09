@@ -8,7 +8,7 @@ use crate::err;
 mod assert;
 mod count;
 mod echo;
-mod iter;
+// mod iter;
 mod log;
 mod nop;
 mod sleep;
@@ -102,27 +102,6 @@ impl FactoryComposite {
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new);
-
-        #[cfg(feature = "act_download")]
-        register!(
-            table,
-            config_ref,
-            "download",
-            download::DownloadFactory::new
-        );
-
-        if enable(config_ref, "iter_map") {
-            table.insert(
-                "iter_map".into(),
-                Arc::new(
-                    iter::map::IterMapFactory::new(
-                        config_ref.map(|c| c["iter_map"].clone()),
-                        table.clone(),
-                    )
-                    .await?,
-                ),
-            );
-        }
 
         Ok(FactoryComposite { table })
     }

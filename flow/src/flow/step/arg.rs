@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
-use std::time::Duration;
 
 use handlebars::{Handlebars, TemplateRenderError};
 
@@ -8,7 +7,7 @@ use chord_core::action::Error;
 use chord_core::action::RunId;
 use chord_core::action::{CreateArg, CreateId, RunArg};
 use chord_core::case::CaseId;
-use chord_core::flow::{Flow, Then};
+use chord_core::flow::Flow;
 use chord_core::task::TaskId;
 use chord_core::value::{Map, Value};
 
@@ -19,12 +18,6 @@ use crate::model::app::RenderContext;
 pub struct RunIdStruct {
     step: String,
     case_id: Arc<dyn CaseId>,
-}
-
-impl RunIdStruct {
-    pub fn new(step: String, case_id: Arc<dyn CaseId>) -> RunIdStruct {
-        RunIdStruct { step, case_id }
-    }
 }
 
 impl RunId for RunIdStruct {

@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use log::trace;
 
-use chord_core::action::{CreateId, RunId};
 use chord_core::action::prelude::*;
+use chord_core::action::{CreateId, RunId};
 
 use crate::err;
 
@@ -79,9 +79,16 @@ impl<'a> RunArg for MapRunArg<'a> {
         self.delegate.id()
     }
 
-
     fn context(&mut self) -> &mut Map {
         &mut self.context
+    }
+
+    fn args_raw(&self) -> &Value {
+        self.delegate.args_raw()
+    }
+
+    fn render(&self, raw: &Value) -> Result<Value, Error> {
+        self.delegate.render(raw)
     }
 
     fn args(&self) -> Result<Value, Error> {

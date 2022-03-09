@@ -5,6 +5,7 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
+mod assert;
 mod count;
 mod echo;
 mod iter;
@@ -55,6 +56,8 @@ impl FactoryComposite {
         let mut table: HashMap<String, Arc<dyn Factory>> = HashMap::new();
 
         let config_ref = config.as_ref();
+
+        register!(table, config_ref, "assert", assert::AssertFactory::new);
 
         register!(table, config_ref, "nop", nop::NopFactory::new);
         register!(table, config_ref, "echo", echo::EchoFactory::new);

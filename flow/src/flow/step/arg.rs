@@ -169,46 +169,8 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         return &self.id;
     }
 
-    pub fn render_str(&self, txt: &str) -> Result<Value, TemplateRenderError> {
-        self.render_str_with(txt, &self.context)
-    }
-
-    fn render_str_with(
-        &self,
-        txt: &str,
-        render_context: &RenderContext,
-    ) -> Result<Value, TemplateRenderError> {
-        return flow::render_str(self.handlebars, render_context, txt);
-    }
-
-    fn render_object_with(
-        &self,
-        raw: &Map,
-        render_context: &RenderContext,
-    ) -> Result<Map, TemplateRenderError> {
-        let mut result = raw.clone();
-        for (_, v) in result.iter_mut() {
-            flow::render_value(self.handlebars, render_context, v)?;
-        }
-        Ok(result)
-    }
-
-    pub fn render_object(&self, raw: &Map) -> Result<Map, TemplateRenderError> {
-        self.render_object_with(raw, &self.context)
-    }
-
     pub fn aid(&mut self, aid: &str) {
         self.aid = aid.to_string();
-    }
-
-    fn args_with(&self, context: &Map) -> Result<Value, Error> {
-        let args_raw = self
-            .flow
-            .step_action_args(self.id().step(), self.aid.as_str());
-        let mut args_val = args_raw.clone();
-        let ctx = RenderContext::wraps(context)?;
-        flow::render_value(self.handlebars, &ctx, &mut args_val)?;
-        return Ok(args_val);
     }
 }
 
@@ -221,7 +183,18 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
         self.context.data_mut().as_object_mut().unwrap()
     }
 
+    fn args_raw(&self) -> &Value {
+        self.flow
+            .step_action_args(self.id().step(), self.aid.as_str())
+    }
+
+    fn render(&self, raw: &Value) -> Result<Value, Error> {
+        let mut val = raw.clone();
+        flow::render_value(self.handlebars, &self.context, &mut val)?;
+        Ok(val)
+    }
+
     fn args(&self) -> Result<Value, Error> {
-        self.args_with(self.context.data().as_object().unwrap())
+        self.render(self.args_raw())
     }
 }

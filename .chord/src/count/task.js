@@ -12,13 +12,19 @@ let step = conf.stage.smoking.step;
 
 step.step1 = {
 
-    count: {
-        init: 10,
-        incr: 2
+    cv: {
+        count: {
+            init: 10,
+            incr: 2
+        }
     },
-    assert: `
-      (all
-        (gt value 9)
-      )
-    `
+
+    state: {
+        assert: `
+        (all
+            (gt cv 9)
+        )
+        `
+    }
+
 }

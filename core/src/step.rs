@@ -5,7 +5,6 @@ use crate::value::Value;
 
 pub enum StepState {
     Ok(Box<dyn Scope>),
-    Fail(Box<dyn Scope>),
     Err(crate::action::Error),
 }
 
@@ -20,13 +19,6 @@ impl StepState {
     pub fn is_err(&self) -> bool {
         match self {
             StepState::Err(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_fail(&self) -> bool {
-        match self {
-            StepState::Fail(_) => true,
             _ => false,
         }
     }

@@ -274,11 +274,6 @@ fn to_value_vec(ca: &dyn CaseAssess, header: &Vec<String>) -> Vec<String> {
                     step_value.push(String::from(format!("{}", e)));
                     step_value.push(to_csv_string(pa.explain()));
                 }
-                StepState::Fail(v) => {
-                    step_value.push(String::from("F"));
-                    step_value.push(to_csv_string(v.as_value()));
-                    step_value.push(to_csv_string(pa.explain()));
-                }
             }
             step_value.push(pa.start().format("%T").to_string());
             step_value.push(pa.end().format("%T").to_string());

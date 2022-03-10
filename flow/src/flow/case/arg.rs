@@ -4,11 +4,13 @@ use std::sync::Arc;
 use chord_core::case::CaseId;
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
+use chord_core::step::{StepAssess, StepState};
 use chord_core::task::TaskId;
 use chord_core::value::Map;
 use chord_core::value::Value;
 
 use crate::flow::step::arg::RunArgStruct;
+use crate::flow::step::res::StepAssessStruct;
 use crate::flow::step::StepRunner;
 use crate::model::app::FlowApp;
 use crate::model::app::RenderContext;
@@ -135,6 +137,14 @@ impl CaseArgStruct {
             self.id.clone(),
             step_id.to_owned(),
         )
+    }
+
+    pub async fn step_assess_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
+        if let StepState::Ok(sv) = step_assess.state() {
+            if let Value::Object(reg) = self.render_ctx.data_mut() {
+                reg["step"][sid] = sv.as_value().clone();
+            }
+        }
     }
 
     pub fn id(&self) -> Arc<CaseIdStruct> {

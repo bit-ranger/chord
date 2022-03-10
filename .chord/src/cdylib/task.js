@@ -12,12 +12,15 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-
-    cdylib: "cdylib_example",
-    assert: `
-    (all
-      (eq value.run 1)
-    )
-  `
+    value: {
+        cdylib: "cdylib_example",
+    },
+    state: {
+        assert: `
+            (all
+                (eq value.run 1)
+            )
+        `
+    }
 }
 

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use chrono::Utc;
-use log::{error, info, trace};
+use log::{error, info, trace, warn};
 
 use chord_core::action::{Action, RunArg, Scope};
 use chord_core::collection::TailDropVec;
@@ -69,8 +69,8 @@ impl StepRunner {
     pub async fn run(&self, arg: &mut RunArgStruct<'_, '_, '_>) -> StepAssessStruct {
         trace!("step start {}", arg.id());
         let start = Utc::now();
-
         let mut assess_vec = Vec::with_capacity(self.action_vec.len());
+        let mut success = true;
         for (aid, action) in self.action_vec.iter() {
             let key: &str = aid;
             let action: &Box<dyn Action> = action;
@@ -79,22 +79,29 @@ impl StepRunner {
             let value = action.run(arg).await;
             match &value {
                 Ok(v) => {
-                    info!("step Ok   {}", arg.id());
                     arg.context().insert(key.to_string(), v.as_value().clone());
-                    let assess = assess_create(arg, explain, value);
+                    let assess = action_assess_create(arg, aid, explain, value);
                     assess_vec.push(assess);
                 }
 
-                Err(e) => {
-                    error!(
-                        "step Err  {}\n{}\n<<<\n{}",
-                        arg.id(),
-                        e,
-                        explain_to_string(&explain)
-                    );
-                    let assess = assess_create(arg, explain, value);
+                Err(_) => {
+                    let assess = action_assess_create(arg, aid, explain, value);
                     assess_vec.push(assess);
+                    success = false;
                     break;
+                }
+            }
+        }
+
+        if success {
+            info!("step Ok   {}", arg.id());
+        } else {
+            error!("step Err  {}", arg.id());
+            for ass in assess_vec.iter() {
+                if let StepState::Ok(v) = ass.state() {
+                    warn!("{}  <<<  {}", v.as_value(), ass.explain());
+                } else if let StepState::Err(e) = ass.state() {
+                    error!("{}  <<<  {}", e, ass.explain());
                 }
             }
         }
@@ -103,8 +110,9 @@ impl StepRunner {
     }
 }
 
-fn assess_create(
+fn action_assess_create(
     arg: &mut RunArgStruct<'_, '_, '_>,
+    aid: &str,
     explain: Value,
     value: Result<Box<dyn Scope>, chord_core::action::Error>,
 ) -> ActionAssessStruct {
@@ -115,10 +123,14 @@ fn assess_create(
             e,
             explain_to_string(&explain),
         );
-        ActionAssessStruct::new(explain, StepState::Err(value.err().unwrap()))
+        ActionAssessStruct::new(
+            aid.to_string(),
+            explain,
+            StepState::Err(value.err().unwrap()),
+        )
     } else {
         info!("step action Ok   {}", arg.id());
-        ActionAssessStruct::new(explain, StepState::Ok(value.unwrap()))
+        ActionAssessStruct::new(aid.to_string(), explain, StepState::Ok(value.unwrap()))
     };
 }
 

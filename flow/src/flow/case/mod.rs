@@ -13,7 +13,7 @@ use crate::model::app::FlowApp;
 pub mod arg;
 pub mod res;
 
-pub async fn run(flow_ctx: &dyn FlowApp, arg: CaseArgStruct) -> CaseAssessStruct {
+pub async fn run(flow_ctx: &dyn FlowApp, mut arg: CaseArgStruct) -> CaseAssessStruct {
     trace!("case start {}", arg.id());
     let start = Utc::now();
     let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
@@ -37,6 +37,8 @@ pub async fn run(flow_ctx: &dyn FlowApp, arg: CaseArgStruct) -> CaseAssessStruct
                 CaseState::Fail(TailDropVec::from(step_assess_vec)),
             );
         } else {
+            arg.step_assess_register(step_assess.id().step(), &step_assess)
+                .await;
             step_assess_vec.push(Box::new(step_assess));
         }
     }

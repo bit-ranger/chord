@@ -16,38 +16,49 @@ module.exports = () => conf;
 
 let prefix = path.join(__dirname, "nodejs-example");
 conf.pre.step.install = {
-    program: {
-        cmd: [
-            "npm",
-            "--prefix",
-            prefix,
-            "install"
-        ],
-        value_to_json: false
+
+    value: {
+        program: {
+            cmd: [
+                "npm",
+                "--prefix",
+                prefix,
+                "install"
+            ],
+            value_to_json: false
+        }
     }
+
 }
 
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-    let: {
-        case: "{{obj case}}"
+    var: {
+        let: {
+            case: "{{obj case}}"
+        }
     },
 
-    program: {
-        cmd: [
-            "npm",
-            "--prefix",
-            prefix,
-            "run",
-            "test",
-            "{{obj case}}"
-        ],
-        value_to_json: true
+    value: {
+        program: {
+            cmd: [
+                "npm",
+                "--prefix",
+                prefix,
+                "run",
+                "test",
+                "{{obj var.case}}"
+            ],
+            value_to_json: true
+        }
     },
-    assert: `
+
+    state: {
+        assert: `
         (eq value.case_args.foo "bar")
         `
+    }
 }
 
 

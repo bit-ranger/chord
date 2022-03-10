@@ -4,11 +4,11 @@ print(t);
 return
 {
     {
-        ['foo'] = foo
+        ['foo'] = var.foo
     }
 ,
     {
-        ['bar'] = tonumber(bar)
+        ['bar'] = tonumber(var.bar)
     },
     {
         ['tag'] = t

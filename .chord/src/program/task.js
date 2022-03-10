@@ -17,52 +17,62 @@ let smoking = conf.stage.smoking;
 
 pre.step.p1 = {
 
-    program: {
-        cmd: [
-            "python3",
-            "--version"
-        ]
+    value: {
+        program: {
+            cmd: [
+                "python3",
+                "--version"
+            ]
+        }
     }
 }
 
 pre.step.p2 = {
 
-    program: {
-        detach: true,
-        cmd: [
-            "python3",
-            "--version"
-        ]
+    value: {
+        program: {
+            detach: true,
+            cmd: [
+                "python3",
+                "--version"
+            ]
+        }
     }
 }
 
 smoking.step.step1 = {
 
-    program: {
-        cmd: [
-            "python3",
-            "--version"
-        ]
+    value: {
+        program: {
+            cmd: [
+                "python3",
+                "--version"
+            ]
+        }
     }
 }
 
 smoking.step.step2 = {
 
-    program: {
-        detach: true,
-        cmd: [
-            "python3",
-            "--version"
-        ]
+    value: {
+        program: {
+            detach: true,
+            cmd: [
+                "python3",
+                "--version"
+            ]
+        }
     }
 }
 
 smoking.step.s3 = {
 
-    program: {
-        cmd: [
-            "python3",
-            "--version"
-        ]
+    value: {
+        program: {
+            cmd: [
+                "python3",
+                "--version"
+            ]
+        }
     }
 }

@@ -9,6 +9,7 @@ mod assert;
 mod count;
 mod echo;
 // mod iter;
+mod lets;
 mod log;
 mod nop;
 mod sleep;
@@ -57,6 +58,7 @@ impl FactoryComposite {
 
         let config_ref = config.as_ref();
 
+        register!(table, config_ref, "let", lets::LetFactory::new);
         register!(table, config_ref, "assert", assert::AssertFactory::new);
 
         register!(table, config_ref, "nop", nop::NopFactory::new);

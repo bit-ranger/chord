@@ -23,19 +23,13 @@ struct Assert {}
 impl Action for Assert {
     async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let raw = arg.args_raw();
-        let raw = raw.as_str().ok_or(err!("100", "illegal exp"))?.trim();
+        let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         let assert_tpl = format!("{{{{{cond}}}}}", cond = raw);
         let result = arg.render(&Value::String(assert_tpl))?;
         if result.eq("true") {
-            Ok(Box::new(
-                arg.context()
-                    .iter()
-                    .last()
-                    .map(|(_, v)| v.clone())
-                    .unwrap_or(Value::Null),
-            ))
+            Ok(Box::new(Value::Bool(true)))
         } else {
-            Err(err!("100", "fail"))
+            Err(err!("100", "false"))
         }
     }
 }

@@ -7,7 +7,7 @@ use chord_core::action::{Action, RunArg, Scope};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::step::StepState;
-use chord_core::value::{to_string_pretty, Value};
+use chord_core::value::Value;
 use res::StepAssessStruct;
 use Error::*;
 
@@ -80,12 +80,12 @@ impl StepRunner {
             match &value {
                 Ok(v) => {
                     arg.context().insert(key.to_string(), v.as_value().clone());
-                    let assess = action_assess_create(arg, aid, explain, value);
+                    let assess = action_assess_create(aid, explain, value);
                     assess_vec.push(assess);
                 }
 
                 Err(_) => {
-                    let assess = action_assess_create(arg, aid, explain, value);
+                    let assess = action_assess_create(aid, explain, value);
                     assess_vec.push(assess);
                     success = false;
                     break;
@@ -94,16 +94,16 @@ impl StepRunner {
         }
 
         if success {
-            info!("step Ok   {}", arg.id());
+            info!("step Ok    {}", arg.id());
         } else {
-            error!("step Err  {}", arg.id());
             for ass in assess_vec.iter() {
                 if let StepState::Ok(v) = ass.state() {
-                    warn!("{}  <<<  {}", v.as_value(), ass.explain());
+                    warn!("{} : {}  <<<  {}", ass.id(), v.as_value(), ass.explain());
                 } else if let StepState::Err(e) = ass.state() {
-                    error!("{}  <<<  {}", e, ass.explain());
+                    error!("{} : {}  <<<  {}", ass.id(), e, ass.explain());
                 }
             }
+            error!("step Err   {}", arg.id());
         }
 
         StepAssessStruct::new(arg.id().clone(), start, Utc::now(), assess_vec)
@@ -111,33 +111,17 @@ impl StepRunner {
 }
 
 fn action_assess_create(
-    arg: &mut RunArgStruct<'_, '_, '_>,
     aid: &str,
     explain: Value,
     value: Result<Box<dyn Scope>, chord_core::action::Error>,
 ) -> ActionAssessStruct {
-    return if let Err(e) = value.as_ref() {
-        error!(
-            "step action Err  {}\n{}\n<<<\n{}",
-            arg.id(),
-            e,
-            explain_to_string(&explain),
-        );
+    return if let Err(_) = value.as_ref() {
         ActionAssessStruct::new(
             aid.to_string(),
             explain,
             StepState::Err(value.err().unwrap()),
         )
     } else {
-        info!("step action Ok   {}", arg.id());
         ActionAssessStruct::new(aid.to_string(), explain, StepState::Ok(value.unwrap()))
     };
-}
-
-fn explain_to_string(explain: &Value) -> String {
-    if explain.is_string() {
-        return explain.as_str().unwrap().to_string();
-    } else {
-        to_string_pretty(&explain).unwrap_or("".to_string())
-    }
 }

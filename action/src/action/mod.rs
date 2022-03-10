@@ -7,11 +7,9 @@ use crate::err;
 
 mod assert;
 mod count;
-mod echo;
 // mod iter;
 mod lets;
 mod log;
-mod nop;
 mod sleep;
 
 #[cfg(feature = "act_cdylib")]
@@ -60,9 +58,6 @@ impl FactoryComposite {
 
         register!(table, config_ref, "let", lets::LetFactory::new);
         register!(table, config_ref, "assert", assert::AssertFactory::new);
-
-        register!(table, config_ref, "nop", nop::NopFactory::new);
-        register!(table, config_ref, "echo", echo::EchoFactory::new);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new);
         register!(table, config_ref, "log", log::LogFactory::new);
         register!(table, config_ref, "count", count::CountFactory::new);

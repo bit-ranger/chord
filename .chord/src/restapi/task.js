@@ -66,13 +66,15 @@ step.crt_inx = {
             }
         }
     },
-    assert:
-        `
+    ok: {
+        assert:
+            `
     (all
       (eq value.status 200)
       (eq value.body.acknowledged true)
     )
   `
+    }
 }
 
 

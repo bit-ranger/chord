@@ -112,7 +112,9 @@ step.insert = {
 
 
 step.wait = {
-    sleep: 9
+    var: {
+        sleep: 9
+    }
 }
 
 

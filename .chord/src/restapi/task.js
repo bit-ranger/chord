@@ -34,31 +34,33 @@ step.del_idx = {
 
 step.crt_inx = {
 
-    restapi: {
-        url: url_root + "/article",
-        method: "PUT",
-        body: {
-            "settings": {
-                "index": {
-                    "analysis.analyzer.default.type": "ik_max_word"
-                }
-            },
-            "mappings": {
-                "properties": {
-                    "user": {
-                        "type": "text",
-                        "analyzer": "ik_max_word",
-                        "search_analyzer": "ik_max_word"
-                    },
-                    "title": {
-                        "type": "text",
-                        "analyzer": "ik_max_word",
-                        "search_analyzer": "ik_max_word"
-                    },
-                    "desc": {
-                        "type": "text",
-                        "analyzer": "ik_max_word",
-                        "search_analyzer": "ik_max_word"
+    value: {
+        restapi: {
+            url: url_root + "/article",
+            method: "PUT",
+            body: {
+                "settings": {
+                    "index": {
+                        "analysis.analyzer.default.type": "ik_max_word"
+                    }
+                },
+                "mappings": {
+                    "properties": {
+                        "user": {
+                            "type": "text",
+                            "analyzer": "ik_max_word",
+                            "search_analyzer": "ik_max_word"
+                        },
+                        "title": {
+                            "type": "text",
+                            "analyzer": "ik_max_word",
+                            "search_analyzer": "ik_max_word"
+                        },
+                        "desc": {
+                            "type": "text",
+                            "analyzer": "ik_max_word",
+                            "search_analyzer": "ik_max_word"
+                        }
                     }
                 }
             }

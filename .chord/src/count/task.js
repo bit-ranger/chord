@@ -22,7 +22,7 @@ step.step1 = {
     state: {
         assert: `
         (all
-            (gt cv 20)
+            (gt cv 10)
         )
         `
     }

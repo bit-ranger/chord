@@ -3,16 +3,16 @@ use std::sync::Arc;
 
 use handlebars::{Handlebars, TemplateRenderError};
 
-use chord_core::action::Error;
 use chord_core::action::RunId;
 use chord_core::action::{CreateArg, CreateId, RunArg};
+use chord_core::action::{Error, Factory};
 use chord_core::case::CaseId;
 use chord_core::flow::Flow;
 use chord_core::task::TaskId;
 use chord_core::value::{Map, Value};
 
-use crate::flow;
 use crate::model::app::RenderContext;
+use crate::{flow, FlowApp};
 
 #[derive(Clone)]
 pub struct RunIdStruct {
@@ -58,25 +58,25 @@ impl Display for CreateIdStruct {
     }
 }
 
-pub struct CreateArgStruct<'f, 'h, 'reg> {
+pub struct CreateArgStruct<'a, 'f> {
+    app: &'a dyn FlowApp,
     flow: &'f Flow,
-    handlebars: &'h Handlebars<'reg>,
     context: RenderContext,
     action: String,
     id: CreateIdStruct,
     aid: String,
 }
 
-impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
+impl<'a, 'f> CreateArgStruct<'a, 'f> {
     pub fn new(
+        app: &'a dyn FlowApp,
         flow: &'f Flow,
-        handlebars: &'h Handlebars<'reg>,
         context: Option<Map>,
         task_id: Arc<dyn TaskId>,
         action: String,
         step_id: String,
         aid: &str,
-    ) -> CreateArgStruct<'f, 'h, 'reg> {
+    ) -> CreateArgStruct<'a, 'f> {
         let id = CreateIdStruct {
             task_id,
             step: step_id,
@@ -87,8 +87,8 @@ impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
         }
         .unwrap();
         let arg = CreateArgStruct {
+            app,
             flow,
-            handlebars,
             context,
             action,
             id,
@@ -98,11 +98,11 @@ impl<'f, 'h, 'reg> CreateArgStruct<'f, 'h, 'reg> {
     }
 
     fn render_str(&self, text: &str) -> Result<Value, TemplateRenderError> {
-        return flow::render_str(self.handlebars, &self.context, text);
+        return flow::render_str(self.app.get_handlebars(), &self.context, text);
     }
 }
 
-impl<'f, 'h, 'reg> CreateArg for CreateArgStruct<'f, 'h, 'reg> {
+impl<'a, 'f> CreateArg for CreateArgStruct<'a, 'f> {
     fn id(&self) -> &dyn CreateId {
         &self.id
     }
@@ -124,32 +124,36 @@ impl<'f, 'h, 'reg> CreateArg for CreateArgStruct<'f, 'h, 'reg> {
         //handlebars.set_strict_mode(true);
         self.render_str(text).is_ok()
     }
+
+    fn factory(&self, action: &str) -> Option<&dyn Factory> {
+        self.app.get_action_factory(action)
+    }
 }
 
-pub struct RunArgStruct<'f, 'h, 'reg> {
+pub struct RunArgStruct<'a, 'f> {
+    app: &'a dyn FlowApp,
     flow: &'f Flow,
-    handlebars: &'h Handlebars<'reg>,
     context: RenderContext,
     id: RunIdStruct,
     aid: String,
 }
 
-impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
+impl<'a, 'f> RunArgStruct<'a, 'f> {
     pub fn new(
+        app: &'a dyn FlowApp,
         flow: &'f Flow,
-        handlebars: &'h Handlebars<'reg>,
         context: RenderContext,
         case_id: Arc<dyn CaseId>,
         step_id: String,
-    ) -> RunArgStruct<'f, 'h, 'reg> {
+    ) -> RunArgStruct<'a, 'f> {
         let id = RunIdStruct {
             case_id,
             step: step_id,
         };
 
         let run_arg = RunArgStruct {
+            app,
             flow,
-            handlebars,
             context,
             id,
             aid: "".to_string(),
@@ -158,7 +162,7 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
         return run_arg;
     }
 
-    pub fn id(self: &RunArgStruct<'f, 'h, 'reg>) -> &RunIdStruct {
+    pub fn id(self: &RunArgStruct<'a, 'f>) -> &RunIdStruct {
         return &self.id;
     }
 
@@ -167,7 +171,7 @@ impl<'f, 'h, 'reg> RunArgStruct<'f, 'h, 'reg> {
     }
 }
 
-impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
+impl<'a, 'f> RunArg for RunArgStruct<'a, 'f> {
     fn id(&self) -> &dyn RunId {
         &self.id
     }
@@ -183,11 +187,15 @@ impl<'f, 'h, 'reg> RunArg for RunArgStruct<'f, 'h, 'reg> {
 
     fn render(&self, raw: &Value) -> Result<Value, Error> {
         let mut val = raw.clone();
-        flow::render_value(self.handlebars, &self.context, &mut val)?;
+        flow::render_value(self.app.get_handlebars(), &self.context, &mut val)?;
         Ok(val)
     }
 
     fn args(&self) -> Result<Value, Error> {
         self.render(self.args_raw())
+    }
+
+    fn factory(&self, action: &str) -> Option<&dyn Factory> {
+        self.app.get_action_factory(action)
     }
 }

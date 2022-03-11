@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::mem::replace;
 use std::sync::Arc;
 
@@ -22,7 +23,7 @@ task_local! {
     pub static CTX_ID: String;
 }
 
-pub async fn context_create(action_factory: Box<dyn Factory>) -> Arc<dyn FlowApp> {
+pub async fn context_create(action_factory: HashMap<String, Box<dyn Factory>>) -> Arc<dyn FlowApp> {
     Arc::new(FlowAppStruct::<'_>::new(action_factory))
 }
 

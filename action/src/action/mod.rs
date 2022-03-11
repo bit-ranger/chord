@@ -8,8 +8,10 @@ use crate::err;
 mod assert;
 mod count;
 // mod iter;
+mod context;
 mod lets;
 mod log;
+mod matches;
 mod sleep;
 
 #[cfg(feature = "act_cdylib")]
@@ -36,7 +38,7 @@ mod restapi;
 mod url;
 
 pub struct FactoryComposite {
-    table: HashMap<String, Arc<dyn Factory>>,
+    table: HashMap<String, Box<dyn Factory>>,
 }
 
 macro_rules! register {
@@ -44,7 +46,7 @@ macro_rules! register {
         if enable($config_ref, $name) {
             $table.insert(
                 $name.into(),
-                Arc::new($module($config_ref.map(|c| c[$name].clone())).await?),
+                Box::new($module($config_ref.map(|c| c[$name].clone())).await?),
             );
         }
     };
@@ -52,10 +54,12 @@ macro_rules! register {
 
 impl FactoryComposite {
     pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Error> {
-        let mut table: HashMap<String, Arc<dyn Factory>> = HashMap::new();
+        let mut table: HashMap<String, Box<dyn Factory>> = HashMap::new();
 
         let config_ref = config.as_ref();
 
+        register!(table, config_ref, "context", context::ContextFactory::new);
+        register!(table, config_ref, "match", matches::MatchFactory::new);
         register!(table, config_ref, "let", lets::LetFactory::new);
         register!(table, config_ref, "assert", assert::AssertFactory::new);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new);
@@ -132,4 +136,10 @@ fn enable(config: Option<&Value>, action_name: &str) -> bool {
     return config_ref[action_name]["enable"]
         .as_bool()
         .unwrap_or(default_enable);
+}
+
+impl From<FactoryComposite> for HashMap<String, Box<dyn Factory>> {
+    fn from(fac: FactoryComposite) -> Self {
+        fac.table
+    }
 }

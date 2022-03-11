@@ -46,6 +46,8 @@ pub trait RunArg: Sync + Send {
     fn render(&self, raw: &Value) -> Result<Value, Error>;
 
     fn args(&self) -> Result<Value, Error>;
+
+    fn factory(&self, action: &str) -> Option<&dyn Factory>;
 }
 
 pub trait CreateArg: Sync + Send {
@@ -59,6 +61,8 @@ pub trait CreateArg: Sync + Send {
 
     /// shared in whole action
     fn is_static(&self, text: &str) -> bool;
+
+    fn factory(&self, action: &str) -> Option<&dyn Factory>;
 }
 
 #[async_trait]

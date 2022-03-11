@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::collections::HashMap;
 
 use handlebars::Handlebars;
 
@@ -9,23 +10,23 @@ use crate::model::helper::register;
 pub trait FlowApp: Sync + Send {
     fn get_handlebars(&self) -> &Handlebars;
 
-    fn get_action_factory(&self) -> &dyn Factory;
+    fn get_action_factory(&self, name: &str) -> Option<&dyn Factory>;
 }
 
 pub struct FlowAppStruct<'reg> {
     handlebars: Handlebars<'reg>,
-    action_factory: Box<dyn Factory>,
+    factory_map: HashMap<String, Box<dyn Factory>>,
 }
 
 impl<'reg> FlowAppStruct<'reg> {
-    pub fn new(action_factory: Box<dyn Factory>) -> FlowAppStruct<'reg> {
+    pub fn new(action_factory: HashMap<String, Box<dyn Factory>>) -> FlowAppStruct<'reg> {
         let mut handlebars = Handlebars::new();
         handlebars.set_strict_mode(true);
         handlebars.register_escape_fn(handlebars::no_escape);
         register(&mut handlebars);
         FlowAppStruct {
             handlebars,
-            action_factory,
+            factory_map: action_factory,
         }
     }
 }
@@ -35,8 +36,8 @@ impl<'reg> FlowApp for FlowAppStruct<'reg> {
         self.handlebars.borrow()
     }
 
-    fn get_action_factory(self: &FlowAppStruct<'reg>) -> &dyn Factory {
-        self.action_factory.as_ref()
+    fn get_action_factory(self: &FlowAppStruct<'reg>, name: &str) -> Option<&dyn Factory> {
+        self.factory_map.get(name).map(|f| f.as_ref())
     }
 }
 

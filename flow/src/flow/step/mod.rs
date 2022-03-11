@@ -31,7 +31,7 @@ pub struct StepRunner {
 
 impl StepRunner {
     pub async fn new(
-        flow_app: &dyn FlowApp,
+        app: &dyn FlowApp,
         flow: &Flow,
         task_id: Arc<TaskIdSimple>,
         step_id: String,
@@ -44,8 +44,8 @@ impl StepRunner {
             let func = flow.step_action_func(step_id.as_str(), aid);
 
             let create_arg = CreateArgStruct::new(
+                app,
                 flow,
-                flow_app.get_handlebars(),
                 None,
                 task_id.clone(),
                 func.into(),
@@ -53,8 +53,9 @@ impl StepRunner {
                 aid,
             );
 
-            let action = flow_app
-                .get_action_factory()
+            let action = app
+                .get_action_factory(func.into())
+                .unwrap()
                 .create(&create_arg)
                 .await
                 .map_err(|e| Create(step_id.clone(), e))?;
@@ -66,7 +67,7 @@ impl StepRunner {
         })
     }
 
-    pub async fn run(&self, arg: &mut RunArgStruct<'_, '_, '_>) -> StepAssessStruct {
+    pub async fn run(&self, arg: &mut RunArgStruct<'_, '_>) -> StepAssessStruct {
         trace!("step start {}", arg.id());
         let start = Utc::now();
         let mut assess_vec = Vec::with_capacity(self.action_vec.len());

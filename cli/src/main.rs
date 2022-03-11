@@ -136,11 +136,12 @@ async fn run(
             .map_err(|e| RunError::Report(e))?;
     let job_reporter = Arc::new(job_reporter);
 
-    let app_ctx = chord_flow::context_create(Box::new(
+    let app_ctx = chord_flow::context_create(
         FactoryComposite::new(config.action().map(|c| c.clone()))
             .await
-            .map_err(|e| RunError::ActionFactory(e))?,
-    ))
+            .map_err(|e| RunError::ActionFactory(e))?
+            .into(),
+    )
     .await;
     let task_state_vec = job::run(
         app_ctx,

@@ -121,18 +121,14 @@ impl CaseArgStruct {
         self.step_vec.clone()
     }
 
-    pub fn step_arg_create<'app, 'h, 'reg>(
+    pub fn step_arg_create<'app>(
         self: &CaseArgStruct,
         step_id: &str,
         flow_app: &'app dyn FlowApp,
-    ) -> RunArgStruct<'_, 'h, 'reg>
-    where
-        'app: 'h,
-        'app: 'reg,
-    {
+    ) -> RunArgStruct<'app, '_> {
         RunArgStruct::new(
+            flow_app,
             self.flow.as_ref(),
-            flow_app.get_handlebars(),
             self.render_ctx.clone(),
             self.id.clone(),
             step_id.to_owned(),

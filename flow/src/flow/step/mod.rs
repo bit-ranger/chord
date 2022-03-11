@@ -21,8 +21,11 @@ pub mod res;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("step `{0}` create:\n{1}")]
-    Create(String, Box<dyn std::error::Error + Sync + Send>),
+    #[error("unsupported action `{0}`")]
+    Unsupported(String),
+
+    #[error("action `{0}.{1}` create:\n{1}")]
+    Create(String, String, Box<dyn std::error::Error + Sync + Send>),
 }
 
 pub struct StepRunner {
@@ -50,15 +53,15 @@ impl StepRunner {
                 task_id.clone(),
                 func.into(),
                 step_id.clone(),
-                aid,
+                aid.as_str(),
             );
 
             let action = app
                 .get_action_factory(func.into())
-                .unwrap()
+                .ok_or_else(|| Unsupported(func.into()))?
                 .create(&create_arg)
                 .await
-                .map_err(|e| Create(step_id.clone(), e))?;
+                .map_err(|e| Create(step_id.clone(), aid.to_string(), e))?;
             action_vec.push((aid.to_string(), action));
         }
 

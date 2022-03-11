@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use handlebars::{Handlebars, TemplateRenderError};
+use handlebars::TemplateRenderError;
 
 use chord_core::action::RunId;
 use chord_core::action::{CreateArg, CreateId, RunArg};

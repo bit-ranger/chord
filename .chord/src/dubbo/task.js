@@ -29,7 +29,7 @@ step.step1 = {
         assert: `
       (all
         (eq value.code "0")
-        (eq value.data content)
+        (eq value.data var.content)
       )
     `
     }

@@ -24,9 +24,11 @@ let step = conf.stage.smoking.step;
 step.del_idx = {
 
 
-    restapi: {
-        url: url_root + "/article",
-        method: "DELETE"
+    value: {
+        restapi: {
+            url: url_root + "/article",
+            method: "DELETE"
+        }
     }
 }
 
@@ -73,28 +75,35 @@ step.crt_inx = {
 
 
 step.insert = {
-    let: {
-        author: "{{case.author}}",
-        title: "{{case.title}}",
-        desc: "{{case.desc}}"
-    },
-
-    restapi: {
-        url: url_root + "/article/_doc/1",
-        method: "PUT",
-        body: {
-            "author": "{{author}}",
-            "title": "{{title}}",
-            "desc": "{{desc}}"
+    var: {
+        let: {
+            author: "{{case.author}}",
+            title: "{{case.title}}",
+            desc: "{{case.desc}}"
         }
     },
-    assert:
-        `
+
+    value: {
+        restapi: {
+            url: url_root + "/article/_doc/1",
+            method: "PUT",
+            body: {
+                "author": "{{var.author}}",
+                "title": "{{var.title}}",
+                "desc": "{{var.desc}}"
+            }
+        }
+    },
+
+    ok: {
+        assert:
+            `
     (all
       (eq value.status 201)
       (eq value.body.result "created")
     )
   `
+    }
 }
 
 
@@ -104,40 +113,47 @@ step.wait = {
 
 
 step.search = {
-    let: {
-        match: "{{case.match}}",
-        term: "{{case.term}}"
+    var: {
+        let: {
+            match: "{{case.match}}",
+            term: "{{case.term}}"
+        }
     },
 
-    restapi: {
-        url: url_root + "/article/_search",
-        method: "GET",
-        body: {
-            "size": 10,
-            "from": 0,
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "match": {
-                                "desc": "{{match}}"
+    value: {
+        restapi: {
+            url: url_root + "/article/_search",
+            method: "GET",
+            body: {
+                "size": 10,
+                "from": 0,
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "match": {
+                                    "desc": "{{var.match}}"
+                                }
+                            },
+                            {
+                                "term": {
+                                    "author": "{{var.term}}"
+                                }
                             }
-                        },
-                        {
-                            "term": {
-                                "author": "{{term}}"
-                            }
-                        }
-                    ]
+                        ]
+                    }
                 }
             }
         }
     },
-    assert:
-        `
+
+    ok: {
+        assert:
+            `
     (all
       (eq value.status 200)
       (eq value.body.hits.total.value 1)
     )
   `
+    }
 }

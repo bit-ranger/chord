@@ -15,16 +15,22 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-    let: {
-        duration: "{{case.seconds}}"
+    var: {
+        let: {
+            duration: "{{case.seconds}}"
+        }
     },
 
-    sleep: "{{duration}}",
-    assert: `
+    value: {
+        sleep: "{{var.duration}}"
+    },
+    ok: {
+        assert: `
       (all
         (eq 1 1)
         (eq 2 2)
         (eq 3 3)
       )
     `
+    }
 }

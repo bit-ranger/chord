@@ -11,43 +11,45 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-    let: {
-        lnum: 456,
-        lbool: true,
-        lobj: {
-            x: "y"
-        },
-        larr: [
-            1, 2, 3
-        ]
+    var: {
+        let: {
+            lnum: 456,
+            lbool: true,
+            lobj: {
+                x: "y"
+            },
+            larr: [
+                1, 2, 3
+            ],
+
+            num1: `{{num "456"}}`,
+            num2: "{{num 456}}",
+            num3: "{{num lnum}}",
+            num4: "{{json 456}}",
+            num5: "{{json lnum}}",
+
+            bool1: `{{bool "true"}}`,
+            bool2: "{{bool true}}",
+            bool3: "{{bool lbool}}",
+            bool4: "{{json true}}",
+            bool5: "{{json lbool}}",
+
+            obj1: `{{obj "{\\"x\\":\\"y\\"}" }}`,
+            obj2: `{{obj {"x":"y"} }}`,
+            obj3: "{{obj lobj}}",
+            obj4: `{{json {"x":"y"} }}`,
+            obj5: "{{json lobj}}",
+
+            arr1: `{{arr "[1,2,3]" }}`,
+            arr2: "{{arr [1,2,3] }}",
+            arr3: "{{arr larr}}",
+            arr4: "{{json [1,2,3] }}",
+            arr5: "{{json larr}}"
+        }
     },
 
-    echo: {
-        num1: `{{num "456"}}`,
-        num2: "{{num 456}}",
-        num3: "{{num lnum}}",
-        num4: "{{json 456}}",
-        num5: "{{json lnum}}",
-
-        bool1: `{{bool "true"}}`,
-        bool2: "{{bool true}}",
-        bool3: "{{bool lbool}}",
-        bool4: "{{json true}}",
-        bool5: "{{json lbool}}",
-
-        obj1: `{{obj "{\\"x\\":\\"y\\"}" }}`,
-        obj2: `{{obj {"x":"y"} }}`,
-        obj3: "{{obj lobj}}",
-        obj4: `{{json {"x":"y"} }}`,
-        obj5: "{{json lobj}}",
-
-        arr1: `{{arr "[1,2,3]" }}`,
-        arr2: "{{arr [1,2,3] }}",
-        arr3: "{{arr larr}}",
-        arr4: "{{json [1,2,3] }}",
-        arr5: "{{json larr}}"
-    },
-    assert: `
+    ok: {
+        assert: `
 (all
 (eq value.num1 456)
 (eq value.num2 456)
@@ -74,4 +76,5 @@ step.step1 = {
 (eq value.arr5.0 1)
 )
 `
+    }
 }

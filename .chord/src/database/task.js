@@ -28,7 +28,7 @@ step.step1 = {
     },
 
     ok: {
-        assert: "(eq value.records.0.Db db)"
+        assert: "(eq value.records.0.Db var.db)"
     }
 
 

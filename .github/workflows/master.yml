@@ -125,7 +125,7 @@ jobs:
         run: |
           chmod -R 777 $PWD
           cargo --version
-          ./build.sh
+          cargo build --all-features --verbose --release
 
       - name: chord-target-upload
         uses: actions/upload-artifact@v2

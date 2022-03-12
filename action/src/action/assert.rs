@@ -25,7 +25,8 @@ impl Action for Assert {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         let assert_tpl = format!("{{{{{cond}}}}}", cond = raw);
-        let result = arg.render(&Value::String(assert_tpl))?;
+        let ctx = arg.context();
+        let result = arg.render(ctx, &Value::String(assert_tpl))?;
         if result.eq("true") {
             Ok(Box::new(Value::Bool(true)))
         } else {

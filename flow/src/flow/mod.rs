@@ -136,5 +136,5 @@ fn assign_by_render(
         }
     }
 
-    Ok(new_render_ctx.data().as_object().unwrap().clone())
+    Ok(assign_value)
 }

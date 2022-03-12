@@ -32,6 +32,12 @@ pub mod prelude {
     pub use super::Scope;
 }
 
+pub trait Context: Sync + Send {
+    fn data(&self) -> &Map;
+
+    fn data_mut(&mut self) -> &mut Map;
+}
+
 pub trait Scope: Sync + Send {
     fn as_value(&self) -> &Value;
 }
@@ -39,13 +45,15 @@ pub trait Scope: Sync + Send {
 pub trait RunArg: Sync + Send {
     fn id(&self) -> &dyn RunId;
 
-    fn context(&mut self) -> &mut Map;
+    fn args(&self) -> Result<Value, Error>;
 
     fn args_raw(&self) -> &Value;
 
-    fn render(&self, raw: &Value) -> Result<Value, Error>;
+    fn context(&self) -> &dyn Context;
 
-    fn args(&self) -> Result<Value, Error>;
+    fn context_mut(&mut self) -> &mut dyn Context;
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
 
     fn factory(&self, action: &str) -> Option<&dyn Factory>;
 }

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use handlebars::TemplateRenderError;
 
-use chord_core::action::RunId;
+use chord_core::action::{Context, RunId};
 use chord_core::action::{CreateArg, CreateId, RunArg};
 use chord_core::action::{Error, Factory};
 use chord_core::case::CaseId;
@@ -61,7 +61,7 @@ impl Display for CreateIdStruct {
 pub struct CreateArgStruct<'a, 'f> {
     app: &'a dyn FlowApp,
     flow: &'f Flow,
-    context: RenderContext,
+    context: ContextStruct,
     action: String,
     id: CreateIdStruct,
     aid: String,
@@ -86,6 +86,9 @@ impl<'a, 'f> CreateArgStruct<'a, 'f> {
             None => RenderContext::wraps(Map::new()),
         }
         .unwrap();
+
+        let context = ContextStruct { ctx: context };
+
         let arg = CreateArgStruct {
             app,
             flow,
@@ -98,7 +101,7 @@ impl<'a, 'f> CreateArgStruct<'a, 'f> {
     }
 
     fn render_str(&self, text: &str) -> Result<Value, TemplateRenderError> {
-        return flow::render_str(self.app.get_handlebars(), &self.context, text);
+        return flow::render_str(self.app.get_handlebars(), self.context.as_ref(), text);
     }
 }
 
@@ -133,7 +136,7 @@ impl<'a, 'f> CreateArg for CreateArgStruct<'a, 'f> {
 pub struct RunArgStruct<'a, 'f> {
     app: &'a dyn FlowApp,
     flow: &'f Flow,
-    context: RenderContext,
+    context: ContextStruct,
     id: RunIdStruct,
     aid: String,
 }
@@ -150,6 +153,8 @@ impl<'a, 'f> RunArgStruct<'a, 'f> {
             case_id,
             step: step_id,
         };
+
+        let context = ContextStruct { ctx: context };
 
         let run_arg = RunArgStruct {
             app,
@@ -176,8 +181,12 @@ impl<'a, 'f> RunArg for RunArgStruct<'a, 'f> {
         &self.id
     }
 
-    fn context(&mut self) -> &mut Map {
-        self.context.data_mut().as_object_mut().unwrap()
+    fn context(&self) -> &dyn Context {
+        &self.context
+    }
+
+    fn context_mut(&mut self) -> &mut dyn Context {
+        &mut self.context
     }
 
     fn args_raw(&self) -> &Value {
@@ -185,17 +194,38 @@ impl<'a, 'f> RunArg for RunArgStruct<'a, 'f> {
             .step_action_args(self.id().step(), self.aid.as_str())
     }
 
-    fn render(&self, raw: &Value) -> Result<Value, Error> {
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
         let mut val = raw.clone();
-        flow::render_value(self.app.get_handlebars(), &self.context, &mut val)?;
+        let rc = RenderContext::wraps(context.data())?;
+        flow::render_value(self.app.get_handlebars(), &rc, &mut val)?;
         Ok(val)
     }
 
     fn args(&self) -> Result<Value, Error> {
-        self.render(self.args_raw())
+        self.render(&self.context, self.args_raw())
     }
 
     fn factory(&self, action: &str) -> Option<&dyn Factory> {
         self.app.get_action_factory(action)
+    }
+}
+
+struct ContextStruct {
+    ctx: RenderContext,
+}
+
+impl AsRef<RenderContext> for ContextStruct {
+    fn as_ref(&self) -> &RenderContext {
+        &self.ctx
+    }
+}
+
+impl Context for ContextStruct {
+    fn data(&self) -> &Map {
+        self.ctx.data().as_object().unwrap()
+    }
+
+    fn data_mut(&mut self) -> &mut Map {
+        self.ctx.data_mut().as_object_mut().unwrap()
     }
 }

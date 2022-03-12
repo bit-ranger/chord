@@ -58,7 +58,10 @@ impl Action for Cdylib {
         let mut ar = Map::new();
         ar.insert("id".to_string(), Value::String(arg.id().to_string()));
         ar.insert("args".to_string(), arg.args()?);
-        ar.insert("context".to_string(), Value::Object(arg.context().clone()));
+        ar.insert(
+            "context".to_string(),
+            Value::Object(arg.context().data().clone()),
+        );
         let ar = Value::Object(ar).to_string();
         let ar = CString::new(ar)?;
         let av: *mut c_char = action_run(ar.as_ptr());

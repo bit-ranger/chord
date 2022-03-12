@@ -28,7 +28,7 @@ impl Action for Lua {
             let args = arg.args()?;
             let code = args.as_str().ok_or(err!("100", "missing lua"))?;
 
-            for (k, v) in arg.context() {
+            for (k, v) in arg.context().data() {
                 let v = rlua_serde::to_value(lua, v)?;
                 lua.globals().set(k.as_str(), v)?;
             }

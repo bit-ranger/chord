@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use chord_core::action::prelude::*;
 
@@ -8,10 +7,10 @@ use crate::err;
 mod assert;
 mod count;
 // mod iter;
-mod context;
+// mod context;
 mod lets;
 mod log;
-mod matches;
+// mod matches;
 mod sleep;
 
 #[cfg(feature = "act_cdylib")]
@@ -58,8 +57,8 @@ impl FactoryComposite {
 
         let config_ref = config.as_ref();
 
-        register!(table, config_ref, "context", context::ContextFactory::new);
-        register!(table, config_ref, "match", matches::MatchFactory::new);
+        // register!(table, config_ref, "context", context::ContextFactory::new);
+        // register!(table, config_ref, "match", matches::MatchFactory::new);
         register!(table, config_ref, "let", lets::LetFactory::new);
         register!(table, config_ref, "assert", assert::AssertFactory::new);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new);

@@ -83,7 +83,9 @@ impl StepRunner {
             let value = action.run(arg).await;
             match &value {
                 Ok(v) => {
-                    arg.context().insert(key.to_string(), v.as_value().clone());
+                    arg.context_mut()
+                        .data_mut()
+                        .insert(key.to_string(), v.as_value().clone());
                     let assess = action_assess_create(aid, explain, value);
                     assess_vec.push(assess);
                 }

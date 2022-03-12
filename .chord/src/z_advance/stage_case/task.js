@@ -27,68 +27,86 @@ let smoking = conf.stage.smoking;
 let stage2 = conf.stage.stage2;
 
 smoking.step.step1 = {
-    let: {
-        arg2: def.arg.arg2
+    var: {
+        let: {
+            arg2: def.arg.arg2
+        }
     },
 
-    echo: [
-        "hello",
-        {
-            hello: "world"
-        },
-        "{{arr arg2}}"
-    ],
-    assert: `
+    value: {
+        let: [
+            "hello",
+            {
+                hello: "world"
+            },
+            "{{arr var.arg2}}"
+        ]
+    },
+    ok: {
+        assert: `
       (all
 (eq value.0 "hello")
 (eq value.1.hello "world")
 (eq value.2.1 "b")
 )
 `
+    }
 }
 
 smoking.step.step2 = {
-    let: {
-        arg1: def.arg.arg1,
-        lon: "{{case.origin_lon}}",
-        lat: "{{case.origin_lat}}"
+    var: {
+        let: {
+            arg1: def.arg.arg1,
+            lon: "{{case.origin_lon}}",
+            lat: "{{case.origin_lat}}"
+        }
     },
 
-    echo: "update bas set a = '{{lon}}' where b = '{{lat}}'",
-    assert:
-        `
+    value: {
+        let: "update bas set a = '{{var.lon}}' where b = '{{var.lat}}'"
+    },
+    ok: {
+        assert:
+            `
     (all
-      (str_start_with arg1 "12")
-      (str_end_with arg1 "23")
-      (str_contains arg1 "2")
+      (str_start_with var.arg1 "12")
+      (str_end_with var.arg1 "23")
+      (str_contains var.arg1 "2")
       (eq
-        (str_sub arg1 1) "23"
+        (str_sub var.arg1 1) "23"
       )
       (eq
-        (str_sub arg1 1 2)
+        (str_sub var.arg1 1 2)
         "2"
       )
     )
   `
+    }
 }
 
 
 stage2.step.step3 = {
-    let: {
-        arg1: def.arg.arg1,
-        foo: "{{case.foo}}",
-        bar: "{{case.bar}}"
+    var: {
+        let: {
+            arg1: def.arg.arg1,
+            foo: "{{case.foo}}",
+            bar: "{{case.bar}}"
+        }
     },
 
-    echo: "update bas set a = '{{foo}}' where b = '{{bar}}'",
-    assert:
-        `
+    value: {
+        let: "update bas set a = '{{var.foo}}' where b = '{{var.bar}}'"
+    },
+    ok: {
+        assert:
+            `
     (all
-      (str_start_with arg1 "12")
-      (str_end_with arg1 "23")
-      (str_contains arg1 "2")
-      (eq (str_sub arg1 1) "23")
-      (eq (str_sub arg1 1 2) "2")
+      (str_start_with var.arg1 "12")
+      (str_end_with var.arg1 "23")
+      (str_contains var.arg1 "2")
+      (eq (str_sub var.arg1 1) "23")
+      (eq (str_sub var.arg1 1 2) "2")
   )
   `
+    }
 }

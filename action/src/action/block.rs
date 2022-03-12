@@ -7,16 +7,17 @@ use std::sync::{Arc, RwLock};
 
 use crate::err;
 
-pub struct ContextFactory {}
+pub struct BlockFactory {}
 
-impl ContextFactory {
-    pub async fn new(_: Option<Value>) -> Result<ContextFactory, Error> {
-        Ok(ContextFactory {})
+impl BlockFactory {
+    pub async fn new(_: Option<Value>) -> Result<BlockFactory, Error> {
+        Ok(BlockFactory {})
     }
 }
 
 struct CreateArgStruct<'o> {
-    origin: &'o dyn CreateArg,
+    block: &'o dyn CreateArg,
+    aid: String,
 }
 
 impl CreateArg for CreateArgStruct {
@@ -46,7 +47,7 @@ impl CreateArg for CreateArgStruct {
 }
 
 #[async_trait]
-impl Factory for ContextFactory {
+impl Factory for BlockFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw.as_object().unwrap();
@@ -57,7 +58,7 @@ impl Factory for ContextFactory {
             let only = fo.as_object().unwrap().iter().last().unwrap();
             let func = only.0.as_str();
 
-            let create_arg = CreateArgStruct { origin: arg };
+            let create_arg = CreateArgStruct { block: arg };
 
             let action = arg
                 .factory(func.into())
@@ -68,14 +69,14 @@ impl Factory for ContextFactory {
             action_vec.push((aid.to_string(), action));
         }
 
-        Ok(Box::new(Context {}))
+        Ok(Box::new(Block {}))
     }
 }
 
-struct Context {}
+struct Block {}
 
 #[async_trait]
-impl Action for Context {
+impl Action for Block {
     async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         Ok(Box::new(arg.args()?))
     }

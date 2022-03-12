@@ -1,8 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use handlebars::TemplateRenderError;
-
 use chord_core::action::{Context, RunId};
 use chord_core::action::{CreateArg, CreateId, RunArg};
 use chord_core::action::{Error, Factory};
@@ -99,10 +97,6 @@ impl<'a, 'f> CreateArgStruct<'a, 'f> {
         };
         return arg;
     }
-
-    fn render_str(&self, text: &str) -> Result<Value, TemplateRenderError> {
-        return flow::render_str(self.app.get_handlebars(), self.context.as_ref(), text);
-    }
 }
 
 impl<'a, 'f> CreateArg for CreateArgStruct<'a, 'f> {
@@ -119,13 +113,23 @@ impl<'a, 'f> CreateArg for CreateArgStruct<'a, 'f> {
             .step_action_args(self.id.step(), self.aid.as_str())
     }
 
-    fn render_str(&self, text: &str) -> Result<Value, Error> {
-        Ok(self.render_str(text)?)
+    fn context(&self) -> &dyn Context {
+        &self.context
     }
 
-    fn is_static(&self, text: &str) -> bool {
-        //handlebars.set_strict_mode(true);
-        self.render_str(text).is_ok()
+    fn context_mut(&mut self) -> &mut dyn Context {
+        &mut self.context
+    }
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        let mut val = raw.clone();
+        let rc = RenderContext::wraps(context.data())?;
+        flow::render_value(self.app.get_handlebars(), &rc, &mut val)?;
+        Ok(val)
+    }
+
+    fn is_static(&self, raw: &Value) -> bool {
+        self.render(&self.context, raw).is_ok()
     }
 
     fn factory(&self, action: &str) -> Option<&dyn Factory> {

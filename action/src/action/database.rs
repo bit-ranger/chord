@@ -20,9 +20,10 @@ impl DatabaseFactory {
 impl Factory for DatabaseFactory {
     async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
-        if let Some(url) = args_raw["url"].as_str() {
+        let url = &args_raw["url"];
+        if url.is_string() {
             if arg.is_static(url) {
-                let url = arg.render_str(url)?;
+                let url = arg.render(arg.context(), url)?;
                 let url = url.as_str().ok_or(err!("100", "invalid url"))?;
                 let rb = create_rb(url).await?;
                 return Ok(Box::new(Database { rb: Some(rb) }));

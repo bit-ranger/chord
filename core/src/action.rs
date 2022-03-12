@@ -65,10 +65,14 @@ pub trait CreateArg: Sync + Send {
 
     fn args_raw(&self) -> &Value;
 
-    fn render_str(&self, text: &str) -> Result<Value, Error>;
+    fn context(&self) -> &dyn Context;
+
+    fn context_mut(&mut self) -> &mut dyn Context;
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
 
     /// shared in whole action
-    fn is_static(&self, text: &str) -> bool;
+    fn is_static(&self, raw: &Value) -> bool;
 
     fn factory(&self, action: &str) -> Option<&dyn Factory>;
 }

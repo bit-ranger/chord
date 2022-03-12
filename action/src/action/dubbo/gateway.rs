@@ -2,14 +2,14 @@ use std::process::Stdio;
 use std::str::FromStr;
 
 use log::{debug, info, trace};
-use reqwest::{Body, Client, Method, Response, Url};
 use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::{Body, Client, Method, Response, Url};
 
 use chord_core::action::prelude::*;
 use chord_core::future::io::{AsyncBufReadExt, BufReader, Lines};
 use chord_core::future::process::{Child, ChildStdout, Command};
 use chord_core::future::task::spawn;
-use chord_core::value::{Deserialize, Serialize, to_string};
+use chord_core::value::{to_string, Deserialize, Serialize};
 
 use crate::err;
 
@@ -140,7 +140,7 @@ struct Dubbo {
 
 #[async_trait]
 impl Action for Dubbo {
-    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let method_long = args["method"]
             .as_str()

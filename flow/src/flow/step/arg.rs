@@ -117,10 +117,6 @@ impl<'a, 'f> CreateArg for CreateArgStruct<'a, 'f> {
         &self.context
     }
 
-    fn context_mut(&mut self) -> &mut dyn Context {
-        &mut self.context
-    }
-
     fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
         let mut val = raw.clone();
         let rc = RenderContext::wraps(context.data())?;
@@ -178,6 +174,10 @@ impl<'a, 'f> RunArgStruct<'a, 'f> {
     pub fn aid(&mut self, aid: &str) {
         self.aid = aid.to_string();
     }
+
+    pub fn context_mut(&mut self) -> &mut dyn Context {
+        &mut self.context
+    }
 }
 
 impl<'a, 'f> RunArg for RunArgStruct<'a, 'f> {
@@ -187,10 +187,6 @@ impl<'a, 'f> RunArg for RunArgStruct<'a, 'f> {
 
     fn context(&self) -> &dyn Context {
         &self.context
-    }
-
-    fn context_mut(&mut self) -> &mut dyn Context {
-        &mut self.context
     }
 
     fn args_raw(&self) -> &Value {

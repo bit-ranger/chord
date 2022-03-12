@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use log::{error, info, trace, warn};
 
-use chord_core::action::{Action, RunArg, Scope};
+use chord_core::action::{Action, Scope};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::step::StepState;
@@ -46,7 +46,7 @@ impl StepRunner {
         for (aid, _) in obj.iter() {
             let func = flow.step_action_func(step_id.as_str(), aid);
 
-            let create_arg = CreateArgStruct::new(
+            let mut create_arg = CreateArgStruct::new(
                 app,
                 flow,
                 None,
@@ -59,7 +59,7 @@ impl StepRunner {
             let action = app
                 .get_action_factory(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
-                .create(&create_arg)
+                .create(&mut create_arg)
                 .await
                 .map_err(|e| Create(step_id.clone(), aid.to_string(), e))?;
             action_vec.push((aid.to_string(), action));

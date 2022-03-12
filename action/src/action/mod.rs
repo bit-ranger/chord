@@ -7,7 +7,7 @@ use crate::err;
 mod assert;
 mod count;
 // mod iter;
-// mod block;
+mod block;
 mod lets;
 mod log;
 // mod matches;
@@ -57,9 +57,9 @@ impl FactoryComposite {
 
         let config_ref = config.as_ref();
 
-        // register!(table, config_ref, "block", block::BlockFactory::new);
-        // register!(table, config_ref, "match", matches::MatchFactory::new);
         register!(table, config_ref, "let", lets::LetFactory::new);
+        register!(table, config_ref, "block", block::BlockFactory::new);
+        // register!(table, config_ref, "match", matches::MatchFactory::new);
         register!(table, config_ref, "assert", assert::AssertFactory::new);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new);
         register!(table, config_ref, "log", log::LogFactory::new);

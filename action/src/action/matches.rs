@@ -1,13 +1,11 @@
+use chord_core::action::prelude::*;
+use chord_core::action::{CreateId, RunId};
+use log::trace;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::mem::replace;
 use std::sync::Arc;
 use std::time::Duration;
-
-use log::trace;
-
-use chord_core::action::prelude::*;
-use chord_core::action::{CreateId, RunId};
 
 use crate::err;
 
@@ -134,7 +132,7 @@ impl Factory for MatchFactory {
 
 #[async_trait]
 impl Action for Match {
-    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         // let mut context = arg.context().clone();
         // context.insert("idx".to_string(), Value::Null);
         // context.insert("item".to_string(), Value::Null);

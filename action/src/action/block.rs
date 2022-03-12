@@ -1,9 +1,6 @@
 use chord_core::action::prelude::*;
-use chord_core::action::CreateId;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::mem::replace;
-use std::sync::{Arc, RwLock};
+use chord_core::action::{Context, CreateId, RunId};
+use chord_core::collection::TailDropVec;
 
 use crate::err;
 
@@ -18,31 +15,36 @@ impl BlockFactory {
 struct CreateArgStruct<'o> {
     block: &'o dyn CreateArg,
     aid: String,
+    action: String,
 }
 
-impl CreateArg for CreateArgStruct {
+impl<'o> CreateArg for CreateArgStruct<'o> {
     fn id(&self) -> &dyn CreateId {
-        todo!()
+        self.block.id()
     }
 
     fn action(&self) -> &str {
-        todo!()
+        &self.action
     }
 
     fn args_raw(&self) -> &Value {
-        todo!()
+        &self.block.args_raw()[&self.aid][&self.action]
     }
 
-    fn render_str(&self, text: &str) -> Result<Value, Error> {
-        todo!()
+    fn context(&self) -> &dyn Context {
+        self.block.context()
     }
 
-    fn is_static(&self, text: &str) -> bool {
-        todo!()
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        self.block.render(context, raw)
+    }
+
+    fn is_static(&self, raw: &Value) -> bool {
+        self.block.is_static(raw)
     }
 
     fn factory(&self, action: &str) -> Option<&dyn Factory> {
-        todo!()
+        self.block.factory(action)
     }
 }
 
@@ -56,28 +58,105 @@ impl Factory for BlockFactory {
 
         for (aid, fo) in map {
             let only = fo.as_object().unwrap().iter().last().unwrap();
-            let func = only.0.as_str();
+            let action = only.0.as_str();
 
-            let create_arg = CreateArgStruct { block: arg };
+            let mut create_arg = CreateArgStruct {
+                block: arg,
+                aid: aid.to_string(),
+                action: action.to_string(),
+            };
 
-            let action = arg
-                .factory(func.into())
+            let action_obj = arg
+                .factory(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
-                .create(&create_arg)
+                .create(&mut create_arg)
                 .await
-                .map_err(|e| err!("100", "create error"))?;
-            action_vec.push((aid.to_string(), action));
+                .map_err(|_| err!("100", "create error"))?;
+            action_vec.push((aid.to_string(), action.to_string(), action_obj));
         }
 
-        Ok(Box::new(Block {}))
+        Ok(Box::new(Block {
+            action_vec: TailDropVec::from(action_vec),
+        }))
     }
 }
 
-struct Block {}
+struct Block {
+    action_vec: TailDropVec<(String, String, Box<dyn Action>)>,
+}
+
+struct RunArgStruct<'o, 'c> {
+    block: &'o dyn RunArg,
+    context: &'c Box<ContextStruct>,
+    aid: String,
+    action: String,
+}
+
+impl<'o, 'c> RunArg for RunArgStruct<'o, 'c> {
+    fn id(&self) -> &dyn RunId {
+        self.block.id()
+    }
+
+    fn args(&self) -> Result<Value, Error> {
+        self.block.render(self.context(), self.args_raw())
+    }
+
+    fn args_raw(&self) -> &Value {
+        &self.block.args_raw()[&self.aid][&self.action]
+    }
+
+    fn context(&self) -> &dyn Context {
+        self.context.as_ref()
+    }
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        self.block.render(context, raw)
+    }
+
+    fn factory(&self, action: &str) -> Option<&dyn Factory> {
+        self.block.factory(action)
+    }
+}
+
+struct ContextStruct {
+    data: Map,
+}
+
+impl Context for ContextStruct {
+    fn data(&self) -> &Map {
+        &self.data
+    }
+
+    fn data_mut(&mut self) -> &mut Map {
+        &mut self.data
+    }
+}
 
 #[async_trait]
 impl Action for Block {
-    async fn run(&self, arg: &mut dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        Ok(Box::new(arg.args()?))
+    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+        let mut context = Box::new(ContextStruct {
+            data: arg.context().data().clone(),
+        });
+        let mut scope_vec = Vec::with_capacity(self.action_vec.len());
+        for (aid, action, action_obj) in self.action_vec.iter() {
+            let mut run = RunArgStruct {
+                block: arg,
+                context: &mut context,
+                aid: aid.to_string(),
+                action: action.to_string(),
+            };
+
+            let v = action_obj.run(&mut run).await?;
+            scope_vec.push((aid.to_string(), v));
+        }
+
+        let scope_vec = TailDropVec::from(scope_vec);
+        let mut value = Map::new();
+        for (aid, scope) in scope_vec.iter() {
+            value.insert(aid.to_string(), scope.as_value().clone());
+        }
+
+        Ok(Box::new(Value::Object(value)))
     }
 }

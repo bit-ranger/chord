@@ -17,7 +17,8 @@ let allTasks = [
     "restapi",
     "sleep",
     "typecast",
-    "z_advance/stage_case"
+    "z_advance/stage_case",
+    "z_advance/match"
 ]
 
 module.exports = (env) => {

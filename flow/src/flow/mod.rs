@@ -13,7 +13,7 @@ use chord_core::value::{from_str, Value};
 pub use task::arg::TaskIdSimple;
 pub use task::TaskRunner;
 
-use crate::model::app::{FlowApp, FlowAppStruct, RenderContext};
+use crate::model::app::{App, AppStruct, RenderContext};
 
 mod case;
 mod step;
@@ -23,8 +23,8 @@ task_local! {
     pub static CTX_ID: String;
 }
 
-pub async fn context_create(action_factory: HashMap<String, Box<dyn Factory>>) -> Arc<dyn FlowApp> {
-    Arc::new(FlowAppStruct::<'_>::new(action_factory))
+pub async fn app_create(action_factory: HashMap<String, Box<dyn Factory>>) -> Arc<dyn App> {
+    Arc::new(AppStruct::<'_>::new(action_factory))
 }
 
 fn render_str(

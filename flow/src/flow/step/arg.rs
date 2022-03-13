@@ -9,7 +9,7 @@ use chord_core::flow::Flow;
 use chord_core::value::{Map, Value};
 
 use crate::model::app::RenderContext;
-use crate::{flow, FlowApp};
+use crate::{flow, App};
 
 #[derive(Clone)]
 pub struct IdStruct {
@@ -34,7 +34,7 @@ impl Display for IdStruct {
 }
 
 pub struct ArgStruct<'a, 'f> {
-    app: &'a dyn FlowApp,
+    app: &'a dyn App,
     flow: &'f Flow,
     context: ContextStruct,
     id: IdStruct,
@@ -43,7 +43,7 @@ pub struct ArgStruct<'a, 'f> {
 
 impl<'a, 'f> ArgStruct<'a, 'f> {
     pub fn new(
-        app: &'a dyn FlowApp,
+        app: &'a dyn App,
         flow: &'f Flow,
         context: RenderContext,
         case_id: Arc<dyn CaseId>,
@@ -83,7 +83,7 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
         self.flow
     }
 
-    pub fn app(&self) -> &dyn FlowApp {
+    pub fn app(&self) -> &dyn App {
         self.app
     }
 }

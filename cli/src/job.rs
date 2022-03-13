@@ -15,7 +15,7 @@ use chord_core::input::JobLoader;
 use chord_core::output::{DateTime, JobReporter, Utc};
 use chord_core::task::{TaskAssess, TaskId, TaskState};
 use chord_core::value::Value;
-use chord_flow::{FlowApp, TaskIdSimple};
+use chord_flow::{App, TaskIdSimple};
 use Error::*;
 
 #[derive(thiserror::Error, Debug)]
@@ -43,7 +43,7 @@ pub enum Error {
 }
 
 pub async fn run<P: AsRef<Path>>(
-    app_ctx: Arc<dyn FlowApp>,
+    app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
     exec_id: String,
@@ -52,7 +52,7 @@ pub async fn run<P: AsRef<Path>>(
 ) -> Result<Vec<Box<dyn TaskAssess>>, Error> {
     let task_state_vec = if job_path_is_task {
         task_path_run_cast_vec(
-            app_ctx,
+            app,
             job_loader,
             job_reporter,
             exec_id,
@@ -62,7 +62,7 @@ pub async fn run<P: AsRef<Path>>(
         .await
     } else {
         job_path_run_recur(
-            app_ctx,
+            app,
             job_loader,
             job_reporter,
             exec_id,
@@ -80,7 +80,7 @@ pub async fn run<P: AsRef<Path>>(
 
 #[async_recursion]
 async fn job_path_run_recur(
-    app_ctx: Arc<dyn FlowApp>,
+    app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
     exec_id: String,
@@ -134,7 +134,7 @@ async fn job_path_run_recur(
         if serial {
             if sub_dir_is_task_path(root_path.clone(), child_sub_path.clone()).await {
                 let asses = task_path_run(
-                    app_ctx.clone(),
+                    app.clone(),
                     job_loader.clone(),
                     job_reporter.clone(),
                     exec_id.clone(),
@@ -149,7 +149,7 @@ async fn job_path_run_recur(
                 }
             } else {
                 let state = job_path_run_recur(
-                    app_ctx.clone(),
+                    app.clone(),
                     job_loader.clone(),
                     job_reporter.clone(),
                     exec_id.clone(),
@@ -167,7 +167,7 @@ async fn job_path_run_recur(
             let mut futures = Vec::new();
             if sub_dir_is_task_path(root_path.clone(), child_sub_path.clone()).await {
                 let jh = spawn(task_path_run_cast_vec(
-                    app_ctx.clone(),
+                    app.clone(),
                     job_loader.clone(),
                     job_reporter.clone(),
                     exec_id.clone(),
@@ -177,7 +177,7 @@ async fn job_path_run_recur(
                 futures.push(jh);
             } else {
                 let jh = spawn(job_path_run_recur(
-                    app_ctx.clone(),
+                    app.clone(),
                     job_loader.clone(),
                     job_reporter.clone(),
                     exec_id.clone(),
@@ -201,7 +201,7 @@ async fn job_path_run_recur(
 }
 
 async fn task_path_run_cast_vec(
-    app_ctx: Arc<dyn FlowApp>,
+    app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
     exec_id: String,
@@ -210,7 +210,7 @@ async fn task_path_run_cast_vec(
 ) -> Result<Vec<Box<dyn TaskAssess>>, Error> {
     Ok(vec![
         task_path_run(
-            app_ctx,
+            app,
             job_loader,
             job_reporter,
             exec_id,
@@ -231,7 +231,7 @@ async fn sub_dir_is_task_path(root_path: PathBuf, sub_path: PathBuf) -> bool {
 }
 
 async fn task_path_run(
-    app_ctx: Arc<dyn FlowApp>,
+    app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
     exec_id: String,
@@ -253,13 +253,13 @@ async fn task_path_run(
     chord_flow::CTX_ID
         .scope(
             id.to_string(),
-            task_path_run_scope(app_ctx, job_loader, job_reporter, task_path, id),
+            task_path_run_scope(app, job_loader, job_reporter, task_path, id),
         )
         .await
 }
 
 async fn task_path_run_scope(
-    app_ctx: Arc<dyn FlowApp>,
+    app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
     task_path: PathBuf,
@@ -267,14 +267,8 @@ async fn task_path_run_scope(
 ) -> Box<dyn TaskAssess> {
     trace!("task path start {}", task_path.to_str().unwrap());
     let start = Utc::now();
-    let task_assess = task_path_run_do(
-        task_path.clone(),
-        id.clone(),
-        app_ctx,
-        job_loader,
-        job_reporter,
-    )
-    .await;
+    let task_assess =
+        task_path_run_do(task_path.clone(), id.clone(), app, job_loader, job_reporter).await;
     return match task_assess {
         Err(e) => {
             error!("task path Err {}, {}", task_path.to_str().unwrap(), e);
@@ -296,7 +290,7 @@ async fn task_path_run_scope(
 async fn task_path_run_do<P: AsRef<Path>>(
     task_path: P,
     task_id: Arc<TaskIdSimple>,
-    app_ctx: Arc<dyn FlowApp>,
+    app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
 ) -> Result<Box<dyn TaskAssess>, Error> {
@@ -322,7 +316,7 @@ async fn task_path_run_do<P: AsRef<Path>>(
         .map_err(|e| Report(task_id.task().to_string(), e))?;
 
     //runner
-    let task_assess = chord_flow::TaskRunner::new(loader, reporter, app_ctx, flow, task_id.clone())
+    let task_assess = chord_flow::TaskRunner::new(loader, reporter, app, flow, task_id.clone())
         .run()
         .await;
 

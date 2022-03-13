@@ -12,7 +12,7 @@ use chord_core::value::Value;
 use crate::flow::step::arg::ArgStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::flow::step::StepRunner;
-use crate::model::app::FlowApp;
+use crate::model::app::App;
 use crate::model::app::RenderContext;
 
 #[derive(Clone)]
@@ -123,7 +123,7 @@ impl CaseArgStruct {
     pub fn step_arg_create<'app>(
         self: &CaseArgStruct,
         step_id: &str,
-        flow_app: &'app dyn FlowApp,
+        flow_app: &'app dyn App,
     ) -> ArgStruct<'app, '_> {
         ArgStruct::new(
             flow_app,

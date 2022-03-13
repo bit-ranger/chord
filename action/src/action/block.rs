@@ -4,55 +4,6 @@ use chord_core::collection::TailDropVec;
 
 use crate::err;
 
-pub struct BlockFactory {}
-
-impl BlockFactory {
-    pub async fn new(_: Option<Value>) -> Result<BlockFactory, Error> {
-        Ok(BlockFactory {})
-    }
-}
-
-#[async_trait]
-impl Factory for BlockFactory {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
-        let map = args_raw.as_object().unwrap();
-        let context = Box::new(ContextStruct {
-            data: arg.context().data().clone(),
-        });
-
-        let mut action_vec = Vec::with_capacity(map.len());
-
-        for (aid, fo) in map {
-            let only = fo.as_object().unwrap().iter().last().unwrap();
-            let action = only.0.as_str();
-
-            let mut create_arg = RunArgStruct {
-                block: arg,
-                context: &context,
-                aid: aid.to_string(),
-                action: action.to_string(),
-            };
-
-            let action_obj = arg
-                .factory(action.into())
-                .ok_or_else(|| err!("100", "unsupported action"))?
-                .create(&mut create_arg)
-                .await
-                .map_err(|_| err!("100", "create error"))?;
-            action_vec.push((aid.to_string(), action.to_string(), action_obj));
-        }
-
-        Ok(Box::new(Block {
-            action_vec: TailDropVec::from(action_vec),
-        }))
-    }
-}
-
-struct Block {
-    action_vec: TailDropVec<(String, String, Box<dyn Action>)>,
-}
-
 struct RunArgStruct<'o, 'c> {
     block: &'o dyn Arg,
     context: &'c Box<ContextStruct>,
@@ -102,6 +53,55 @@ impl Context for ContextStruct {
     fn data_mut(&mut self) -> &mut Map {
         &mut self.data
     }
+}
+
+pub struct BlockFactory {}
+
+impl BlockFactory {
+    pub async fn new(_: Option<Value>) -> Result<BlockFactory, Error> {
+        Ok(BlockFactory {})
+    }
+}
+
+#[async_trait]
+impl Factory for BlockFactory {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let args_raw = arg.args_raw();
+        let map = args_raw.as_object().unwrap();
+        let context = Box::new(ContextStruct {
+            data: arg.context().data().clone(),
+        });
+
+        let mut action_vec = Vec::with_capacity(map.len());
+
+        for (aid, fo) in map {
+            let only = fo.as_object().unwrap().iter().last().unwrap();
+            let action = only.0.as_str();
+
+            let mut create_arg = RunArgStruct {
+                block: arg,
+                context: &context,
+                aid: aid.to_string(),
+                action: action.to_string(),
+            };
+
+            let action_obj = arg
+                .factory(action.into())
+                .ok_or_else(|| err!("100", "unsupported action"))?
+                .create(&mut create_arg)
+                .await
+                .map_err(|_| err!("100", "create error"))?;
+            action_vec.push((aid.to_string(), action.to_string(), action_obj));
+        }
+
+        Ok(Box::new(Block {
+            action_vec: TailDropVec::from(action_vec),
+        }))
+    }
+}
+
+struct Block {
+    action_vec: TailDropVec<(String, String, Box<dyn Action>)>,
 }
 
 #[async_trait]

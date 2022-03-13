@@ -25,7 +25,7 @@ use crate::flow::task::arg::TaskIdSimple;
 use crate::flow::task::res::StageAssessStruct;
 use crate::flow::task::Error::*;
 use crate::flow::{assign_by_render, step};
-use crate::model::app::{FlowApp, RenderContext};
+use crate::model::app::{App, RenderContext};
 use crate::CTX_ID;
 
 pub mod arg;
@@ -73,7 +73,7 @@ pub struct TaskRunner {
     reporter: Box<dyn TaskReporter>,
     loader: Box<dyn TaskLoader>,
     id: Arc<TaskIdSimple>,
-    flow_app: Arc<dyn FlowApp>,
+    flow_app: Arc<dyn App>,
     flow: Arc<Flow>,
 }
 
@@ -81,7 +81,7 @@ impl TaskRunner {
     pub fn new(
         loader: Box<dyn TaskLoader>,
         reporter: Box<dyn TaskReporter>,
-        flow_app: Arc<dyn FlowApp>,
+        flow_app: Arc<dyn App>,
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
     ) -> TaskRunner {
@@ -114,11 +114,11 @@ impl TaskRunner {
     }
 
     pub async fn run(mut self) -> Box<dyn TaskAssess> {
-        trace!("task run start {}", self.id);
+        trace!("task run  {}", self.id);
         let start = Utc::now();
 
         if let Err(e) = self.reporter.start(start).await {
-            error!("task run Err {}", self.id);
+            error!("task Err  {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id.clone(),
                 start,
@@ -138,7 +138,7 @@ impl TaskRunner {
             let rc = RenderContext::wraps(rc).unwrap();
             let rso = assign_by_render(self.flow_app.get_handlebars(), &rc, def_raw, false);
             if let Err(e) = rso {
-                error!("task run Err {}", self.id);
+                error!("task Err  {}", self.id);
                 return Box::new(TaskAssessStruct::new(
                     self.id.clone(),
                     start,
@@ -160,7 +160,7 @@ impl TaskRunner {
                 )
                 .await;
                 if let Err(e) = pre_step_vec {
-                    error!("task run Err {}", self.id);
+                    error!("task Err  {}", self.id);
                     return Box::new(TaskAssessStruct::new(
                         self.id.clone(),
                         start,
@@ -178,7 +178,7 @@ impl TaskRunner {
                 )
                 .await;
                 if let Err(e) = pre_arg {
-                    error!("task run Err {}", self.id);
+                    error!("task Err  {}", self.id);
                     return Box::new(TaskAssessStruct::new(
                         self.id,
                         start,
@@ -191,7 +191,7 @@ impl TaskRunner {
 
                 match pre_assess.state() {
                     CaseState::Err(_) => {
-                        error!("task run Err {}", self.id.clone());
+                        error!("task Err  {}", self.id.clone());
                         return Box::new(TaskAssessStruct::new(
                             self.id,
                             start,
@@ -201,7 +201,7 @@ impl TaskRunner {
                     }
 
                     CaseState::Fail(v) => {
-                        error!("task run Err {}", self.id);
+                        error!("task Err  {}", self.id);
                         return Box::new(TaskAssessStruct::new(
                             self.id.clone(),
                             start,
@@ -224,7 +224,7 @@ impl TaskRunner {
         let result = self.task_run().await;
 
         let task_assess = if let Err(e) = result {
-            error!("task run Err {}", self.id);
+            error!("task Err  {}", self.id);
             TaskAssessStruct::new(
                 self.id.clone(),
                 start,
@@ -234,11 +234,11 @@ impl TaskRunner {
         } else {
             match self.task_state {
                 TaskState::Ok => {
-                    info!("task run Ok {}", self.id.clone());
+                    info!("task Ok   {}", self.id.clone());
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok)
                 }
                 TaskState::Fail(c) => {
-                    warn!("task run Fail {}", self.id);
+                    warn!("task Fail {}", self.id);
                     TaskAssessStruct::new(
                         self.id.clone(),
                         start,
@@ -247,14 +247,14 @@ impl TaskRunner {
                     )
                 }
                 TaskState::Err(e) => {
-                    error!("task run Err {}", self.id);
+                    error!("task Err  {}", self.id);
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Err(e))
                 }
             }
         };
 
         if let Err(e) = self.reporter.end(&task_assess).await {
-            error!("task run Err {}", self.id);
+            error!("task Err  {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id.clone(),
                 start,
@@ -278,7 +278,7 @@ impl TaskRunner {
             .map(|s| s.to_owned())
             .collect();
         for state_id in stage_id_vec {
-            trace!("task run stage {}, {}", self.id, state_id);
+            trace!("stage run   {}-{}", self.id, state_id);
             self.stage_run(state_id.as_str()).await?;
             if let StageState::Fail(_) = self.stage_state {
                 if "stage_fail" == self.flow.stage_break_on(state_id.as_str()) {
@@ -356,7 +356,7 @@ impl TaskRunner {
             .await;
 
         let stage_assess = if let Err(e) = result {
-            error!("stage run Err {}", self.id);
+            error!("stage Err  {}-{}", self.id, stage_id);
             StageAssessStruct::new(
                 stage_id.to_string(),
                 start,
@@ -366,11 +366,11 @@ impl TaskRunner {
         } else {
             match &self.stage_state {
                 StageState::Ok => {
-                    info!("stage run Ok {}.{}", self.id.clone(), stage_id);
+                    info!("stage Ok   {}-{}", self.id.clone(), stage_id);
                     StageAssessStruct::new(stage_id.to_string(), start, Utc::now(), StageState::Ok)
                 }
                 StageState::Fail(c) => {
-                    warn!("stage run Fail {}.{}", self.id.clone(), stage_id);
+                    warn!("stage Fail {}-{}", self.id.clone(), stage_id);
                     StageAssessStruct::new(
                         stage_id.to_string(),
                         start,
@@ -531,7 +531,7 @@ async fn pre_ctx_create(sa_vec: &Vec<Box<dyn StepAssess>>) -> Map {
 }
 
 async fn step_vec_create(
-    flow_app: Arc<dyn FlowApp>,
+    flow_app: Arc<dyn App>,
     flow: Arc<Flow>,
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdSimple>,
@@ -560,18 +560,15 @@ async fn step_vec_create(
     Ok(step_vec)
 }
 
-async fn case_run(flow_ctx: &dyn FlowApp, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run(flow_ctx: &dyn App, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     Box::new(case::run(flow_ctx, case_arg).await)
 }
 
-fn case_spawn(
-    flow_ctx: Arc<dyn FlowApp>,
-    case_arg: CaseArgStruct,
-) -> JoinHandle<Box<dyn CaseAssess>> {
+fn case_spawn(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> JoinHandle<Box<dyn CaseAssess>> {
     spawn(case_run_arc(flow_ctx, case_arg))
 }
 
-async fn case_run_arc(flow_ctx: Arc<dyn FlowApp>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run_arc(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     CTX_ID
         .scope(
             case_arg.id().to_string(),

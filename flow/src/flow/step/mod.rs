@@ -31,12 +31,14 @@ pub struct StepRunner {
 
 impl StepRunner {
     pub async fn new(arg: &mut ArgStruct<'_, '_>) -> Result<StepRunner, Error> {
+        trace!("step new {}", arg.id());
         let obj = arg.flow().step_obj(arg.id().step());
-
+        let aid_vec: Vec<String> = obj.iter().map(|(aid, _)| aid.to_string()).collect();
         let mut action_vec = Vec::with_capacity(obj.len());
 
-        for (aid, _) in obj.iter() {
-            let func = arg.flow().step_action_func(arg.id().step(), aid);
+        for aid in aid_vec {
+            arg.aid(aid.as_str());
+            let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
 
             let action = arg
                 .app()
@@ -54,7 +56,7 @@ impl StepRunner {
     }
 
     pub async fn run(&self, arg: &mut ArgStruct<'_, '_>) -> StepAssessStruct {
-        trace!("step start {}", arg.id());
+        trace!("step run {}", arg.id());
         let start = Utc::now();
         let mut assess_vec = Vec::with_capacity(self.action_vec.len());
         let mut success = true;
@@ -83,7 +85,7 @@ impl StepRunner {
         }
 
         if success {
-            info!("step Ok    {}", arg.id());
+            info!("step Ok   {}", arg.id());
         } else {
             for ass in assess_vec.iter() {
                 if let StepState::Ok(v) = ass.state() {
@@ -92,7 +94,7 @@ impl StepRunner {
                     error!("{} : {}  <<<  {}", ass.id(), e, ass.explain());
                 }
             }
-            error!("step Err   {}", arg.id());
+            error!("step Err {}", arg.id());
         }
 
         StepAssessStruct::new(arg.id().clone(), start, Utc::now(), assess_vec)

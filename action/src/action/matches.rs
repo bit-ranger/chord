@@ -42,32 +42,6 @@ impl<'a> MatchRunArg<'a> {
     }
 }
 
-impl<'a> Arg for MatchRunArg<'a> {
-    fn id(&self) -> &dyn Id {
-        self.delegate.id()
-    }
-
-    fn context(&mut self) -> &mut Map {
-        &mut self.context
-    }
-
-    fn args_raw(&self) -> &Value {
-        self.delegate.args_raw()
-    }
-
-    fn render(&self, raw: &Value) -> Result<Value, Error> {
-        self.delegate.render(raw)
-    }
-
-    fn args(&self) -> Result<Value, Error> {
-        self.delegate.args()
-    }
-
-    fn factory(&self, action: &str) -> Option<&dyn Factory> {
-        self.delegate.factory(action)
-    }
-}
-
 #[async_trait]
 impl Factory for MatchFactory {
     async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {

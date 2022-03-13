@@ -21,6 +21,12 @@ struct Assert {}
 
 #[async_trait]
 impl Action for Assert {
+    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
+        let raw = arg.args_raw();
+        let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
+        Ok(Value::String(raw.to_string()))
+    }
+
     async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();

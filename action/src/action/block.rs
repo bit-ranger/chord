@@ -4,14 +4,14 @@ use chord_core::collection::TailDropVec;
 
 use crate::err;
 
-struct RunArgStruct<'o, 'c> {
+struct ArgStruct<'o, 'c> {
     block: &'o dyn Arg,
     context: &'c Box<ContextStruct>,
     aid: String,
     action: String,
 }
 
-impl<'o, 'c> Arg for RunArgStruct<'o, 'c> {
+impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
     fn id(&self) -> &dyn Id {
         self.block.id()
     }
@@ -78,7 +78,7 @@ impl Factory for BlockFactory {
             let only = fo.as_object().unwrap().iter().last().unwrap();
             let action = only.0.as_str();
 
-            let mut create_arg = RunArgStruct {
+            let mut create_arg = ArgStruct {
                 block: arg,
                 context: &context,
                 aid: aid.to_string(),
@@ -112,7 +112,7 @@ impl Action for Block {
         });
         let mut scope_vec = Vec::with_capacity(self.action_vec.len());
         for (aid, action, action_obj) in self.action_vec.iter() {
-            let mut run = RunArgStruct {
+            let mut run = ArgStruct {
                 block: arg,
                 context: &context,
                 aid: aid.to_string(),

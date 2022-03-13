@@ -122,6 +122,8 @@ impl Flow {
             flow._step_check(step_id)?;
 
             for (aid, _) in flow._step_obj(step_id)? {
+                flow._step_action_obj(step_id, aid)?;
+                flow._step_action_func(step_id, aid)?;
                 flow._step_action_args(step_id, aid)?;
             }
         }

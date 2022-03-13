@@ -8,7 +8,7 @@ mod count;
 mod block;
 mod lets;
 mod log;
-// mod matches;
+mod matches;
 mod sleep;
 
 #[cfg(feature = "act_cdylib")]
@@ -57,7 +57,7 @@ impl FactoryComposite {
 
         register!(table, config_ref, "let", lets::LetFactory::new);
         register!(table, config_ref, "block", block::BlockFactory::new);
-        // register!(table, config_ref, "match", matches::MatchFactory::new);
+        register!(table, config_ref, "match", matches::MatchFactory::new);
         register!(table, config_ref, "assert", assert::AssertFactory::new);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new);
         register!(table, config_ref, "log", log::LogFactory::new);

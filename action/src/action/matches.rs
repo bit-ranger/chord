@@ -1,11 +1,5 @@
 use chord_core::action::prelude::*;
 use chord_core::action::{Context, Id};
-use log::trace;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::mem::replace;
-use std::sync::Arc;
-use std::time::Duration;
 
 use crate::err;
 
@@ -17,79 +11,76 @@ impl MatchFactory {
     }
 }
 
-struct Match {
-    action: Box<dyn Action>,
+struct Match {}
+
+struct ArgStruct<'a> {
+    origin: &'a dyn Arg,
+    cond: String,
 }
 
-struct MatchRunArg<'a> {
-    delegate: &'a dyn Arg,
-    index: usize,
-    item: Value,
-    context: Map,
-}
+impl<'o> Arg for ArgStruct<'o> {
+    fn id(&self) -> &dyn Id {
+        self.origin.id()
+    }
 
-impl<'a> MatchRunArg<'a> {
-    fn new(delegate: &'a mut dyn Arg, index: usize, item: Value) -> MatchRunArg {
-        let mut context = delegate.context().clone();
-        context.insert("idx".to_string(), Value::Number(Number::from(index)));
-        context.insert("item".to_string(), item.clone());
-        MatchRunArg {
-            delegate,
-            index,
-            item,
-            context,
-        }
+    fn args(&self) -> Result<Value, Error> {
+        self.render(self.context(), self.args_raw())
+    }
+
+    fn args_raw(&self) -> &Value {
+        &self.origin.args_raw()[self.cond.as_str()]
+    }
+
+    fn context(&self) -> &dyn Context {
+        self.origin.context()
+    }
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        self.origin.render(context, raw)
+    }
+
+    fn factory(&self, action: &str) -> Option<&dyn Factory> {
+        self.origin.factory(action)
+    }
+
+    fn is_static(&self, raw: &Value) -> bool {
+        self.origin.is_static(raw)
     }
 }
 
 #[async_trait]
 impl Factory for MatchFactory {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
-        let map = args_raw["map"]
-            .as_object()
-            .ok_or(err!("101", "missing map"))?;
-        if map.is_empty() {
-            return Err(err!("102", "missing iter_map.map"));
-        }
-
-        if map.len() != 1 {
-            return Err(err!("102", "invalid iter_map.map"));
-        }
-
-        let action = map.keys().nth(0).unwrap().as_str();
-        let map_create_arg = MatchCreateArg {
-            origin: arg,
-            chosen: "".to_string(),
-        };
-
-        let factory = arg
-            .factory(action)
-            .ok_or(err!("102", format!("unsupported action {}", action)))?;
-
-        let map_action = factory.create(&map_create_arg).await?;
-
-        Ok(Box::new(Match { action: map_action }))
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        Ok(Box::new(Match {}))
     }
 }
 
 #[async_trait]
 impl Action for Match {
     async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        // let mut context = arg.context().clone();
-        // context.insert("idx".to_string(), Value::Null);
-        // context.insert("item".to_string(), Value::Null);
+        let map = arg
+            .args_raw()
+            .as_object()
+            .ok_or(err!("100", "match must be a object"))?;
 
-        let args = arg.args()?;
-        trace!("{}", args);
-        let array = args["iter"].as_array().ok_or(err!("103", "missing iter"))?;
-
-        let mut map_val_vec = Vec::with_capacity(array.len());
-        for (index, item) in array.iter().enumerate() {
-            let mut mra = MatchRunArg::new(arg, index, item.clone());
-            let val = self.action.run(&mut mra).await?;
-            map_val_vec.push(val.as_value().clone());
+        for (cond_raw, _) in map {
+            let cond_tpl = format!("{{{{{cond}}}}}", cond = cond_raw.trim().to_string());
+            let cond = Value::String(cond_tpl);
+            let cv = arg.render(arg.context(), &cond)?;
+            if cv.is_string() && cv.as_str().unwrap().eq("true") {
+                let arg = ArgStruct {
+                    origin: arg,
+                    cond: cond_raw.to_string(),
+                };
+                let bf = arg
+                    .factory("block")
+                    .ok_or(err!("101", "missing `block` action"))?
+                    .create(&arg)
+                    .await?;
+                return bf.run(&arg).await;
+            }
         }
-        Ok(Box::new(Value::Array(map_val_vec)))
+
+        Ok(Box::new(Value::Null))
     }
 }

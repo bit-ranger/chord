@@ -547,7 +547,8 @@ async fn step_vec_create(
         let mut arg = ArgStruct::new(
             flow_app.as_ref(),
             flow.as_ref(),
-            RenderContext::wraps(Value::Null).map_err(|e| Step(sid.clone(), Box::new(e)))?,
+            RenderContext::wraps(Value::Object(Map::with_capacity(0)))
+                .map_err(|e| Step(sid.clone(), Box::new(e)))?,
             case_id.clone(),
             sid.clone(),
         );

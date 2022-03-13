@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use chord_core::action::prelude::*;
-use chord_util::docker::container::Arg;
+use chord_util::docker::container::Arg as DkArg;
 use chord_util::docker::engine::Engine;
 use chord_util::docker::image::Image;
 
@@ -24,7 +24,7 @@ impl Docker {
 
 #[async_trait]
 impl Factory for Docker {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let image = args_raw["image"]
             .as_str()
@@ -40,11 +40,11 @@ struct ImageWrapper(Image);
 
 #[async_trait]
 impl Action for ImageWrapper {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let cmd = &args["cmd"];
 
-        let mut ca = Arg::default();
+        let mut ca = DkArg::default();
         if cmd.is_array() {
             let cmd_vec = cmd
                 .as_array()

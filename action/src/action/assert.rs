@@ -12,7 +12,7 @@ impl AssertFactory {
 
 #[async_trait]
 impl Factory for AssertFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Assert {}))
     }
 }
@@ -21,7 +21,7 @@ struct Assert {}
 
 #[async_trait]
 impl Action for Assert {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         let assert_tpl = format!("{{{{{cond}}}}}", cond = raw);

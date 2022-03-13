@@ -18,7 +18,8 @@ use chord_core::value::{json, Map, Value};
 use res::TaskAssessStruct;
 
 use crate::flow::case;
-use crate::flow::case::arg::CaseArgStruct;
+use crate::flow::case::arg::{CaseArgStruct, CaseIdStruct};
+use crate::flow::step::arg::ArgStruct;
 use crate::flow::step::StepRunner;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::flow::task::res::StageAssessStruct;
@@ -536,15 +537,24 @@ async fn step_vec_create(
     task_id: Arc<TaskIdSimple>,
 ) -> Result<Vec<(String, StepRunner)>, Error> {
     let mut step_vec = vec![];
+    let case_id = Arc::new(CaseIdStruct::new(
+        task_id,
+        Arc::new("create".to_string()),
+        Arc::new("0".to_string()),
+        "0".to_string(),
+    ));
     for sid in step_id_vec {
-        let pr = step::StepRunner::new(
+        let mut arg = ArgStruct::new(
             flow_app.as_ref(),
             flow.as_ref(),
-            task_id.clone(),
+            RenderContext::wraps(Value::Null).map_err(|e| Step(sid.clone(), Box::new(e)))?,
+            case_id.clone(),
             sid.clone(),
-        )
-        .await
-        .map_err(|e| Error::Step(sid.clone(), Box::new(e)))?;
+        );
+
+        let pr = step::StepRunner::new(&mut arg)
+            .await
+            .map_err(|e| Error::Step(sid.clone(), Box::new(e)))?;
         step_vec.push((sid, pr));
     }
     Ok(step_vec)

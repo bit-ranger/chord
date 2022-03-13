@@ -1,5 +1,5 @@
 use chord_core::action::prelude::*;
-use chord_core::action::{CreateId, RunId};
+use chord_core::action::{Context, Id};
 use log::trace;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -17,50 +17,19 @@ impl MatchFactory {
     }
 }
 
-struct MatchCreateArg<'a> {
-    origin: &'a dyn CreateArg,
-    chosen: String,
-}
-
-impl<'a> CreateArg for MatchCreateArg<'a> {
-    fn id(&self) -> &dyn CreateId {
-        self.origin.id()
-    }
-
-    fn action(&self) -> &str {
-        self.origin.action()
-    }
-
-    fn args_raw(&self) -> &Value {
-        self.origin.args_raw()
-    }
-
-    fn render_str(&self, text: &str) -> Result<Value, Error> {
-        self.origin.render_str(text)
-    }
-
-    fn is_static(&self, text: &str) -> bool {
-        self.origin.is_static(text)
-    }
-
-    fn factory(&self, action: &str) -> Option<&dyn Factory> {
-        self.origin.factory(action)
-    }
-}
-
 struct Match {
     action: Box<dyn Action>,
 }
 
 struct MatchRunArg<'a> {
-    delegate: &'a dyn RunArg,
+    delegate: &'a dyn Arg,
     index: usize,
     item: Value,
     context: Map,
 }
 
 impl<'a> MatchRunArg<'a> {
-    fn new(delegate: &'a mut dyn RunArg, index: usize, item: Value) -> MatchRunArg {
+    fn new(delegate: &'a mut dyn Arg, index: usize, item: Value) -> MatchRunArg {
         let mut context = delegate.context().clone();
         context.insert("idx".to_string(), Value::Number(Number::from(index)));
         context.insert("item".to_string(), item.clone());
@@ -73,8 +42,8 @@ impl<'a> MatchRunArg<'a> {
     }
 }
 
-impl<'a> RunArg for MatchRunArg<'a> {
-    fn id(&self) -> &dyn RunId {
+impl<'a> Arg for MatchRunArg<'a> {
+    fn id(&self) -> &dyn Id {
         self.delegate.id()
     }
 
@@ -101,7 +70,7 @@ impl<'a> RunArg for MatchRunArg<'a> {
 
 #[async_trait]
 impl Factory for MatchFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw["map"]
             .as_object()
@@ -132,7 +101,7 @@ impl Factory for MatchFactory {
 
 #[async_trait]
 impl Action for Match {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         // let mut context = arg.context().clone();
         // context.insert("idx".to_string(), Value::Null);
         // context.insert("item".to_string(), Value::Null);

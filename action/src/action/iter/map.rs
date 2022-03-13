@@ -96,7 +96,7 @@ impl<'a> RunArg for MapRunArg<'a> {
 
 #[async_trait]
 impl Factory for IterMapFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw["map"]
             .as_object()

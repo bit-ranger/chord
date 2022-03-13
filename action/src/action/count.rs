@@ -12,7 +12,7 @@ impl CountFactory {
 
 #[async_trait]
 impl Factory for CountFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let init = args_raw["init"].as_u64().unwrap_or(1);
         let incr = args_raw["incr"].as_u64().unwrap_or(1);
@@ -30,7 +30,7 @@ struct Count {
 
 #[async_trait]
 impl Action for Count {
-    async fn run(&self, _: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, _: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         Ok(Box::new(Value::Number(Number::from(
             self.num.fetch_add(self.incr, Ordering::SeqCst),
         ))))

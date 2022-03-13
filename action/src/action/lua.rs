@@ -12,7 +12,7 @@ impl LuaFactory {
 
 #[async_trait]
 impl Factory for LuaFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Lua {}))
     }
 }
@@ -21,7 +21,7 @@ struct Lua {}
 
 #[async_trait]
 impl Action for Lua {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let rt = rlua::Lua::new();
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {

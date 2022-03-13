@@ -3,18 +3,15 @@ use std::sync::Arc;
 use chrono::Utc;
 use log::{error, info, trace, warn};
 
-use chord_core::action::{Action, Scope};
+use chord_core::action::{Action, Id, Scope};
 use chord_core::collection::TailDropVec;
-use chord_core::flow::Flow;
 use chord_core::step::StepState;
 use chord_core::value::Value;
 use res::StepAssessStruct;
 use Error::*;
 
-use crate::flow::step::arg::{CreateArgStruct, RunArgStruct};
+use crate::flow::step::arg::ArgStruct;
 use crate::flow::step::res::ActionAssessStruct;
-use crate::model::app::FlowApp;
-use crate::TaskIdSimple;
 
 pub mod arg;
 pub mod res;
@@ -33,35 +30,21 @@ pub struct StepRunner {
 }
 
 impl StepRunner {
-    pub async fn new(
-        app: &dyn FlowApp,
-        flow: &Flow,
-        task_id: Arc<TaskIdSimple>,
-        step_id: String,
-    ) -> Result<StepRunner, Error> {
-        let obj = flow.step_obj(step_id.as_str());
+    pub async fn new(arg: &mut ArgStruct<'_, '_>) -> Result<StepRunner, Error> {
+        let obj = arg.flow().step_obj(arg.id().step());
 
         let mut action_vec = Vec::with_capacity(obj.len());
 
         for (aid, _) in obj.iter() {
-            let func = flow.step_action_func(step_id.as_str(), aid);
+            let func = arg.flow().step_action_func(arg.id().step(), aid);
 
-            let mut create_arg = CreateArgStruct::new(
-                app,
-                flow,
-                None,
-                task_id.clone(),
-                func.into(),
-                step_id.clone(),
-                aid.as_str(),
-            );
-
-            let action = app
+            let action = arg
+                .app()
                 .get_action_factory(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
-                .create(&mut create_arg)
+                .create(arg)
                 .await
-                .map_err(|e| Create(step_id.clone(), aid.to_string(), e))?;
+                .map_err(|e| Create(arg.id().step().to_string(), aid.to_string(), e))?;
             action_vec.push((aid.to_string(), action));
         }
 
@@ -70,7 +53,7 @@ impl StepRunner {
         })
     }
 
-    pub async fn run(&self, arg: &mut RunArgStruct<'_, '_>) -> StepAssessStruct {
+    pub async fn run(&self, arg: &mut ArgStruct<'_, '_>) -> StepAssessStruct {
         trace!("step start {}", arg.id());
         let start = Utc::now();
         let mut assess_vec = Vec::with_capacity(self.action_vec.len());

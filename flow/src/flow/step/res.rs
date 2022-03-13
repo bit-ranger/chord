@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
 
-use chord_core::action::RunId;
+use chord_core::action::Id;
 use chord_core::collection::TailDropVec;
 use chord_core::step::{StepAssess, StepState};
 use chord_core::value::{Map, Value};
 
-use crate::flow::step::arg::RunIdStruct;
+use crate::flow::step::arg::IdStruct;
 
 pub struct ActionAssessStruct {
     aid: String,
@@ -36,7 +36,7 @@ impl ActionAssessStruct {
 }
 
 pub struct StepAssessStruct {
-    id: RunIdStruct,
+    id: IdStruct,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     #[allow(dead_code)]
@@ -47,7 +47,7 @@ pub struct StepAssessStruct {
 
 impl StepAssessStruct {
     pub fn new(
-        id: RunIdStruct,
+        id: IdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         mut action_assess_vec: Vec<ActionAssessStruct>,
@@ -89,7 +89,7 @@ impl StepAssessStruct {
 }
 
 impl StepAssess for StepAssessStruct {
-    fn id(&self) -> &dyn RunId {
+    fn id(&self) -> &dyn Id {
         &self.id
     }
 

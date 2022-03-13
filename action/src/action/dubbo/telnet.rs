@@ -28,7 +28,7 @@ impl DubboFactory {
 
 #[async_trait]
 impl Factory for DubboFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Dubbo {
             address: self.address.clone(),
         }))

@@ -16,7 +16,7 @@ impl MongodbFactory {
 
 #[async_trait]
 impl Factory for MongodbFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Mongodb {}))
     }
 }
@@ -25,12 +25,12 @@ struct Mongodb {}
 
 #[async_trait]
 impl Action for Mongodb {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }
 
-async fn run(arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+async fn run(arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
     let args = arg.args()?;
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
     let database = args["database"]

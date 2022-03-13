@@ -11,7 +11,7 @@ impl LetFactory {
 
 #[async_trait]
 impl Factory for LetFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Let {}))
     }
 }
@@ -34,7 +34,7 @@ impl Context for ContextStruct {
 
 #[async_trait]
 impl Action for Let {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let mut lets = Map::new();
         if arg.args_raw().is_object() {
             let mut new_ctx = ContextStruct {

@@ -39,7 +39,7 @@ impl DubboFactory {
 
 #[async_trait]
 impl Factory for DubboFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         self.delegate.create(arg).await
     }
 }

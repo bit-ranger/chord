@@ -1,5 +1,5 @@
 use chord_core::action::prelude::*;
-use chord_core::action::{Context, CreateId, RunId};
+use chord_core::action::{Context, Id};
 use chord_core::collection::TailDropVec;
 
 use crate::err;
@@ -12,47 +12,14 @@ impl BlockFactory {
     }
 }
 
-struct CreateArgStruct<'o> {
-    block: &'o dyn CreateArg,
-    aid: String,
-    action: String,
-}
-
-impl<'o> CreateArg for CreateArgStruct<'o> {
-    fn id(&self) -> &dyn CreateId {
-        self.block.id()
-    }
-
-    fn action(&self) -> &str {
-        &self.action
-    }
-
-    fn args_raw(&self) -> &Value {
-        &self.block.args_raw()[&self.aid][&self.action]
-    }
-
-    fn context(&self) -> &dyn Context {
-        self.block.context()
-    }
-
-    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
-        self.block.render(context, raw)
-    }
-
-    fn is_static(&self, raw: &Value) -> bool {
-        self.block.is_static(raw)
-    }
-
-    fn factory(&self, action: &str) -> Option<&dyn Factory> {
-        self.block.factory(action)
-    }
-}
-
 #[async_trait]
 impl Factory for BlockFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw.as_object().unwrap();
+        let context = Box::new(ContextStruct {
+            data: arg.context().data().clone(),
+        });
 
         let mut action_vec = Vec::with_capacity(map.len());
 
@@ -60,8 +27,9 @@ impl Factory for BlockFactory {
             let only = fo.as_object().unwrap().iter().last().unwrap();
             let action = only.0.as_str();
 
-            let mut create_arg = CreateArgStruct {
+            let mut create_arg = RunArgStruct {
                 block: arg,
+                context: &context,
                 aid: aid.to_string(),
                 action: action.to_string(),
             };
@@ -86,14 +54,14 @@ struct Block {
 }
 
 struct RunArgStruct<'o, 'c> {
-    block: &'o dyn RunArg,
+    block: &'o dyn Arg,
     context: &'c Box<ContextStruct>,
     aid: String,
     action: String,
 }
 
-impl<'o, 'c> RunArg for RunArgStruct<'o, 'c> {
-    fn id(&self) -> &dyn RunId {
+impl<'o, 'c> Arg for RunArgStruct<'o, 'c> {
+    fn id(&self) -> &dyn Id {
         self.block.id()
     }
 
@@ -116,6 +84,10 @@ impl<'o, 'c> RunArg for RunArgStruct<'o, 'c> {
     fn factory(&self, action: &str) -> Option<&dyn Factory> {
         self.block.factory(action)
     }
+
+    fn is_static(&self, raw: &Value) -> bool {
+        self.block.is_static(raw)
+    }
 }
 
 struct ContextStruct {
@@ -134,15 +106,15 @@ impl Context for ContextStruct {
 
 #[async_trait]
 impl Action for Block {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
-        let mut context = Box::new(ContextStruct {
+    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+        let context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
         let mut scope_vec = Vec::with_capacity(self.action_vec.len());
         for (aid, action, action_obj) in self.action_vec.iter() {
             let mut run = RunArgStruct {
                 block: arg,
-                context: &mut context,
+                context: &context,
                 aid: aid.to_string(),
                 action: action.to_string(),
             };

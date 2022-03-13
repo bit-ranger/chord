@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::action::{RunId, Scope};
+use crate::action::{Id, Scope};
 use crate::value::Value;
 
 pub enum StepState {
@@ -25,7 +25,7 @@ impl StepState {
 }
 
 pub trait StepAssess: Sync + Send {
-    fn id(&self) -> &dyn RunId;
+    fn id(&self) -> &dyn Id;
 
     fn start(&self) -> DateTime<Utc>;
 

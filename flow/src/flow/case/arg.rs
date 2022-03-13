@@ -9,7 +9,7 @@ use chord_core::task::TaskId;
 use chord_core::value::Map;
 use chord_core::value::Value;
 
-use crate::flow::step::arg::RunArgStruct;
+use crate::flow::step::arg::ArgStruct;
 use crate::flow::step::res::StepAssessStruct;
 use crate::flow::step::StepRunner;
 use crate::model::app::FlowApp;
@@ -124,8 +124,8 @@ impl CaseArgStruct {
         self: &CaseArgStruct,
         step_id: &str,
         flow_app: &'app dyn FlowApp,
-    ) -> RunArgStruct<'app, '_> {
-        RunArgStruct::new(
+    ) -> ArgStruct<'app, '_> {
+        ArgStruct::new(
             flow_app,
             self.flow.as_ref(),
             self.render_ctx.clone(),

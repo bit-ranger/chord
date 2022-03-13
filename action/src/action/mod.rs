@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use chord_core::action::prelude::*;
 
-use crate::err;
-
 mod assert;
 mod count;
 // mod iter;
@@ -104,21 +102,6 @@ impl FactoryComposite {
         register!(table, config_ref, "docker", docker::Docker::new);
 
         Ok(FactoryComposite { table })
-    }
-}
-
-#[async_trait]
-impl Factory for FactoryComposite {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let action = arg.action();
-        self.table
-            .get(action)
-            .ok_or(err!(
-                "002",
-                format!("unsupported action {}", action).as_str()
-            ))?
-            .create(arg)
-            .await
     }
 }
 

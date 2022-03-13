@@ -3,7 +3,6 @@ use std::fmt::Display;
 pub use async_trait::async_trait;
 
 use crate::case::CaseId;
-use crate::task::TaskId;
 use crate::value::Map;
 use crate::value::Value;
 
@@ -25,11 +24,16 @@ pub mod prelude {
 
     pub use super::async_trait;
     pub use super::Action;
-    pub use super::CreateArg;
+    pub use super::Arg;
     pub use super::Error;
     pub use super::Factory;
-    pub use super::RunArg;
     pub use super::Scope;
+}
+
+pub trait Id: Sync + Send + Display {
+    fn step(&self) -> &str;
+
+    fn case_id(&self) -> &dyn CaseId;
 }
 
 pub trait Context: Sync + Send {
@@ -42,8 +46,14 @@ pub trait Scope: Sync + Send {
     fn as_value(&self) -> &Value;
 }
 
-pub trait RunArg: Sync + Send {
-    fn id(&self) -> &dyn RunId;
+impl Scope for Value {
+    fn as_value(&self) -> &Value {
+        &self
+    }
+}
+
+pub trait Arg: Sync + Send {
+    fn id(&self) -> &dyn Id;
 
     fn args(&self) -> Result<Value, Error>;
 
@@ -54,52 +64,20 @@ pub trait RunArg: Sync + Send {
     fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
 
     fn factory(&self, action: &str) -> Option<&dyn Factory>;
-}
-
-pub trait CreateArg: Sync + Send {
-    fn id(&self) -> &dyn CreateId;
-
-    fn action(&self) -> &str;
-
-    fn args_raw(&self) -> &Value;
-
-    fn context(&self) -> &dyn Context;
-
-    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
 
     fn is_static(&self, raw: &Value) -> bool;
-
-    fn factory(&self, action: &str) -> Option<&dyn Factory>;
 }
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error>;
+    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         arg.args()
     }
 }
 
 #[async_trait]
 pub trait Factory: Sync + Send {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error>;
-}
-
-impl Scope for Value {
-    fn as_value(&self) -> &Value {
-        &self
-    }
-}
-
-pub trait CreateId: Sync + Send + Display {
-    fn step(&self) -> &str;
-
-    fn task_id(&self) -> &dyn TaskId;
-}
-
-pub trait RunId: Sync + Send + Display {
-    fn step(&self) -> &str;
-
-    fn case_id(&self) -> &dyn CaseId;
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error>;
 }

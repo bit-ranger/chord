@@ -30,7 +30,7 @@ struct Count {
 
 #[async_trait]
 impl Action for Count {
-    async fn run(&self, _: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, _: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         Ok(Box::new(Value::Number(Number::from(
             self.num.fetch_add(self.incr, Ordering::SeqCst),
         ))))

@@ -37,7 +37,7 @@ struct Redis {
 
 #[async_trait]
 impl Action for Redis {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {

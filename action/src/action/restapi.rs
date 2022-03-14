@@ -35,7 +35,7 @@ struct Restapi {
 
 #[async_trait]
 impl Action for Restapi {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(self.client.clone(), arg).await
     }
 

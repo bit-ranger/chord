@@ -6,7 +6,7 @@ use crate::err;
 
 struct ArgStruct<'o, 'c> {
     block: &'o dyn Arg,
-    context: &'c Box<ContextStruct>,
+    context: &'c mut Box<ContextStruct>,
     aid: String,
     action: String,
 }
@@ -26,6 +26,10 @@ impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
 
     fn context(&self) -> &dyn Context {
         self.context.as_ref()
+    }
+
+    fn context_mut(&mut self) -> &mut dyn Context {
+        self.context.as_mut()
     }
 
     fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
@@ -68,7 +72,7 @@ impl Factory for BlockFactory {
     async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw.as_object().unwrap();
-        let context = Box::new(ContextStruct {
+        let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
 
@@ -80,7 +84,7 @@ impl Factory for BlockFactory {
 
             let mut create_arg = ArgStruct {
                 block: arg,
-                context: &context,
+                context: &mut context,
                 aid: aid.to_string(),
                 action: action.to_string(),
             };
@@ -106,15 +110,15 @@ struct Block {
 
 #[async_trait]
 impl Action for Block {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let context = Box::new(ContextStruct {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+        let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
         let mut scope_vec = Vec::with_capacity(self.action_vec.len());
         for (aid, action, action_obj) in self.action_vec.iter() {
             let mut run = ArgStruct {
                 block: arg,
-                context: &context,
+                context: &mut context,
                 aid: aid.to_string(),
                 action: action.to_string(),
             };

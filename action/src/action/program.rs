@@ -34,7 +34,7 @@ impl AttachProgram {
 
 #[async_trait]
 impl Action for AttachProgram {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let mut command = program_command(&args)?;
         trace!("program attach command {:?}", command);
@@ -87,7 +87,7 @@ impl DetachProgram {
 
 #[async_trait]
 impl Action for DetachProgram {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
 
         let mut command = program_command(&args)?;

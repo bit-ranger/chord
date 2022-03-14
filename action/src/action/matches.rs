@@ -14,7 +14,7 @@ impl MatchFactory {
 struct Match {}
 
 struct ArgStruct<'a> {
-    origin: &'a dyn Arg,
+    origin: &'a mut dyn Arg,
     cond: String,
 }
 
@@ -33,6 +33,10 @@ impl<'o> Arg for ArgStruct<'o> {
 
     fn context(&self) -> &dyn Context {
         self.origin.context()
+    }
+
+    fn context_mut(&mut self) -> &mut dyn Context {
+        self.origin.context_mut()
     }
 
     fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
@@ -57,18 +61,20 @@ impl Factory for MatchFactory {
 
 #[async_trait]
 impl Action for Match {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let map = arg
             .args_raw()
             .as_object()
             .ok_or(err!("100", "match must be a object"))?;
 
-        for (cond_raw, _) in map {
+        let cond_raw_vec: Vec<String> = map.iter().map(|(k, _v)| k.to_string()).collect();
+
+        for cond_raw in cond_raw_vec {
             let cond_tpl = format!("{{{{{cond}}}}}", cond = cond_raw.trim().to_string());
             let cond = Value::String(cond_tpl);
             let cv = arg.render(arg.context(), &cond)?;
             if cv.is_string() && cv.as_str().unwrap().eq("true") {
-                let arg = ArgStruct {
+                let mut arg = ArgStruct {
                     origin: arg,
                     cond: cond_raw.to_string(),
                 };
@@ -77,7 +83,7 @@ impl Action for Match {
                     .ok_or(err!("101", "missing `block` action"))?
                     .create(&arg)
                     .await?;
-                return bf.run(&arg).await;
+                return bf.run(&mut arg).await;
             }
         }
 

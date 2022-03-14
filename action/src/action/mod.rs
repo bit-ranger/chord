@@ -8,6 +8,7 @@ mod count;
 mod block;
 mod lets;
 mod log;
+// mod loops;
 mod matches;
 mod sleep;
 
@@ -57,6 +58,7 @@ impl FactoryComposite {
 
         register!(table, config_ref, "let", lets::LetFactory::new);
         register!(table, config_ref, "block", block::BlockFactory::new);
+        // register!(table, config_ref, "loop", loops::LoopFactory::new);
         register!(table, config_ref, "match", matches::MatchFactory::new);
         register!(table, config_ref, "assert", assert::AssertFactory::new);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new);

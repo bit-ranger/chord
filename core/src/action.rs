@@ -61,6 +61,8 @@ pub trait Arg: Sync + Send {
 
     fn context(&self) -> &dyn Context;
 
+    fn context_mut(&mut self) -> &mut dyn Context;
+
     fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
 
     fn factory(&self, action: &str) -> Option<&dyn Factory>;
@@ -70,7 +72,7 @@ pub trait Arg: Sync + Send {
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error>;
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         arg.args()

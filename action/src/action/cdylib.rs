@@ -52,7 +52,7 @@ struct Cdylib {
 
 #[async_trait]
 impl Action for Cdylib {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let action_run: Symbol<fn(args: *const c_char) -> *mut c_char> =
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();

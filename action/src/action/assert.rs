@@ -27,7 +27,7 @@ impl Action for Assert {
         Ok(Value::String(raw.to_string()))
     }
 
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         let assert_tpl = format!("{{{{{cond}}}}}", cond = raw);

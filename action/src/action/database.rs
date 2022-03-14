@@ -40,7 +40,7 @@ struct Database {
 
 #[async_trait]
 impl Action for Database {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(&self, arg).await
     }
 }

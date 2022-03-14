@@ -122,6 +122,10 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
         let rc = RenderContext::wraps(Value::Null).unwrap();
         flow::render_value(self.app.get_handlebars(), &rc, &mut val).is_ok()
     }
+
+    fn context_mut(&mut self) -> &mut dyn Context {
+        &mut self.context
+    }
 }
 
 struct ContextStruct {

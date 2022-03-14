@@ -25,7 +25,7 @@ struct Mongodb {}
 
 #[async_trait]
 impl Action for Mongodb {
-    async fn run(&self, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }

@@ -8,9 +8,10 @@ mod count;
 mod block;
 mod lets;
 mod log;
-// mod loops;
 mod matches;
+mod set;
 mod sleep;
+mod whiles;
 
 #[cfg(feature = "act_cdylib")]
 mod cdylib;
@@ -57,8 +58,9 @@ impl FactoryComposite {
         let config_ref = config.as_ref();
 
         register!(table, config_ref, "let", lets::LetFactory::new);
+        register!(table, config_ref, "set", set::SetFactory::new);
         register!(table, config_ref, "block", block::BlockFactory::new);
-        // register!(table, config_ref, "loop", loops::LoopFactory::new);
+        register!(table, config_ref, "while", whiles::WhileFactory::new);
         register!(table, config_ref, "match", matches::MatchFactory::new);
         register!(table, config_ref, "assert", assert::AssertFactory::new);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new);

@@ -1,3 +1,5 @@
+use std::mem::replace;
+
 use chord_core::action::prelude::*;
 use chord_core::action::{Context, Id};
 use chord_core::collection::TailDropVec;
@@ -122,10 +124,11 @@ impl Action for Block {
                 aid: aid.to_string(),
                 action: action.to_string(),
             };
-
             let v = action_obj.run(&mut run).await?;
             scope_vec.push((aid.to_string(), v));
         }
+
+        let _ = replace(arg.context_mut().data_mut(), context.data);
 
         let scope_vec = TailDropVec::from(scope_vec);
         let mut value = Map::new();

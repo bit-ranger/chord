@@ -10,14 +10,14 @@ let conf = {
 module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
-step.step1 = {
-    log: "{{(num_sub 2.1 1.1)}}"
-}
 
 step.step2 = {
+    v: {
+        log: "{{(num_sub 2.1 1.1)}}"
+    },
 
-    nop: {},
-    assert: `
+    ok: {
+        assert: `
       (all
         (eq (num_add 1 1) 2)
         (eq (num_add 1.1 1) 2.1)
@@ -27,4 +27,7 @@ step.step2 = {
         (eq (num_div 2.2 2) 1.1)
     )
    `
+    }
+
+
 }

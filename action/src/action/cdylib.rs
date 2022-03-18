@@ -34,7 +34,7 @@ impl CdylibFactory {
 
 #[async_trait]
 impl Factory for CdylibFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let lib_name = args_raw.as_str().ok_or(err!("100", "missing lib"))?;
 
@@ -52,16 +52,15 @@ struct Cdylib {
 
 #[async_trait]
 impl Action for Cdylib {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let action_run: Symbol<fn(args: *const c_char) -> *mut c_char> =
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();
         ar.insert("id".to_string(), Value::String(arg.id().to_string()));
         ar.insert("args".to_string(), arg.args()?);
-        ar.insert("context".to_string(), Value::Object(arg.context().clone()));
         ar.insert(
-            "timeout".to_string(),
-            Value::Number(Number::from(arg.timeout().as_secs())),
+            "context".to_string(),
+            Value::Object(arg.context().data().clone()),
         );
         let ar = Value::Object(ar).to_string();
         let ar = CString::new(ar)?;

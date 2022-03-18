@@ -14,53 +14,65 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-    let: {
-        foo: "{{case.foo}}",
-        bar: "{{case.bar}}"
+    var: {
+        let: {
+            foo: "{{case.foo}}",
+            bar: "{{case.bar}}"
+        },
     },
-
-    lua: fs.readFileSync(path.join(__dirname, "step1.lua"), {
-            encoding: "utf-8"
-        }
-    ),
-    assert: `
-    (all
-      (eq value.1.bar (num bar))
-    )
-  `
+    value: {
+        lua: fs.readFileSync(path.join(__dirname, "step1.lua"), {
+                encoding: "utf-8"
+            }
+        ),
+    },
+    state: {
+        assert: `
+        (all
+        (eq value.1.bar (num var.bar))
+        )
+        `
+    }
 }
 
 step.step2 = {
-    let: {
-        foo: "{{case.foo}}",
-        bar: "{{case.bar}}",
+    var: {
+        let: {
+            foo: "{{case.foo}}",
+            bar: "{{case.bar}}",
+        },
+    },
+    value: {
+        // language=Lua
+        lua: `
+            r = os.time();
+            t = "CHORD-" .. tostring(r);
+            print(t);
+            return
+            {
+                {
+                    ['foo'] = var.foo
+                }
+            ,
+                {
+                    ['bar'] = tonumber(var.bar)
+                },
+                {
+                    ['tag'] = t
+                }
+            }
+        `,
     },
 
-    // language=Lua
-    lua: `
-        r = os.time();
-        t = "CHORD-" .. tostring(r);
-        print(t);
-        return
-        {
-            {
-                ['foo'] = foo
-            }
-        ,
-            {
-                ['bar'] = tonumber(bar)
-            },
-            {
-                ['tag'] = t
-            }
-        }
-    `,
-    assert:
+    state: {
+        assert: `
+            (all
+                (eq value.1.bar (num var.bar))
+            )
         `
-    (all
-      (eq value.1.bar (num bar))
-    )
-  `
+    }
+
+
 }
 
 

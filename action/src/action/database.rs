@@ -18,11 +18,12 @@ impl DatabaseFactory {
 
 #[async_trait]
 impl Factory for DatabaseFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
-        if let Some(url) = args_raw["url"].as_str() {
+        let url = &args_raw["url"];
+        if url.is_string() {
             if arg.is_static(url) {
-                let url = arg.render_str(url)?;
+                let url = arg.render(arg.context(), url)?;
                 let url = url.as_str().ok_or(err!("100", "invalid url"))?;
                 let rb = create_rb(url).await?;
                 return Ok(Box::new(Database { rb: Some(rb) }));
@@ -39,7 +40,7 @@ struct Database {
 
 #[async_trait]
 impl Action for Database {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(&self, arg).await
     }
 }
@@ -50,7 +51,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
     Ok(rb)
 }
 
-async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+async fn run(obj: &Database, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
     let args = arg.args()?;
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
@@ -63,7 +64,7 @@ async fn run(obj: &Database, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> 
     };
 }
 
-async fn run0(arg: &dyn RunArg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
+async fn run0(arg: &dyn Arg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
     let args = arg.args()?;
     let sql = args["sql"].as_str().ok_or(err!("101", "missing sql"))?;
     let sql = sql.trim();

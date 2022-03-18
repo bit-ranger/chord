@@ -13,31 +13,41 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.set_redis = {
-    let: {
-        arg0: "{{case.arg0}}"
+    var: {
+        let: {
+            arg0: "{{case.arg0}}"
+        }
     },
 
-    redis: {
-        url: url,
-        cmd: "SET",
-        args: [
-            "CHORD:TEST:0123456789",
-            "{{arg0}}"
-        ]
+    value: {
+        redis: {
+            url: url,
+            cmd: "SET",
+            args: [
+                "CHORD:TEST:0123456789",
+                "{{var.arg0}}"
+            ]
+        }
     }
 }
 
 step.get_redis = {
-    let: {
-        arg0: "{{case.arg0}}"
+    var: {
+        let: {
+            arg0: "{{case.arg0}}"
+        }
     },
 
-    redis: {
-        url: url,
-        cmd: "GET",
-        args: [
-            "CHORD:TEST:0123456789"
-        ]
+    value: {
+        redis: {
+            url: url,
+            cmd: "GET",
+            args: [
+                "CHORD:TEST:0123456789"
+            ]
+        }
     },
-    assert: "(eq value arg0)"
+    state: {
+        assert: "(eq value var.arg0)"
+    }
 }

@@ -22,7 +22,7 @@ impl RestapiFactory {
 
 #[async_trait]
 impl Factory for RestapiFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Restapi {
             client: self.client.clone(),
         }))
@@ -35,11 +35,11 @@ struct Restapi {
 
 #[async_trait]
 impl Action for Restapi {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(self.client.clone(), arg).await
     }
 
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
+    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         let args = arg.args()?;
         let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
 
@@ -86,12 +86,12 @@ impl Action for Restapi {
     }
 }
 
-async fn run(client: Client, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+async fn run(client: Client, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
     let value = run0(client, arg).await?;
     Ok(Box::new(value))
 }
 
-async fn run0(client: Client, arg: &dyn RunArg) -> std::result::Result<Value, Error> {
+async fn run0(client: Client, arg: &dyn Arg) -> std::result::Result<Value, Error> {
     let args = arg.args()?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;

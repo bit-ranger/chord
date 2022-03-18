@@ -1,4 +1,6 @@
-mod action;
-mod error;
+extern crate core;
 
 pub use action::FactoryComposite;
+
+mod action;
+mod error;

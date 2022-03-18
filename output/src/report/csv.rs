@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use csv::Writer;
-use log::info;
 
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::flow::Flow;
@@ -141,21 +140,7 @@ impl CsvStageReporter {
         flow: Arc<Flow>,
         with_bom: bool,
     ) -> Result<CsvStageReporter, Error> {
-        let fixed_step = {
-            let mut v = true;
-            for step_id in flow.stage_step_id_vec(stage_id) {
-                if let Some(then) = flow.step_then(step_id) {
-                    for th in then {
-                        if th.goto().is_some() {
-                            info!("step goto detected {}, result will be flexible", step_id);
-                            v = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            v
-        };
+        let fixed_step = true;
 
         let dir = PathBuf::from(dir.as_ref());
         let report_file = dir.join(format!("{}.{}.csv", task_id.task(), stage_id));
@@ -287,11 +272,6 @@ fn to_value_vec(ca: &dyn CaseAssess, header: &Vec<String>) -> Vec<String> {
                 StepState::Err(e) => {
                     step_value.push(String::from("E"));
                     step_value.push(String::from(format!("{}", e)));
-                    step_value.push(to_csv_string(pa.explain()));
-                }
-                StepState::Fail(v) => {
-                    step_value.push(String::from("F"));
-                    step_value.push(to_csv_string(v.as_value()));
                     step_value.push(to_csv_string(pa.explain()));
                 }
             }

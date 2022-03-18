@@ -1,9 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use log::trace;
-
-use chord_core::action::Action;
 use chord_core::case::CaseId;
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
@@ -12,11 +9,10 @@ use chord_core::task::TaskId;
 use chord_core::value::Map;
 use chord_core::value::Value;
 
-use crate::flow;
-use crate::flow::case::Error;
-use crate::flow::step::arg::RunArgStruct;
+use crate::flow::step::arg::ArgStruct;
 use crate::flow::step::res::StepAssessStruct;
-use crate::model::app::FlowApp;
+use crate::flow::step::StepRunner;
+use crate::model::app::App;
 use crate::model::app::RenderContext;
 
 #[derive(Clone)]
@@ -75,7 +71,7 @@ impl Display for CaseIdStruct {
 
 pub struct CaseArgStruct {
     flow: Arc<Flow>,
-    step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
+    step_vec: Arc<TailDropVec<(String, StepRunner)>>,
     id: Arc<CaseIdStruct>,
     data: Value,
     render_ctx: RenderContext,
@@ -84,7 +80,7 @@ pub struct CaseArgStruct {
 impl CaseArgStruct {
     pub fn new(
         flow: Arc<Flow>,
-        step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
+        step_vec: Arc<TailDropVec<(String, StepRunner)>>,
         data: Value,
         pre_ctx: Option<Arc<Map>>,
         def_ctx: Option<Arc<Map>>,
@@ -100,7 +96,6 @@ impl CaseArgStruct {
         if let Some(def_ctx) = def_ctx {
             render_data.insert(String::from("def"), Value::Object(def_ctx.as_ref().clone()));
         }
-        render_data.insert(String::from("reg"), Value::Object(Map::new()));
         render_data.insert(String::from("case"), data.clone());
         if let Some(pre_ctx) = pre_ctx.as_ref() {
             if let Some(pre_step) = pre_ctx.get("step") {
@@ -121,41 +116,30 @@ impl CaseArgStruct {
         };
     }
 
-    pub fn step_vec(self: &CaseArgStruct) -> Arc<TailDropVec<(String, Box<dyn Action>)>> {
+    pub fn step_vec(self: &CaseArgStruct) -> Arc<TailDropVec<(String, StepRunner)>> {
         self.step_vec.clone()
     }
 
-    pub fn step_arg_create<'app, 'h, 'reg>(
+    pub fn step_arg_create<'app>(
         self: &CaseArgStruct,
         step_id: &str,
-        flow_app: &'app dyn FlowApp,
-    ) -> Result<RunArgStruct<'_, 'h, 'reg>, Error>
-    where
-        'app: 'h,
-        'app: 'reg,
-    {
-        let let_raw = self.flow.step_let(step_id);
-        let let_value = match let_raw {
-            Some(let_raw) => {
-                let let_value = flow::assign_by_render(
-                    flow_app.get_handlebars(),
-                    &self.render_ctx,
-                    let_raw,
-                    false,
-                )
-                .map_err(|e| Error::Render("let".to_string(), e))?;
-                Some(let_value)
-            }
-            None => None,
-        };
-
-        Ok(RunArgStruct::new(
+        flow_app: &'app dyn App,
+    ) -> ArgStruct<'app, '_> {
+        ArgStruct::new(
+            flow_app,
             self.flow.as_ref(),
-            flow_app.get_handlebars(),
-            let_value,
+            self.render_ctx.clone(),
             self.id.clone(),
             step_id.to_owned(),
-        ))
+        )
+    }
+
+    pub async fn step_assess_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
+        if let StepState::Ok(sv) = step_assess.state() {
+            if let Value::Object(reg) = self.render_ctx.data_mut() {
+                reg["step"][sid] = sv.as_value().clone();
+            }
+        }
     }
 
     pub fn id(&self) -> Arc<CaseIdStruct> {
@@ -164,21 +148,5 @@ impl CaseArgStruct {
 
     pub fn take_data(self) -> Value {
         self.data
-    }
-
-    pub async fn step_ok_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
-        if let StepState::Ok(scope) = step_assess.state() {
-            if let Value::Object(reg) = self.render_ctx.data_mut() {
-                reg["step"][sid]["value"] = scope.as_value().clone();
-                if let Some(then) = step_assess.then() {
-                    if let Some(r) = then.reg() {
-                        for (k, v) in r {
-                            trace!("step reg {} {} {}", sid, k, v);
-                            reg["reg"][k] = v.clone()
-                        }
-                    }
-                }
-            }
-        }
     }
 }

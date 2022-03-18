@@ -14,11 +14,12 @@ impl RedisFactory {
 
 #[async_trait]
 impl Factory for RedisFactory {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
-        if let Some(url) = args_raw["url"].as_str() {
+        let url = &args_raw["url"];
+        if url.is_string() {
             if arg.is_static(url) {
-                let url = arg.render_str(url)?;
+                let url = arg.render(arg.context(), url)?;
                 let url = url.as_str().ok_or(err!("100", "invalid url"))?;
                 let client = redis::Client::open(url)?;
                 return Ok(Box::new(Redis {
@@ -36,7 +37,7 @@ struct Redis {
 
 #[async_trait]
 impl Action for Redis {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
@@ -50,7 +51,7 @@ impl Action for Redis {
     }
 }
 
-async fn run0(arg: &dyn RunArg, client: &Client) -> Result<Box<dyn Scope>, Error> {
+async fn run0(arg: &dyn Arg, client: &Client) -> Result<Box<dyn Scope>, Error> {
     let args = arg.args()?;
     let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 

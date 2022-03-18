@@ -11,21 +11,27 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-    let: {
-        content: "{{case.content}}"
+    var: {
+        let: {
+            content: "{{case.content}}"
+        }
     },
 
-    dubbo: {
-        method: "com.bitranger.dubbo.provider.service.EchoService#echo(java.lang.String)",
-        args: [
-            "{{content}}"
-        ]
+    value: {
+        dubbo: {
+            method: "com.bitranger.dubbo.provider.service.EchoService#echo(java.lang.String)",
+            args: [
+                "{{var.content}}"
+            ]
+        }
     },
-    assert: `
+    ok: {
+        assert: `
       (all
         (eq value.code "0")
-        (eq value.data content)
+        (eq value.data var.content)
       )
     `
+    }
 }
 

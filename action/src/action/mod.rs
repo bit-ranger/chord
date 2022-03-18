@@ -1,16 +1,17 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use chord_core::action::prelude::*;
 
-use crate::err;
-
+mod assert;
 mod count;
-mod echo;
-mod iter;
+// mod iter;
+mod block;
+mod lets;
 mod log;
-mod nop;
+mod matches;
+mod set;
 mod sleep;
+mod whiles;
 
 #[cfg(feature = "act_cdylib")]
 mod cdylib;
@@ -36,7 +37,7 @@ mod restapi;
 mod url;
 
 pub struct FactoryComposite {
-    table: HashMap<String, Arc<dyn Factory>>,
+    table: HashMap<String, Box<dyn Factory>>,
 }
 
 macro_rules! register {
@@ -44,7 +45,7 @@ macro_rules! register {
         if enable($config_ref, $name) {
             $table.insert(
                 $name.into(),
-                Arc::new($module($config_ref.map(|c| c[$name].clone())).await?),
+                Box::new($module($config_ref.map(|c| c[$name].clone())).await?),
             );
         }
     };
@@ -52,12 +53,16 @@ macro_rules! register {
 
 impl FactoryComposite {
     pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Error> {
-        let mut table: HashMap<String, Arc<dyn Factory>> = HashMap::new();
+        let mut table: HashMap<String, Box<dyn Factory>> = HashMap::new();
 
         let config_ref = config.as_ref();
 
-        register!(table, config_ref, "nop", nop::NopFactory::new);
-        register!(table, config_ref, "echo", echo::EchoFactory::new);
+        register!(table, config_ref, "let", lets::LetFactory::new);
+        register!(table, config_ref, "set", set::SetFactory::new);
+        register!(table, config_ref, "block", block::BlockFactory::new);
+        register!(table, config_ref, "while", whiles::WhileFactory::new);
+        register!(table, config_ref, "match", matches::MatchFactory::new);
+        register!(table, config_ref, "assert", assert::AssertFactory::new);
         register!(table, config_ref, "sleep", sleep::SleepFactory::new);
         register!(table, config_ref, "log", log::LogFactory::new);
         register!(table, config_ref, "count", count::CountFactory::new);
@@ -100,43 +105,7 @@ impl FactoryComposite {
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new);
 
-        #[cfg(feature = "act_download")]
-        register!(
-            table,
-            config_ref,
-            "download",
-            download::DownloadFactory::new
-        );
-
-        if enable(config_ref, "iter_map") {
-            table.insert(
-                "iter_map".into(),
-                Arc::new(
-                    iter::map::IterMapFactory::new(
-                        config_ref.map(|c| c["iter_map"].clone()),
-                        table.clone(),
-                    )
-                    .await?,
-                ),
-            );
-        }
-
         Ok(FactoryComposite { table })
-    }
-}
-
-#[async_trait]
-impl Factory for FactoryComposite {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
-        let action = arg.action();
-        self.table
-            .get(action)
-            .ok_or(err!(
-                "002",
-                format!("unsupported action {}", action).as_str()
-            ))?
-            .create(arg)
-            .await
     }
 }
 
@@ -153,4 +122,10 @@ fn enable(config: Option<&Value>, action_name: &str) -> bool {
     return config_ref[action_name]["enable"]
         .as_bool()
         .unwrap_or(default_enable);
+}
+
+impl From<FactoryComposite> for HashMap<String, Box<dyn Factory>> {
+    fn from(fac: FactoryComposite) -> Self {
+        fac.table
+    }
 }

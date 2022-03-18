@@ -1,10 +1,8 @@
 use std::fmt::Display;
-use std::time::Duration;
 
 pub use async_trait::async_trait;
 
 use crate::case::CaseId;
-use crate::task::TaskId;
 use crate::value::Map;
 use crate::value::Value;
 
@@ -26,54 +24,26 @@ pub mod prelude {
 
     pub use super::async_trait;
     pub use super::Action;
-    pub use super::CreateArg;
+    pub use super::Arg;
     pub use super::Error;
     pub use super::Factory;
-    pub use super::RunArg;
     pub use super::Scope;
+}
+
+pub trait Id: Sync + Send + Display {
+    fn step(&self) -> &str;
+
+    fn case_id(&self) -> &dyn CaseId;
+}
+
+pub trait Context: Sync + Send {
+    fn data(&self) -> &Map;
+
+    fn data_mut(&mut self) -> &mut Map;
 }
 
 pub trait Scope: Sync + Send {
     fn as_value(&self) -> &Value;
-}
-
-pub trait RunArg: Sync + Send {
-    fn id(&self) -> &dyn RunId;
-
-    fn context(&self) -> &Map;
-
-    fn timeout(&self) -> Duration;
-
-    fn args(&self) -> Result<Value, Error>;
-
-    fn args_with(&self, context: &Map) -> Result<Value, Error>;
-}
-
-pub trait CreateArg: Sync + Send {
-    fn id(&self) -> &dyn CreateId;
-
-    fn action(&self) -> &str;
-
-    fn args_raw(&self) -> &Value;
-
-    fn render_str(&self, text: &str) -> Result<Value, Error>;
-
-    /// shared in whole action
-    fn is_static(&self, text: &str) -> bool;
-}
-
-#[async_trait]
-pub trait Action: Sync + Send {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error>;
-
-    async fn explain(&self, arg: &dyn RunArg) -> Result<Value, Error> {
-        arg.args()
-    }
-}
-
-#[async_trait]
-pub trait Factory: Sync + Send {
-    async fn create(&self, arg: &dyn CreateArg) -> Result<Box<dyn Action>, Error>;
 }
 
 impl Scope for Value {
@@ -82,14 +52,34 @@ impl Scope for Value {
     }
 }
 
-pub trait CreateId: Sync + Send + Display {
-    fn step(&self) -> &str;
+pub trait Arg: Sync + Send {
+    fn id(&self) -> &dyn Id;
 
-    fn task_id(&self) -> &dyn TaskId;
+    fn args(&self) -> Result<Value, Error>;
+
+    fn args_raw(&self) -> &Value;
+
+    fn context(&self) -> &dyn Context;
+
+    fn context_mut(&mut self) -> &mut dyn Context;
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
+
+    fn factory(&self, action: &str) -> Option<&dyn Factory>;
+
+    fn is_static(&self, raw: &Value) -> bool;
 }
 
-pub trait RunId: Sync + Send + Display {
-    fn step(&self) -> &str;
+#[async_trait]
+pub trait Action: Sync + Send {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
-    fn case_id(&self) -> &dyn CaseId;
+    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
+        arg.args()
+    }
+}
+
+#[async_trait]
+pub trait Factory: Sync + Send {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error>;
 }

@@ -1,6 +1,6 @@
 [package]
 name = "chord-action"
-version = "0.1.17"
+version = "0.1.18"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 
@@ -16,8 +16,8 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chord-core = { path = "../core", version = "0.1.17" }
-chord-util = { path = "../util", version = "0.1.17", optional = true }
+chord-core = { path = "../core", version = "0.1.18" }
+chord-util = { path = "../util", version = "0.1.18", optional = true }
 serde = { version = "1.0" }
 itertools = "0.10.1"
 futures = { version = "0.3.13" }
@@ -32,10 +32,6 @@ dynamic_reload = { version = "0.4.0", optional = true }
 rlua = { version = "0.17.0", optional = true }
 rlua_serde = { version = "0.4", optional = true }
 dirs = "3.0.2"
-
-
-[target.'cfg(linux)'.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }
 
 
 [features]

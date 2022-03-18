@@ -121,7 +121,7 @@ impl DubboFactory {
 
 #[async_trait]
 impl Factory for DubboFactory {
-    async fn create(&self, _: &dyn CreateArg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Dubbo {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
@@ -140,7 +140,7 @@ struct Dubbo {
 
 #[async_trait]
 impl Action for Dubbo {
-    async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let method_long = args["method"]
             .as_str()
@@ -168,7 +168,7 @@ impl Action for Dubbo {
                     address: self.registry_address.clone(),
                 },
                 interface: parts[0].to_owned(),
-                timeout: arg.timeout().as_millis() as usize,
+                timeout: 60000,
             },
 
             method: parts[1].to_owned(),

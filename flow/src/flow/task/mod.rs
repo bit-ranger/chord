@@ -4,7 +4,6 @@ use futures::future::join_all;
 use handlebars::TemplateRenderError;
 use log::{error, info, trace, warn};
 
-use chord_core::action::Action;
 use chord_core::case::{CaseAssess, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
@@ -18,14 +17,15 @@ use chord_core::task::{StageAssess, StageState, TaskAssess, TaskId, TaskState};
 use chord_core::value::{json, Map, Value};
 use res::TaskAssessStruct;
 
-use crate::flow::assign_by_render;
 use crate::flow::case;
-use crate::flow::case::arg::CaseArgStruct;
-use crate::flow::step::arg::CreateArgStruct;
+use crate::flow::case::arg::{CaseArgStruct, CaseIdStruct};
+use crate::flow::step::arg::ArgStruct;
+use crate::flow::step::StepRunner;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::flow::task::res::StageAssessStruct;
 use crate::flow::task::Error::*;
-use crate::model::app::{FlowApp, RenderContext};
+use crate::flow::{assign_by_render, step};
+use crate::model::app::{App, RenderContext};
 use crate::CTX_ID;
 
 pub mod arg;
@@ -35,9 +35,6 @@ pub mod res;
 enum Error {
     #[error("`{0}` render:\n{1}")]
     Render(String, TemplateRenderError),
-
-    #[error("step `{0}` create:\n{1}")]
-    StepCreate(String, Box<dyn std::error::Error + Sync + Send>),
 
     #[error("pre:")]
     PreErr,
@@ -53,10 +50,13 @@ enum Error {
 
     #[error("stage `{0}` case is empty")]
     CaseEmpty(String),
+
+    #[error("step `{0}` create:\n{1}")]
+    Step(String, Box<dyn std::error::Error + Sync + Send>),
 }
 
 pub struct TaskRunner {
-    step_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
+    step_vec: Arc<TailDropVec<(String, StepRunner)>>,
     stage_round_no: usize,
     stage_id: Arc<String>,
     stage_state: StageState,
@@ -65,7 +65,7 @@ pub struct TaskRunner {
     #[allow(dead_code)]
     pre_assess: Option<Box<dyn CaseAssess>>,
     #[allow(dead_code)]
-    pre_step_vec: Option<Arc<TailDropVec<(String, Box<dyn Action>)>>>,
+    pre_step_vec: Option<Arc<TailDropVec<(String, StepRunner)>>>,
 
     task_state: TaskState,
 
@@ -73,7 +73,7 @@ pub struct TaskRunner {
     reporter: Box<dyn TaskReporter>,
     loader: Box<dyn TaskLoader>,
     id: Arc<TaskIdSimple>,
-    flow_app: Arc<dyn FlowApp>,
+    flow_app: Arc<dyn App>,
     flow: Arc<Flow>,
 }
 
@@ -81,7 +81,7 @@ impl TaskRunner {
     pub fn new(
         loader: Box<dyn TaskLoader>,
         reporter: Box<dyn TaskReporter>,
-        flow_app: Arc<dyn FlowApp>,
+        flow_app: Arc<dyn App>,
         flow: Arc<Flow>,
         id: Arc<TaskIdSimple>,
     ) -> TaskRunner {
@@ -114,11 +114,11 @@ impl TaskRunner {
     }
 
     pub async fn run(mut self) -> Box<dyn TaskAssess> {
-        trace!("task run start {}", self.id);
+        trace!("task run  {}", self.id);
         let start = Utc::now();
 
         if let Err(e) = self.reporter.start(start).await {
-            error!("task run Err {}", self.id);
+            error!("task Err  {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id.clone(),
                 start,
@@ -138,7 +138,7 @@ impl TaskRunner {
             let rc = RenderContext::wraps(rc).unwrap();
             let rso = assign_by_render(self.flow_app.get_handlebars(), &rc, def_raw, false);
             if let Err(e) = rso {
-                error!("task run Err {}", self.id);
+                error!("task Err  {}", self.id);
                 return Box::new(TaskAssessStruct::new(
                     self.id.clone(),
                     start,
@@ -155,14 +155,12 @@ impl TaskRunner {
                 let pre_step_vec = step_vec_create(
                     self.flow_app.clone(),
                     self.flow.clone(),
-                    self.def_ctx.clone(),
-                    None,
                     pre_step_id_vec.into_iter().map(|s| s.to_owned()).collect(),
                     self.id.clone(),
                 )
                 .await;
                 if let Err(e) = pre_step_vec {
-                    error!("task run Err {}", self.id);
+                    error!("task Err  {}", self.id);
                     return Box::new(TaskAssessStruct::new(
                         self.id.clone(),
                         start,
@@ -171,16 +169,16 @@ impl TaskRunner {
                     ));
                 }
 
-                let pre_action_vec = Arc::new(TailDropVec::from(pre_step_vec.unwrap()));
+                let pre_step_vec = Arc::new(TailDropVec::from(pre_step_vec.unwrap()));
                 let pre_arg = pre_arg(
                     self.flow.clone(),
                     self.id.clone(),
                     self.def_ctx.clone(),
-                    pre_action_vec.clone(),
+                    pre_step_vec.clone(),
                 )
                 .await;
                 if let Err(e) = pre_arg {
-                    error!("task run Err {}", self.id);
+                    error!("task Err  {}", self.id);
                     return Box::new(TaskAssessStruct::new(
                         self.id,
                         start,
@@ -193,7 +191,7 @@ impl TaskRunner {
 
                 match pre_assess.state() {
                     CaseState::Err(_) => {
-                        error!("task run Err {}", self.id.clone());
+                        error!("task Err  {}", self.id.clone());
                         return Box::new(TaskAssessStruct::new(
                             self.id,
                             start,
@@ -203,7 +201,7 @@ impl TaskRunner {
                     }
 
                     CaseState::Fail(v) => {
-                        error!("task run Err {}", self.id);
+                        error!("task Err  {}", self.id);
                         return Box::new(TaskAssessStruct::new(
                             self.id.clone(),
                             start,
@@ -217,7 +215,7 @@ impl TaskRunner {
                         let pre_ctx = pre_ctx_create(sa_vec.as_ref()).await;
                         self.pre_ctx = Some(Arc::new(pre_ctx));
                         self.pre_assess = Some(pre_assess);
-                        self.pre_step_vec = Some(pre_action_vec);
+                        self.pre_step_vec = Some(pre_step_vec);
                     }
                 }
             }
@@ -226,7 +224,7 @@ impl TaskRunner {
         let result = self.task_run().await;
 
         let task_assess = if let Err(e) = result {
-            error!("task run Err {}", self.id);
+            error!("task Err  {}", self.id);
             TaskAssessStruct::new(
                 self.id.clone(),
                 start,
@@ -236,11 +234,11 @@ impl TaskRunner {
         } else {
             match self.task_state {
                 TaskState::Ok => {
-                    info!("task run Ok {}", self.id.clone());
+                    info!("task Ok   {}", self.id.clone());
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Ok)
                 }
                 TaskState::Fail(c) => {
-                    warn!("task run Fail {}", self.id);
+                    warn!("task Fail {}", self.id);
                     TaskAssessStruct::new(
                         self.id.clone(),
                         start,
@@ -249,14 +247,14 @@ impl TaskRunner {
                     )
                 }
                 TaskState::Err(e) => {
-                    error!("task run Err {}", self.id);
+                    error!("task Err  {}", self.id);
                     TaskAssessStruct::new(self.id.clone(), start, Utc::now(), TaskState::Err(e))
                 }
             }
         };
 
         if let Err(e) = self.reporter.end(&task_assess).await {
-            error!("task run Err {}", self.id);
+            error!("task Err  {}", self.id);
             return Box::new(TaskAssessStruct::new(
                 self.id.clone(),
                 start,
@@ -280,7 +278,7 @@ impl TaskRunner {
             .map(|s| s.to_owned())
             .collect();
         for state_id in stage_id_vec {
-            trace!("task run stage {}, {}", self.id, state_id);
+            trace!("stage run   {}-{}", self.id, state_id);
             self.stage_run(state_id.as_str()).await?;
             if let StageState::Fail(_) = self.stage_state {
                 if "stage_fail" == self.flow.stage_break_on(state_id.as_str()) {
@@ -303,8 +301,6 @@ impl TaskRunner {
         let action_vec = step_vec_create(
             self.flow_app.clone(),
             self.flow.clone(),
-            self.def_ctx.clone(),
-            self.pre_ctx.clone(),
             step_id_vec,
             self.id.clone(),
         )
@@ -360,7 +356,7 @@ impl TaskRunner {
             .await;
 
         let stage_assess = if let Err(e) = result {
-            error!("stage run Err {}", self.id);
+            error!("stage Err  {}-{}", self.id, stage_id);
             StageAssessStruct::new(
                 stage_id.to_string(),
                 start,
@@ -370,11 +366,11 @@ impl TaskRunner {
         } else {
             match &self.stage_state {
                 StageState::Ok => {
-                    info!("stage run Ok {}.{}", self.id.clone(), stage_id);
+                    info!("stage Ok   {}-{}", self.id.clone(), stage_id);
                     StageAssessStruct::new(stage_id.to_string(), start, Utc::now(), StageState::Ok)
                 }
                 StageState::Fail(c) => {
-                    warn!("stage run Fail {}.{}", self.id.clone(), stage_id);
+                    warn!("stage Fail {}-{}", self.id.clone(), stage_id);
                     StageAssessStruct::new(
                         stage_id.to_string(),
                         start,
@@ -508,11 +504,11 @@ async fn pre_arg(
     flow: Arc<Flow>,
     task_id: Arc<TaskIdSimple>,
     def_ctx: Option<Arc<Map>>,
-    pre_action_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
+    pre_step_vec: Arc<TailDropVec<(String, StepRunner)>>,
 ) -> Result<CaseArgStruct, Error> {
     Ok(CaseArgStruct::new(
         flow.clone(),
-        pre_action_vec,
+        pre_step_vec,
         Value::Null,
         None,
         def_ctx,
@@ -535,90 +531,45 @@ async fn pre_ctx_create(sa_vec: &Vec<Box<dyn StepAssess>>) -> Map {
 }
 
 async fn step_vec_create(
-    flow_app: Arc<dyn FlowApp>,
+    flow_app: Arc<dyn App>,
     flow: Arc<Flow>,
-    def_ctx: Option<Arc<Map>>,
-    pre_ctx: Option<Arc<Map>>,
     step_id_vec: Vec<String>,
     task_id: Arc<TaskIdSimple>,
-) -> Result<Vec<(String, Box<dyn Action>)>, Error> {
-    let render_context = render_context_create(flow.clone(), def_ctx, pre_ctx);
-    let mut action_vec = vec![];
+) -> Result<Vec<(String, StepRunner)>, Error> {
+    let mut step_vec = vec![];
+    let case_id = Arc::new(CaseIdStruct::new(
+        task_id,
+        Arc::new("create".to_string()),
+        Arc::new("0".to_string()),
+        "0".to_string(),
+    ));
     for sid in step_id_vec {
-        let pr = step_create(
+        let mut arg = ArgStruct::new(
             flow_app.as_ref(),
             flow.as_ref(),
-            &render_context,
-            task_id.clone(),
+            RenderContext::wraps(Value::Object(Map::with_capacity(0)))
+                .map_err(|e| Step(sid.clone(), Box::new(e)))?,
+            case_id.clone(),
             sid.clone(),
-        )
-        .await?;
-        action_vec.push((sid, pr));
+        );
+
+        let pr = step::StepRunner::new(&mut arg)
+            .await
+            .map_err(|e| Error::Step(sid.clone(), Box::new(e)))?;
+        step_vec.push((sid, pr));
     }
-    Ok(action_vec)
+    Ok(step_vec)
 }
 
-fn render_context_create(
-    flow: Arc<Flow>,
-    def_ctx: Option<Arc<Map>>,
-    _pre_ctx: Option<Arc<Map>>,
-) -> RenderContext {
-    let mut render_data: Map = Map::new();
-
-    render_data.insert("__meta__".to_owned(), Value::Object(flow.meta().clone()));
-    if let Some(def_ctx) = def_ctx {
-        render_data.insert("def".to_owned(), Value::Object(def_ctx.as_ref().clone()));
-    }
-
-    return RenderContext::wraps(render_data).unwrap();
-}
-
-async fn step_create(
-    flow_app: &dyn FlowApp,
-    flow: &Flow,
-    render_ctx: &RenderContext,
-    task_id: Arc<TaskIdSimple>,
-    step_id: String,
-) -> Result<Box<dyn Action>, Error> {
-    let let_raw = flow.step_let(step_id.as_ref());
-    let let_value = match let_raw {
-        Some(let_raw) => {
-            let let_value = assign_by_render(flow_app.get_handlebars(), render_ctx, let_raw, true)
-                .map_err(|e| Render(format!("step.{}.let", step_id), e))?;
-            Some(let_value)
-        }
-        None => None,
-    };
-
-    let action = flow.step_exec_action(step_id.as_ref());
-    let create_arg = CreateArgStruct::new(
-        flow,
-        flow_app.get_handlebars(),
-        let_value,
-        task_id,
-        action.into(),
-        step_id.clone(),
-    );
-
-    flow_app
-        .get_action_factory()
-        .create(&create_arg)
-        .await
-        .map_err(|e| StepCreate(step_id, e))
-}
-
-async fn case_run(flow_ctx: &dyn FlowApp, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run(flow_ctx: &dyn App, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     Box::new(case::run(flow_ctx, case_arg).await)
 }
 
-fn case_spawn(
-    flow_ctx: Arc<dyn FlowApp>,
-    case_arg: CaseArgStruct,
-) -> JoinHandle<Box<dyn CaseAssess>> {
+fn case_spawn(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> JoinHandle<Box<dyn CaseAssess>> {
     spawn(case_run_arc(flow_ctx, case_arg))
 }
 
-async fn case_run_arc(flow_ctx: Arc<dyn FlowApp>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run_arc(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
     CTX_ID
         .scope(
             case_arg.id().to_string(),

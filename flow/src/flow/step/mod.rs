@@ -1,234 +1,118 @@
-use std::panic::AssertUnwindSafe;
+use std::sync::Arc;
 
-use chrono::{DateTime, Utc};
-use futures::FutureExt;
-use handlebars::TemplateRenderError;
-use log::{debug, error, info, trace, warn};
+use chrono::Utc;
+use log::{error, info, trace, warn};
 
-use chord_core::action::{Action, Scope};
-use chord_core::future::time::timeout;
+use chord_core::action::{Action, Id, Scope};
+use chord_core::collection::TailDropVec;
 use chord_core::step::StepState;
-use chord_core::value::json;
-use chord_core::value::{to_string_pretty, Value};
+use chord_core::value::Value;
 use res::StepAssessStruct;
 use Error::*;
 
-use crate::flow::step::arg::RunArgStruct;
-use crate::flow::step::res::StepThen;
-use crate::flow::step::Error::ValueUnexpected;
-use crate::model::app::FlowApp;
+use crate::flow::step::arg::ArgStruct;
+use crate::flow::step::res::ActionAssessStruct;
 
 pub mod arg;
 pub mod res;
 
 #[derive(thiserror::Error, Debug)]
-enum Error {
-    #[error("timeout")]
-    Timeout,
+pub enum Error {
+    #[error("unsupported action `{0}`")]
+    Unsupported(String),
 
-    #[error("unwind")]
-    Unwind,
-
-    #[error("`{0}` unexpect value `{1}`")]
-    ValueUnexpected(String, String),
-
-    #[error("`{0}` render error:\n{1}")]
-    Render(String, TemplateRenderError),
+    #[error("action `{0}.{1}` create:\n{1}")]
+    Create(String, String, Box<dyn std::error::Error + Sync + Send>),
 }
 
-pub async fn run(
-    _: &dyn FlowApp,
-    arg: &mut RunArgStruct<'_, '_, '_>,
-    action: &dyn Action,
-) -> StepAssessStruct {
-    trace!("step start {}", arg.id());
-    let start = Utc::now();
-    let explain = action.explain(arg).await.unwrap_or(Value::Null);
-    let future = AssertUnwindSafe(action.run(arg)).catch_unwind();
-    let timeout_value = timeout(arg.timeout(), future).await;
-    if let Err(_) = timeout_value {
-        warn!("step timeout {}", arg.id());
-        return assess_create(arg, start, explain, Err(Box::new(Timeout)));
-    }
-    let unwind_value = timeout_value.unwrap();
-    if let Err(_) = unwind_value {
-        error!("step unwind {}", arg.id());
-        return assess_create(arg, start, explain, Err(Box::new(Unwind)));
-    }
-    let action_value = unwind_value.unwrap();
-    return assess_create(arg, start, explain, action_value);
+pub struct StepRunner {
+    action_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
 }
 
-fn assess_create(
-    arg: &mut RunArgStruct<'_, '_, '_>,
-    start: DateTime<Utc>,
-    explain: Value,
-    action_value: Result<Box<dyn Scope>, chord_core::action::Error>,
-) -> StepAssessStruct {
-    let end = Utc::now();
-    if let Err(e) = action_value.as_ref() {
-        if !arg.catch_err() {
-            error!(
-                "step Err  {}\n{}\n<<<\n{}",
-                arg.id(),
-                e,
-                explain_to_string(&explain),
-            );
-            return StepAssessStruct::new(
-                arg.id().clone(),
-                start,
-                end,
-                explain,
-                StepState::Err(action_value.err().unwrap()),
-                None,
-            );
-        } else {
-            let map = arg.context_mut();
-            map.insert("state".to_string(), Value::String("Err".to_string()));
-            map.insert("value".to_string(), Value::String(e.to_string()));
-            map.insert(
-                "meta".to_string(),
-                json!({
-                    "start": start,
-                    "end": end
-                }),
-            );
+impl StepRunner {
+    pub async fn new(arg: &mut ArgStruct<'_, '_>) -> Result<StepRunner, Error> {
+        trace!("step new {}", arg.id());
+        let obj = arg.flow().step_obj(arg.id().step());
+        let aid_vec: Vec<String> = obj.iter().map(|(aid, _)| aid.to_string()).collect();
+        let mut action_vec = Vec::with_capacity(obj.len());
+
+        for aid in aid_vec {
+            arg.aid(aid.as_str());
+            let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
+
+            let action = arg
+                .app()
+                .get_action_factory(func.into())
+                .ok_or_else(|| Unsupported(func.into()))?
+                .create(arg)
+                .await
+                .map_err(|e| Create(arg.id().step().to_string(), aid.to_string(), e))?;
+            action_vec.push((aid.to_string(), action));
         }
-    } else {
-        let map = arg.context_mut();
-        map.insert("state".to_string(), Value::String("Ok".to_string()));
-        map.insert(
-            "value".to_string(),
-            action_value.as_ref().unwrap().as_value().clone(),
-        );
-        map.insert(
-            "meta".to_string(),
-            json!({
-                "start": start,
-                "end": end
-            }),
-        );
+
+        Ok(StepRunner {
+            action_vec: Arc::new(TailDropVec::from(action_vec)),
+        })
     }
 
-    let then = assert_and_then(arg);
-    return match then {
-        Err(e) => {
-            error!(
-                "step Err  {}\n{}\n<<<\n{}",
-                arg.id(),
-                &e,
-                explain_to_string(&explain)
-            );
-            StepAssessStruct::new(
-                arg.id().clone(),
-                start,
-                end,
-                explain,
-                StepState::Err(Box::new(e)),
-                None,
-            )
-        }
-        Ok((ar, at)) => {
-            if ar {
-                info!("step Ok   {}", arg.id());
-                StepAssessStruct::new(
-                    arg.id().clone(),
-                    start,
-                    end,
-                    explain,
-                    StepState::Ok(action_value.unwrap()),
-                    at,
-                )
-            } else {
-                warn!(
-                    "step Fail {}\n{}\n<<<\n{}",
-                    arg.id(),
-                    to_string_pretty(action_value.as_ref().unwrap().as_value())
-                        .unwrap_or("".to_string()),
-                    explain_to_string(&explain)
-                );
-                StepAssessStruct::new(
-                    arg.id().clone(),
-                    start,
-                    end,
-                    explain,
-                    StepState::Fail(action_value.unwrap()),
-                    None,
-                )
+    pub async fn run(&self, arg: &mut ArgStruct<'_, '_>) -> StepAssessStruct {
+        trace!("step run {}", arg.id());
+        let start = Utc::now();
+        let mut assess_vec = Vec::with_capacity(self.action_vec.len());
+        let mut success = true;
+        for (aid, action) in self.action_vec.iter() {
+            let key: &str = aid;
+            let action: &Box<dyn Action> = action;
+            arg.aid(key);
+            let explain = action.explain(arg).await.unwrap_or(Value::Null);
+            let value = action.run(arg).await;
+            match &value {
+                Ok(v) => {
+                    arg.context_mut()
+                        .data_mut()
+                        .insert(key.to_string(), v.as_value().clone());
+                    let assess = action_assess_create(aid, explain, value);
+                    assess_vec.push(assess);
+                }
+
+                Err(_) => {
+                    let assess = action_assess_create(aid, explain, value);
+                    assess_vec.push(assess);
+                    success = false;
+                    break;
+                }
             }
         }
-    };
-}
 
-fn assert_and_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<(bool, Option<StepThen>), Error> {
-    let assert_success = value_assert(arg, arg.assert()).unwrap_or_else(|e| {
-        debug!("step assert Err {}", e);
-        false
-    });
-    return if !assert_success {
-        Ok((false, None))
-    } else {
-        Ok((true, choose_then(arg)?))
-    };
-}
-
-fn value_assert(
-    arg: &RunArgStruct<'_, '_, '_>,
-    condition: Option<&str>,
-) -> Result<bool, TemplateRenderError> {
-    if let Some(condition) = condition {
-        assert(arg, condition)
-    } else {
-        Ok(true)
-    }
-}
-
-fn choose_then(arg: &RunArgStruct<'_, '_, '_>) -> Result<Option<StepThen>, Error> {
-    let then_vec = arg.then();
-    if then_vec.is_none() {
-        return Ok(None);
-    }
-    for (idx, then) in then_vec.unwrap().iter().enumerate() {
-        let cond: Option<&str> = then.cond();
-        if cond.is_none()
-            || value_assert(arg, cond).map_err(|e| Render(format!("then.{}.if", idx), e))?
-        {
-            let reg = if let Some(r) = then.reg() {
-                Some(
-                    arg.render_object(r)
-                        .map_err(|e| Render(format!("then.{}.reg", idx), e))?,
-                )
-            } else {
-                None
-            };
-
-            let goto = if let Some(g) = then.goto() {
-                let goto = arg
-                    .render_str(g)
-                    .map_err(|e| Render(format!("then.{}.goto", idx), e))?;
-                Some(goto.as_str().map(|s| s.to_string()).ok_or_else(|| {
-                    ValueUnexpected(format!("then.{}.goto", idx), goto.to_string())
-                })?)
-            } else {
-                None
-            };
-
-            return Ok(Some(StepThen::new(reg, goto)));
+        if success {
+            info!("step Ok   {}", arg.id());
+        } else {
+            for ass in assess_vec.iter() {
+                if let StepState::Ok(v) = ass.state() {
+                    warn!("{} : {}  <<<  {}", ass.id(), v.as_value(), ass.explain());
+                } else if let StepState::Err(e) = ass.state() {
+                    error!("{} : {}  <<<  {}", ass.id(), e, ass.explain());
+                }
+            }
+            error!("step Err {}", arg.id());
         }
+
+        StepAssessStruct::new(arg.id().clone(), start, Utc::now(), assess_vec)
     }
-    return Ok(None);
 }
 
-fn assert(arg: &RunArgStruct<'_, '_, '_>, condition: &str) -> Result<bool, TemplateRenderError> {
-    let assert_tpl = format!("{{{{{condition}}}}}", condition = condition);
-    let assert_result = arg.render_str(assert_tpl.as_str())?;
-    Ok(assert_result == "true")
-}
-
-fn explain_to_string(explain: &Value) -> String {
-    if explain.is_string() {
-        return explain.as_str().unwrap().to_string();
+fn action_assess_create(
+    aid: &str,
+    explain: Value,
+    value: Result<Box<dyn Scope>, chord_core::action::Error>,
+) -> ActionAssessStruct {
+    return if let Err(_) = value.as_ref() {
+        ActionAssessStruct::new(
+            aid.to_string(),
+            explain,
+            StepState::Err(value.err().unwrap()),
+        )
     } else {
-        to_string_pretty(&explain).unwrap_or("".to_string())
-    }
+        ActionAssessStruct::new(aid.to_string(), explain, StepState::Ok(value.unwrap()))
+    };
 }

@@ -1,6 +1,6 @@
 [package]
 name = "chord-core"
-version = "0.1.17"
+version = "0.1.18"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 
@@ -15,12 +15,16 @@ repository = "https://github.com/bit-ranger/chord"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = {version = "1.0", features = ["derive"]}
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-chrono = {version = "0.4.19", features = ["serde"]}
+chrono = { version = "0.4.19", features = ["serde"] }
 async-trait = "0.1.50"
 regex = "1.4.6"
 lazy_static = "1.4.0"
 itertools = "0.10.0"
 thiserror = "1.0"
-tokio = { version = "1.16", features = ["fs", "time", "tracing", "process"] }
+tokio = { version = "1.16", features = ["fs", "time", "tracing", "process", "macros", "rt", "io-util"] }
+
+
+[target.'cfg(linux)'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }

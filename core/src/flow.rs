@@ -120,15 +120,12 @@ impl Flow {
 
         for step_id in step_id_checked.iter() {
             flow._step_check(step_id)?;
-            flow._step_spec_check(step_id)?;
 
-            let _ = flow._step_let(step_id)?;
-            let _ = flow._step_assert(step_id)?;
-            let _ = flow._step_then(step_id)?;
-            let _ = flow._step_exec_action(step_id)?;
-            let _ = flow._step_exec_args(step_id)?;
-            let _ = flow._step_spec_timeout(step_id)?;
-            let _ = flow._step_spec_catch_err(step_id)?;
+            for (aid, _) in flow._step_obj(step_id)? {
+                flow._step_action_obj(step_id, aid)?;
+                flow._step_action_func(step_id, aid)?;
+                flow._step_action_args(step_id, aid)?;
+            }
         }
 
         return Ok(flow);
@@ -196,28 +193,20 @@ impl Flow {
         self._step_let(step_id).unwrap()
     }
 
-    pub fn step_exec_action(&self, step_id: &str) -> &str {
-        self._step_exec_action(step_id).unwrap()
+    pub fn step_obj(&self, step_id: &str) -> &Map {
+        self._step_obj(step_id).unwrap()
     }
 
-    pub fn step_exec_args(&self, step_id: &str) -> &Value {
-        self._step_exec_args(step_id).unwrap()
+    pub fn step_action(&self, step_id: &str, action_id: &str) -> &Map {
+        self._step_action_obj(step_id, action_id).unwrap()
     }
 
-    pub fn step_spec_timeout(&self, step_id: &str) -> Duration {
-        self._step_spec_timeout(step_id).unwrap()
+    pub fn step_action_func(&self, step_id: &str, action_id: &str) -> &str {
+        self._step_action_func(step_id, action_id).unwrap()
     }
 
-    pub fn step_spec_catch_err(&self, step_id: &str) -> bool {
-        self._step_spec_catch_err(step_id).unwrap()
-    }
-
-    pub fn step_assert(&self, step_id: &str) -> Option<&str> {
-        self._step_assert(step_id).unwrap()
-    }
-
-    pub fn step_then(&self, step_id: &str) -> Option<Vec<Then>> {
-        self._step_then(step_id).unwrap()
+    pub fn step_action_args(&self, step_id: &str, action_id: &str) -> &Value {
+        self._step_action_args(step_id, action_id).unwrap()
     }
 
     // -----------------------------------------------
@@ -399,6 +388,17 @@ impl Flow {
         return self.flow["pre"]["step"][step_id].borrow();
     }
 
+    fn _step_obj(&self, step_id: &str) -> Result<&Map, Error> {
+        let step = self._step(step_id);
+        step.as_object().ok_or_else(|| {
+            Violation(
+                format!("step.{}", step_id),
+                "be a object".into(),
+                "is not".into(),
+            )
+        })
+    }
+
     fn _step_let(&self, step_id: &str) -> Result<Option<&Map>, Error> {
         let lv = &self._step(step_id)["let"];
         if lv.is_null() {
@@ -409,120 +409,32 @@ impl Flow {
             .ok_or(EntryLost(format!("step.{}", step_id), "let".into()))
     }
 
-    fn _step_exec_action(&self, step_id: &str) -> Result<&str, Error> {
-        let step = self._step(step_id).as_object().ok_or(Violation(
-            step_id.into(),
+    fn _step_action_obj(&self, step_id: &str, action_id: &str) -> Result<&Map, Error> {
+        let obj = self._step(step_id)[action_id].as_object().ok_or(Violation(
+            format!("{}.{}", step_id, action_id),
             "be a object".into(),
             "is not".into(),
         ))?;
-
-        let fixed_keys = vec!["let", "spec", "assert", "then"];
-        let action: Vec<&str> = step
-            .iter()
-            .filter(|(k, _)| !fixed_keys.contains(&k.as_str()))
-            .map(|(k, _)| k.as_str())
-            .collect();
-
-        if action.len() != 1 {
-            return Err(Violation(
-                format!("step.{}", step_id),
-                "have only 1 action".into(),
-                format!("has {}", action.len()),
-            ));
-        }
-
-        Ok(action[0])
-    }
-
-    pub fn _step_exec_args(&self, step_id: &str) -> Result<&Value, Error> {
-        let action = self._step_exec_action(step_id)?;
-        let args = &self._step(step_id)[action];
-        return if args.is_null() {
-            Err(EntryLost(
-                format!("step.{}.{}", step_id, action),
-                "args".into(),
+        return if obj.len() != 1 {
+            Err(Violation(
+                format!("{}.{}", step_id, action_id),
+                "have 1 entry".into(),
+                "is not".into(),
             ))
         } else {
-            Ok(args)
+            Ok(obj)
         };
     }
 
-    fn _step_spec_check(&self, step_id: &str) -> Result<(), Error> {
-        let spec = self._step(step_id)["spec"].borrow();
-        if spec.is_null() {
-            return Ok(());
-        } else {
-            let enable_keys = vec!["timeout", "catch_err"];
-            let object = spec.as_object().ok_or(Violation(
-                format!("step.{}.spec", step_id),
-                "be a object".into(),
-                "is not".into(),
-            ))?;
-
-            for (k, _) in object {
-                if !enable_keys.contains(&k.as_str()) {
-                    return Err(EntryUnexpected(format!("step.{}", step_id), k.into()));
-                }
-            }
-
-            Ok(())
-        }
+    fn _step_action_func(&self, step_id: &str, action_id: &str) -> Result<&str, Error> {
+        let action_obj = self._step_action_obj(step_id, action_id)?;
+        let only = action_obj.iter().last().unwrap();
+        Ok(only.0.as_str())
     }
 
-    fn _step_spec_timeout(&self, step_id: &str) -> Result<Duration, Error> {
-        let s = self._step(step_id)["spec"]["timeout"].as_u64();
-        if s.is_none() {
-            return Ok(Duration::from_secs(60));
-        }
-
-        let s = s.unwrap();
-        if s < 1 {
-            return Err(Violation(
-                format!("step.{}.spec.timeout", step_id),
-                "> 0".into(),
-                format!("is {}", s),
-            ));
-        }
-        Ok(Duration::from_secs(s))
-    }
-
-    fn _step_spec_catch_err(&self, step_id: &str) -> Result<bool, Error> {
-        Ok(self._step(step_id)["spec"]["catch_err"]
-            .as_bool()
-            .unwrap_or(false))
-    }
-
-    pub fn _step_assert(&self, step_id: &str) -> Result<Option<&str>, Error> {
-        match &self._step(step_id)["assert"] {
-            Value::Null => Ok(None),
-            Value::String(s) => Ok(Some(s.as_str())),
-            _ => {
-                return Err(Violation(
-                    format!("step.{}.assert", step_id),
-                    "be a string".into(),
-                    "is not".into(),
-                ));
-            }
-        }
-    }
-
-    pub fn _step_then(&self, step_id: &str) -> Result<Option<Vec<Then>>, Error> {
-        let array = self._step(step_id)["then"].as_array();
-        if array.is_none() {
-            return Ok(None);
-        } else {
-            let array = array.unwrap();
-            Ok(Some(
-                array
-                    .iter()
-                    .filter(|v| v.is_object())
-                    .map(|m| Then {
-                        cond: m["if"].as_str().map(|c| c.to_string()),
-                        reg: m["reg"].as_object().map(|r| r.clone()),
-                        goto: m["goto"].as_str().map(|g| g.to_string()),
-                    })
-                    .collect(),
-            ))
-        }
+    fn _step_action_args(&self, step_id: &str, action_id: &str) -> Result<&Value, Error> {
+        let action_obj = self._step_action_obj(step_id, action_id)?;
+        let only = action_obj.iter().last().unwrap();
+        Ok(only.1)
     }
 }

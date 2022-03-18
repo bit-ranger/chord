@@ -1,11 +1,10 @@
 use chrono::{DateTime, Utc};
 
-use crate::action::{RunId, Scope};
+use crate::action::{Id, Scope};
 use crate::value::Value;
 
 pub enum StepState {
     Ok(Box<dyn Scope>),
-    Fail(Box<dyn Scope>),
     Err(crate::action::Error),
 }
 
@@ -23,17 +22,10 @@ impl StepState {
             _ => false,
         }
     }
-
-    pub fn is_fail(&self) -> bool {
-        match self {
-            StepState::Fail(_) => true,
-            _ => false,
-        }
-    }
 }
 
 pub trait StepAssess: Sync + Send {
-    fn id(&self) -> &dyn RunId;
+    fn id(&self) -> &dyn Id;
 
     fn start(&self) -> DateTime<Utc>;
 

@@ -242,12 +242,11 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         elapse: (sa.end() - sa.start()).num_milliseconds() as usize,
         state: match sa.state() {
             StepState::Ok(_) => "O",
-            StepState::Fail(_) => "F",
             StepState::Err(_) => "E",
         }
         .to_owned(),
         value: match sa.state() {
-            StepState::Ok(scope) | StepState::Fail(scope) => scope.as_value().clone(),
+            StepState::Ok(scope) => scope.as_value().clone(),
             StepState::Err(e) => Value::String(e.to_string()),
         },
     }

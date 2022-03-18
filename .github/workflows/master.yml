@@ -74,27 +74,11 @@ jobs:
       - name: chord-build-simple
         run: |
           chmod -R 777 $PWD
-          cargo --version
-          cargo test  --verbose --release
-          cargo build --verbose --release
-          find $(pwd)
-
-
-      - name: chord-build-cache-all-features
-        uses: actions/cache@v2
-        with:
-          key: build-target-linux-gnu-all-features-${{ hashFiles('Cargo.lock') }}
-          path: |
-            ./target
-
-      - name: chord-build-all-features
-        run: |
-          chmod -R 777 $PWD
           make -C .chord/src/cdylib/cdylib_example/bin
           cargo --version
-          cargo test  --all-features --verbose --release
-          cargo build --all-features --verbose --release
+          ./build.sh
           find $(pwd)
+
 
       - name: chord-test
         run: |
@@ -139,17 +123,8 @@ jobs:
 
       - name: chord-build-simple
         run: |
-          cargo build --verbose --release
-
-      - name: chord-build-cache-all-features
-        uses: actions/cache@v2
-        with:
-          key: build-target-windows-msvc-all-features-${{ hashFiles('Cargo.lock') }}
-          path: |
-            ./target
-
-      - name: chord-build-all-features
-        run: |
+          chmod -R 777 $PWD
+          cargo --version
           cargo build --all-features --verbose --release
 
       - name: chord-target-upload
@@ -183,18 +158,9 @@ jobs:
 
       - name: chord-build-simple
         run: |
-          cargo build --verbose --release
-
-      - name: chord-build-cache-all-features
-        uses: actions/cache@v2
-        with:
-          key: build-target-apple-darwin-all-features-${{ hashFiles('Cargo.lock') }}
-          path: |
-            ./target
-
-      - name: chord-build-all-features
-        run: |
-          cargo build --all-features --verbose --release
+          chmod -R 777 $PWD
+          cargo --version
+          ./build.sh
 
       - name: chord-target-upload
         uses: actions/upload-artifact@v2

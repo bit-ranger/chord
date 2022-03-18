@@ -1,65 +1,95 @@
 use chrono::{DateTime, Utc};
 
-use chord_core::action::RunId;
+use chord_core::action::Id;
+use chord_core::collection::TailDropVec;
 use chord_core::step::{StepAssess, StepState};
 use chord_core::value::{Map, Value};
 
-use crate::flow::step::arg::RunIdStruct;
+use crate::flow::step::arg::IdStruct;
 
-pub struct StepAssessStruct {
-    id: RunIdStruct,
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
+pub struct ActionAssessStruct {
+    aid: String,
     explain: Value,
     state: StepState,
-    then: Option<StepThen>,
 }
 
-pub struct StepThen {
-    reg: Option<Map>,
-    goto: Option<String>,
+impl ActionAssessStruct {
+    pub fn new(aid: String, explain: Value, state: StepState) -> ActionAssessStruct {
+        ActionAssessStruct {
+            aid,
+            explain,
+            state,
+        }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.aid
+    }
+
+    pub fn explain(&self) -> &Value {
+        &self.explain
+    }
+
+    pub fn state(&self) -> &StepState {
+        &self.state
+    }
 }
 
-impl StepThen {
-    pub fn reg(&self) -> Option<&Map> {
-        self.reg.as_ref()
-    }
-
-    pub fn goto(&self) -> Option<&str> {
-        self.goto.as_ref().map(|g| g.as_str())
-    }
-
-    pub fn new(reg: Option<Map>, goto: Option<String>) -> StepThen {
-        StepThen { reg, goto }
-    }
+pub struct StepAssessStruct {
+    id: IdStruct,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    #[allow(dead_code)]
+    action_assess_vec: TailDropVec<ActionAssessStruct>,
+    explain: Value,
+    state: StepState,
 }
 
 impl StepAssessStruct {
     pub fn new(
-        id: RunIdStruct,
+        id: IdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
-        explain: Value,
-        state: StepState,
-        then: Option<StepThen>,
+        mut action_assess_vec: Vec<ActionAssessStruct>,
     ) -> StepAssessStruct {
+        let mut em = Map::new();
+        let mut sm = Map::new();
+
+        for ast in action_assess_vec.iter() {
+            em.insert(ast.aid.to_string(), ast.explain.clone());
+            if let StepState::Ok(s) = ast.state() {
+                sm.insert(ast.id().to_string(), s.as_value().clone());
+            } else if let StepState::Err(e) = ast.state() {
+                sm.insert(ast.id().to_string(), Value::String(e.to_string()));
+            }
+        }
+
+        let explain = Value::Object(em);
+
+        let state = if action_assess_vec.is_empty() {
+            StepState::Ok(Box::new(Value::Object(Map::new())))
+        } else {
+            let last_is_err = (&action_assess_vec).last().unwrap().state.is_err();
+            if last_is_err {
+                action_assess_vec.pop().unwrap().state
+            } else {
+                StepState::Ok(Box::new(Value::Object(sm)))
+            }
+        };
+
         StepAssessStruct {
             id,
             start,
             end,
+            action_assess_vec: TailDropVec::from(action_assess_vec),
             explain,
             state,
-            then,
         }
-    }
-
-    pub fn then(&self) -> Option<&StepThen> {
-        self.then.as_ref()
     }
 }
 
 impl StepAssess for StepAssessStruct {
-    fn id(&self) -> &dyn RunId {
+    fn id(&self) -> &dyn Id {
         &self.id
     }
 

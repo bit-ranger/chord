@@ -17,6 +17,7 @@ let allTasks = [
     "restapi",
     "sleep",
     "typecast",
+    "refpre",
     "z_advance/stage_case",
     "z_advance/match",
     "z_advance/while"

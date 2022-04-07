@@ -89,9 +89,19 @@ impl StepRunner {
         } else {
             for ass in assess_vec.iter() {
                 if let StepState::Ok(v) = ass.state() {
-                    warn!("{} : {}  <<<  {}", ass.id(), v.as_value(), ass.explain());
+                    warn!(
+                        "{} : {}  <<<  {}",
+                        ass.id(),
+                        v.as_value(),
+                        explain_string(ass.explain())
+                    );
                 } else if let StepState::Err(e) = ass.state() {
-                    error!("{} : {}  <<<  {}", ass.id(), e, ass.explain());
+                    error!(
+                        "{} : {}  <<<  {}",
+                        ass.id(),
+                        e,
+                        explain_string(ass.explain())
+                    );
                 }
             }
             error!("step Err {}", arg.id());
@@ -115,4 +125,12 @@ fn action_assess_create(
     } else {
         ActionAssessStruct::new(aid.to_string(), explain, StepState::Ok(value.unwrap()))
     };
+}
+
+fn explain_string(exp: &Value) -> String {
+    if let Value::String(txt) = exp {
+        txt.to_string()
+    } else {
+        exp.to_string()
+    }
 }

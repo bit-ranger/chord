@@ -524,7 +524,7 @@ async fn pre_ctx_create(sa_vec: &Vec<Box<dyn StepAssess>>) -> Map {
     pre_ctx.insert("step".to_owned(), Value::Object(Map::new()));
     for sa in sa_vec.iter() {
         if let StepState::Ok(pv) = sa.state() {
-            pre_ctx["step"][sa.id().step()]["value"] = pv.as_value().clone();
+            pre_ctx["step"][sa.id().step()] = pv.as_value().clone();
         }
     }
     pre_ctx

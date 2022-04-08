@@ -98,9 +98,7 @@ impl CaseArgStruct {
         }
         render_data.insert(String::from("case"), data.clone());
         if let Some(pre_ctx) = pre_ctx.as_ref() {
-            if let Some(pre_step) = pre_ctx.get("step") {
-                render_data.insert(String::from("step"), pre_step.clone());
-            }
+            render_data.insert(String::from("pre"), Value::Object(pre_ctx.as_ref().clone()));
         }
         if !render_data.contains_key("step") {
             render_data.insert(String::from("step"), Value::Object(Map::new()));

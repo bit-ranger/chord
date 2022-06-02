@@ -17,28 +17,6 @@ step.step1 = {
     var: {
         let: {
             foo: "{{case.foo}}",
-            bar: "{{case.bar}}"
-        },
-    },
-    value: {
-        lua: fs.readFileSync(path.join(__dirname, "step1.lua"), {
-                encoding: "utf-8"
-            }
-        ),
-    },
-    state: {
-        assert: `
-        (all
-        (eq value.1.bar (num var.bar))
-        )
-        `
-    }
-}
-
-step.step2 = {
-    var: {
-        let: {
-            foo: "{{case.foo}}",
             bar: "{{case.bar}}",
         },
     },
@@ -56,7 +34,8 @@ step.step2 = {
             ,
                 {
                     ['bar'] = tonumber(var.bar)
-                },
+                }
+            ,
                 {
                     ['tag'] = t
                 }
@@ -65,14 +44,38 @@ step.step2 = {
     },
 
     state: {
-        assert: `
-            (all
-                (eq value.1.bar (num var.bar))
-            )
+        // language=Lua
+        lua: `
+            ok = tostring(value[2].bar) == tostring(var.bar)
+            if (not ok) then
+                error("fail")
+            end
         `
     }
+}
 
-
+step.step2 = {
+    var: {
+        let: {
+            foo: "{{case.foo}}",
+            bar: "{{case.bar}}"
+        },
+    },
+    value: {
+        lua: fs.readFileSync(path.join(__dirname, "step1.lua"), {
+                encoding: "utf-8"
+            }
+        ),
+    },
+    state: {
+        // language=Lua
+        lua: `
+            ok = tostring(value[2].bar) == tostring(var.bar)
+            if (not ok) then
+                error("fail")
+            end
+        `
+    }
 }
 
 

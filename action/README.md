@@ -18,9 +18,9 @@ chord - async parallel task executor
 
 ### run
 
-    cd .chord/job
+    cd .chord
     npm run build
-    chord run -i$(pwd)/dist/echo
+    chord run -i$(pwd)/dist/lua
 
 ### help
 

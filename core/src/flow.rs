@@ -189,16 +189,8 @@ impl Flow {
         self._stage_break_on(stage_id).unwrap()
     }
 
-    pub fn step_let(&self, step_id: &str) -> Option<&Map> {
-        self._step_let(step_id).unwrap()
-    }
-
     pub fn step_obj(&self, step_id: &str) -> &Map {
         self._step_obj(step_id).unwrap()
-    }
-
-    pub fn step_action(&self, step_id: &str, action_id: &str) -> &Map {
-        self._step_action_obj(step_id, action_id).unwrap()
     }
 
     pub fn step_action_func(&self, step_id: &str, action_id: &str) -> &str {
@@ -397,16 +389,6 @@ impl Flow {
                 "is not".into(),
             )
         })
-    }
-
-    fn _step_let(&self, step_id: &str) -> Result<Option<&Map>, Error> {
-        let lv = &self._step(step_id)["let"];
-        if lv.is_null() {
-            return Ok(None);
-        }
-        lv.as_object()
-            .map(|o| Some(o))
-            .ok_or(EntryLost(format!("step.{}", step_id), "let".into()))
     }
 
     fn _step_action_obj(&self, step_id: &str, action_id: &str) -> Result<&Map, Error> {

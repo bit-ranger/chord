@@ -46,10 +46,7 @@ step.step1 = {
     state: {
         // language=Lua
         lua: `
-            ok = tostring(value[2].bar) == tostring(var.bar)
-            if (not ok) then
-                error("fail")
-            end
+            assert(tostring(value[2].bar) == tostring(var.bar), "fail")
         `
     }
 }
@@ -70,10 +67,7 @@ step.step2 = {
     state: {
         // language=Lua
         lua: `
-            ok = tostring(value[2].bar) == tostring(var.bar)
-            if (not ok) then
-                error("fail")
-            end
+            assert(tostring(value[2].bar) == tostring(var.bar), "fail")
         `
     }
 }

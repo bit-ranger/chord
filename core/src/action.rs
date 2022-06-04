@@ -25,8 +25,11 @@ pub mod prelude {
     pub use super::async_trait;
     pub use super::Action;
     pub use super::Arg;
+    pub use super::Combo;
+    pub use super::Context;
     pub use super::Error;
-    pub use super::Factory;
+    pub use super::Id;
+    pub use super::Play;
     pub use super::Scope;
 }
 
@@ -34,12 +37,16 @@ pub trait Id: Sync + Send + Display {
     fn step(&self) -> &str;
 
     fn case_id(&self) -> &dyn CaseId;
+
+    fn clone(&self) -> Box<dyn Id>;
 }
 
 pub trait Context: Sync + Send {
     fn data(&self) -> &Map;
 
     fn data_mut(&mut self) -> &mut Map;
+
+    fn clone(&self) -> Box<dyn Context>;
 }
 
 pub trait Scope: Sync + Send {
@@ -50,6 +57,12 @@ impl Scope for Value {
     fn as_value(&self) -> &Value {
         &self
     }
+}
+
+pub trait Combo: Sync + Send {
+    fn action(&self, action: &str) -> Option<&dyn Action>;
+
+    fn clone(&self) -> Box<dyn Combo>;
 }
 
 pub trait Arg: Sync + Send {
@@ -65,14 +78,14 @@ pub trait Arg: Sync + Send {
 
     fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
 
-    fn factory(&self, action: &str) -> Option<&dyn Factory>;
+    fn combo(&self) -> &dyn Combo;
 
     fn is_static(&self, raw: &Value) -> bool;
 }
 
 #[async_trait]
-pub trait Action: Sync + Send {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
+pub trait Play: Sync + Send {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         arg.args()
@@ -80,6 +93,6 @@ pub trait Action: Sync + Send {
 }
 
 #[async_trait]
-pub trait Factory: Sync + Send {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error>;
+pub trait Action: Sync + Send {
+    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error>;
 }

@@ -1,13 +1,12 @@
 use chord_core::action::prelude::*;
-use chord_core::action::{Context, Id};
 
 use crate::err;
 
-pub struct WhileFactory {}
+pub struct WhileAction {}
 
-impl WhileFactory {
-    pub async fn new(_: Option<Value>) -> Result<WhileFactory, Error> {
-        Ok(WhileFactory {})
+impl WhileAction {
+    pub async fn new(_: Option<Value>) -> Result<WhileAction, Error> {
+        Ok(WhileAction {})
     }
 }
 
@@ -43,8 +42,8 @@ impl<'o> Arg for ArgStruct<'o> {
         self.origin.render(context, raw)
     }
 
-    fn factory(&self, action: &str) -> Option<&dyn Factory> {
-        self.origin.factory(action)
+    fn combo(&self) -> &dyn Combo {
+        self.origin.combo()
     }
 
     fn is_static(&self, raw: &Value) -> bool {
@@ -53,15 +52,15 @@ impl<'o> Arg for ArgStruct<'o> {
 }
 
 #[async_trait]
-impl Factory for WhileFactory {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for WhileAction {
+    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
         Ok(Box::new(While {}))
     }
 }
 
 #[async_trait]
-impl Action for While {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Play for While {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let cond_raw = arg
             .args_raw()
             .as_object()
@@ -79,11 +78,12 @@ impl Action for While {
                     cond: cond_raw.to_string(),
                 };
                 let bf = arg
-                    .factory("block")
+                    .combo()
+                    .action("block")
                     .ok_or(err!("101", "missing `block` action"))?
-                    .create(&arg)
+                    .play(&arg)
                     .await?;
-                bf.run(&mut arg).await?;
+                bf.execute(&mut arg).await?;
             } else {
                 break;
             }

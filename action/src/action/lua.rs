@@ -1,27 +1,85 @@
-use chord_core::action::prelude::*;
+use rlua::{AnyUserData, UserData, UserDataMethods};
 
+use chord_core::action::prelude::*;
+use chord_core::action::{Context, Id};
+use chord_core::future::runtime::Handle;
+
+use crate::action::lua;
 use crate::err;
 
-pub struct LuaFactory {}
+pub struct LuaAction {}
 
-impl LuaFactory {
-    pub async fn new(_: Option<Value>) -> Result<LuaFactory, Error> {
-        Ok(LuaFactory {})
+impl LuaAction {
+    pub async fn new(_: Option<Value>) -> Result<LuaAction, Error> {
+        Ok(LuaAction {})
     }
 }
 
 #[async_trait]
-impl Factory for LuaFactory {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Lua {}))
+impl Action for LuaAction {
+    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+        Ok(Box::new(LuaPlay {}))
     }
 }
 
-struct Lua {}
+struct LuaPlay {}
+
+struct PlayUserData {
+    action: Box<dyn Play>,
+}
+
+impl UserData for PlayUserData {
+    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method("execute", |_, this, pa: ()| {
+            println!("execute");
+            Ok(())
+        });
+    }
+}
+
+struct IdStruct {}
+
+struct ContextStruct {}
+
+struct ArgStruct {}
+
+impl Arg for ArgStruct {
+    fn id(&self) -> &dyn Id {
+        todo!()
+    }
+
+    fn args(&self) -> Result<Value, Error> {
+        todo!()
+    }
+
+    fn args_raw(&self) -> &Value {
+        todo!()
+    }
+
+    fn context(&self) -> &dyn Context {
+        todo!()
+    }
+
+    fn context_mut(&mut self) -> &mut dyn Context {
+        todo!()
+    }
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        todo!()
+    }
+
+    fn combo(&self) -> &dyn Combo {
+        todo!()
+    }
+
+    fn is_static(&self, raw: &Value) -> bool {
+        true
+    }
+}
 
 #[async_trait]
-impl Action for Lua {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Play for LuaPlay {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let rt = rlua::Lua::new();
         rt.set_memory_limit(Some(1024000));
         rt.context(|lua| {
@@ -33,12 +91,26 @@ impl Action for Lua {
                 lua.globals().set(k.as_str(), v)?;
             }
 
+            let combo = arg.combo().clone();
+            let action =
+                lua.create_function_mut(move |c, (name, param): (rlua::String, rlua::Value)| {
+                    let action = combo.action(name.to_str().unwrap()).unwrap();
+                    let play_arg = ArgStruct {};
+
+                    let handle = Handle::current();
+                    let action = handle.block_on(action.play(&play_arg)).unwrap();
+
+                    Ok(PlayUserData { action })
+                })?;
+
+            lua.globals().set("action", action);
+
             self.eval(lua, code.to_string())
         })
     }
 }
 
-impl Lua {
+impl LuaPlay {
     fn eval(&self, lua: rlua::Context, code: String) -> Result<Box<dyn Scope>, Error> {
         match lua.load(code.as_str()).eval::<rlua::Value>() {
             Ok(v) => {

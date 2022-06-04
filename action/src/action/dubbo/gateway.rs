@@ -13,7 +13,7 @@ use chord_core::value::{to_string, Deserialize, Serialize};
 
 use crate::err;
 
-pub struct DubboFactory {
+pub struct DubboAction {
     registry_protocol: String,
     registry_address: String,
     port: usize,
@@ -21,8 +21,8 @@ pub struct DubboFactory {
     client: Client,
 }
 
-impl DubboFactory {
-    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
+impl DubboAction {
+    pub async fn new(config: Option<Value>) -> Result<DubboAction, Error> {
         if config.is_none() {
             return Err(err!("100", "missing action.dubbo"));
         }
@@ -109,7 +109,7 @@ impl DubboFactory {
 
         child.stdout = None;
         let client = Client::new();
-        Ok(DubboFactory {
+        Ok(DubboAction {
             registry_protocol,
             registry_address,
             port,
@@ -120,8 +120,8 @@ impl DubboFactory {
 }
 
 #[async_trait]
-impl Factory for DubboFactory {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for DubboAction {
+    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
         Ok(Box::new(Dubbo {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
@@ -139,8 +139,8 @@ struct Dubbo {
 }
 
 #[async_trait]
-impl Action for Dubbo {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Play for Dubbo {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let method_long = args["method"]
             .as_str()
@@ -247,7 +247,7 @@ async fn log_line(line: &str) {
     }
 }
 
-impl Drop for DubboFactory {
+impl Drop for DubboAction {
     fn drop(&mut self) {
         trace!(
             "kill [{}] dubbo generic gateway",

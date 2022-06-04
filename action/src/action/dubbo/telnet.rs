@@ -5,12 +5,12 @@ use futures::io::{AsyncReadExt, AsyncWriteExt};
 use log::trace;
 use std::str::FromStr;
 
-pub struct DubboFactory {
+pub struct DubboAction {
     address: String,
 }
 
-impl DubboFactory {
-    pub async fn new(config: Option<Value>) -> Result<DubboFactory, Error> {
+impl DubboAction {
+    pub async fn new(config: Option<Value>) -> Result<DubboAction, Error> {
         if config.is_none() {
             return Err(err!("dubbo", "missing dubbo.config"));
         }
@@ -20,14 +20,14 @@ impl DubboFactory {
         let address = config["telnet"]["address"]
             .as_str()
             .ok_or(err!("010", "missing telnet.address"))?;
-        Ok(DubboFactory {
+        Ok(DubboAction {
             address: address.to_owned(),
         })
     }
 }
 
 #[async_trait]
-impl Factory for DubboFactory {
+impl Action for DubboAction {
     async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Dubbo {
             address: self.address.clone(),

@@ -3,23 +3,24 @@ use chord_core::action::Context;
 
 use crate::err;
 
-pub struct SetFactory {}
+pub struct SetAction {}
 
-impl SetFactory {
-    pub async fn new(_: Option<Value>) -> Result<SetFactory, Error> {
-        Ok(SetFactory {})
+impl SetAction {
+    pub async fn new(_: Option<Value>) -> Result<SetAction, Error> {
+        Ok(SetAction {})
     }
 }
 
 #[async_trait]
-impl Factory for SetFactory {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for SetAction {
+    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
         Ok(Box::new(Set {}))
     }
 }
 
 struct Set {}
 
+#[derive(Clone)]
 struct ContextStruct {
     map: Map,
 }
@@ -32,11 +33,16 @@ impl Context for ContextStruct {
     fn data_mut(&mut self) -> &mut Map {
         &mut self.map
     }
+
+    fn clone(&self) -> Box<dyn Context> {
+        let ctx = Clone::clone(self);
+        Box::new(ctx)
+    }
 }
 
 #[async_trait]
-impl Action for Set {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Play for Set {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let obj = args
             .as_object()

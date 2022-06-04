@@ -2,17 +2,17 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct AssertFactory {}
+pub struct AssertAction {}
 
-impl AssertFactory {
-    pub async fn new(_: Option<Value>) -> Result<AssertFactory, Error> {
-        Ok(AssertFactory {})
+impl AssertAction {
+    pub async fn new(_: Option<Value>) -> Result<AssertAction, Error> {
+        Ok(AssertAction {})
     }
 }
 
 #[async_trait]
-impl Factory for AssertFactory {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for AssertAction {
+    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
         Ok(Box::new(Assert {}))
     }
 }
@@ -20,14 +20,14 @@ impl Factory for AssertFactory {
 struct Assert {}
 
 #[async_trait]
-impl Action for Assert {
+impl Play for Assert {
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         Ok(Value::String(raw.to_string()))
     }
 
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         let assert_tpl = format!("{{{{{cond}}}}}", cond = raw);

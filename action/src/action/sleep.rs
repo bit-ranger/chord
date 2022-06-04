@@ -15,7 +15,7 @@ impl SleepAction {
 
 #[async_trait]
 impl Action for SleepAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Sleep {}))
     }
 }
@@ -23,8 +23,8 @@ impl Action for SleepAction {
 struct Sleep {}
 
 #[async_trait]
-impl Play for Sleep {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Sleep {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let sec = arg.args()?;
         if sec.is_null() {
             return Err(err!("100", "sleep must > 0"));

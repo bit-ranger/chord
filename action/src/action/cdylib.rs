@@ -34,7 +34,7 @@ impl CdylibAction {
 
 #[async_trait]
 impl Action for CdylibAction {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let lib_name = args_raw.as_str().ok_or(err!("100", "missing lib"))?;
 
@@ -51,8 +51,8 @@ struct Cdylib {
 }
 
 #[async_trait]
-impl Play for Cdylib {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Cdylib {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let action_run: Symbol<fn(args: *const c_char) -> *mut c_char> =
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();

@@ -53,14 +53,14 @@ impl<'o> Arg for ArgStruct<'o> {
 
 #[async_trait]
 impl Action for MatchAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Match {}))
     }
 }
 
 #[async_trait]
-impl Play for Match {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Match {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let map = arg
             .args_raw()
             .as_object()
@@ -81,9 +81,9 @@ impl Play for Match {
                     .combo()
                     .action("block")
                     .ok_or(err!("101", "missing `block` action"))?
-                    .play(&arg)
+                    .player(&arg)
                     .await?;
-                return bf.execute(&mut arg).await;
+                return bf.play(&mut arg).await;
             }
         }
 

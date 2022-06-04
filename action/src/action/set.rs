@@ -13,7 +13,7 @@ impl SetAction {
 
 #[async_trait]
 impl Action for SetAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Set {}))
     }
 }
@@ -41,8 +41,8 @@ impl Context for ContextStruct {
 }
 
 #[async_trait]
-impl Play for Set {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Set {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let obj = args
             .as_object()

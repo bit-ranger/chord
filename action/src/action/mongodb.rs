@@ -16,7 +16,7 @@ impl MongodbAction {
 
 #[async_trait]
 impl Action for MongodbAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Mongodb {}))
     }
 }
@@ -24,8 +24,8 @@ impl Action for MongodbAction {
 struct Mongodb {}
 
 #[async_trait]
-impl Play for Mongodb {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Mongodb {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }

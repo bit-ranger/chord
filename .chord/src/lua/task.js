@@ -23,6 +23,14 @@ step.step1 = {
     value: {
         // language=Lua
         lua: `
+            count = player("count", {
+                init = 1,
+                incr = 1
+            });
+            assert(count:play() == "1")
+            assert(count:play() == "2")
+            assert(count:play() == "3")
+
             r = os.time();
             t = "CHORD-" .. tostring(r);
             print(t);

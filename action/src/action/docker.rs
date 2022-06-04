@@ -24,7 +24,7 @@ impl Docker {
 
 #[async_trait]
 impl Action for Docker {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let image = args_raw["image"]
             .as_str()
@@ -39,8 +39,8 @@ impl Action for Docker {
 struct ImageWrapper(Image);
 
 #[async_trait]
-impl Play for ImageWrapper {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for ImageWrapper {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let cmd = &args["cmd"];
 

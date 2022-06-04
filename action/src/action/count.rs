@@ -12,7 +12,7 @@ impl CountAction {
 
 #[async_trait]
 impl Action for CountAction {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let init = args_raw["init"].as_u64().unwrap_or(1);
         let incr = args_raw["incr"].as_u64().unwrap_or(1);
@@ -29,8 +29,8 @@ struct Count {
 }
 
 #[async_trait]
-impl Play for Count {
-    async fn execute(&self, _: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Count {
+    async fn play(&self, _: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         Ok(Box::new(Value::Number(Number::from(
             self.num.fetch_add(self.incr, Ordering::SeqCst),
         ))))

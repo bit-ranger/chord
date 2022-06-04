@@ -18,7 +18,7 @@ impl DatabaseAction {
 
 #[async_trait]
 impl Action for DatabaseAction {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let url = &args_raw["url"];
         if url.is_string() {
@@ -39,8 +39,8 @@ struct Database {
 }
 
 #[async_trait]
-impl Play for Database {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Database {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(&self, arg).await
     }
 }

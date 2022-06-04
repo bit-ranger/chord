@@ -22,7 +22,7 @@ impl RestapiAction {
 
 #[async_trait]
 impl Action for RestapiAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(RestapiPlay {
             client: self.client.clone(),
         }))
@@ -34,8 +34,8 @@ struct RestapiPlay {
 }
 
 #[async_trait]
-impl Play for RestapiPlay {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for RestapiPlay {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(self.client.clone(), arg).await
     }
 

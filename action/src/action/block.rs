@@ -76,7 +76,7 @@ impl BlockAction {
 
 #[async_trait]
 impl Action for BlockAction {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw.as_object().unwrap();
         let mut context = Box::new(ContextStruct {
@@ -100,7 +100,7 @@ impl Action for BlockAction {
                 .combo()
                 .action(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
-                .play(&mut create_arg)
+                .player(&mut create_arg)
                 .await
                 .map_err(|_| err!("100", "create error"))?;
             action_vec.push((aid.to_string(), action.to_string(), action_obj));
@@ -113,12 +113,12 @@ impl Action for BlockAction {
 }
 
 struct Block {
-    action_vec: TailDropVec<(String, String, Box<dyn Play>)>,
+    action_vec: TailDropVec<(String, String, Box<dyn Player>)>,
 }
 
 #[async_trait]
-impl Play for Block {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Block {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
@@ -130,7 +130,7 @@ impl Play for Block {
                 aid: aid.to_string(),
                 action: action.to_string(),
             };
-            let v = action_obj.execute(&mut run).await?;
+            let v = action_obj.play(&mut run).await?;
             scope_vec.push((aid.to_string(), v));
         }
 

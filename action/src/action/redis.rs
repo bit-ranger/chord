@@ -14,7 +14,7 @@ impl RedisAction {
 
 #[async_trait]
 impl Action for RedisAction {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let url = &args_raw["url"];
         if url.is_string() {
@@ -36,8 +36,8 @@ struct Redis {
 }
 
 #[async_trait]
-impl Play for Redis {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Redis {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {

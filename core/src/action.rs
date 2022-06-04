@@ -29,7 +29,7 @@ pub mod prelude {
     pub use super::Context;
     pub use super::Error;
     pub use super::Id;
-    pub use super::Play;
+    pub use super::Player;
     pub use super::Scope;
 }
 
@@ -84,8 +84,8 @@ pub trait Arg: Sync + Send {
 }
 
 #[async_trait]
-pub trait Play: Sync + Send {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
+pub trait Player: Sync + Send {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         arg.args()
@@ -94,5 +94,5 @@ pub trait Play: Sync + Send {
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error>;
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error>;
 }

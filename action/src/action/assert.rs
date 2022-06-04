@@ -12,7 +12,7 @@ impl AssertAction {
 
 #[async_trait]
 impl Action for AssertAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Assert {}))
     }
 }
@@ -20,14 +20,14 @@ impl Action for AssertAction {
 struct Assert {}
 
 #[async_trait]
-impl Play for Assert {
+impl Player for Assert {
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         Ok(Value::String(raw.to_string()))
     }
 
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         let assert_tpl = format!("{{{{{cond}}}}}", cond = raw);

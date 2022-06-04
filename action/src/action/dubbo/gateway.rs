@@ -121,7 +121,7 @@ impl DubboAction {
 
 #[async_trait]
 impl Action for DubboAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Dubbo {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
@@ -139,8 +139,8 @@ struct Dubbo {
 }
 
 #[async_trait]
-impl Play for Dubbo {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Dubbo {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let method_long = args["method"]
             .as_str()

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use log::{error, info, trace, warn};
 
-use chord_core::action::{Arg, Id, Play, Scope};
+use chord_core::action::{Arg, Id, Player, Scope};
 use chord_core::collection::TailDropVec;
 use chord_core::step::StepState;
 use chord_core::value::Value;
@@ -26,7 +26,7 @@ pub enum Error {
 }
 
 pub struct StepRunner {
-    action_vec: Arc<TailDropVec<(String, Box<dyn Play>)>>,
+    action_vec: Arc<TailDropVec<(String, Box<dyn Player>)>>,
 }
 
 impl StepRunner {
@@ -44,7 +44,7 @@ impl StepRunner {
                 .combo()
                 .action(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
-                .play(arg)
+                .player(arg)
                 .await
                 .map_err(|e| Create(arg.id().step().to_string(), aid.to_string(), e))?;
             action_vec.push((aid.to_string(), action));
@@ -62,10 +62,10 @@ impl StepRunner {
         let mut success = true;
         for (aid, action) in self.action_vec.iter() {
             let key: &str = aid;
-            let action: &Box<dyn Play> = action;
+            let action: &Box<dyn Player> = action;
             arg.aid(key);
             let explain = action.explain(arg).await.unwrap_or(Value::Null);
-            let value = action.execute(arg).await;
+            let value = action.play(arg).await;
             match &value {
                 Ok(v) => {
                     arg.context_mut()

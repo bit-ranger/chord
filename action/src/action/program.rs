@@ -15,7 +15,7 @@ impl ProgramAction {
 
 #[async_trait]
 impl Action for ProgramAction {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         match args_raw["detach"].as_bool().unwrap_or(false) {
             true => Ok(Box::new(DetachProgram::new(&args_raw)?)),
@@ -33,8 +33,8 @@ impl AttachProgram {
 }
 
 #[async_trait]
-impl Play for AttachProgram {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for AttachProgram {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let mut command = program_command(&args)?;
         trace!("program attach command {:?}", command);
@@ -86,8 +86,8 @@ impl DetachProgram {
 }
 
 #[async_trait]
-impl Play for DetachProgram {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for DetachProgram {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
 
         let mut command = program_command(&args)?;

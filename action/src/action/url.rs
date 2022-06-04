@@ -12,7 +12,7 @@ impl UrlAction {
 
 #[async_trait]
 impl Action for UrlAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Url {}))
     }
 }
@@ -20,8 +20,8 @@ impl Action for UrlAction {
 struct Url {}
 
 #[async_trait]
-impl Play for Url {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Url {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 

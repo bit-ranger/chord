@@ -12,7 +12,7 @@ impl CryptoAction {
 
 #[async_trait]
 impl Action for CryptoAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Crypto {}))
     }
 }
@@ -20,8 +20,8 @@ impl Action for CryptoAction {
 struct Crypto {}
 
 #[async_trait]
-impl Play for Crypto {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Crypto {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }

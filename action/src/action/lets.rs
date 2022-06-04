@@ -11,7 +11,7 @@ impl LetAction {
 
 #[async_trait]
 impl Action for LetAction {
-    async fn play(&self, _: &dyn Arg) -> Result<Box<dyn Play>, Error> {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Let {}))
     }
 }
@@ -39,8 +39,8 @@ impl Context for ContextStruct {
 }
 
 #[async_trait]
-impl Play for Let {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Let {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let mut lets = Map::new();
         if arg.args_raw().is_object() {
             let mut new_ctx = ContextStruct {

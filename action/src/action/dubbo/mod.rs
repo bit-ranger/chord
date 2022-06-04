@@ -39,7 +39,7 @@ impl DubboAction {
 
 #[async_trait]
 impl Action for DubboAction {
-    async fn play(&self, arg: &dyn Arg) -> Result<Box<dyn Play>, Error> {
-        self.delegate.play(arg).await
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+        self.delegate.player(arg).await
     }
 }

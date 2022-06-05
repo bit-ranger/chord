@@ -23,13 +23,19 @@ step.step1 = {
     value: {
         // language=Lua
         lua: `
+            let = action("let")
+            lv = let:run({
+                "c", "b", "a"
+            })
+            assert(lv[1] == "c")
+            
             count = action("count", {
                 init = 1,
                 incr = 1
             });
-            assert(count:run() == "1")
-            assert(count:run() == "2")
-            assert(count:run() == "3")
+            assert(count:run() == 1)
+            assert(count:run() == 2)
+            assert(count:run() == 3)
 
             r = os.time();
             t = "CHORD-" .. tostring(r);

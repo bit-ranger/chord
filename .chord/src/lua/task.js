@@ -17,34 +17,20 @@ step.step1 = {
     var: {
         let: {
             foo: "{{case.foo}}",
-            bar: "{{case.bar}}"
-        },
-    },
-    value: {
-        lua: fs.readFileSync(path.join(__dirname, "step1.lua"), {
-                encoding: "utf-8"
-            }
-        ),
-    },
-    state: {
-        assert: `
-        (all
-        (eq value.1.bar (num var.bar))
-        )
-        `
-    }
-}
-
-step.step2 = {
-    var: {
-        let: {
-            foo: "{{case.foo}}",
             bar: "{{case.bar}}",
         },
     },
     value: {
         // language=Lua
         lua: `
+            count = player("count", {
+                init = 1,
+                incr = 1
+            });
+            assert(count:play() == "1")
+            assert(count:play() == "2")
+            assert(count:play() == "3")
+
             r = os.time();
             t = "CHORD-" .. tostring(r);
             print(t);
@@ -56,7 +42,8 @@ step.step2 = {
             ,
                 {
                     ['bar'] = tonumber(var.bar)
-                },
+                }
+            ,
                 {
                     ['tag'] = t
                 }
@@ -65,14 +52,32 @@ step.step2 = {
     },
 
     state: {
-        assert: `
-            (all
-                (eq value.1.bar (num var.bar))
-            )
+        // language=Lua
+        lua: `
+            assert(tostring(value[2].bar) == tostring(var.bar), "fail")
         `
     }
+}
 
-
+step.step2 = {
+    var: {
+        let: {
+            foo: "{{case.foo}}",
+            bar: "{{case.bar}}"
+        },
+    },
+    value: {
+        lua: fs.readFileSync(path.join(__dirname, "step1.lua"), {
+                encoding: "utf-8"
+            }
+        ),
+    },
+    state: {
+        // language=Lua
+        lua: `
+            assert(tostring(value[2].bar) == tostring(var.bar), "fail")
+        `
+    }
 }
 
 

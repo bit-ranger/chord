@@ -1,7 +1,6 @@
 use std::mem::replace;
 
 use chord_core::action::prelude::*;
-use chord_core::action::{Context, Id};
 use chord_core::collection::TailDropVec;
 
 use crate::err;
@@ -38,8 +37,8 @@ impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
         self.block.render(context, raw)
     }
 
-    fn factory(&self, action: &str) -> Option<&dyn Factory> {
-        self.block.factory(action)
+    fn combo(&self) -> &dyn Combo {
+        self.block.combo()
     }
 
     fn is_static(&self, raw: &Value) -> bool {
@@ -47,6 +46,7 @@ impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
     }
 }
 
+#[derive(Clone)]
 struct ContextStruct {
     data: Map,
 }
@@ -59,19 +59,24 @@ impl Context for ContextStruct {
     fn data_mut(&mut self) -> &mut Map {
         &mut self.data
     }
+
+    fn clone(&self) -> Box<dyn Context> {
+        let ctx = Clone::clone(self);
+        Box::new(ctx)
+    }
 }
 
-pub struct BlockFactory {}
+pub struct BlockAction {}
 
-impl BlockFactory {
-    pub async fn new(_: Option<Value>) -> Result<BlockFactory, Error> {
-        Ok(BlockFactory {})
+impl BlockAction {
+    pub async fn new(_: Option<Value>) -> Result<BlockAction, Error> {
+        Ok(BlockAction {})
     }
 }
 
 #[async_trait]
-impl Factory for BlockFactory {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for BlockAction {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw.as_object().unwrap();
         let mut context = Box::new(ContextStruct {
@@ -92,9 +97,10 @@ impl Factory for BlockFactory {
             };
 
             let action_obj = arg
-                .factory(action.into())
+                .combo()
+                .action(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
-                .create(&mut create_arg)
+                .player(&mut create_arg)
                 .await
                 .map_err(|_| err!("100", "create error"))?;
             action_vec.push((aid.to_string(), action.to_string(), action_obj));
@@ -107,12 +113,12 @@ impl Factory for BlockFactory {
 }
 
 struct Block {
-    action_vec: TailDropVec<(String, String, Box<dyn Action>)>,
+    action_vec: TailDropVec<(String, String, Box<dyn Player>)>,
 }
 
 #[async_trait]
-impl Action for Block {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Block {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
@@ -124,7 +130,7 @@ impl Action for Block {
                 aid: aid.to_string(),
                 action: action.to_string(),
             };
-            let v = action_obj.run(&mut run).await?;
+            let v = action_obj.play(&mut run).await?;
             scope_vec.push((aid.to_string(), v));
         }
 

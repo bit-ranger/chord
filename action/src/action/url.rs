@@ -2,17 +2,17 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct UrlFactory {}
+pub struct UrlAction {}
 
-impl UrlFactory {
-    pub async fn new(_: Option<Value>) -> Result<UrlFactory, Error> {
-        Ok(UrlFactory {})
+impl UrlAction {
+    pub async fn new(_: Option<Value>) -> Result<UrlAction, Error> {
+        Ok(UrlAction {})
     }
 }
 
 #[async_trait]
-impl Factory for UrlFactory {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for UrlAction {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Url {}))
     }
 }
@@ -20,8 +20,8 @@ impl Factory for UrlFactory {
 struct Url {}
 
 #[async_trait]
-impl Action for Url {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Url {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 

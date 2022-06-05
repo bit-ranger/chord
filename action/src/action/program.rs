@@ -5,17 +5,17 @@ use chord_core::future::process::{Child, Command};
 
 use crate::err;
 
-pub struct ProgramFactory {}
+pub struct ProgramAction {}
 
-impl ProgramFactory {
-    pub async fn new(_: Option<Value>) -> Result<ProgramFactory, Error> {
-        Ok(ProgramFactory {})
+impl ProgramAction {
+    pub async fn new(_: Option<Value>) -> Result<ProgramAction, Error> {
+        Ok(ProgramAction {})
     }
 }
 
 #[async_trait]
-impl Factory for ProgramFactory {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for ProgramAction {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         match args_raw["detach"].as_bool().unwrap_or(false) {
             true => Ok(Box::new(DetachProgram::new(&args_raw)?)),
@@ -33,8 +33,8 @@ impl AttachProgram {
 }
 
 #[async_trait]
-impl Action for AttachProgram {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for AttachProgram {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let mut command = program_command(&args)?;
         trace!("program attach command {:?}", command);
@@ -86,8 +86,8 @@ impl DetachProgram {
 }
 
 #[async_trait]
-impl Action for DetachProgram {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for DetachProgram {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
 
         let mut command = program_command(&args)?;

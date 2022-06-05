@@ -36,8 +36,8 @@ mod restapi;
 #[cfg(feature = "act_url")]
 mod url;
 
-pub struct FactoryComposite {
-    table: HashMap<String, Box<dyn Factory>>,
+pub struct ActionComposite {
+    table: HashMap<String, Box<dyn Action>>,
 }
 
 macro_rules! register {
@@ -51,61 +51,56 @@ macro_rules! register {
     };
 }
 
-impl FactoryComposite {
-    pub async fn new(config: Option<Value>) -> Result<FactoryComposite, Error> {
-        let mut table: HashMap<String, Box<dyn Factory>> = HashMap::new();
+impl ActionComposite {
+    pub async fn new(config: Option<Value>) -> Result<ActionComposite, Error> {
+        let mut table: HashMap<String, Box<dyn Action>> = HashMap::new();
 
         let config_ref = config.as_ref();
 
-        register!(table, config_ref, "let", lets::LetFactory::new);
-        register!(table, config_ref, "set", set::SetFactory::new);
-        register!(table, config_ref, "block", block::BlockFactory::new);
-        register!(table, config_ref, "while", whiles::WhileFactory::new);
-        register!(table, config_ref, "match", matches::MatchFactory::new);
-        register!(table, config_ref, "assert", assert::AssertFactory::new);
-        register!(table, config_ref, "sleep", sleep::SleepFactory::new);
-        register!(table, config_ref, "log", log::LogFactory::new);
-        register!(table, config_ref, "count", count::CountFactory::new);
+        register!(table, config_ref, "let", lets::LetAction::new);
+        register!(table, config_ref, "set", set::SetAction::new);
+        register!(table, config_ref, "block", block::BlockAction::new);
+        register!(table, config_ref, "while", whiles::WhileAction::new);
+        register!(table, config_ref, "match", matches::MatchAction::new);
+        register!(table, config_ref, "assert", assert::AssertAction::new);
+        register!(table, config_ref, "sleep", sleep::SleepAction::new);
+        register!(table, config_ref, "log", log::LogAction::new);
+        register!(table, config_ref, "count", count::CountAction::new);
 
         #[cfg(feature = "act_restapi")]
-        register!(table, config_ref, "restapi", restapi::RestapiFactory::new);
+        register!(table, config_ref, "restapi", restapi::RestapiAction::new);
 
         #[cfg(feature = "act_crypto")]
-        register!(table, config_ref, "crypto", crypto::CryptoFactory::new);
+        register!(table, config_ref, "crypto", crypto::CryptoAction::new);
 
         #[cfg(feature = "act_url")]
-        register!(table, config_ref, "url", url::UrlFactory::new);
+        register!(table, config_ref, "url", url::UrlAction::new);
 
         #[cfg(feature = "act_database")]
-        register!(
-            table,
-            config_ref,
-            "database",
-            database::DatabaseFactory::new
-        );
+        register!(table, config_ref, "database", database::DatabaseAction::new);
 
         #[cfg(feature = "act_redis")]
-        register!(table, config_ref, "redis", redis::RedisFactory::new);
+        register!(table, config_ref, "redis", redis::RedisAction::new);
 
         #[cfg(feature = "act_mongodb")]
-        register!(table, config_ref, "mongodb", mongodb::MongodbFactory::new);
+        register!(table, config_ref, "mongodb", mongodb::MongodbAction::new);
 
         #[cfg(feature = "act_lua")]
-        register!(table, config_ref, "lua", lua::LuaFactory::new);
+        register!(table, config_ref, "lua", lua::LuaAction::new);
 
         #[cfg(feature = "act_program")]
-        register!(table, config_ref, "program", program::ProgramFactory::new);
+        register!(table, config_ref, "program", program::ProgramAction::new);
 
         #[cfg(feature = "act_dubbo")]
-        register!(table, config_ref, "dubbo", dubbo::DubboFactory::new);
+        register!(table, config_ref, "dubbo", dubbo::DubboAction::new);
 
         #[cfg(feature = "act_cdylib")]
-        register!(table, config_ref, "cdylib", cdylib::CdylibFactory::new);
+        register!(table, config_ref, "cdylib", cdylib::CdylibAction::new);
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new);
 
-        Ok(FactoryComposite { table })
+        Ok(ActionComposite { table })
     }
 }
 
@@ -124,8 +119,8 @@ fn enable(config: Option<&Value>, action_name: &str) -> bool {
         .unwrap_or(default_enable);
 }
 
-impl From<FactoryComposite> for HashMap<String, Box<dyn Factory>> {
-    fn from(fac: FactoryComposite) -> Self {
+impl From<ActionComposite> for HashMap<String, Box<dyn Action>> {
+    fn from(fac: ActionComposite) -> Self {
         fac.table
     }
 }

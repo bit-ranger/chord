@@ -4,17 +4,17 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct RedisFactory {}
+pub struct RedisAction {}
 
-impl RedisFactory {
-    pub async fn new(_: Option<Value>) -> Result<RedisFactory, Error> {
-        Ok(RedisFactory {})
+impl RedisAction {
+    pub async fn new(_: Option<Value>) -> Result<RedisAction, Error> {
+        Ok(RedisAction {})
     }
 }
 
 #[async_trait]
-impl Factory for RedisFactory {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for RedisAction {
+    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let url = &args_raw["url"];
         if url.is_string() {
@@ -36,8 +36,8 @@ struct Redis {
 }
 
 #[async_trait]
-impl Action for Redis {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Redis {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {

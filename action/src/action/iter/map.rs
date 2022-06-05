@@ -7,16 +7,16 @@ use std::time::Duration;
 
 use crate::err;
 
-pub struct IterMapFactory {
-    table: HashMap<String, Arc<dyn Factory>>,
+pub struct IterMapAction {
+    table: HashMap<String, Arc<dyn Action>>,
 }
 
-impl IterMapFactory {
+impl IterMapAction {
     pub async fn new(
         _: Option<Value>,
-        table: HashMap<String, Arc<dyn Factory>>,
-    ) -> Result<IterMapFactory, Error> {
-        Ok(IterMapFactory { table })
+        table: HashMap<String, Arc<dyn Action>>,
+    ) -> Result<IterMapAction, Error> {
+        Ok(IterMapAction { table })
     }
 }
 
@@ -95,7 +95,7 @@ impl<'a> RunArg for MapRunArg<'a> {
 }
 
 #[async_trait]
-impl Factory for IterMapFactory {
+impl Action for IterMapAction {
     async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw["map"]
@@ -110,8 +110,8 @@ impl Factory for IterMapFactory {
         }
 
         let action = map.keys().nth(0).unwrap().as_str();
-        let factory = match action {
-            "iter_map" => self as &dyn Factory,
+        let Action = match action {
+            "iter_map" => self as &dyn Action,
             _ => self
                 .table
                 .get(action)
@@ -124,7 +124,7 @@ impl Factory for IterMapFactory {
             args_raw: arg.args_raw().clone(),
         };
 
-        let map_action = factory.create(&map_create_arg).await?;
+        let map_action = Action.create(&map_create_arg).await?;
 
         Ok(Box::new(IterMap { map_action }))
     }

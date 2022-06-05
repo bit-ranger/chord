@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use chord_core::action::Arg;
+use chord_core::action::{Action, Error};
+use chord_core::action::{Arg, Combo};
 use chord_core::action::{Context, Id};
-use chord_core::action::{Error, Factory};
 use chord_core::case::CaseId;
 use chord_core::flow::Flow;
 use chord_core::value::{Map, Value};
@@ -25,6 +26,11 @@ impl Id for IdStruct {
     fn case_id(&self) -> &dyn CaseId {
         self.case_id.as_ref()
     }
+
+    fn clone(&self) -> Box<dyn Id> {
+        let id = Clone::clone(self);
+        Box::new(id)
+    }
 }
 
 impl Display for IdStruct {
@@ -33,8 +39,25 @@ impl Display for IdStruct {
     }
 }
 
+#[derive(Clone)]
+pub struct ComboStruct {
+    action_map: Arc<HashMap<String, Box<dyn Action>>>,
+}
+
+impl Combo for ComboStruct {
+    fn action(&self, action: &str) -> Option<&dyn Action> {
+        self.action_map.get(action).map(|a| a.as_ref())
+    }
+
+    fn clone(&self) -> Box<dyn Combo> {
+        let combo = Clone::clone(self);
+        Box::new(combo)
+    }
+}
+
 pub struct ArgStruct<'a, 'f> {
     app: &'a dyn App,
+    combo: ComboStruct,
     flow: &'f Flow,
     context: ContextStruct,
     id: IdStruct,
@@ -49,15 +72,20 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
         case_id: Arc<dyn CaseId>,
         step_id: String,
     ) -> ArgStruct<'a, 'f> {
+        let combo = ComboStruct {
+            action_map: app.get_action_map().clone(),
+        };
+
+        let context = ContextStruct { ctx: context };
+
         let id = IdStruct {
             case_id,
             step: step_id,
         };
 
-        let context = ContextStruct { ctx: context };
-
         let run_arg = ArgStruct {
             app,
+            combo,
             flow,
             context,
             id,
@@ -81,10 +109,6 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
 
     pub fn flow(&self) -> &Flow {
         self.flow
-    }
-
-    pub fn app(&self) -> &dyn App {
-        self.app
     }
 }
 
@@ -113,8 +137,8 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
         self.render(&self.context, self.args_raw())
     }
 
-    fn factory(&self, action: &str) -> Option<&dyn Factory> {
-        self.app.get_action_factory(action)
+    fn combo(&self) -> &dyn Combo {
+        &self.combo
     }
 
     fn is_static(&self, raw: &Value) -> bool {
@@ -128,6 +152,7 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
     }
 }
 
+#[derive(Clone)]
 struct ContextStruct {
     ctx: RenderContext,
 }
@@ -145,5 +170,10 @@ impl Context for ContextStruct {
 
     fn data_mut(&mut self) -> &mut Map {
         self.ctx.data_mut().as_object_mut().unwrap()
+    }
+
+    fn clone(&self) -> Box<dyn Context> {
+        let ctx = Clone::clone(self);
+        Box::new(ctx)
     }
 }

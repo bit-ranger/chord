@@ -6,17 +6,17 @@ use chord_core::value::from_str;
 
 use crate::err;
 
-pub struct MongodbFactory {}
+pub struct MongodbAction {}
 
-impl MongodbFactory {
-    pub async fn new(_: Option<Value>) -> Result<MongodbFactory, Error> {
-        Ok(MongodbFactory {})
+impl MongodbAction {
+    pub async fn new(_: Option<Value>) -> Result<MongodbAction, Error> {
+        Ok(MongodbAction {})
     }
 }
 
 #[async_trait]
-impl Factory for MongodbFactory {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Action for MongodbAction {
+    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Mongodb {}))
     }
 }
@@ -24,8 +24,8 @@ impl Factory for MongodbFactory {
 struct Mongodb {}
 
 #[async_trait]
-impl Action for Mongodb {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Player for Mongodb {
+    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }

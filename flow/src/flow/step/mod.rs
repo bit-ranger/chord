@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use log::{error, info, trace, warn};
 
-use chord_core::action::{Action, Id, Scope};
+use chord_core::action::{Arg, Id, Player, Scope};
 use chord_core::collection::TailDropVec;
 use chord_core::step::StepState;
 use chord_core::value::Value;
@@ -26,7 +26,7 @@ pub enum Error {
 }
 
 pub struct StepRunner {
-    action_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
+    action_vec: Arc<TailDropVec<(String, Box<dyn Player>)>>,
 }
 
 impl StepRunner {
@@ -41,10 +41,10 @@ impl StepRunner {
             let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
 
             let action = arg
-                .app()
-                .get_action_factory(func.into())
+                .combo()
+                .action(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
-                .create(arg)
+                .player(arg)
                 .await
                 .map_err(|e| Create(arg.id().step().to_string(), aid.to_string(), e))?;
             action_vec.push((aid.to_string(), action));
@@ -62,10 +62,10 @@ impl StepRunner {
         let mut success = true;
         for (aid, action) in self.action_vec.iter() {
             let key: &str = aid;
-            let action: &Box<dyn Action> = action;
+            let action: &Box<dyn Player> = action;
             arg.aid(key);
             let explain = action.explain(arg).await.unwrap_or(Value::Null);
-            let value = action.run(arg).await;
+            let value = action.play(arg).await;
             match &value {
                 Ok(v) => {
                     arg.context_mut()
@@ -107,7 +107,7 @@ impl StepRunner {
             error!("step Err {}", arg.id());
         }
 
-        StepAssessStruct::new(arg.id().clone(), start, Utc::now(), assess_vec)
+        StepAssessStruct::new(Clone::clone(arg.id()), start, Utc::now(), assess_vec)
     }
 }
 

@@ -7,16 +7,16 @@ use std::time::Duration;
 
 use crate::err;
 
-pub struct IterMapAction {
-    table: HashMap<String, Arc<dyn Action>>,
+pub struct IterMapPlayer {
+    table: HashMap<String, Arc<dyn Player>>,
 }
 
-impl IterMapAction {
+impl IterMapPlayer {
     pub async fn new(
         _: Option<Value>,
-        table: HashMap<String, Arc<dyn Action>>,
-    ) -> Result<IterMapAction, Error> {
-        Ok(IterMapAction { table })
+        table: HashMap<String, Arc<dyn Player>>,
+    ) -> Result<IterMapPlayer, Error> {
+        Ok(IterMapPlayer { table })
     }
 }
 
@@ -48,7 +48,7 @@ impl<'a> CreateArg for MapCreateArg<'a> {
 }
 
 struct IterMap {
-    map_action: Box<dyn Action>,
+    map_action: Box<dyn Player>,
 }
 
 struct MapRunArg<'a> {
@@ -95,8 +95,8 @@ impl<'a> RunArg for MapRunArg<'a> {
 }
 
 #[async_trait]
-impl Action for IterMapAction {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Player for IterMapPlayer {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw["map"]
             .as_object()
@@ -110,8 +110,8 @@ impl Action for IterMapAction {
         }
 
         let action = map.keys().nth(0).unwrap().as_str();
-        let Action = match action {
-            "iter_map" => self as &dyn Action,
+        let Player = match action {
+            "iter_map" => self as &dyn Player,
             _ => self
                 .table
                 .get(action)
@@ -124,14 +124,14 @@ impl Action for IterMapAction {
             args_raw: arg.args_raw().clone(),
         };
 
-        let map_action = Action.create(&map_create_arg).await?;
+        let map_action = Player.create(&map_create_arg).await?;
 
         Ok(Box::new(IterMap { map_action }))
     }
 }
 
 #[async_trait]
-impl Action for IterMap {
+impl Player for IterMap {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         // let mut context = arg.context().clone();
         // context.insert("idx".to_string(), Value::Null);

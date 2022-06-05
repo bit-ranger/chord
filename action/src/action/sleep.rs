@@ -5,17 +5,17 @@ use chord_core::future::time::sleep;
 
 use crate::err;
 
-pub struct SleepAction {}
+pub struct SleepPlayer {}
 
-impl SleepAction {
-    pub async fn new(_: Option<Value>) -> Result<SleepAction, Error> {
-        Ok(SleepAction {})
+impl SleepPlayer {
+    pub async fn new(_: Option<Value>) -> Result<SleepPlayer, Error> {
+        Ok(SleepPlayer {})
     }
 }
 
 #[async_trait]
-impl Action for SleepAction {
-    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+impl Player for SleepPlayer {
+    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Sleep {}))
     }
 }
@@ -23,8 +23,8 @@ impl Action for SleepAction {
 struct Sleep {}
 
 #[async_trait]
-impl Player for Sleep {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for Sleep {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let sec = arg.args()?;
         if sec.is_null() {
             return Err(err!("100", "sleep must > 0"));

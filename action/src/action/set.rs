@@ -3,17 +3,17 @@ use chord_core::action::Context;
 
 use crate::err;
 
-pub struct SetAction {}
+pub struct SetPlayer {}
 
-impl SetAction {
-    pub async fn new(_: Option<Value>) -> Result<SetAction, Error> {
-        Ok(SetAction {})
+impl SetPlayer {
+    pub async fn new(_: Option<Value>) -> Result<SetPlayer, Error> {
+        Ok(SetPlayer {})
     }
 }
 
 #[async_trait]
-impl Action for SetAction {
-    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+impl Player for SetPlayer {
+    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Set {}))
     }
 }
@@ -41,8 +41,8 @@ impl Context for ContextStruct {
 }
 
 #[async_trait]
-impl Player for Set {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for Set {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let obj = args
             .as_object()

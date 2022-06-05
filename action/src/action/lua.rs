@@ -7,46 +7,27 @@ use chord_core::future::runtime::Handle;
 
 use crate::err;
 
-pub struct LuaAction {}
+pub struct LuaPlayer {}
 
-impl LuaAction {
-    pub async fn new(_: Option<Value>) -> Result<LuaAction, Error> {
-        Ok(LuaAction {})
+impl LuaPlayer {
+    pub async fn new(_: Option<Value>) -> Result<LuaPlayer, Error> {
+        Ok(LuaPlayer {})
     }
 }
 
 #[async_trait]
-impl Action for LuaAction {
-    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
-        Ok(Box::new(LuaPlay {}))
+impl Player for LuaPlayer {
+    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        Ok(Box::new(LuaAction {}))
     }
 }
 
-struct LuaPlay {}
+struct LuaAction {}
 
-struct PlayUserData {
+struct ActionUserData {
     id: Box<dyn Id>,
-    play: Box<dyn Player>,
+    action: Box<dyn Action>,
     combo: Box<dyn Combo>,
-}
-
-impl UserData for PlayUserData {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method("play", |_lua, this, param: rlua::Value| {
-            let mut play_arg = ArgStruct {
-                id: this.id.clone(),
-                combo: this.combo.clone(),
-                args: to_value(&param).map_err(|e| LuaError::RuntimeError(e.to_string()))?,
-                context: ContextStruct { map: Map::new() },
-            };
-            let handle = Handle::current();
-            let _ = handle.enter();
-            let scope = futures::executor::block_on(this.play.play(&mut play_arg))
-                .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
-            let value = scope.as_value();
-            Ok(value.to_string())
-        });
-    }
 }
 
 #[derive(Clone)]
@@ -111,8 +92,8 @@ impl Arg for ArgStruct {
 }
 
 #[async_trait]
-impl Player for LuaPlay {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for LuaAction {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let combo = arg.combo().clone();
         let context = arg.context().data().clone();
@@ -137,7 +118,7 @@ fn execute(
             lua.globals().set(k.as_str(), v)?;
         }
 
-        let player_create_fn =
+        let action_fn =
             lua.create_function_mut(move |_c, (name, param): (rlua::String, rlua::Value)| {
                 let name = name.to_str().unwrap();
                 let id = id.clone();
@@ -155,12 +136,16 @@ fn execute(
                 };
                 let handle = Handle::current();
                 let _ = handle.enter();
-                let play = futures::executor::block_on(action.player(&play_arg)).unwrap();
+                let play = futures::executor::block_on(action.action(&play_arg)).unwrap();
 
-                Ok(PlayUserData { id, play, combo })
+                Ok(ActionUserData {
+                    id,
+                    action: play,
+                    combo,
+                })
             })?;
 
-        lua.globals().set("player", player_create_fn)?;
+        lua.globals().set("action", action_fn)?;
 
         eval(lua, code.to_string())
     })
@@ -221,4 +206,23 @@ fn is_array(table: &rlua::Table) -> Result<bool, Error> {
         }
     }
     return Ok(false);
+}
+
+impl UserData for ActionUserData {
+    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method("run", |_lua, this, param: rlua::Value| {
+            let mut play_arg = ArgStruct {
+                id: this.id.clone(),
+                combo: this.combo.clone(),
+                args: to_value(&param).map_err(|e| LuaError::RuntimeError(e.to_string()))?,
+                context: ContextStruct { map: Map::new() },
+            };
+            let handle = Handle::current();
+            let _ = handle.enter();
+            let scope = futures::executor::block_on(this.action.run(&mut play_arg))
+                .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
+            let value = scope.as_value();
+            Ok(value.to_string())
+        });
+    }
 }

@@ -60,7 +60,7 @@ impl Scope for Value {
 }
 
 pub trait Combo: Sync + Send {
-    fn action(&self, action: &str) -> Option<&dyn Action>;
+    fn action(&self, action: &str) -> Option<&dyn Player>;
 
     fn clone(&self) -> Box<dyn Combo>;
 }
@@ -84,8 +84,8 @@ pub trait Arg: Sync + Send {
 }
 
 #[async_trait]
-pub trait Player: Sync + Send {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
+pub trait Action: Sync + Send {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         arg.args()
@@ -93,6 +93,6 @@ pub trait Player: Sync + Send {
 }
 
 #[async_trait]
-pub trait Action: Sync + Send {
-    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error>;
+pub trait Player: Sync + Send {
+    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error>;
 }

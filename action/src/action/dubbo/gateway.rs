@@ -13,7 +13,7 @@ use chord_core::value::{to_string, Deserialize, Serialize};
 
 use crate::err;
 
-pub struct DubboAction {
+pub struct DubboPlayer {
     registry_protocol: String,
     registry_address: String,
     port: usize,
@@ -21,8 +21,8 @@ pub struct DubboAction {
     client: Client,
 }
 
-impl DubboAction {
-    pub async fn new(config: Option<Value>) -> Result<DubboAction, Error> {
+impl DubboPlayer {
+    pub async fn new(config: Option<Value>) -> Result<DubboPlayer, Error> {
         if config.is_none() {
             return Err(err!("100", "missing action.dubbo"));
         }
@@ -109,7 +109,7 @@ impl DubboAction {
 
         child.stdout = None;
         let client = Client::new();
-        Ok(DubboAction {
+        Ok(DubboPlayer {
             registry_protocol,
             registry_address,
             port,
@@ -120,8 +120,8 @@ impl DubboAction {
 }
 
 #[async_trait]
-impl Action for DubboAction {
-    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+impl Player for DubboPlayer {
+    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Dubbo {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
@@ -139,8 +139,8 @@ struct Dubbo {
 }
 
 #[async_trait]
-impl Player for Dubbo {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for Dubbo {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let method_long = args["method"]
             .as_str()
@@ -247,7 +247,7 @@ async fn log_line(line: &str) {
     }
 }
 
-impl Drop for DubboAction {
+impl Drop for DubboPlayer {
     fn drop(&mut self) {
         trace!(
             "kill [{}] dubbo generic gateway",

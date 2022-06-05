@@ -5,12 +5,12 @@ use crate::err;
 mod gateway;
 // mod telnet;
 
-pub struct DubboAction {
-    delegate: Box<dyn Action>,
+pub struct DubboPlayer {
+    delegate: Box<dyn Player>,
 }
 
-impl DubboAction {
-    pub async fn new(config: Option<Value>) -> Result<DubboAction, Error> {
+impl DubboPlayer {
+    pub async fn new(config: Option<Value>) -> Result<DubboPlayer, Error> {
         if config.is_none() {
             return Err(err!("100", "missing dubbo.config"));
         }
@@ -26,11 +26,11 @@ impl DubboAction {
             .to_owned();
 
         match mode.as_str() {
-            "gateway" => Ok(DubboAction {
-                delegate: Box::new(gateway::DubboAction::new(config).await?),
+            "gateway" => Ok(DubboPlayer {
+                delegate: Box::new(gateway::DubboPlayer::new(config).await?),
             }),
-            // "telnet" => Ok(DubboAction {
-            //     delegate: Box::new(telnet::DubboAction::new(config).await?),
+            // "telnet" => Ok(DubboPlayer {
+            //     delegate: Box::new(telnet::DubboPlayer::new(config).await?),
             // }),
             _ => Err(err!("103", "unsupported mode")),
         }
@@ -38,8 +38,8 @@ impl DubboAction {
 }
 
 #[async_trait]
-impl Action for DubboAction {
-    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
-        self.delegate.player(arg).await
+impl Player for DubboPlayer {
+    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        self.delegate.action(arg).await
     }
 }

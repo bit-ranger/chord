@@ -2,17 +2,17 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct UrlAction {}
+pub struct UrlPlayer {}
 
-impl UrlAction {
-    pub async fn new(_: Option<Value>) -> Result<UrlAction, Error> {
-        Ok(UrlAction {})
+impl UrlPlayer {
+    pub async fn new(_: Option<Value>) -> Result<UrlPlayer, Error> {
+        Ok(UrlPlayer {})
     }
 }
 
 #[async_trait]
-impl Action for UrlAction {
-    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+impl Player for UrlPlayer {
+    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Url {}))
     }
 }
@@ -20,8 +20,8 @@ impl Action for UrlAction {
 struct Url {}
 
 #[async_trait]
-impl Player for Url {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for Url {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 

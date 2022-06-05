@@ -66,17 +66,17 @@ impl Context for ContextStruct {
     }
 }
 
-pub struct BlockAction {}
+pub struct BlockPlayer {}
 
-impl BlockAction {
-    pub async fn new(_: Option<Value>) -> Result<BlockAction, Error> {
-        Ok(BlockAction {})
+impl BlockPlayer {
+    pub async fn new(_: Option<Value>) -> Result<BlockPlayer, Error> {
+        Ok(BlockPlayer {})
     }
 }
 
 #[async_trait]
-impl Action for BlockAction {
-    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+impl Player for BlockPlayer {
+    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw.as_object().unwrap();
         let mut context = Box::new(ContextStruct {
@@ -100,7 +100,7 @@ impl Action for BlockAction {
                 .combo()
                 .action(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
-                .player(&mut create_arg)
+                .action(&mut create_arg)
                 .await
                 .map_err(|_| err!("100", "create error"))?;
             action_vec.push((aid.to_string(), action.to_string(), action_obj));
@@ -113,12 +113,12 @@ impl Action for BlockAction {
 }
 
 struct Block {
-    action_vec: TailDropVec<(String, String, Box<dyn Player>)>,
+    action_vec: TailDropVec<(String, String, Box<dyn Action>)>,
 }
 
 #[async_trait]
-impl Player for Block {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for Block {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
@@ -130,7 +130,7 @@ impl Player for Block {
                 aid: aid.to_string(),
                 action: action.to_string(),
             };
-            let v = action_obj.play(&mut run).await?;
+            let v = action_obj.run(&mut run).await?;
             scope_vec.push((aid.to_string(), v));
         }
 

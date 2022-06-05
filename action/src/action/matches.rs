@@ -2,11 +2,11 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct MatchAction {}
+pub struct MatchPlayer {}
 
-impl MatchAction {
-    pub async fn new(_: Option<Value>) -> Result<MatchAction, Error> {
-        Ok(MatchAction {})
+impl MatchPlayer {
+    pub async fn new(_: Option<Value>) -> Result<MatchPlayer, Error> {
+        Ok(MatchPlayer {})
     }
 }
 
@@ -52,15 +52,15 @@ impl<'o> Arg for ArgStruct<'o> {
 }
 
 #[async_trait]
-impl Action for MatchAction {
-    async fn player(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+impl Player for MatchPlayer {
+    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Match {}))
     }
 }
 
 #[async_trait]
-impl Player for Match {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for Match {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let map = arg
             .args_raw()
             .as_object()
@@ -81,9 +81,9 @@ impl Player for Match {
                     .combo()
                     .action("block")
                     .ok_or(err!("101", "missing `block` action"))?
-                    .player(&arg)
+                    .action(&arg)
                     .await?;
-                return bf.play(&mut arg).await;
+                return bf.run(&mut arg).await;
             }
         }
 

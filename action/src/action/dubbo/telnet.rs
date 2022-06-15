@@ -5,12 +5,12 @@ use futures::io::{AsyncReadExt, AsyncWriteExt};
 use log::trace;
 use std::str::FromStr;
 
-pub struct DubboAction {
+pub struct DubboPlayer {
     address: String,
 }
 
-impl DubboAction {
-    pub async fn new(config: Option<Value>) -> Result<DubboAction, Error> {
+impl DubboPlayer {
+    pub async fn new(config: Option<Value>) -> Result<DubboPlayer, Error> {
         if config.is_none() {
             return Err(err!("dubbo", "missing dubbo.config"));
         }
@@ -20,15 +20,15 @@ impl DubboAction {
         let address = config["telnet"]["address"]
             .as_str()
             .ok_or(err!("010", "missing telnet.address"))?;
-        Ok(DubboAction {
+        Ok(DubboPlayer {
             address: address.to_owned(),
         })
     }
 }
 
 #[async_trait]
-impl Action for DubboAction {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Player for DubboPlayer {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
         Ok(Box::new(Dubbo {
             address: self.address.clone(),
         }))
@@ -40,7 +40,7 @@ struct Dubbo {
 }
 
 #[async_trait]
-impl Action for Dubbo {
+impl Player for Dubbo {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let mut stream = TcpStream::connect(self.address.as_str())
             .await

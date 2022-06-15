@@ -8,12 +8,12 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct CdylibAction {
+pub struct CdylibPlayer {
     lib_dir: String,
 }
 
-impl CdylibAction {
-    pub async fn new(config: Option<Value>) -> Result<CdylibAction, Error> {
+impl CdylibPlayer {
+    pub async fn new(config: Option<Value>) -> Result<CdylibPlayer, Error> {
         if config.is_none() {
             return Err(err!("100", "missing action.cdylib"));
         }
@@ -28,13 +28,13 @@ impl CdylibAction {
             .ok_or(err!("103", "missing cdylib.dir"))?
             .to_owned();
 
-        Ok(CdylibAction { lib_dir })
+        Ok(CdylibPlayer { lib_dir })
     }
 }
 
 #[async_trait]
-impl Action for CdylibAction {
-    async fn player(&self, arg: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+impl Player for CdylibPlayer {
+    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let lib_name = args_raw.as_str().ok_or(err!("100", "missing lib"))?;
 
@@ -51,8 +51,8 @@ struct Cdylib {
 }
 
 #[async_trait]
-impl Player for Cdylib {
-    async fn play(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for Cdylib {
+    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let action_run: Symbol<fn(args: *const c_char) -> *mut c_char> =
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();

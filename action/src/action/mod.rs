@@ -37,7 +37,7 @@ mod restapi;
 mod url;
 
 pub struct ActionComposite {
-    table: HashMap<String, Box<dyn Action>>,
+    table: HashMap<String, Box<dyn Player>>,
 }
 
 macro_rules! register {
@@ -53,49 +53,49 @@ macro_rules! register {
 
 impl ActionComposite {
     pub async fn new(config: Option<Value>) -> Result<ActionComposite, Error> {
-        let mut table: HashMap<String, Box<dyn Action>> = HashMap::new();
+        let mut table: HashMap<String, Box<dyn Player>> = HashMap::new();
 
         let config_ref = config.as_ref();
 
-        register!(table, config_ref, "let", lets::LetAction::new);
-        register!(table, config_ref, "set", set::SetAction::new);
-        register!(table, config_ref, "block", block::BlockAction::new);
-        register!(table, config_ref, "while", whiles::WhileAction::new);
-        register!(table, config_ref, "match", matches::MatchAction::new);
-        register!(table, config_ref, "assert", assert::AssertAction::new);
-        register!(table, config_ref, "sleep", sleep::SleepAction::new);
-        register!(table, config_ref, "log", log::LogAction::new);
-        register!(table, config_ref, "count", count::CountAction::new);
+        register!(table, config_ref, "let", lets::LetPlayer::new);
+        register!(table, config_ref, "set", set::SetPlayer::new);
+        register!(table, config_ref, "block", block::BlockPlayer::new);
+        register!(table, config_ref, "while", whiles::WhilePlayer::new);
+        register!(table, config_ref, "match", matches::MatchPlayer::new);
+        register!(table, config_ref, "assert", assert::AssertPlayer::new);
+        register!(table, config_ref, "sleep", sleep::SleepPlayer::new);
+        register!(table, config_ref, "log", log::LogPlayer::new);
+        register!(table, config_ref, "count", count::CountPlayer::new);
 
         #[cfg(feature = "act_restapi")]
-        register!(table, config_ref, "restapi", restapi::RestapiAction::new);
+        register!(table, config_ref, "restapi", restapi::RestapiPlayer::new);
 
         #[cfg(feature = "act_crypto")]
-        register!(table, config_ref, "crypto", crypto::CryptoAction::new);
+        register!(table, config_ref, "crypto", crypto::CryptoPlayer::new);
 
         #[cfg(feature = "act_url")]
-        register!(table, config_ref, "url", url::UrlAction::new);
+        register!(table, config_ref, "url", url::UrlPlayer::new);
 
         #[cfg(feature = "act_database")]
-        register!(table, config_ref, "database", database::DatabaseAction::new);
+        register!(table, config_ref, "database", database::DatabasePlayer::new);
 
         #[cfg(feature = "act_redis")]
-        register!(table, config_ref, "redis", redis::RedisAction::new);
+        register!(table, config_ref, "redis", redis::RedisPlayer::new);
 
         #[cfg(feature = "act_mongodb")]
-        register!(table, config_ref, "mongodb", mongodb::MongodbAction::new);
+        register!(table, config_ref, "mongodb", mongodb::MongodbPlayer::new);
 
         #[cfg(feature = "act_lua")]
-        register!(table, config_ref, "lua", lua::LuaAction::new);
+        register!(table, config_ref, "lua", lua::LuaPlayer::new);
 
         #[cfg(feature = "act_program")]
-        register!(table, config_ref, "program", program::ProgramAction::new);
+        register!(table, config_ref, "program", program::ProgramPlayer::new);
 
         #[cfg(feature = "act_dubbo")]
-        register!(table, config_ref, "dubbo", dubbo::DubboAction::new);
+        register!(table, config_ref, "dubbo", dubbo::DubboPlayer::new);
 
         #[cfg(feature = "act_cdylib")]
-        register!(table, config_ref, "cdylib", cdylib::CdylibAction::new);
+        register!(table, config_ref, "cdylib", cdylib::CdylibPlayer::new);
 
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new);
@@ -119,7 +119,7 @@ fn enable(config: Option<&Value>, action_name: &str) -> bool {
         .unwrap_or(default_enable);
 }
 
-impl From<ActionComposite> for HashMap<String, Box<dyn Action>> {
+impl From<ActionComposite> for HashMap<String, Box<dyn Player>> {
     fn from(fac: ActionComposite) -> Self {
         fac.table
     }

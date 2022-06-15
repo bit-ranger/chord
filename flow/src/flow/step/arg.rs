@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use chord_core::action::{Action, Error};
 use chord_core::action::{Arg, Combo};
 use chord_core::action::{Context, Id};
+use chord_core::action::{Error, Player};
 use chord_core::case::CaseId;
 use chord_core::flow::Flow;
 use chord_core::value::{Map, Value};
@@ -41,11 +41,11 @@ impl Display for IdStruct {
 
 #[derive(Clone)]
 pub struct ComboStruct {
-    action_map: Arc<HashMap<String, Box<dyn Action>>>,
+    action_map: Arc<HashMap<String, Box<dyn Player>>>,
 }
 
 impl Combo for ComboStruct {
-    fn action(&self, action: &str) -> Option<&dyn Action> {
+    fn action(&self, action: &str) -> Option<&dyn Player> {
         self.action_map.get(action).map(|a| a.as_ref())
     }
 

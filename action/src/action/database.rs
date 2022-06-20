@@ -1,6 +1,5 @@
 use log::trace;
 use rbatis::crud::CRUD;
-use rbatis::executor::Executor;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 

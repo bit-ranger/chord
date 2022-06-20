@@ -492,7 +492,7 @@ version = "0.1.20"
 dependencies = [
  "chord-core",
  "chord-util",
- "dirs 3.0.2",
+ "dirs",
  "dynamic_reload",
  "futures",
  "itertools",
@@ -519,7 +519,7 @@ dependencies = [
  "chord-input",
  "chord-output",
  "colored",
- "dirs 3.0.2",
+ "dirs",
  "flume",
  "futures",
  "itertools",
@@ -611,7 +611,7 @@ dependencies = [
  "chord-core",
  "chord-input",
  "chord-util",
- "dirs 3.0.2",
+ "dirs",
  "flume",
  "futures",
  "indexmap",
@@ -926,15 +926,6 @@ dependencies = [
  "block-buffer 0.10.2",
  "crypto-common",
  "subtle",
-]
-
-[[package]]
-name = "dirs"
-version = "3.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30baa043103c9d0c2a57cf537cc2f35623889dc0d405e6c3cccfadbc81c71309"
-dependencies = [
- "dirs-sys",
 ]
 
 [[package]]
@@ -3261,7 +3252,7 @@ dependencies = [
  "crc",
  "crossbeam-queue",
  "digest 0.10.3",
- "dirs 4.0.0",
+ "dirs",
  "either",
  "encoding_rs",
  "event-listener",

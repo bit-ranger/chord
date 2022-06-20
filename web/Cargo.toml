@@ -30,7 +30,7 @@ itertools = "0.10.0"
 log = { version = "0.4.14", features = ["std"] }
 flume = "0.10.5"
 actix-web = "4.0.0-rc.1"
-validator = { version = "0.13", features = ["derive"] }
+validator = { version = "0.15", features = ["derive"] }
 lazy_static = "1.4.0"
 url = "2.2.1"
 regex = "1.5.5"

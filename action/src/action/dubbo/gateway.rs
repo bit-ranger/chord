@@ -42,19 +42,16 @@ impl DubboPlayer {
 impl Player for DubboPlayer {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let player = self.player.read().await;
-        let player = player.borrow();
-        if player.is_some() {
-            return player.as_ref().unwrap().action(arg).await;
+        let player_ref = player.borrow();
+        if player_ref.is_some() {
+            return player_ref.as_ref().unwrap().action(arg).await;
         } else {
+            drop(player);
             let mut guard = self.player.write().await;
             let guard = guard.borrow_mut();
             let new_player = DubboPlayerActual::new(self.config.clone()).await?;
+            let action = new_player.action(arg).await?;
             guard.replace(new_player);
-
-            // read
-            let player = self.player.read().await;
-            let player = player.borrow().as_ref().unwrap();
-            let action = player.action(arg).await?;
             return Ok(action);
         }
     }

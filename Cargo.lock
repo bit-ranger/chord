@@ -502,7 +502,7 @@ dependencies = [
  "rbatis",
  "redis",
  "reqwest",
- "rlua",
+ "rlua 0.19.2",
  "rlua_serde",
  "serde",
  "urlencoding",
@@ -2805,12 +2805,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "rlua"
+version = "0.19.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a8b33d82d6653c447e40067dcf3c970b76e6ebf13807f6acee934f06cc2e35e"
+dependencies = [
+ "bitflags",
+ "bstr",
+ "libc",
+ "num-traits",
+ "rlua-lua54-sys",
+]
+
+[[package]]
+name = "rlua-lua54-sys"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ca23c19a6782d115dce7e11be719b4dbea833acd0d0599e963abf4f31ad9137"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
 name = "rlua_serde"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46e57c8c7bfcc5f18a46ddaf0c6a0d6a5c083ce9e6d185d4093bf98e640d256b"
 dependencies = [
- "rlua",
+ "rlua 0.17.1",
  "serde",
 ]
 

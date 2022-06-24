@@ -239,9 +239,9 @@ checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
 
 [[package]]
 name = "async-recursion"
-version = "0.3.2"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7d78656ba01f1b93024b7c3a0467f1608e4be67d725749fdcd7d2c7678fd7a2"
+checksum = "2cda8f4bcc10624c4e85bc66b3f452cca98cfa5ca002dc83a16aad2367641bea"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -417,7 +417,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "time 0.3.9",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -492,7 +492,7 @@ version = "0.1.20"
 dependencies = [
  "chord-core",
  "chord-util",
- "dirs 3.0.2",
+ "dirs",
  "dynamic_reload",
  "futures",
  "itertools",
@@ -519,7 +519,7 @@ dependencies = [
  "chord-input",
  "chord-output",
  "colored",
- "dirs 3.0.2",
+ "dirs",
  "flume",
  "futures",
  "itertools",
@@ -611,7 +611,7 @@ dependencies = [
  "chord-core",
  "chord-input",
  "chord-util",
- "dirs 3.0.2",
+ "dirs",
  "flume",
  "futures",
  "indexmap",
@@ -926,15 +926,6 @@ dependencies = [
  "block-buffer 0.10.2",
  "crypto-common",
  "subtle",
-]
-
-[[package]]
-name = "dirs"
-version = "3.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30baa043103c9d0c2a57cf537cc2f35623889dc0d405e6c3cccfadbc81c71309"
-dependencies = [
- "dirs-sys",
 ]
 
 [[package]]
@@ -1376,18 +1367,18 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
-
-[[package]]
-name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
  "ahash",
 ]
+
+[[package]]
+name = "hashbrown"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db0d4cf898abf0081f964436dc980e96670a0f36863e4b83aaacdb65c9d7ccc3"
 
 [[package]]
 name = "hashlink"
@@ -1448,9 +1439,9 @@ dependencies = [
 
 [[package]]
 name = "hocon"
-version = "0.7.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ded0fc426537171e361b4f3ce37b4e6d70565a49dec6d0df47a931ce2478e01"
+checksum = "7dbf0338dac82c09762a1283d8bb117f2d0dddb97ee4eec711dd1b78f89975ee"
 dependencies = [
  "aho-corasick",
  "java-properties",
@@ -1462,7 +1453,7 @@ dependencies = [
  "serde",
  "serde_path_to_error",
  "thiserror",
- "uuid",
+ "uuid 1.1.2",
 ]
 
 [[package]]
@@ -1599,12 +1590,12 @@ checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
 
 [[package]]
 name = "indexmap"
-version = "1.6.2"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824845a0bf897a9042383849b02c1bc219c2383772efcd5c6f9766fa4b81aef3"
+checksum = "6c6392766afd7964e2531940894cffe4bd8d7d17dbc3c1c4857040fd4b33bdb3"
 dependencies = [
  "autocfg",
- "hashbrown 0.9.1",
+ "hashbrown 0.12.1",
 ]
 
 [[package]]
@@ -2007,7 +1998,7 @@ dependencies = [
  "trust-dns-proto",
  "trust-dns-resolver",
  "typed-builder",
- "uuid",
+ "uuid 0.8.2",
  "webpki-roots 0.22.3",
 ]
 
@@ -2566,7 +2557,7 @@ dependencies = [
  "rbatis_sql",
  "rbson",
  "serde",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -2588,7 +2579,7 @@ dependencies = [
  "serde_json",
  "sqlx-core",
  "time 0.2.27",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -2648,7 +2639,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -3261,7 +3252,7 @@ dependencies = [
  "crc",
  "crossbeam-queue",
  "digest 0.10.3",
- "dirs 4.0.0",
+ "dirs",
  "either",
  "encoding_rs",
  "event-listener",
@@ -3303,7 +3294,7 @@ dependencies = [
  "thiserror",
  "tokio-stream",
  "url",
- "uuid",
+ "uuid 0.8.2",
  "webpki 0.21.4",
  "webpki-roots 0.21.1",
  "whoami",
@@ -3858,6 +3849,15 @@ checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 dependencies = [
  "getrandom",
  "serde",
+]
+
+[[package]]
+name = "uuid"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd6469f4314d5f1ffec476e05f17cc9a78bc7a27a6a857842170bdf8d6f98d2f"
+dependencies = [
+ "getrandom",
 ]
 
 [[package]]

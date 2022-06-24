@@ -417,7 +417,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "time 0.3.9",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -1439,9 +1439,9 @@ dependencies = [
 
 [[package]]
 name = "hocon"
-version = "0.7.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ded0fc426537171e361b4f3ce37b4e6d70565a49dec6d0df47a931ce2478e01"
+checksum = "7dbf0338dac82c09762a1283d8bb117f2d0dddb97ee4eec711dd1b78f89975ee"
 dependencies = [
  "aho-corasick",
  "java-properties",
@@ -1453,7 +1453,7 @@ dependencies = [
  "serde",
  "serde_path_to_error",
  "thiserror",
- "uuid",
+ "uuid 1.1.2",
 ]
 
 [[package]]
@@ -1998,7 +1998,7 @@ dependencies = [
  "trust-dns-proto",
  "trust-dns-resolver",
  "typed-builder",
- "uuid",
+ "uuid 0.8.2",
  "webpki-roots 0.22.3",
 ]
 
@@ -2557,7 +2557,7 @@ dependencies = [
  "rbatis_sql",
  "rbson",
  "serde",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -2579,7 +2579,7 @@ dependencies = [
  "serde_json",
  "sqlx-core",
  "time 0.2.27",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -2639,7 +2639,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -3294,7 +3294,7 @@ dependencies = [
  "thiserror",
  "tokio-stream",
  "url",
- "uuid",
+ "uuid 0.8.2",
  "webpki 0.21.4",
  "webpki-roots 0.21.1",
  "whoami",
@@ -3849,6 +3849,15 @@ checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 dependencies = [
  "getrandom",
  "serde",
+]
+
+[[package]]
+name = "uuid"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd6469f4314d5f1ffec476e05f17cc9a78bc7a27a6a857842170bdf8d6f98d2f"
+dependencies = [
+ "getrandom",
 ]
 
 [[package]]

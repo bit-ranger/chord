@@ -30,14 +30,14 @@ itertools = "0.10.0"
 log = { version = "0.4.14", features = ["std"] }
 flume = "0.10.5"
 actix-web = "4.0.0-rc.1"
-validator = { version = "0.13", features = ["derive"] }
+validator = { version = "0.15", features = ["derive"] }
 lazy_static = "1.4.0"
 url = "2.2.1"
 regex = "1.5.5"
 structopt = "0.3"
 async-trait = "0.1.50"
 bean = "0.1.4"
-dirs = "3.0.2"
+dirs = "4.0.0"
 thiserror = "1.0"
 #FIXME https://github.com/tkaitchuck/aHash/issues/95
-indexmap = "=1.6.2"
+indexmap = "=1.9.1"

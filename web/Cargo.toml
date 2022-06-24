@@ -40,4 +40,4 @@ bean = "0.1.4"
 dirs = "3.0.2"
 thiserror = "1.0"
 #FIXME https://github.com/tkaitchuck/aHash/issues/95
-indexmap = "=1.6.2"
+indexmap = "=1.9.0"

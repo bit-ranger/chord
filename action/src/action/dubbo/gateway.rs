@@ -16,7 +16,7 @@ use chord_core::value::{to_string, Deserialize, Serialize};
 use crate::err;
 
 pub struct DubboPlayer {
-    player: RwLock<Option<DubboPlayerActual>>,
+    actual: RwLock<Option<DubboPlayerActual>>,
     registry_protocol: String,
     registry_address: String,
     gateway_lib: String,
@@ -80,7 +80,7 @@ impl DubboPlayer {
             .parse()?;
 
         Ok(DubboPlayer {
-            player: RwLock::new(None),
+            actual: RwLock::new(None),
             registry_protocol,
             registry_address,
             gateway_lib,
@@ -93,13 +93,13 @@ impl DubboPlayer {
 #[async_trait]
 impl Player for DubboPlayer {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let player = self.player.read().await;
+        let player = self.actual.read().await;
         let player_ref = player.borrow();
         if player_ref.is_some() {
             return player_ref.as_ref().unwrap().action(arg).await;
         } else {
             drop(player);
-            let mut guard = self.player.write().await;
+            let mut guard = self.actual.write().await;
             let guard = guard.borrow_mut();
             let new_player = DubboPlayerActual::new(
                 self.registry_protocol.clone(),

@@ -40,14 +40,10 @@ impl Config {
             },
            "action": {
                "dubbo": {
-                   "enable": false,
                    "mode": "gateway",
                    "gateway": {
                        "lib": home_dir.join("lib").join("dubbo-generic-gateway-0.0.1-SNAPSHOT.jar").to_str().unwrap().to_string()
                    }
-               },
-               "docker": {
-                   "enable": false
                },
                "cdylib": {
                    "dir": home_dir.join("lib").to_str().unwrap().to_string()

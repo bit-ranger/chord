@@ -1,6 +1,8 @@
+use std::borrow::{Borrow, BorrowMut};
 use std::sync::Arc;
 
 use chord_core::action::prelude::*;
+use chord_core::future::sync::RwLock;
 use chord_util::docker::container::Arg as DkArg;
 use chord_util::docker::engine::Engine;
 use chord_util::docker::image::Image;
@@ -8,7 +10,8 @@ use chord_util::docker::image::Image;
 use crate::err;
 
 pub struct Docker {
-    engine: Arc<Engine>,
+    actual: RwLock<Option<DockerActual>>,
+    address: String,
 }
 
 impl Docker {
@@ -17,13 +20,45 @@ impl Docker {
             v["address"].as_str().unwrap_or("127.0.0.1:2375").into()
         });
         Ok(Docker {
-            engine: Arc::new(Engine::new(address).await?),
+            actual: RwLock::new(None),
+            address,
         })
     }
 }
 
 #[async_trait]
 impl Player for Docker {
+    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let player = self.actual.read().await;
+        let player_ref = player.borrow();
+        if player_ref.is_some() {
+            return player_ref.as_ref().unwrap().action(arg).await;
+        } else {
+            drop(player);
+            let mut guard = self.actual.write().await;
+            let guard = guard.borrow_mut();
+            let new_player = DockerActual::new(self.address.clone()).await?;
+            let action = new_player.action(arg).await?;
+            guard.replace(new_player);
+            return Ok(action);
+        }
+    }
+}
+
+pub struct DockerActual {
+    engine: Arc<Engine>,
+}
+
+impl DockerActual {
+    async fn new(address: String) -> Result<DockerActual, Error> {
+        Ok(DockerActual {
+            engine: Arc::new(Engine::new(address).await?),
+        })
+    }
+}
+
+#[async_trait]
+impl Player for DockerActual {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let image = args_raw["image"]

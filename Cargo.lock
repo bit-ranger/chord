@@ -526,7 +526,7 @@ dependencies = [
  "log",
  "structopt",
  "thiserror",
- "time 0.1.44",
+ "time 0.3.9",
  "tokio",
 ]
 
@@ -622,7 +622,7 @@ dependencies = [
  "serde",
  "structopt",
  "thiserror",
- "time 0.1.44",
+ "time 0.3.9",
  "tokio",
  "url",
  "validator",

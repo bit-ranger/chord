@@ -23,8 +23,8 @@ task_local! {
     pub static CTX_ID: String;
 }
 
-pub async fn app_create(action_factory: HashMap<String, Box<dyn Player>>) -> Arc<dyn App> {
-    Arc::new(AppStruct::<'_>::new(action_factory))
+pub async fn app_create(player_map: HashMap<String, Box<dyn Player>>) -> Arc<dyn App> {
+    Arc::new(AppStruct::<'_>::new(player_map))
 }
 
 fn render_str(

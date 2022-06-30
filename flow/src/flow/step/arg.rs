@@ -41,12 +41,12 @@ impl Display for IdStruct {
 
 #[derive(Clone)]
 pub struct ComboStruct {
-    action_map: Arc<HashMap<String, Box<dyn Player>>>,
+    player_map: Arc<HashMap<String, Box<dyn Player>>>,
 }
 
 impl Combo for ComboStruct {
     fn action(&self, action: &str) -> Option<&dyn Player> {
-        self.action_map.get(action).map(|a| a.as_ref())
+        self.player_map.get(action).map(|a| a.as_ref())
     }
 
     fn clone(&self) -> Box<dyn Combo> {
@@ -73,7 +73,7 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
         step_id: String,
     ) -> ArgStruct<'a, 'f> {
         let combo = ComboStruct {
-            action_map: app.get_action_map().clone(),
+            player_map: app.get_player_map().clone(),
         };
 
         let context = ContextStruct { ctx: context };

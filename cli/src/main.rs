@@ -5,7 +5,7 @@ use std::sync::Arc;
 use dirs;
 use structopt::StructOpt;
 
-use chord_action::ActionComposite;
+use chord_action::PlayerComposite;
 use chord_core::future::path::is_dir;
 use chord_core::task::TaskState;
 use chord_core::value::Value;
@@ -137,7 +137,7 @@ async fn run(
     let job_reporter = Arc::new(job_reporter);
 
     let app = chord_flow::app_create(
-        ActionComposite::new(config.action().map(|c| c.clone()))
+        PlayerComposite::new(config.player().map(|c| c.clone()))
             .await
             .map_err(|e| RunError::ActionFactory(e))?
             .into(),

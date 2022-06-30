@@ -17,6 +17,9 @@ let conf = {
             step: {}
         },
         stage2: {
+            loader: {
+                name: "stage2_named"
+            },
             step: {}
         }
     }

@@ -51,7 +51,7 @@ pub async fn run<P: AsRef<Path>>(
     job_path_is_task: bool,
 ) -> Result<Vec<Box<dyn TaskAssess>>, Error> {
     let task_state_vec = if job_path_is_task {
-        task_path_run_cast_vec(
+        task_path_run_to_vec(
             app,
             job_loader,
             job_reporter,
@@ -166,7 +166,7 @@ async fn job_path_run_recur(
         } else {
             let mut futures = Vec::new();
             if sub_dir_is_task_path(root_path.clone(), child_sub_path.clone()).await {
-                let jh = spawn(task_path_run_cast_vec(
+                let jh = spawn(task_path_run_to_vec(
                     app.clone(),
                     job_loader.clone(),
                     job_reporter.clone(),
@@ -200,7 +200,7 @@ async fn job_path_run_recur(
     return Ok(task_assess_vec);
 }
 
-async fn task_path_run_cast_vec(
+async fn task_path_run_to_vec(
     app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,

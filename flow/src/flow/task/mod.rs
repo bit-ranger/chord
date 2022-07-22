@@ -24,7 +24,7 @@ use crate::flow::step::StepRunner;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::flow::task::res::StageAssessStruct;
 use crate::flow::task::Error::*;
-use crate::flow::{assign_by_render, step};
+use crate::flow::{assign_by_render};
 use crate::model::app::{App, RenderContext};
 use crate::CTX_ID;
 
@@ -553,9 +553,9 @@ async fn step_vec_create(
             sid.clone(),
         );
 
-        let pr = step::StepRunner::new(&mut arg)
+        let pr = StepRunner::new(&mut arg)
             .await
-            .map_err(|e| Error::Step(sid.clone(), Box::new(e)))?;
+            .map_err(|e| Step(sid.clone(), Box::new(e)))?;
         step_vec.push((sid, pr));
     }
     Ok(step_vec)

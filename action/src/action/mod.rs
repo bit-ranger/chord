@@ -36,7 +36,7 @@ mod restapi;
 #[cfg(feature = "act_url")]
 mod url;
 
-pub struct ActionComposite {
+pub struct PlayerComposite {
     table: HashMap<String, Box<dyn Player>>,
 }
 
@@ -51,8 +51,8 @@ macro_rules! register {
     };
 }
 
-impl ActionComposite {
-    pub async fn new(config: Option<Value>) -> Result<ActionComposite, Error> {
+impl PlayerComposite {
+    pub async fn new(config: Option<Value>) -> Result<PlayerComposite, Error> {
         let mut table: HashMap<String, Box<dyn Player>> = HashMap::new();
 
         let config_ref = config.as_ref();
@@ -100,7 +100,7 @@ impl ActionComposite {
         #[cfg(feature = "act_docker")]
         register!(table, config_ref, "docker", docker::Docker::new);
 
-        Ok(ActionComposite { table })
+        Ok(PlayerComposite { table })
     }
 }
 
@@ -119,8 +119,8 @@ fn enable(config: Option<&Value>, action_name: &str) -> bool {
         .unwrap_or(default_enable);
 }
 
-impl From<ActionComposite> for HashMap<String, Box<dyn Player>> {
-    fn from(fac: ActionComposite) -> Self {
-        fac.table
+impl From<PlayerComposite> for HashMap<String, Box<dyn Player>> {
+    fn from(player: PlayerComposite) -> Self {
+        player.table
     }
 }

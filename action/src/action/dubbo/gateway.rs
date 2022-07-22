@@ -1,3 +1,4 @@
+use std::borrow::{Borrow, BorrowMut};
 use std::process::Stdio;
 use std::str::FromStr;
 
@@ -8,17 +9,19 @@ use reqwest::{Body, Client, Method, Response, Url};
 use chord_core::action::prelude::*;
 use chord_core::future::io::{AsyncBufReadExt, BufReader, Lines};
 use chord_core::future::process::{Child, ChildStdout, Command};
+use chord_core::future::sync::RwLock;
 use chord_core::future::task::spawn;
 use chord_core::value::{to_string, Deserialize, Serialize};
 
 use crate::err;
 
 pub struct DubboPlayer {
+    actual: RwLock<Option<DubboPlayerActual>>,
     registry_protocol: String,
     registry_address: String,
-    port: usize,
-    child: Child,
-    client: Client,
+    gateway_lib: String,
+    gateway_args: Vec<String>,
+    gateway_port: usize,
 }
 
 impl DubboPlayer {
@@ -71,11 +74,64 @@ impl DubboPlayer {
             .last()
             .ok_or(err!("105", "missing dubbo.gateway.args.--server.port"))?;
         let port: Vec<&str> = port.split("=").collect();
-        let port: usize = port
+        let gateway_port: usize = port
             .get(1)
             .ok_or(err!("106", "missing dubbo.gateway.args.--server.port"))?
             .parse()?;
 
+        Ok(DubboPlayer {
+            actual: RwLock::new(None),
+            registry_protocol,
+            registry_address,
+            gateway_lib,
+            gateway_args,
+            gateway_port,
+        })
+    }
+}
+
+#[async_trait]
+impl Player for DubboPlayer {
+    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let player = self.actual.read().await;
+        let player_ref = player.borrow();
+        if player_ref.is_some() {
+            return player_ref.as_ref().unwrap().action(arg).await;
+        } else {
+            drop(player);
+            let mut guard = self.actual.write().await;
+            let guard = guard.borrow_mut();
+            let new_player = DubboPlayerActual::new(
+                self.registry_protocol.clone(),
+                self.registry_address.clone(),
+                self.gateway_lib.clone(),
+                self.gateway_args.clone(),
+                self.gateway_port,
+            )
+            .await?;
+            let action = new_player.action(arg).await?;
+            guard.replace(new_player);
+            return Ok(action);
+        }
+    }
+}
+
+struct DubboPlayerActual {
+    registry_protocol: String,
+    registry_address: String,
+    gateway_port: usize,
+    child: Child,
+    client: Client,
+}
+
+impl DubboPlayerActual {
+    pub async fn new(
+        registry_protocol: String,
+        registry_address: String,
+        gateway_lib: String,
+        gateway_args: Vec<String>,
+        gateway_port: usize,
+    ) -> Result<DubboPlayerActual, Error> {
         let mut command = Command::new("java");
         command.kill_on_drop(true);
         command.arg("-jar").arg(gateway_lib);
@@ -109,10 +165,10 @@ impl DubboPlayer {
 
         child.stdout = None;
         let client = Client::new();
-        Ok(DubboPlayer {
+        Ok(DubboPlayerActual {
             registry_protocol,
             registry_address,
-            port,
+            gateway_port,
             child,
             client,
         })
@@ -120,12 +176,12 @@ impl DubboPlayer {
 }
 
 #[async_trait]
-impl Player for DubboPlayer {
+impl Player for DubboPlayerActual {
     async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Dubbo {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
-            port: self.port,
+            gateway_port: self.gateway_port,
             client: self.client.clone(),
         }))
     }
@@ -134,7 +190,7 @@ impl Player for DubboPlayer {
 struct Dubbo {
     registry_protocol: String,
     registry_address: String,
-    port: usize,
+    gateway_port: usize,
     client: Client,
 }
 
@@ -178,7 +234,7 @@ impl Action for Dubbo {
 
         let invoke_str = to_string(&invoke)?;
         trace!("invoke request {}", invoke_str);
-        let value = remote_invoke(self.client.clone(), self.port, invoke).await?;
+        let value = remote_invoke(self.client.clone(), self.gateway_port, invoke).await?;
         trace!("invoke response {}, {}", invoke_str, &value);
         let value = &value;
         if value["success"].as_bool().unwrap_or(false) {
@@ -247,7 +303,7 @@ async fn log_line(line: &str) {
     }
 }
 
-impl Drop for DubboPlayer {
+impl Drop for DubboPlayerActual {
     fn drop(&mut self) {
         trace!(
             "kill [{}] dubbo generic gateway",

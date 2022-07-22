@@ -1,4 +1,5 @@
 pub use tokio::main;
+pub use tokio::sync;
 
 pub mod fs;
 pub mod io;

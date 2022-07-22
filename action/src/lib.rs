@@ -1,6 +1,6 @@
 extern crate core;
 
-pub use action::ActionComposite;
+pub use action::PlayerComposite;
 
 mod action;
 mod error;

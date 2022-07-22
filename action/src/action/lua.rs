@@ -94,25 +94,22 @@ impl Arg for ArgStruct {
 #[async_trait]
 impl Action for LuaAction {
     async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args()?;
         let combo = arg.combo().clone();
         let context = arg.context().data().clone();
         let id = arg.id().clone();
-        execute(id, args, combo, context)
+        execute(id, arg.args_raw().to_string(), combo, context)
     }
 }
 
 fn execute(
     id: Box<dyn Id>,
-    args: Value,
+    code: String,
     combo: Box<dyn Combo>,
     context: Map,
 ) -> Result<Box<dyn Scope>, Error> {
     let rt = rlua::Lua::new();
     rt.set_memory_limit(Some(1024000));
     rt.context(|lua| {
-        let code = args.as_str().ok_or(err!("100", "missing lua"))?;
-
         for (k, v) in context {
             let v = rlua_serde::to_value(lua, v)?;
             lua.globals().set(k.as_str(), v)?;
@@ -148,7 +145,7 @@ fn execute(
 
         lua.globals().set("action", action_fn)?;
 
-        eval(lua, code.to_string())
+        eval(lua, code)
     })
 }
 

@@ -80,11 +80,10 @@ impl CsvTaskLoader {
 #[async_trait]
 impl TaskLoader for CsvTaskLoader {
     async fn stage(&self, stage_id: &str) -> Result<Box<dyn StageLoader>, Error> {
-        let path = self.path.join(format!("{}.csv", stage_id));
-
-        let strategy = self.flow.stage_loader(stage_id)["strategy"]
-            .as_str()
-            .unwrap_or(self.strategy.as_str());
+        let conf = self.flow.stage_loader(stage_id);
+        let name = conf["name"].as_str().unwrap_or(stage_id);
+        let strategy = conf["strategy"].as_str().unwrap_or(self.strategy.as_str());
+        let path = self.path.join(format!("{}.csv", name));
         let loader = CsvStageLoader::new(path, strategy.to_string()).await?;
         Ok(Box::new(loader))
     }

@@ -38,16 +38,12 @@ impl Config {
                     "dir": home_dir.join("output").to_str().unwrap().to_string()
                 }
             },
-           "action": {
+           "player": {
                "dubbo": {
-                   "enable": false,
                    "mode": "gateway",
                    "gateway": {
                        "lib": home_dir.join("lib").join("dubbo-generic-gateway-0.0.1-SNAPSHOT.jar").to_str().unwrap().to_string()
                    }
-               },
-               "docker": {
-                   "enable": false
                },
                "cdylib": {
                    "dir": home_dir.join("lib").to_str().unwrap().to_string()
@@ -85,8 +81,8 @@ impl Config {
         return target_level;
     }
 
-    pub fn action(&self) -> Option<&Value> {
-        self.conf.get("action")
+    pub fn player(&self) -> Option<&Value> {
+        self.conf.get("player")
     }
 
     pub fn loader(&self) -> Option<&Value> {

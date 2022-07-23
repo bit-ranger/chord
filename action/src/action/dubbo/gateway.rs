@@ -42,7 +42,7 @@ impl DubboPlayer {
 
         let registry_address = config["gateway"]["registry"]["address"]
             .as_str()
-            .ok_or(err!("102", "missing dubbo.gateway.registry.address"))?
+            .unwrap_or("127.0.0.1:2181")
             .to_owned();
 
         let gateway_lib = config["gateway"]["lib"]

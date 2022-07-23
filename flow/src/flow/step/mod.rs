@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use chrono::Utc;
-use log::{error, info, trace, warn};
+use log::{error, info, trace, warn, debug};
 
 use chord_core::action::{Action, Arg, Id, Scope};
 use chord_core::collection::TailDropVec;
@@ -39,7 +39,6 @@ impl StepRunner {
         for aid in aid_vec {
             arg.aid(aid.as_str());
             let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
-
             let action = arg
                 .combo()
                 .action(func.into())
@@ -85,22 +84,32 @@ impl StepRunner {
         }
 
         if success {
+            for ass in assess_vec.iter() {
+                if let StepState::Ok(v) = ass.state() {
+                    debug!(
+                        "{}:\n{}\n>>> {}",
+                        ass.id(),
+                        explain_string(ass.explain()),
+                        v.as_value()
+                    );
+                }
+            }
             info!("step Ok   {}", arg.id());
         } else {
             for ass in assess_vec.iter() {
                 if let StepState::Ok(v) = ass.state() {
                     warn!(
-                        "{} : {}  <<<  {}",
+                        "{}:\n{}\n>>> {}",
                         ass.id(),
+                        explain_string(ass.explain()),
                         v.as_value(),
-                        explain_string(ass.explain())
                     );
                 } else if let StepState::Err(e) = ass.state() {
                     error!(
-                        "{} : {}  <<<  {}",
+                        "{}:\n{}\n>>> {}",
                         ass.id(),
-                        e,
-                        explain_string(ass.explain())
+                        explain_string(ass.explain()),
+                        e
                     );
                 }
             }

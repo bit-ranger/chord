@@ -97,7 +97,8 @@ impl Action for LuaAction {
         let combo = arg.combo().clone();
         let context = arg.context().data().clone();
         let id = arg.id().clone();
-        execute(id, arg.args_raw().to_string(), combo, context)
+        let code = arg.args_raw().as_str().ok_or(err!("100", "missing lua"))?.to_string();
+        execute(id, code, combo, context)
     }
 }
 
@@ -110,11 +111,6 @@ fn execute(
     let rt = rlua::Lua::new();
     rt.set_memory_limit(Some(1024000));
     rt.context(|lua| {
-        for (k, v) in context {
-            let v = rlua_serde::to_value(lua, v)?;
-            lua.globals().set(k.as_str(), v)?;
-        }
-
         let action_fn =
             lua.create_function_mut(move |_c, (name, param): (rlua::String, rlua::Value)| {
                 let name = name.to_str().unwrap();
@@ -145,12 +141,17 @@ fn execute(
 
         lua.globals().set("action", action_fn)?;
 
-        eval(lua, code)
+        for (k, v) in context {
+            let v = rlua_serde::to_value(lua, v)?;
+            lua.globals().set(k.as_str(), v)?;
+        }
+
+        eval(lua, code.as_str())
     })
 }
 
-fn eval(lua: rlua::Context, code: String) -> Result<Box<dyn Scope>, Error> {
-    let chunk = lua.load(code.as_str());
+fn eval(lua: rlua::Context, code: &str) -> Result<Box<dyn Scope>, Error> {
+    let chunk = lua.load(code);
     let result: rlua::Result<rlua::Value> = chunk.eval();
     match result {
         Ok(v) => {

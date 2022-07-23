@@ -36,7 +36,6 @@ step.step1 = {
             assert(count:run() == 1)
             assert(count:run() == 2)
             assert(count:run() == 3)
-
             r = os.time();
             t = "CHORD-" .. tostring(r);
             print(t);
@@ -58,9 +57,10 @@ step.step1 = {
     },
 
     state: {
-        // language=Lua
-        lua: `
-            assert(tostring(value[2].bar) == tostring(var.bar), "fail")
+        assert: `
+        (all 
+            (eq (str value.1.bar) var.bar)
+        )
         `
     }
 }
@@ -81,7 +81,7 @@ step.step2 = {
     state: {
         // language=Lua
         lua: `
-            assert(tostring(value[2].bar) == tostring(var.bar), "fail")
+            assert(tostring(value[2].bar) == var.bar, "fail")
         `
     }
 }

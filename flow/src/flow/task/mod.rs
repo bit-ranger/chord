@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use futures::future::join_all;
-use handlebars::TemplateRenderError;
+use handlebars::RenderError;
 use log::{error, info, trace, warn};
 
 use chord_core::case::{CaseAssess, CaseState};
@@ -17,6 +17,7 @@ use chord_core::task::{StageAssess, StageState, TaskAssess, TaskId, TaskState};
 use chord_core::value::{json, Map, Value};
 use res::TaskAssessStruct;
 
+use crate::flow::assign_by_render;
 use crate::flow::case;
 use crate::flow::case::arg::{CaseArgStruct, CaseIdStruct};
 use crate::flow::step::arg::ArgStruct;
@@ -24,7 +25,6 @@ use crate::flow::step::StepRunner;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::flow::task::res::StageAssessStruct;
 use crate::flow::task::Error::*;
-use crate::flow::{assign_by_render};
 use crate::model::app::{App, RenderContext};
 use crate::CTX_ID;
 
@@ -34,7 +34,7 @@ pub mod res;
 #[derive(thiserror::Error, Debug)]
 enum Error {
     #[error("`{0}` render:\n{1}")]
-    Render(String, TemplateRenderError),
+    Render(String, RenderError),
 
     #[error("pre:")]
     PreErr,

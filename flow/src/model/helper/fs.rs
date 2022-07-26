@@ -19,7 +19,7 @@ impl HelperDef for ReadHelper {
         _: &'reg Handlebars<'reg>,
         ctx: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"fs_read\""))?;
@@ -38,7 +38,7 @@ impl HelperDef for ReadHelper {
                 let file_string = read_to_string(file_path).map_err(|e| {
                     RenderError::new(format!("Failed for helper \"fs_read\", cause {}", e))
                 })?;
-                Ok(Some(ScopedJson::Derived(Value::String(file_string))))
+                Ok(ScopedJson::Derived(Value::String(file_string)))
             }
             _ => Err(RenderError::new("Param invalid for helper \"fs_read\"")),
         }
@@ -55,7 +55,7 @@ impl HelperDef for PathHelper {
         _: &'reg Handlebars<'reg>,
         ctx: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"fs_path\""))?;
@@ -74,9 +74,7 @@ impl HelperDef for PathHelper {
                 let path_string = file_path
                     .to_str()
                     .ok_or_else(|| RenderError::new("Failed for helper \"fs_path\""))?;
-                Ok(Some(ScopedJson::Derived(Value::String(
-                    path_string.to_string(),
-                ))))
+                Ok(ScopedJson::Derived(Value::String(path_string.to_string())))
             }
             _ => Err(RenderError::new("Param invalid for helper \"fs_path\"")),
         }

@@ -14,12 +14,12 @@ impl HelperDef for JsonHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"json\""))?;
 
-        Ok(Some(ScopedJson::Derived(param.value().clone())))
+        Ok(ScopedJson::Derived(param.value().clone()))
     }
 }
 
@@ -33,7 +33,7 @@ impl HelperDef for PathHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let params = h.params();
         if params.len() != 2 {
             return Err(RenderError::new("Param invalid for helper \"json_path\""));
@@ -52,6 +52,6 @@ impl HelperDef for PathHelper {
         finder.set_json(Box::new(value.clone()));
 
         let find = finder.find();
-        Ok(Some(ScopedJson::Derived(find)))
+        Ok(ScopedJson::Derived(find))
     }
 }

@@ -97,7 +97,11 @@ impl Action for LuaAction {
         let combo = arg.combo().clone();
         let context = arg.context().data().clone();
         let id = arg.id().clone();
-        let code = arg.args_raw().as_str().ok_or(err!("100", "missing lua"))?.to_string();
+        let code = arg
+            .args_raw()
+            .as_str()
+            .ok_or(err!("100", "missing lua"))?
+            .to_string();
         execute(id, code, combo, context)
     }
 }

@@ -142,7 +142,7 @@ fn execute(
         lua.globals().set("action", action_fn)?;
 
         for (k, v) in context {
-            let v = rlua_serde::to_value(lua, v)?;
+            let v = to_lua_value(lua, &v)?;
             lua.globals().set(k.as_str(), v)?;
         }
 

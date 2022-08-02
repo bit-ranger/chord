@@ -16,7 +16,7 @@ impl HelperDef for BoolHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"num\""))?;
@@ -24,8 +24,8 @@ impl HelperDef for BoolHelper {
         let param = param.value();
 
         match param {
-            Value::String(x) => Ok(Some(ScopedJson::Derived(Value::Bool(from_str(x.trim())?)))),
-            Value::Bool(n) => Ok(Some(ScopedJson::Derived(Value::Bool(n.clone())))),
+            Value::String(x) => Ok(ScopedJson::Derived(Value::Bool(from_str(x.trim())?))),
+            Value::Bool(n) => Ok(ScopedJson::Derived(Value::Bool(n.clone()))),
             _ => Err(RenderError::new("\"bool\" can not convert ")),
         }
     }
@@ -41,7 +41,7 @@ impl HelperDef for AllHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let mut idx = 0;
         loop {
             let param = h.param(idx);
@@ -57,7 +57,7 @@ impl HelperDef for AllHelper {
             match param {
                 Value::Bool(b) => {
                     if !b {
-                        return Ok(Some(ScopedJson::Derived(Value::Bool(false))));
+                        return Ok(ScopedJson::Derived(Value::Bool(false)));
                     }
                 }
                 _ => return Err(RenderError::new("\"all\" only accept bool")),
@@ -66,7 +66,7 @@ impl HelperDef for AllHelper {
             idx = idx + 1;
         }
 
-        return Ok(Some(ScopedJson::Derived(Value::Bool(true))));
+        return Ok(ScopedJson::Derived(Value::Bool(true)));
     }
 }
 
@@ -80,7 +80,7 @@ impl HelperDef for AnyHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let mut idx = 0;
         loop {
             let param = h.param(idx);
@@ -96,7 +96,7 @@ impl HelperDef for AnyHelper {
             match param {
                 Value::Bool(b) => {
                     if *b {
-                        return Ok(Some(ScopedJson::Derived(Value::Bool(true))));
+                        return Ok(ScopedJson::Derived(Value::Bool(true)));
                     }
                 }
                 _ => return Err(RenderError::new("\"any\" only accept bool")),
@@ -105,6 +105,6 @@ impl HelperDef for AnyHelper {
             idx = idx + 1;
         }
 
-        return Ok(Some(ScopedJson::Derived(Value::Bool(false))));
+        return Ok(ScopedJson::Derived(Value::Bool(false)));
     }
 }

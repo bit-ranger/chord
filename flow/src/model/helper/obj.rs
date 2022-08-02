@@ -19,14 +19,14 @@ impl HelperDef for ObjHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"obj\""))?;
 
         match param.value() {
-            Value::String(txt) => Ok(Some(ScopedJson::Derived(Value::Object(from_str(txt)?)))),
-            Value::Object(obj) => Ok(Some(ScopedJson::Derived(Value::Object(obj.clone())))),
+            Value::String(txt) => Ok(ScopedJson::Derived(Value::Object(from_str(txt)?))),
+            Value::Object(obj) => Ok(ScopedJson::Derived(Value::Object(obj.clone()))),
             _ => Err(RenderError::new("\"obj\" can not convert ")),
         }
     }
@@ -42,7 +42,7 @@ impl HelperDef for ObjContainsKeyHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let obj = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"obj_contains_key\""))?;
@@ -53,7 +53,7 @@ impl HelperDef for ObjContainsKeyHelper {
 
         match obj.value() {
             Value::Object(obj) => match key.value() {
-                Value::String(s) => Ok(Some(ScopedJson::Derived(Value::Bool(obj.contains_key(s))))),
+                Value::String(s) => Ok(ScopedJson::Derived(Value::Bool(obj.contains_key(s)))),
                 _ => Err(RenderError::new(
                     "Param invalid for helper \"obj_contains_key\"",
                 )),

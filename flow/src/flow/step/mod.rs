@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use chrono::Utc;
-use log::{error, info, trace, warn, debug};
+use log::{debug, error, info, trace, warn};
 
 use chord_core::action::{Action, Arg, Id, Scope};
 use chord_core::collection::TailDropVec;

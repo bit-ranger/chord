@@ -22,14 +22,14 @@ impl HelperDef for ArrHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"arr\""))?;
 
         match param.value() {
-            Value::String(txt) => Ok(Some(ScopedJson::Derived(Value::Array(from_str(txt)?)))),
-            Value::Array(arr) => Ok(Some(ScopedJson::Derived(Value::Array(arr.clone())))),
+            Value::String(txt) => Ok(ScopedJson::Derived(Value::Array(from_str(txt)?))),
+            Value::Array(arr) => Ok(ScopedJson::Derived(Value::Array(arr.clone()))),
             _ => Err(RenderError::new("\"arr\" can not convert ")),
         }
     }
@@ -45,7 +45,7 @@ impl HelperDef for SubHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let params = h.params();
         let arr = params[0]
             .value()
@@ -60,7 +60,7 @@ impl HelperDef for SubHelper {
                 as usize;
             let mut a = Vec::<Value>::new();
             a.clone_from_slice(&arr[start..]);
-            return Ok(Some(ScopedJson::Derived(Value::Array(a))));
+            return Ok(ScopedJson::Derived(Value::Array(a)));
         } else if params.len() == 3 {
             let start = params[1]
                 .value()
@@ -74,7 +74,7 @@ impl HelperDef for SubHelper {
                 as usize;
             let mut a = Vec::<Value>::new();
             a.clone_from_slice(&arr[start..end]);
-            return Ok(Some(ScopedJson::Derived(Value::Array(a))));
+            return Ok(ScopedJson::Derived(Value::Array(a)));
         } else {
             return Err(RenderError::new("Param invalid for helper \"arr_sub\""));
         }
@@ -91,16 +91,14 @@ impl HelperDef for LenHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let params = h.params();
         let arr = params[0]
             .value()
             .as_array()
             .ok_or(RenderError::new("Param invalid for helper \"arr_len\""))?;
 
-        Ok(Some(ScopedJson::Derived(Value::Number(Number::from(
-            arr.len(),
-        )))))
+        Ok(ScopedJson::Derived(Value::Number(Number::from(arr.len()))))
     }
 }
 
@@ -114,7 +112,7 @@ impl HelperDef for GetHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let params = h.params();
         let arr = params[0]
             .value()
@@ -132,7 +130,7 @@ impl HelperDef for GetHelper {
             } else {
                 Value::Null
             };
-            return Ok(Some(ScopedJson::Derived(result)));
+            return Ok(ScopedJson::Derived(result));
         } else {
             return Err(RenderError::new("Param invalid for helper \"arr_get\""));
         }

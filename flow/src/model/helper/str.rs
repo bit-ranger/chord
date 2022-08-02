@@ -32,13 +32,13 @@ impl HelperDef for StrHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"str\""))?;
 
         let json = param.value().to_string();
-        Ok(Some(ScopedJson::Derived(Value::String(json))))
+        Ok(ScopedJson::Derived(Value::String(json)))
     }
 }
 
@@ -52,7 +52,7 @@ impl HelperDef for SubHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h.params();
         let str = param[0]
             .value()
@@ -65,9 +65,7 @@ impl HelperDef for SubHelper {
                 .as_f64()
                 .ok_or(RenderError::new("Param invalid for helper \"str_sub\""))?
                 as usize;
-            return Ok(Some(ScopedJson::Derived(Value::String(
-                str[start..].to_owned(),
-            ))));
+            return Ok(ScopedJson::Derived(Value::String(str[start..].to_owned())));
         } else if param.len() == 3 {
             let start = param[1]
                 .value()
@@ -79,9 +77,9 @@ impl HelperDef for SubHelper {
                 .as_f64()
                 .ok_or(RenderError::new("Param invalid for helper \"str_sub\""))?
                 as usize;
-            return Ok(Some(ScopedJson::Derived(Value::String(
+            return Ok(ScopedJson::Derived(Value::String(
                 str[start..end].to_owned(),
-            ))));
+            )));
         } else {
             return Err(RenderError::new("Param invalid for helper \"str_sub\""));
         }
@@ -98,16 +96,16 @@ impl HelperDef for EscapeHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h.params();
         let str = param[0]
             .value()
             .as_str()
             .ok_or(RenderError::new("Param invalid for helper \"str_escape\""))?;
 
-        return Ok(Some(ScopedJson::Derived(Value::String(
+        return Ok(ScopedJson::Derived(Value::String(
             str.escape_debug().to_string(),
-        ))));
+        )));
     }
 }
 
@@ -121,15 +119,13 @@ impl HelperDef for LenHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"str_len\""))?;
 
         match param.value() {
-            Value::String(txt) => Ok(Some(ScopedJson::Derived(Value::Number(Number::from(
-                txt.len(),
-            ))))),
+            Value::String(txt) => Ok(ScopedJson::Derived(Value::Number(Number::from(txt.len())))),
             _ => Err(RenderError::new("Param invalid for helper \"str_len\"")),
         }
     }

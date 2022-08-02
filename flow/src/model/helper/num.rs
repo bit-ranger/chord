@@ -18,7 +18,7 @@ impl HelperDef for NumHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"num\""))?;
@@ -26,10 +26,8 @@ impl HelperDef for NumHelper {
         let param = param.value();
 
         match param {
-            Value::String(x) => Ok(Some(ScopedJson::Derived(Value::Number(from_str(
-                x.trim(),
-            )?)))),
-            Value::Number(n) => Ok(Some(ScopedJson::Derived(Value::Number(n.clone())))),
+            Value::String(x) => Ok(ScopedJson::Derived(Value::Number(from_str(x.trim())?))),
+            Value::Number(n) => Ok(ScopedJson::Derived(Value::Number(n.clone()))),
             _ => Err(RenderError::new("\"num\" can not convert ")),
         }
     }
@@ -45,7 +43,7 @@ impl HelperDef for AddHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let p1 = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"num_add\""))?;
@@ -65,14 +63,14 @@ impl HelperDef for AddHelper {
 
         if p1.is_f64() || p2.is_f64() {
             let sum = p1.as_f64().unwrap() + p2.as_f64().unwrap();
-            return Ok(Some(ScopedJson::Derived(Value::Number(
+            return Ok(ScopedJson::Derived(Value::Number(
                 Number::from_f64(sum)
                     .ok_or_else(|| RenderError::new("Return NaN for helper \"num_add\""))?,
-            ))));
+            )));
         }
 
         let sum = p1.as_i64().unwrap() + p2.as_i64().unwrap();
-        return Ok(Some(ScopedJson::Derived(Value::Number(Number::from(sum)))));
+        return Ok(ScopedJson::Derived(Value::Number(Number::from(sum))));
     }
 }
 
@@ -86,7 +84,7 @@ impl HelperDef for SubHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let p1 = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"num_sub\""))?;
@@ -106,14 +104,14 @@ impl HelperDef for SubHelper {
 
         if p1.is_f64() || p2.is_f64() {
             let sum = p1.as_f64().unwrap() - p2.as_f64().unwrap();
-            return Ok(Some(ScopedJson::Derived(Value::Number(
+            return Ok(ScopedJson::Derived(Value::Number(
                 Number::from_f64(sum)
                     .ok_or_else(|| RenderError::new("Return NaN for helper \"num_sub\""))?,
-            ))));
+            )));
         }
 
         let sum = p1.as_i64().unwrap() - p2.as_i64().unwrap();
-        return Ok(Some(ScopedJson::Derived(Value::Number(Number::from(sum)))));
+        return Ok(ScopedJson::Derived(Value::Number(Number::from(sum))));
     }
 }
 
@@ -127,7 +125,7 @@ impl HelperDef for MulHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let p1 = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"num_mul\""))?;
@@ -147,14 +145,14 @@ impl HelperDef for MulHelper {
 
         if p1.is_f64() || p2.is_f64() {
             let sum = p1.as_f64().unwrap() * p2.as_f64().unwrap();
-            return Ok(Some(ScopedJson::Derived(Value::Number(
+            return Ok(ScopedJson::Derived(Value::Number(
                 Number::from_f64(sum)
                     .ok_or_else(|| RenderError::new("Return NaN for helper \"num_mul\""))?,
-            ))));
+            )));
         }
 
         let sum = p1.as_i64().unwrap() * p2.as_i64().unwrap();
-        return Ok(Some(ScopedJson::Derived(Value::Number(Number::from(sum)))));
+        return Ok(ScopedJson::Derived(Value::Number(Number::from(sum))));
     }
 }
 
@@ -168,7 +166,7 @@ impl HelperDef for DivHelper {
         _: &'reg Handlebars<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let p1 = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"num_dib\""))?;
@@ -188,13 +186,13 @@ impl HelperDef for DivHelper {
 
         if p1.is_f64() || p2.is_f64() {
             let sum = p1.as_f64().unwrap() / p2.as_f64().unwrap();
-            return Ok(Some(ScopedJson::Derived(Value::Number(
+            return Ok(ScopedJson::Derived(Value::Number(
                 Number::from_f64(sum)
                     .ok_or_else(|| RenderError::new("Return NaN for helper \"num_dib\""))?,
-            ))));
+            )));
         }
 
         let sum = p1.as_i64().unwrap() / p2.as_i64().unwrap();
-        return Ok(Some(ScopedJson::Derived(Value::Number(Number::from(sum)))));
+        return Ok(ScopedJson::Derived(Value::Number(Number::from(sum))));
     }
 }

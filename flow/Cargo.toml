@@ -20,7 +20,7 @@ itertools = "0.10.0"
 futures = "0.3.13"
 handlebars = "4.3.3"
 log = { version = "0.4.14", features = ["std"] }
-chrono = "0.4.19"
+chrono = "0.4.22"
 lazy_static = "1.4.0"
 jsonpath-rust = "0.1.4"
 thiserror = "1.0"

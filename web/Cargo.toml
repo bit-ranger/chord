@@ -38,4 +38,4 @@ async-trait = "0.1.57"
 bean = "0.1.4"
 dirs = "4.0.0"
 thiserror = "1.0"
-chrono = { version = "0.4.19", features = ["serde"] }
+chrono = { version = "0.4.22", features = ["serde"] }

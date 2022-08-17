@@ -11,7 +11,7 @@ for mod in "${members[@]}"
 do
   cd "$mod"
   echo "entering $(pwd)"
-  cargo check
+  cargo check --all-features
   cd "$entry"
 done
 

@@ -11,9 +11,10 @@ use flume::{bounded, Receiver, Sender};
 use itertools::Itertools;
 use log;
 use log::{Level, LevelFilter, Metadata, Record};
-use time::{at, get_time, strftime};
 
 use chord_core::future::runtime::Handle;
+
+use chrono::{Local};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {}
@@ -66,18 +67,15 @@ impl log::Log for ChannelLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let now = at(get_time());
-            let date = strftime("%F %T", &now).unwrap();
-            let ms = now.tm_nsec / 1000000;
+            let now = Local::now();
 
             let ctx_id = chord_flow::CTX_ID
                 .try_with(|c| c.clone())
                 .unwrap_or("".to_owned());
 
             let data = format!(
-                "{}.{:03}  {:<5} {:<5} --- {:<30} : [{}] {}\n",
-                date,
-                ms,
+                "{} {:<5} {:<5} --- {:<30} : [{}] {}\n",
+                now.format("%Y-%m-%d %H:%M:%S%.3f"),
                 record.level(),
                 std::process::id(),
                 format!("{}:{}", record.target(), record.line().unwrap_or(0)),

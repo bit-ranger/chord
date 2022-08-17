@@ -6,12 +6,12 @@ use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
 use std::vec::Vec;
+use chrono::Local;
 
 use flume::{bounded, Receiver, Sender};
 use itertools::Itertools;
 use log;
 use log::{LevelFilter, Metadata, Record};
-use time::{at, get_time, strftime};
 
 use chord_core::future::fs::create_dir_all;
 use chord_core::future::fs::{File, OpenOptions};
@@ -72,18 +72,15 @@ impl log::Log for ChannelLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let now = at(get_time());
-            let date = strftime("%F %T", &now).unwrap();
-            let ms = now.tm_nsec / 1000000;
+            let now = Local::now();
 
             // let ctx_id = chord_flow::CTX_ID
             //     .try_with(|c| c.clone())
             //     .unwrap_or("".to_owned());
 
             let data = format!(
-                "{}.{:03}  {:<5} {:<5} --- {:<30} : {}\n",
-                date,
-                ms,
+                "{}  {:<5} {:<5} --- {:<30} : {}\n",
+                now.format("%Y-%m-%d %H:%M:%S%.3f"),
                 record.level(),
                 std::process::id(),
                 format!("{}:{}", record.target(), record.line().unwrap_or(0)),

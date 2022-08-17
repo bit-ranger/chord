@@ -24,7 +24,6 @@ chord-input = { path = "../input", version = "0.1.20" }
 chord-util = { path = "../util", version = "0.1.20" }
 tokio = { version = "1.20", features = ["fs", "time", "tracing", "process", "macros"] }
 serde = { version = "1.0" }
-time = "0.1.42"
 futures = "0.3.13"
 itertools = "0.10.0"
 log = { version = "0.4.14", features = ["std"] }
@@ -39,5 +38,4 @@ async-trait = "0.1.57"
 bean = "0.1.4"
 dirs = "4.0.0"
 thiserror = "1.0"
-#FIXME https://github.com/tkaitchuck/aHash/issues/95
-indexmap = "=1.9.1"
+chrono = { version = "0.4.19", features = ["serde"] }

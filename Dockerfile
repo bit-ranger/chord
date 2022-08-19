@@ -1,5 +1,5 @@
 # 基础镜像 
-FROM rust:1.57.0
+FROM rust:1.62.0
 
 WORKDIR /usr/src
 
@@ -39,7 +39,7 @@ COPY zero/devops/cargo/config /usr/local/cargo/config
 
 # chord
 COPY Cargo.toml Cargo.toml
-#COPY Cargo.lock Cargo.lock
+COPY Cargo.lock Cargo.lock
 COPY core core
 COPY cli cli
 COPY flow flow

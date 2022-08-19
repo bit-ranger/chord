@@ -1,6 +1,6 @@
 [package]
 name = "chord-core"
-version = "0.1.20"
+version = "0.1.21"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 

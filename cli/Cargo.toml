@@ -1,6 +1,6 @@
 [package]
 name = "chord-cli"
-version = "0.1.20"
+version = "0.1.21"
 authors = ["bit-ranger <sincerebravefight@gmail.com>"]
 edition = "2021"
 
@@ -19,11 +19,11 @@ name = "chord"
 path = "src/main.rs"
 
 [dependencies]
-chord-core = { path = "../core", version = "0.1.20" }
-chord-flow = { path = "../flow", version = "0.1.20" }
-chord-input = { path = "../input", version = "0.1.20" }
-chord-output = { path = "../output", version = "0.1.20", features = ["report_csv", "report_webhook"] }
-chord-action = { path = "../action", version = "0.1.20", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_cdylib", "act_docker", "act_lua", "act_program"] }
+chord-core = { path = "../core", version = "0.1.21" }
+chord-flow = { path = "../flow", version = "0.1.21" }
+chord-input = { path = "../input", version = "0.1.21" }
+chord-output = { path = "../output", version = "0.1.21", features = ["report_csv", "report_webhook"] }
+chord-action = { path = "../action", version = "0.1.21", features = ["act_restapi", "act_crypto", "act_dubbo", "act_redis", "act_database", "act_mongodb", "act_url", "act_cdylib", "act_docker", "act_lua", "act_program"] }
 tokio = { version = "1.20", features = ["fs", "time", "tracing", "process", "macros", "rt", "io-util"] }
 log = { version = "0.4.14", features = ["std"] }
 futures = "0.3.13"

@@ -79,7 +79,7 @@ impl Action for Match {
                 };
                 let bf = arg
                     .combo()
-                    .action("block")
+                    .player("block")
                     .ok_or(err!("101", "missing `block` action"))?
                     .action(&arg)
                     .await?;

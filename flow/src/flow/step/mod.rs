@@ -41,7 +41,7 @@ impl StepRunner {
             let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
             let action = arg
                 .combo()
-                .action(func.into())
+                .player(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
                 .action(arg)
                 .await

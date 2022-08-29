@@ -9,7 +9,7 @@ mod block;
 mod lets;
 mod log;
 mod matches;
-mod set;
+mod alter;
 mod sleep;
 mod whiles;
 
@@ -58,7 +58,7 @@ impl PlayerComposite {
         let config_ref = config.as_ref();
 
         register!(table, config_ref, "let", lets::LetPlayer::new);
-        register!(table, config_ref, "set", set::SetPlayer::new);
+        register!(table, config_ref, "alter", alter::AlterPlayer::new);
         register!(table, config_ref, "block", block::BlockPlayer::new);
         register!(table, config_ref, "while", whiles::WhilePlayer::new);
         register!(table, config_ref, "match", matches::MatchPlayer::new);

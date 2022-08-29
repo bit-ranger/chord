@@ -60,7 +60,7 @@ impl Scope for Value {
 }
 
 pub trait Combo: Sync + Send {
-    fn action(&self, action: &str) -> Option<&dyn Player>;
+    fn player(&self, action: &str) -> Option<&dyn Player>;
 
     fn clone(&self) -> Box<dyn Combo>;
 }

@@ -45,7 +45,7 @@ pub struct ComboStruct {
 }
 
 impl Combo for ComboStruct {
-    fn action(&self, action: &str) -> Option<&dyn Player> {
+    fn player(&self, action: &str) -> Option<&dyn Player> {
         self.player_map.get(action).map(|a| a.as_ref())
     }
 

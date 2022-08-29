@@ -98,7 +98,7 @@ impl Player for BlockPlayer {
 
             let action_obj = arg
                 .combo()
-                .action(action.into())
+                .player(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
                 .action(&mut create_arg)
                 .await

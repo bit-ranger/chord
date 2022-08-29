@@ -122,7 +122,7 @@ fn execute(
                 let combo = combo.clone();
 
                 let action = combo
-                    .action(name)
+                    .player(name)
                     .ok_or(err!("110", "unsupported action"))
                     .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
                 let play_arg = ArgStruct {

@@ -1,7 +1,10 @@
+use std::time::Duration;
+
 use hirofa_utils::js_utils::{JsError, Script};
 use hirofa_utils::js_utils::facades::{JsRuntimeBuilder, JsRuntimeFacade};
 use hirofa_utils::js_utils::modules::NativeModuleLoader;
 use quickjs_runtime::builder::QuickJsRuntimeBuilder;
+use quickjs_runtime::facades::QuickJsRuntimeFacade;
 use quickjs_runtime::quickjs_utils::primitives::from_i32;
 use quickjs_runtime::quickjsrealmadapter::QuickJsRealmAdapter;
 use quickjs_runtime::valueref::JSValueRef;
@@ -59,9 +62,9 @@ async fn execute(
     struct ChordModuleLoader {}
     impl NativeModuleLoader<QuickJsRealmAdapter> for ChordModuleLoader {
         fn has_module(&self, _q_ctx: &QuickJsRealmAdapter, module_name: &str) -> bool {
-            println!("has_module {}", module_name);
-            module_name.eq("chord")
-
+            let has_module = module_name.eq("chord");
+            println!("has_module {} {}", module_name, has_module);
+            has_module
         }
 
         fn get_module_export_names(&self, realm: &QuickJsRealmAdapter, module_name: &str) -> Vec<&str> {
@@ -91,23 +94,26 @@ async fn execute(
         }
     }
 
-    let rt = QuickJsRuntimeBuilder::new()
+    let rt = QuickJsRuntimeFacade::builder()
+        .gc_interval(Duration::from_secs(1))
+        .max_stack_size(128 * 1024)
         .memory_limit(1024000)
         .native_module_loader(Box::new(ChordModuleLoader{}))
-        .js_build();
+        .build();
 
-
-    let result = rt.js_eval_module(
-        None,
-        Script::new("chord/core.es", "import {chordVal} from \"chord\";")).await;
-
-    if let Err(e) = result {
-        return Err(err!("101", format!("{}", e)));
-    }
+    // let result = rt.js_eval_module(
+    //     Some("chord"),
+    //     Script::new("chord/core.es", "import {chordVal} from \"chord\";")).await;
+    //
+    // if let Err(e) = result {
+    //     return Err(err!("101", format!("{}", e)));
+    // }
 
     let result = rt.js_eval(
         None,
-        Script::new(format!("{}", id).as_str(), code.as_str())
+        Script::new(
+            "chord/core.es",
+            "import('chord').then((chordVal) => { return 233; })")
     ).await;
 
     match result {

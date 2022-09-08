@@ -35,6 +35,9 @@ mod redis;
 mod restapi;
 #[cfg(feature = "act_url")]
 mod url;
+#[cfg(feature = "act_js")]
+mod quickjs;
+
 
 pub struct PlayerComposite {
     table: HashMap<String, Box<dyn Player>>,
@@ -87,6 +90,9 @@ impl PlayerComposite {
 
         #[cfg(feature = "act_lua")]
         register!(table, config_ref, "lua", lua::LuaPlayer::new);
+
+        #[cfg(feature = "act_js")]
+        register!(table, config_ref, "js", quickjs::QuickjsPlayer::new);
 
         #[cfg(feature = "act_program")]
         register!(table, config_ref, "program", program::ProgramPlayer::new);

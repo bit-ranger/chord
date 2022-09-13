@@ -14,9 +14,7 @@ step.step1 = {
     value: {
         // language=js
         js: `
-            console.log("xxxxxxx")
             console.log(chordVal)
-            return 233
         `,
     },
 

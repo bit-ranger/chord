@@ -22,7 +22,7 @@ path = "src/main.rs"
 chord-core = { path = "../core", version = "0.1.21" }
 chord-input = { path = "../input", version = "0.1.21" }
 chord-util = { path = "../util", version = "0.1.21" }
-tokio = { version = "1.20", features = ["fs", "time", "tracing", "process", "macros"] }
+tokio = { version = "1.21", features = ["fs", "time", "tracing", "process", "macros"] }
 serde = { version = "1.0" }
 futures = "0.3.24"
 itertools = "0.10.0"

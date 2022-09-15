@@ -22,16 +22,16 @@ path = "src/main.rs"
 chord-core = { path = "../core", version = "0.1.21" }
 chord-input = { path = "../input", version = "0.1.21" }
 chord-util = { path = "../util", version = "0.1.21" }
-tokio = { version = "1.20", features = ["fs", "time", "tracing", "process", "macros"] }
+tokio = { version = "1.21", features = ["fs", "time", "tracing", "process", "macros"] }
 serde = { version = "1.0" }
 futures = "0.3.24"
-itertools = "0.10.0"
+itertools = "0.10.4"
 log = { version = "0.4.14", features = ["std"] }
 flume = "0.10.14"
 actix-web = "4.0.0-rc.1"
 validator = { version = "0.16", features = ["derive"] }
 lazy_static = "1.4.0"
-url = "2.2.1"
+url = "2.3.0"
 regex = "1.6.0"
 structopt = "0.3"
 async-trait = "0.1.57"

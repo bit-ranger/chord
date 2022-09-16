@@ -27,7 +27,7 @@ impl Action for Crypto {
 }
 
 async fn run(arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.args()?;
+    let args = arg.body()?;
     let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 
     let from = args["from"].as_str().ok_or(err!("101", "missing from"))?;

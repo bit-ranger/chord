@@ -15,18 +15,19 @@ impl RedisPlayer {
 #[async_trait]
 impl Player for RedisPlayer {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
-        let url = &args_raw["url"];
-        if url.is_string() {
-            if arg.is_static(url) {
+        let args_init = arg.init();
+        if let Some(args_init) = args_init {
+            let url = &args_init["url"];
+            if url.is_string() {
                 let url = arg.render(arg.context(), url)?;
                 let url = url.as_str().ok_or(err!("100", "invalid url"))?;
-                let client = redis::Client::open(url)?;
+                let client = Client::open(url)?;
                 return Ok(Box::new(Redis {
                     client: Some(client),
                 }));
             }
         }
+
         return Ok(Box::new(Redis { client: None }));
     }
 }
@@ -41,7 +42,7 @@ impl Action for Redis {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
-                let args = arg.args()?;
+                let args = arg.body()?;
                 let url = args["url"].as_str().ok_or(err!("101", "missing url"))?;
 
                 let client = redis::Client::open(url)?;
@@ -52,7 +53,7 @@ impl Action for Redis {
 }
 
 async fn run0(arg: &dyn Arg, client: &Client) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.args()?;
+    let args = arg.body()?;
     let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 
     let mut con = client.get_async_connection().await?;

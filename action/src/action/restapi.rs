@@ -40,7 +40,7 @@ impl Action for RestapiAction {
     }
 
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
-        let args = arg.args()?;
+        let args = arg.body()?;
         let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
 
         let url = Url::from_str(url).map_err(|_| err!("101", format!("invalid url: {}", url)))?;
@@ -92,7 +92,7 @@ async fn run(client: Client, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
 }
 
 async fn run0(client: Client, arg: &dyn Arg) -> std::result::Result<Value, Error> {
-    let args = arg.args()?;
+    let args = arg.body()?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("101", format!("invalid url: {}", url))))?;

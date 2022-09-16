@@ -121,7 +121,7 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
         &self.context
     }
 
-    fn args_raw(&self) -> &Value {
+    fn body_raw(&self) -> &Value {
         self.flow
             .step_action_args(self.id().step(), self.aid.as_str())
     }
@@ -133,22 +133,25 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
         Ok(val)
     }
 
-    fn args(&self) -> Result<Value, Error> {
-        self.render(&self.context, self.args_raw())
+    fn body(&self) -> Result<Value, Error> {
+        self.render(&self.context, self.body_raw())
     }
 
     fn combo(&self) -> &dyn Combo {
         &self.combo
     }
 
-    fn is_static(&self, raw: &Value) -> bool {
-        let mut val = raw.clone();
-        let rc = RenderContext::wraps(Value::Null).unwrap();
-        flow::render_value(self.app.get_handlebars(), &rc, &mut val).is_ok()
-    }
-
     fn context_mut(&mut self) -> &mut dyn Context {
         &mut self.context
+    }
+
+    fn init(&self) -> Option<&Value> {
+        let raw = self.body_raw();
+        if let Value::Object(obj) = raw {
+            obj.get("__init__")
+        } else {
+            None
+        }
     }
 }
 

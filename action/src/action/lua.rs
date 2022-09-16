@@ -62,12 +62,16 @@ impl Arg for ArgStruct {
         self.id.as_ref()
     }
 
-    fn args(&self) -> Result<Value, Error> {
+    fn body(&self) -> Result<Value, Error> {
         Ok(self.args.clone())
     }
 
-    fn args_raw(&self) -> &Value {
+    fn body_raw(&self) -> &Value {
         &self.args
+    }
+
+    fn init(&self) -> Option<&Value> {
+        None
     }
 
     fn context(&self) -> &dyn Context {
@@ -85,10 +89,6 @@ impl Arg for ArgStruct {
     fn combo(&self) -> &dyn Combo {
         self.combo.as_ref()
     }
-
-    fn is_static(&self, _: &Value) -> bool {
-        true
-    }
 }
 
 #[async_trait]
@@ -98,7 +98,7 @@ impl Action for LuaAction {
         let context = arg.context().data().clone();
         let id = arg.id().clone();
         let code = arg
-            .args_raw()
+            .body_raw()
             .as_str()
             .ok_or(err!("100", "missing lua"))?
             .to_string();

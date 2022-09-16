@@ -60,7 +60,7 @@ impl DockerActual {
 #[async_trait]
 impl Player for DockerActual {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
+        let args_raw = arg.body_raw();
         let image = args_raw["image"]
             .as_str()
             .ok_or(err!("010", "missing image"))?;
@@ -76,7 +76,7 @@ struct ImageWrapper(Image);
 #[async_trait]
 impl Action for ImageWrapper {
     async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args()?;
+        let args = arg.body()?;
         let cmd = &args["cmd"];
 
         let mut ca = DkArg::default();

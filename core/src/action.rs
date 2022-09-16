@@ -68,9 +68,11 @@ pub trait Combo: Sync + Send {
 pub trait Arg: Sync + Send {
     fn id(&self) -> &dyn Id;
 
-    fn args(&self) -> Result<Value, Error>;
+    fn body(&self) -> Result<Value, Error>;
 
-    fn args_raw(&self) -> &Value;
+    fn body_raw(&self) -> &Value;
+
+    fn init(&self) -> Option<&Value>;
 
     fn context(&self) -> &dyn Context;
 
@@ -79,8 +81,6 @@ pub trait Arg: Sync + Send {
     fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
 
     fn combo(&self) -> &dyn Combo;
-
-    fn is_static(&self, raw: &Value) -> bool;
 }
 
 #[async_trait]
@@ -88,7 +88,7 @@ pub trait Action: Sync + Send {
     async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
-        arg.args()
+        arg.body()
     }
 }
 

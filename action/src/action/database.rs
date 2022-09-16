@@ -18,17 +18,16 @@ impl DatabasePlayer {
 #[async_trait]
 impl Player for DatabasePlayer {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
-        let url = &args_raw["url"];
-        if url.is_string() {
-            if arg.is_static(url) {
+        let args_init = arg.init();
+        if let Some(args_init) = args_init {
+            let url = &args_init["url"];
+            if url.is_string() {
                 let url = arg.render(arg.context(), url)?;
                 let url = url.as_str().ok_or(err!("100", "invalid url"))?;
                 let rb = create_rb(url).await?;
                 return Ok(Box::new(Database { rb: Some(rb) }));
             }
         }
-
         return Ok(Box::new(Database { rb: None }));
     }
 }
@@ -51,7 +50,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
 }
 
 async fn run(obj: &Database, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.args()?;
+    let args = arg.body()?;
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
         None => {
@@ -64,7 +63,7 @@ async fn run(obj: &Database, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
 }
 
 async fn run0(arg: &dyn Arg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.args()?;
+    let args = arg.body()?;
     let sql = args["sql"].as_str().ok_or(err!("101", "missing sql"))?;
     let sql = sql.trim();
     if sql.to_uppercase().starts_with("SELECT ") {

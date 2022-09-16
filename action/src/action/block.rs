@@ -17,12 +17,21 @@ impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
         self.block.id()
     }
 
-    fn args(&self) -> Result<Value, Error> {
-        self.block.render(self.context(), self.args_raw())
+    fn body(&self) -> Result<Value, Error> {
+        self.block.render(self.context(), self.body_raw())
     }
 
-    fn args_raw(&self) -> &Value {
-        &self.block.args_raw()[&self.aid][&self.action]
+    fn body_raw(&self) -> &Value {
+        &self.block.body_raw()[&self.aid][&self.action]
+    }
+
+    fn init(&self) -> Option<&Value> {
+        let raw = self.body_raw();
+        if let Value::Object(obj) = raw {
+            obj.get("__init__")
+        } else {
+            None
+        }
     }
 
     fn context(&self) -> &dyn Context {
@@ -39,10 +48,6 @@ impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
 
     fn combo(&self) -> &dyn Combo {
         self.block.combo()
-    }
-
-    fn is_static(&self, raw: &Value) -> bool {
-        self.block.is_static(raw)
     }
 }
 
@@ -77,7 +82,7 @@ impl BlockPlayer {
 #[async_trait]
 impl Player for BlockPlayer {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
+        let args_raw = arg.body_raw();
         let map = args_raw.as_object().unwrap();
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),

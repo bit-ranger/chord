@@ -35,7 +35,7 @@ impl CdylibPlayer {
 #[async_trait]
 impl Player for CdylibPlayer {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
+        let args_raw = arg.body_raw();
         let lib_name = args_raw.as_str().ok_or(err!("100", "missing lib"))?;
 
         let mut reload_handler =
@@ -57,7 +57,7 @@ impl Action for Cdylib {
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();
         ar.insert("id".to_string(), Value::String(arg.id().to_string()));
-        ar.insert("args".to_string(), arg.args()?);
+        ar.insert("args".to_string(), arg.body()?);
         ar.insert(
             "context".to_string(),
             Value::Object(arg.context().data().clone()),

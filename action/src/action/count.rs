@@ -13,7 +13,7 @@ impl CountPlayer {
 #[async_trait]
 impl Player for CountPlayer {
     async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
+        let args_raw = arg.body_raw();
         let init = args_raw["init"].as_u64().unwrap_or(1);
         let incr = args_raw["incr"].as_u64().unwrap_or(1);
         Ok(Box::new(Count {

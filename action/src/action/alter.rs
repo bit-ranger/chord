@@ -43,7 +43,7 @@ impl Context for ContextStruct {
 #[async_trait]
 impl Action for Alter {
     async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args()?;
+        let args = arg.body()?;
         let obj = args
             .as_object()
             .ok_or(err!("100", "alter must be a object"))?;

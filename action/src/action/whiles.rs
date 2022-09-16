@@ -22,12 +22,21 @@ impl<'o> Arg for ArgStruct<'o> {
         self.origin.id()
     }
 
-    fn args(&self) -> Result<Value, Error> {
-        self.render(self.context(), self.args_raw())
+    fn body(&self) -> Result<Value, Error> {
+        self.render(self.context(), self.body_raw())
     }
 
-    fn args_raw(&self) -> &Value {
-        &self.origin.args_raw()[self.cond.as_str()]
+    fn body_raw(&self) -> &Value {
+        &self.origin.body_raw()[self.cond.as_str()]
+    }
+
+    fn init(&self) -> Option<&Value> {
+        let raw = self.body_raw();
+        if let Value::Object(obj) = raw {
+            obj.get("__init__")
+        } else {
+            None
+        }
     }
 
     fn context(&self) -> &dyn Context {
@@ -45,10 +54,6 @@ impl<'o> Arg for ArgStruct<'o> {
     fn combo(&self) -> &dyn Combo {
         self.origin.combo()
     }
-
-    fn is_static(&self, raw: &Value) -> bool {
-        self.origin.is_static(raw)
-    }
 }
 
 #[async_trait]
@@ -62,7 +67,7 @@ impl Player for WhilePlayer {
 impl Action for While {
     async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let cond_raw = arg
-            .args_raw()
+            .body_raw()
             .as_object()
             .ok_or(err!("100", "while must be object"))?;
 

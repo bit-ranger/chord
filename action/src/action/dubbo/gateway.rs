@@ -197,7 +197,7 @@ struct Dubbo {
 #[async_trait]
 impl Action for Dubbo {
     async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.args()?;
+        let args = arg.body()?;
         let method_long = args["method"]
             .as_str()
             .ok_or(err!("109", "missing method"))?;

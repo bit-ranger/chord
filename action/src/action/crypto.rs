@@ -2,17 +2,17 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct CryptoPlayer {}
+pub struct CryptoCreator {}
 
-impl CryptoPlayer {
-    pub async fn new(_: Option<Value>) -> Result<CryptoPlayer, Error> {
-        Ok(CryptoPlayer {})
+impl CryptoCreator {
+    pub async fn new(_: Option<Value>) -> Result<CryptoCreator, Error> {
+        Ok(CryptoCreator {})
     }
 }
 
 #[async_trait]
-impl Player for CryptoPlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for CryptoCreator {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Crypto {}))
     }
 }
@@ -21,7 +21,7 @@ struct Crypto {}
 
 #[async_trait]
 impl Action for Crypto {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(arg).await
     }
 }

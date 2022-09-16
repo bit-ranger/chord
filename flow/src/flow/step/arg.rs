@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use chord_core::action::{Arg, Combo};
 use chord_core::action::{Context, Id};
-use chord_core::action::{Error, Player};
+use chord_core::action::{Creator, Error};
 use chord_core::case::CaseId;
 use chord_core::flow::Flow;
 use chord_core::value::{Map, Value};
@@ -41,12 +41,12 @@ impl Display for IdStruct {
 
 #[derive(Clone)]
 pub struct ComboStruct {
-    player_map: Arc<HashMap<String, Box<dyn Player>>>,
+    creator_map: Arc<HashMap<String, Box<dyn Creator>>>,
 }
 
 impl Combo for ComboStruct {
-    fn player(&self, action: &str) -> Option<&dyn Player> {
-        self.player_map.get(action).map(|a| a.as_ref())
+    fn creator(&self, action: &str) -> Option<&dyn Creator> {
+        self.creator_map.get(action).map(|a| a.as_ref())
     }
 
     fn clone(&self) -> Box<dyn Combo> {
@@ -73,7 +73,7 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
         step_id: String,
     ) -> ArgStruct<'a, 'f> {
         let combo = ComboStruct {
-            player_map: app.get_player_map().clone(),
+            creator_map: app.get_creator_map().clone(),
         };
 
         let context = ContextStruct { ctx: context };

@@ -71,17 +71,17 @@ impl Context for ContextStruct {
     }
 }
 
-pub struct BlockPlayer {}
+pub struct BlockCreator {}
 
-impl BlockPlayer {
-    pub async fn new(_: Option<Value>) -> Result<BlockPlayer, Error> {
-        Ok(BlockPlayer {})
+impl BlockCreator {
+    pub async fn new(_: Option<Value>) -> Result<BlockCreator, Error> {
+        Ok(BlockCreator {})
     }
 }
 
 #[async_trait]
-impl Player for BlockPlayer {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for BlockCreator {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.body_raw();
         let map = args_raw.as_object().unwrap();
         let mut context = Box::new(ContextStruct {
@@ -103,9 +103,9 @@ impl Player for BlockPlayer {
 
             let action_obj = arg
                 .combo()
-                .player(action.into())
+                .creator(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
-                .action(&mut create_arg)
+                .create(&mut create_arg)
                 .await
                 .map_err(|_| err!("100", "create error"))?;
             action_vec.push((aid.to_string(), action.to_string(), action_obj));
@@ -123,7 +123,7 @@ struct Block {
 
 #[async_trait]
 impl Action for Block {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
@@ -135,7 +135,7 @@ impl Action for Block {
                 aid: aid.to_string(),
                 action: action.to_string(),
             };
-            let v = action_obj.run(&mut run).await?;
+            let v = action_obj.execute(&mut run).await?;
             scope_vec.push((aid.to_string(), v));
         }
 

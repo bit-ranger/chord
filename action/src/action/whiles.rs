@@ -2,11 +2,11 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct WhilePlayer {}
+pub struct WhileCreator {}
 
-impl WhilePlayer {
-    pub async fn new(_: Option<Value>) -> Result<WhilePlayer, Error> {
-        Ok(WhilePlayer {})
+impl WhileCreator {
+    pub async fn new(_: Option<Value>) -> Result<WhileCreator, Error> {
+        Ok(WhileCreator {})
     }
 }
 
@@ -57,15 +57,15 @@ impl<'o> Arg for ArgStruct<'o> {
 }
 
 #[async_trait]
-impl Player for WhilePlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for WhileCreator {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(While {}))
     }
 }
 
 #[async_trait]
 impl Action for While {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let cond_raw = arg
             .body_raw()
             .as_object()
@@ -84,11 +84,11 @@ impl Action for While {
                 };
                 let bf = arg
                     .combo()
-                    .player("block")
+                    .creator("block")
                     .ok_or(err!("101", "missing `block` action"))?
-                    .action(&arg)
+                    .create(&arg)
                     .await?;
-                bf.run(&mut arg).await?;
+                bf.execute(&mut arg).await?;
             } else {
                 break;
             }

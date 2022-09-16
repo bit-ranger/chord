@@ -9,20 +9,20 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct RestapiPlayer {
+pub struct RestapiCreator {
     client: Client,
 }
 
-impl RestapiPlayer {
-    pub async fn new(_: Option<Value>) -> Result<RestapiPlayer, Error> {
+impl RestapiCreator {
+    pub async fn new(_: Option<Value>) -> Result<RestapiCreator, Error> {
         let client = Client::new();
-        Ok(RestapiPlayer { client })
+        Ok(RestapiCreator { client })
     }
 }
 
 #[async_trait]
-impl Player for RestapiPlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for RestapiCreator {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(RestapiAction {
             client: self.client.clone(),
         }))
@@ -35,7 +35,7 @@ struct RestapiAction {
 
 #[async_trait]
 impl Action for RestapiAction {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(self.client.clone(), arg).await
     }
 

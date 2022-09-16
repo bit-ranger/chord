@@ -6,7 +6,7 @@ use handlebars::{Handlebars, RenderError};
 use log::trace;
 
 use chord_core::action::prelude::Map;
-use chord_core::action::Player;
+use chord_core::action::Creator;
 use chord_core::future::task::task_local;
 use chord_core::value::{from_str, Value};
 pub use task::arg::TaskIdSimple;
@@ -22,8 +22,8 @@ task_local! {
     pub static CTX_ID: String;
 }
 
-pub async fn app_create(player_map: HashMap<String, Box<dyn Player>>) -> Arc<dyn App> {
-    Arc::new(AppStruct::<'_>::new(player_map))
+pub async fn app_create(creator_map: HashMap<String, Box<dyn Creator>>) -> Arc<dyn App> {
+    Arc::new(AppStruct::<'_>::new(creator_map))
 }
 
 fn render_str(

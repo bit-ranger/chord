@@ -7,17 +7,17 @@ use chord_core::future::runtime::Handle;
 
 use crate::err;
 
-pub struct LuaPlayer {}
+pub struct LuaCreator {}
 
-impl LuaPlayer {
-    pub async fn new(_: Option<Value>) -> Result<LuaPlayer, Error> {
-        Ok(LuaPlayer {})
+impl LuaCreator {
+    pub async fn new(_: Option<Value>) -> Result<LuaCreator, Error> {
+        Ok(LuaCreator {})
     }
 }
 
 #[async_trait]
-impl Player for LuaPlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for LuaCreator {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(LuaAction {}))
     }
 }
@@ -93,7 +93,7 @@ impl Arg for ArgStruct {
 
 #[async_trait]
 impl Action for LuaAction {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let combo = arg.combo().clone();
         let context = arg.context().data().clone();
         let id = arg.id().clone();
@@ -122,7 +122,7 @@ fn execute(
                 let combo = combo.clone();
 
                 let action = combo
-                    .player(name)
+                    .creator(name)
                     .ok_or(err!("110", "unsupported action"))
                     .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
                 let play_arg = ArgStruct {
@@ -134,7 +134,7 @@ fn execute(
                 };
                 let handle = Handle::current();
                 let _ = handle.enter();
-                let play = futures::executor::block_on(action.action(&play_arg)).unwrap();
+                let play = futures::executor::block_on(action.create(&play_arg)).unwrap();
 
                 Ok(ActionUserData {
                     id,
@@ -250,7 +250,7 @@ impl UserData for ActionUserData {
             };
             let handle = Handle::current();
             let _ = handle.enter();
-            let scope = futures::executor::block_on(this.action.run(&mut play_arg))
+            let scope = futures::executor::block_on(this.action.execute(&mut play_arg))
                 .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
             let value = scope.as_value();
             let lua_value = to_lua_value(lua_ctx, value);

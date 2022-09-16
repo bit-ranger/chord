@@ -41,9 +41,9 @@ impl StepRunner {
             let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
             let action = arg
                 .combo()
-                .player(func.into())
+                .creator(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
-                .action(arg)
+                .create(arg)
                 .await
                 .map_err(|e| Create(arg.id().step().to_string(), aid.to_string(), e))?;
             action_vec.push((aid.to_string(), action));
@@ -64,7 +64,7 @@ impl StepRunner {
             let action: &Box<dyn Action> = action;
             arg.aid(key);
             let explain = action.explain(arg).await.unwrap_or(Value::Null);
-            let value = action.run(arg).await;
+            let value = action.execute(arg).await;
             match &value {
                 Ok(v) => {
                     arg.context_mut()

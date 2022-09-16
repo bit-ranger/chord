@@ -3,17 +3,17 @@ use chord_core::action::Context;
 
 use crate::err;
 
-pub struct AlterPlayer {}
+pub struct AlterCreator {}
 
-impl AlterPlayer {
-    pub async fn new(_: Option<Value>) -> Result<AlterPlayer, Error> {
-        Ok(AlterPlayer {})
+impl AlterCreator {
+    pub async fn new(_: Option<Value>) -> Result<AlterCreator, Error> {
+        Ok(AlterCreator {})
     }
 }
 
 #[async_trait]
-impl Player for AlterPlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for AlterCreator {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Alter {}))
     }
 }
@@ -42,7 +42,7 @@ impl Context for ContextStruct {
 
 #[async_trait]
 impl Action for Alter {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.body()?;
         let obj = args
             .as_object()

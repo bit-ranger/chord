@@ -27,9 +27,9 @@ pub mod prelude {
     pub use super::Arg;
     pub use super::Combo;
     pub use super::Context;
+    pub use super::Creator;
     pub use super::Error;
     pub use super::Id;
-    pub use super::Player;
     pub use super::Scope;
 }
 
@@ -60,7 +60,7 @@ impl Scope for Value {
 }
 
 pub trait Combo: Sync + Send {
-    fn player(&self, action: &str) -> Option<&dyn Player>;
+    fn creator(&self, action: &str) -> Option<&dyn Creator>;
 
     fn clone(&self) -> Box<dyn Combo>;
 }
@@ -85,7 +85,7 @@ pub trait Arg: Sync + Send {
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
     async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
         arg.body()
@@ -93,6 +93,6 @@ pub trait Action: Sync + Send {
 }
 
 #[async_trait]
-pub trait Player: Sync + Send {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error>;
+pub trait Creator: Sync + Send {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error>;
 }

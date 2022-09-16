@@ -27,19 +27,19 @@ impl Docker {
 }
 
 #[async_trait]
-impl Player for Docker {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let player = self.actual.read().await;
-        let player_ref = player.borrow();
-        if player_ref.is_some() {
-            return player_ref.as_ref().unwrap().action(arg).await;
+impl Creator for Docker {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let creator = self.actual.read().await;
+        let creator_ref = creator.borrow();
+        if creator_ref.is_some() {
+            return creator_ref.as_ref().unwrap().create(arg).await;
         } else {
-            drop(player);
+            drop(creator);
             let mut guard = self.actual.write().await;
             let guard = guard.borrow_mut();
-            let new_player = DockerActual::new(self.address.clone()).await?;
-            let action = new_player.action(arg).await?;
-            guard.replace(new_player);
+            let new_creator = DockerActual::new(self.address.clone()).await?;
+            let action = new_creator.create(arg).await?;
+            guard.replace(new_creator);
             return Ok(action);
         }
     }
@@ -58,8 +58,8 @@ impl DockerActual {
 }
 
 #[async_trait]
-impl Player for DockerActual {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for DockerActual {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.body_raw();
         let image = args_raw["image"]
             .as_str()
@@ -75,7 +75,7 @@ struct ImageWrapper(Image);
 
 #[async_trait]
 impl Action for ImageWrapper {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let args = arg.body()?;
         let cmd = &args["cmd"];
 

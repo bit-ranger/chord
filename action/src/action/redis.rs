@@ -4,17 +4,17 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct RedisPlayer {}
+pub struct RedisCreator {}
 
-impl RedisPlayer {
-    pub async fn new(_: Option<Value>) -> Result<RedisPlayer, Error> {
-        Ok(RedisPlayer {})
+impl RedisCreator {
+    pub async fn new(_: Option<Value>) -> Result<RedisCreator, Error> {
+        Ok(RedisCreator {})
     }
 }
 
 #[async_trait]
-impl Player for RedisPlayer {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for RedisCreator {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_init = arg.init();
         if let Some(args_init) = args_init {
             let url = &args_init["url"];
@@ -38,7 +38,7 @@ struct Redis {
 
 #[async_trait]
 impl Action for Redis {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {

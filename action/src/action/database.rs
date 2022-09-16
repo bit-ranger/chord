@@ -7,17 +7,17 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct DatabasePlayer {}
+pub struct DatabaseCreator {}
 
-impl DatabasePlayer {
-    pub async fn new(_: Option<Value>) -> Result<DatabasePlayer, Error> {
-        Ok(DatabasePlayer {})
+impl DatabaseCreator {
+    pub async fn new(_: Option<Value>) -> Result<DatabaseCreator, Error> {
+        Ok(DatabaseCreator {})
     }
 }
 
 #[async_trait]
-impl Player for DatabasePlayer {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for DatabaseCreator {
+    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_init = arg.init();
         if let Some(args_init) = args_init {
             let url = &args_init["url"];
@@ -38,7 +38,7 @@ struct Database {
 
 #[async_trait]
 impl Action for Database {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         run(&self, arg).await
     }
 }

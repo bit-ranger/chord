@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use chord_core::action::{Arg, Combo};
+use chord_core::action::{Arg, Chord};
 use chord_core::action::{Context, Id};
 use chord_core::action::{Creator, Error};
 use chord_core::case::CaseId;
@@ -44,12 +44,12 @@ pub struct ComboStruct {
     creator_map: Arc<HashMap<String, Box<dyn Creator>>>,
 }
 
-impl Combo for ComboStruct {
+impl Chord for ComboStruct {
     fn creator(&self, action: &str) -> Option<&dyn Creator> {
         self.creator_map.get(action).map(|a| a.as_ref())
     }
 
-    fn clone(&self) -> Box<dyn Combo> {
+    fn clone(&self) -> Box<dyn Chord> {
         let combo = Clone::clone(self);
         Box::new(combo)
     }
@@ -137,7 +137,7 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
         self.render(&self.context, self.body_raw())
     }
 
-    fn combo(&self) -> &dyn Combo {
+    fn chord(&self) -> &dyn Chord {
         &self.combo
     }
 

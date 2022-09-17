@@ -46,8 +46,8 @@ impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
         self.block.render(context, raw)
     }
 
-    fn combo(&self) -> &dyn Combo {
-        self.block.combo()
+    fn chord(&self) -> &dyn Chord {
+        self.block.chord()
     }
 }
 
@@ -102,7 +102,7 @@ impl Creator for BlockCreator {
             };
 
             let action_obj = arg
-                .combo()
+                .chord()
                 .creator(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
                 .create(&mut create_arg)

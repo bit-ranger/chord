@@ -27,7 +27,7 @@ struct LuaAction {}
 struct ActionUserData {
     id: Box<dyn Id>,
     action: Box<dyn Action>,
-    combo: Box<dyn Combo>,
+    combo: Box<dyn Chord>,
 }
 
 #[derive(Clone)]
@@ -54,7 +54,7 @@ struct ArgStruct {
     id: Box<dyn Id>,
     args: Value,
     context: ContextStruct,
-    combo: Box<dyn Combo>,
+    combo: Box<dyn Chord>,
 }
 
 impl Arg for ArgStruct {
@@ -86,7 +86,7 @@ impl Arg for ArgStruct {
         Ok(raw.clone())
     }
 
-    fn combo(&self) -> &dyn Combo {
+    fn chord(&self) -> &dyn Chord {
         self.combo.as_ref()
     }
 }
@@ -94,7 +94,7 @@ impl Arg for ArgStruct {
 #[async_trait]
 impl Action for LuaAction {
     async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let combo = arg.combo().clone();
+        let combo = arg.chord().clone();
         let context = arg.context().data().clone();
         let id = arg.id().clone();
         let code = arg
@@ -109,7 +109,7 @@ impl Action for LuaAction {
 fn execute(
     id: Box<dyn Id>,
     code: String,
-    combo: Box<dyn Combo>,
+    combo: Box<dyn Chord>,
     context: Map,
 ) -> Result<Box<dyn Scope>, Error> {
     let rt = rlua::Lua::new();

@@ -51,8 +51,8 @@ impl<'o> Arg for ArgStruct<'o> {
         self.origin.render(context, raw)
     }
 
-    fn combo(&self) -> &dyn Combo {
-        self.origin.combo()
+    fn chord(&self) -> &dyn Chord {
+        self.origin.chord()
     }
 }
 
@@ -83,7 +83,7 @@ impl Action for While {
                     cond: cond_raw.to_string(),
                 };
                 let bf = arg
-                    .combo()
+                    .chord()
                     .creator("block")
                     .ok_or(err!("101", "missing `block` action"))?
                     .create(&arg)

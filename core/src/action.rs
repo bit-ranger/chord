@@ -25,7 +25,7 @@ pub mod prelude {
     pub use super::async_trait;
     pub use super::Action;
     pub use super::Arg;
-    pub use super::Combo;
+    pub use super::Chord;
     pub use super::Context;
     pub use super::Creator;
     pub use super::Error;
@@ -59,10 +59,10 @@ impl Scope for Value {
     }
 }
 
-pub trait Combo: Sync + Send {
+pub trait Chord: Sync + Send {
     fn creator(&self, action: &str) -> Option<&dyn Creator>;
 
-    fn clone(&self) -> Box<dyn Combo>;
+    fn clone(&self) -> Box<dyn Chord>;
 }
 
 pub trait Arg: Sync + Send {
@@ -80,7 +80,7 @@ pub trait Arg: Sync + Send {
 
     fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
 
-    fn combo(&self) -> &dyn Combo;
+    fn chord(&self) -> &dyn Chord;
 }
 
 #[async_trait]

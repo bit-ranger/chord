@@ -40,7 +40,7 @@ impl StepRunner {
             arg.aid(aid.as_str());
             let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
             let action = arg
-                .combo()
+                .chord()
                 .creator(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
                 .create(arg)

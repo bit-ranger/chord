@@ -13,22 +13,17 @@ module.exports = () => conf;
 let step = conf.stage.smoking.step;
 
 step.step1 = {
-    var: {
-        let: {
-            url: url,
-            db: "{{case.db}}"
-        },
-    },
-
     value: {
         database: {
-            url: "{{var.url}}",
-            sql: "SELECT * FROM db where Db='{{var.db}}'"
+            __init__: {
+                url: url
+            },
+            sql: "SELECT * FROM db where Db='{{case.db}}'"
         },
     },
 
     ok: {
-        assert: "(eq value.records.0.Db var.db)"
+        assert: "(eq value.records.0.Db case.db)"
     }
 
 

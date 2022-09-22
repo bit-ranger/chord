@@ -39,7 +39,7 @@ impl DubboCreator {
 
 #[async_trait]
 impl Creator for DubboCreator {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        self.delegate.create(arg).await
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        self.delegate.create(chord, arg).await
     }
 }

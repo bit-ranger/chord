@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
+use handlebars::Handlebars;
+
 use chord_core::action::{Arg, Chord};
 use chord_core::action::{Context, Id};
 use chord_core::action::{Creator, Error};
@@ -39,25 +41,44 @@ impl Display for IdStruct {
     }
 }
 
-#[derive(Clone)]
-pub struct ComboStruct {
+pub struct ChordStruct {
     creator_map: Arc<HashMap<String, Box<dyn Creator>>>,
+    app: Arc<dyn App>,
 }
 
-impl Chord for ComboStruct {
+impl ChordStruct {
+    pub fn new(app: Arc<dyn App>) -> ChordStruct {
+        ChordStruct {
+            creator_map: app.get_creator_map().clone(),
+            app,
+        }
+    }
+
+    fn render(handlebars: &Handlebars, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        let mut val = raw.clone();
+        let rc = RenderContext::wraps(context.data())?;
+        flow::render_value(handlebars, &rc, &mut val)?;
+        Ok(val)
+    }
+}
+
+impl Chord for ChordStruct {
     fn creator(&self, action: &str) -> Option<&dyn Creator> {
-        self.creator_map.get(action).map(|a| a.as_ref())
+        let creator_op = self.creator_map.get(action);
+        creator_op.map(|a| a.as_ref())
+    }
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        ChordStruct::render(self.app.get_handlebars(), context, raw)
     }
 
     fn clone(&self) -> Box<dyn Chord> {
-        let combo = Clone::clone(self);
-        Box::new(combo)
+        Box::new(ChordStruct::new(self.app.clone()))
     }
 }
 
 pub struct ArgStruct<'a, 'f> {
     app: &'a dyn App,
-    combo: ComboStruct,
     flow: &'f Flow,
     context: ContextStruct,
     id: IdStruct,
@@ -72,10 +93,6 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
         case_id: Arc<dyn CaseId>,
         step_id: String,
     ) -> ArgStruct<'a, 'f> {
-        let combo = ComboStruct {
-            creator_map: app.get_creator_map().clone(),
-        };
-
         let context = ContextStruct { ctx: context };
 
         let id = IdStruct {
@@ -85,7 +102,6 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
 
         let run_arg = ArgStruct {
             app,
-            combo,
             flow,
             context,
             id,
@@ -121,32 +137,21 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
         &self.context
     }
 
-    fn body_raw(&self) -> &Value {
+    fn args_raw(&self) -> &Value {
         self.flow
             .step_action_args(self.id().step(), self.aid.as_str())
     }
 
-    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
-        let mut val = raw.clone();
-        let rc = RenderContext::wraps(context.data())?;
-        flow::render_value(self.app.get_handlebars(), &rc, &mut val)?;
-        Ok(val)
-    }
-
-    fn body(&self) -> Result<Value, Error> {
-        self.render(&self.context, self.body_raw())
-    }
-
-    fn chord(&self) -> &dyn Chord {
-        &self.combo
+    fn args(&self) -> Result<Value, Error> {
+        ChordStruct::render(&self.app.get_handlebars(), &self.context, self.args_raw())
     }
 
     fn context_mut(&mut self) -> &mut dyn Context {
         &mut self.context
     }
 
-    fn init(&self) -> Option<&Value> {
-        let raw = self.body_raw();
+    fn args_init(&self) -> Option<&Value> {
+        let raw = self.args_raw();
         if let Value::Object(obj) = raw {
             obj.get("__init__")
         } else {

@@ -12,7 +12,7 @@ impl AssertCreator {
 
 #[async_trait]
 impl Creator for AssertCreator {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Assert {}))
     }
 }
@@ -21,18 +21,18 @@ struct Assert {}
 
 #[async_trait]
 impl Action for Assert {
-    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
-        let raw = arg.body_raw();
+    async fn explain(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Value, Error> {
+        let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         Ok(Value::String(raw.to_string()))
     }
 
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let raw = arg.body_raw();
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+        let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         let assert_tpl = format!("{{{{{cond}}}}}", cond = raw);
         let ctx = arg.context();
-        let result = arg.render(ctx, &Value::String(assert_tpl))?;
+        let result = chord.render(ctx, &Value::String(assert_tpl))?;
         if result.eq("true") {
             Ok(Box::new(Value::Bool(true)))
         } else {

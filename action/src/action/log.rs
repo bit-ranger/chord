@@ -12,7 +12,7 @@ impl LogCreator {
 
 #[async_trait]
 impl Creator for LogCreator {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Log {}))
     }
 }
@@ -21,8 +21,12 @@ struct Log {}
 
 #[async_trait]
 impl Action for Log {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.body()?;
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
+        let args = arg.args()?;
         info!("{}", args);
         return Ok(Box::new(Value::Null));
     }

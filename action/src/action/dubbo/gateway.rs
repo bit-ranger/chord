@@ -92,11 +92,11 @@ impl DubboCreator {
 
 #[async_trait]
 impl Creator for DubboCreator {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let creator = self.actual.read().await;
         let creator_ref = creator.borrow();
         if creator_ref.is_some() {
-            return creator_ref.as_ref().unwrap().create(arg).await;
+            return creator_ref.as_ref().unwrap().create(chord, arg).await;
         } else {
             drop(creator);
             let mut guard = self.actual.write().await;
@@ -109,7 +109,7 @@ impl Creator for DubboCreator {
                 self.gateway_port,
             )
             .await?;
-            let action = new_creator.create(arg).await?;
+            let action = new_creator.create(chord, arg).await?;
             guard.replace(new_creator);
             return Ok(action);
         }
@@ -177,7 +177,7 @@ impl DubboCreatorActual {
 
 #[async_trait]
 impl Creator for DubboCreatorActual {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Dubbo {
             registry_protocol: self.registry_protocol.clone(),
             registry_address: self.registry_address.clone(),
@@ -196,8 +196,12 @@ struct Dubbo {
 
 #[async_trait]
 impl Action for Dubbo {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.body()?;
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
+        let args = arg.args()?;
         let method_long = args["method"]
             .as_str()
             .ok_or(err!("109", "missing method"))?;

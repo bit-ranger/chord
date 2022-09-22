@@ -14,12 +14,12 @@ impl RedisCreator {
 
 #[async_trait]
 impl Creator for RedisCreator {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_init = arg.init();
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let args_init = arg.args_init();
         if let Some(args_init) = args_init {
             let url = &args_init["url"];
             if url.is_string() {
-                let url = arg.render(arg.context(), url)?;
+                let url = chord.render(arg.context(), url)?;
                 let url = url.as_str().ok_or(err!("100", "invalid url"))?;
                 let client = Client::open(url)?;
                 return Ok(Box::new(Redis {
@@ -38,11 +38,15 @@ struct Redis {
 
 #[async_trait]
 impl Action for Redis {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
-                let args = arg.body()?;
+                let args = arg.args()?;
                 let url = args["url"].as_str().ok_or(err!("101", "missing url"))?;
 
                 let client = redis::Client::open(url)?;
@@ -53,7 +57,7 @@ impl Action for Redis {
 }
 
 async fn run0(arg: &dyn Arg, client: &Client) -> Result<Box<dyn Scope>, Error> {
-    let args = arg.body()?;
+    let args = arg.args()?;
     let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 
     let mut con = client.get_async_connection().await?;

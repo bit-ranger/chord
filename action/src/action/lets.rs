@@ -11,7 +11,7 @@ impl LetCreator {
 
 #[async_trait]
 impl Creator for LetCreator {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Let {}))
     }
 }
@@ -40,20 +40,20 @@ impl Context for ContextStruct {
 
 #[async_trait]
 impl Action for Let {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let mut lets = Map::new();
-        if arg.body_raw().is_object() {
+        if arg.args_raw().is_object() {
             let mut new_ctx = ContextStruct {
                 map: arg.context().data().clone(),
             };
-            for (k, v) in arg.body_raw().as_object().unwrap() {
-                let rvr = arg.render(&new_ctx, v)?;
+            for (k, v) in arg.args_raw().as_object().unwrap() {
+                let rvr = chord.render(&new_ctx, v)?;
                 new_ctx.data_mut().insert(k.clone(), rvr.clone());
                 lets.insert(k.clone(), rvr);
             }
             Ok(Box::new(Value::Object(lets)))
         } else {
-            Ok(Box::new(arg.body()?))
+            Ok(Box::new(arg.args()?))
         }
     }
 }

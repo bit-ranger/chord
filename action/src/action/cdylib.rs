@@ -34,8 +34,8 @@ impl CdylibCreator {
 
 #[async_trait]
 impl Creator for CdylibCreator {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.body_raw();
+    async fn create(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let args_raw = arg.args_raw();
         let lib_name = args_raw.as_str().ok_or(err!("100", "missing lib"))?;
 
         let mut reload_handler =
@@ -52,12 +52,16 @@ struct Cdylib {
 
 #[async_trait]
 impl Action for Cdylib {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
         let action_run: Symbol<fn(args: *const c_char) -> *mut c_char> =
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();
         ar.insert("id".to_string(), Value::String(arg.id().to_string()));
-        ar.insert("args".to_string(), arg.body()?);
+        ar.insert("args".to_string(), arg.args()?);
         ar.insert(
             "context".to_string(),
             Value::Object(arg.context().data().clone()),

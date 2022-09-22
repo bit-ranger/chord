@@ -63,7 +63,7 @@ impl Creator for Dubbo {
             Value::Array(aw_vec) => {
                 let mut ar_vec: Vec<Value> = vec![];
                 for aw in aw_vec {
-                    let ar = arg.render_value(aw)?;
+                    let ar = chord.render_value(aw)?;
                     ar_vec.push(ar);
                 }
                 ar_vec

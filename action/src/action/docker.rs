@@ -28,17 +28,17 @@ impl Docker {
 
 #[async_trait]
 impl Creator for Docker {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let creator = self.actual.read().await;
         let creator_ref = creator.borrow();
         if creator_ref.is_some() {
-            return creator_ref.as_ref().unwrap().create(arg).await;
+            return creator_ref.as_ref().unwrap().create(chord, arg).await;
         } else {
             drop(creator);
             let mut guard = self.actual.write().await;
             let guard = guard.borrow_mut();
             let new_creator = DockerActual::new(self.address.clone()).await?;
-            let action = new_creator.create(arg).await?;
+            let action = new_creator.create(chord, arg).await?;
             guard.replace(new_creator);
             return Ok(action);
         }
@@ -59,8 +59,8 @@ impl DockerActual {
 
 #[async_trait]
 impl Creator for DockerActual {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.body_raw();
+    async fn create(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let args_raw = arg.args_raw();
         let image = args_raw["image"]
             .as_str()
             .ok_or(err!("010", "missing image"))?;
@@ -75,8 +75,12 @@ struct ImageWrapper(Image);
 
 #[async_trait]
 impl Action for ImageWrapper {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.body()?;
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
+        let args = arg.args()?;
         let cmd = &args["cmd"];
 
         let mut ca = DkArg::default();

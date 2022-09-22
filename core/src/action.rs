@@ -62,37 +62,35 @@ impl Scope for Value {
 pub trait Chord: Sync + Send {
     fn creator(&self, action: &str) -> Option<&dyn Creator>;
 
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
+
     fn clone(&self) -> Box<dyn Chord>;
 }
 
 pub trait Arg: Sync + Send {
     fn id(&self) -> &dyn Id;
 
-    fn body(&self) -> Result<Value, Error>;
+    fn args(&self) -> Result<Value, Error>;
 
-    fn body_raw(&self) -> &Value;
+    fn args_raw(&self) -> &Value;
 
-    fn init(&self) -> Option<&Value>;
+    fn args_init(&self) -> Option<&Value>;
 
     fn context(&self) -> &dyn Context;
 
     fn context_mut(&mut self) -> &mut dyn Context;
-
-    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error>;
-
-    fn chord(&self) -> &dyn Chord;
 }
 
 #[async_trait]
 pub trait Action: Sync + Send {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error>;
 
-    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
-        arg.body()
+    async fn explain(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Value, Error> {
+        arg.args()
     }
 }
 
 #[async_trait]
 pub trait Creator: Sync + Send {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error>;
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error>;
 }

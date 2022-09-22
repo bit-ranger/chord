@@ -13,7 +13,7 @@ impl AlterCreator {
 
 #[async_trait]
 impl Creator for AlterCreator {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Alter {}))
     }
 }
@@ -42,8 +42,12 @@ impl Context for ContextStruct {
 
 #[async_trait]
 impl Action for Alter {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.body()?;
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
+        let args = arg.args()?;
         let obj = args
             .as_object()
             .ok_or(err!("100", "alter must be a object"))?;

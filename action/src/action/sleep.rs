@@ -15,7 +15,7 @@ impl SleepCreator {
 
 #[async_trait]
 impl Creator for SleepCreator {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Sleep {}))
     }
 }
@@ -24,8 +24,12 @@ struct Sleep {}
 
 #[async_trait]
 impl Action for Sleep {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let sec = arg.body()?;
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
+        let sec = arg.args()?;
         if sec.is_null() {
             return Err(err!("100", "sleep must > 0"));
         }

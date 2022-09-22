@@ -39,7 +39,7 @@ impl<'a> CreateArg for MapCreateArg<'a> {
     }
 
     fn render_str(&self, text: &str) -> Result<Value, Error> {
-        self.iter_arg.render_str(text)
+        self.iter_chord.render_str(text)
     }
 
     fn is_static(&self, text: &str) -> bool {

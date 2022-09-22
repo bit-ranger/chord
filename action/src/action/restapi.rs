@@ -22,7 +22,7 @@ impl RestapiCreator {
 
 #[async_trait]
 impl Creator for RestapiCreator {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(RestapiAction {
             client: self.client.clone(),
         }))
@@ -35,12 +35,16 @@ struct RestapiAction {
 
 #[async_trait]
 impl Action for RestapiAction {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
         run(self.client.clone(), arg).await
     }
 
-    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
-        let args = arg.body()?;
+    async fn explain(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Value, Error> {
+        let args = arg.args()?;
         let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
 
         let url = Url::from_str(url).map_err(|_| err!("101", format!("invalid url: {}", url)))?;
@@ -92,7 +96,7 @@ async fn run(client: Client, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
 }
 
 async fn run0(client: Client, arg: &dyn Arg) -> std::result::Result<Value, Error> {
-    let args = arg.body()?;
+    let args = arg.args()?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
     let url = Url::from_str(url).or(Err(err!("101", format!("invalid url: {}", url))))?;

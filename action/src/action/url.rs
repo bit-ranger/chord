@@ -12,7 +12,7 @@ impl UrlCreator {
 
 #[async_trait]
 impl Creator for UrlCreator {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Url {}))
     }
 }
@@ -21,8 +21,12 @@ struct Url {}
 
 #[async_trait]
 impl Action for Url {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let args = arg.body()?;
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Box<dyn Scope>, Error> {
+        let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 
         let from = args["from"].as_str().ok_or(err!("101", "missing from"))?;

@@ -5,28 +5,29 @@ use chord_core::collection::TailDropVec;
 
 use crate::err;
 
-struct ArgStruct<'o, 'c> {
+struct ArgStruct<'o, 'c, 'ch> {
     block: &'o dyn Arg,
     context: &'c mut Box<ContextStruct>,
     aid: String,
     action: String,
+    chord: &'ch dyn Chord,
 }
 
-impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
+impl<'o, 'c, 'ch> Arg for ArgStruct<'o, 'c, 'ch> {
     fn id(&self) -> &dyn Id {
         self.block.id()
     }
 
-    fn body(&self) -> Result<Value, Error> {
-        self.block.render(self.context(), self.body_raw())
+    fn args(&self) -> Result<Value, Error> {
+        self.chord.render(self.context(), self.args_raw())
     }
 
-    fn body_raw(&self) -> &Value {
-        &self.block.body_raw()[&self.aid][&self.action]
+    fn args_raw(&self) -> &Value {
+        &self.block.args_raw()[&self.aid][&self.action]
     }
 
-    fn init(&self) -> Option<&Value> {
-        let raw = self.body_raw();
+    fn args_init(&self) -> Option<&Value> {
+        let raw = self.args_raw();
         if let Value::Object(obj) = raw {
             obj.get("__init__")
         } else {
@@ -40,14 +41,6 @@ impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
 
     fn context_mut(&mut self) -> &mut dyn Context {
         self.context.as_mut()
-    }
-
-    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
-        self.block.render(context, raw)
-    }
-
-    fn chord(&self) -> &dyn Chord {
-        self.block.chord()
     }
 }
 
@@ -81,8 +74,8 @@ impl BlockCreator {
 
 #[async_trait]
 impl Creator for BlockCreator {
-    async fn create(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.body_raw();
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let args_raw = arg.args_raw();
         let map = args_raw.as_object().unwrap();
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
@@ -99,13 +92,13 @@ impl Creator for BlockCreator {
                 context: &mut context,
                 aid: aid.to_string(),
                 action: action.to_string(),
+                chord,
             };
 
-            let action_obj = arg
-                .chord()
+            let action_obj = chord
                 .creator(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
-                .create(&mut create_arg)
+                .create(chord, &mut create_arg)
                 .await
                 .map_err(|_| err!("100", "create error"))?;
             action_vec.push((aid.to_string(), action.to_string(), action_obj));
@@ -123,7 +116,7 @@ struct Block {
 
 #[async_trait]
 impl Action for Block {
-    async fn execute(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
@@ -134,8 +127,9 @@ impl Action for Block {
                 context: &mut context,
                 aid: aid.to_string(),
                 action: action.to_string(),
+                chord,
             };
-            let v = action_obj.execute(&mut run).await?;
+            let v = action_obj.execute(chord, &mut run).await?;
             scope_vec.push((aid.to_string(), v));
         }
 

@@ -3,14 +3,14 @@ use std::sync::Arc;
 use chrono::Utc;
 use log::{debug, error, info, trace, warn};
 
-use chord_core::action::{Action, Arg, Id, Scope};
+use chord_core::action::{Action, Chord, Id, Scope};
 use chord_core::collection::TailDropVec;
 use chord_core::step::StepState;
 use chord_core::value::Value;
 use res::StepAssessStruct;
 use Error::*;
 
-use crate::flow::step::arg::ArgStruct;
+use crate::flow::step::arg::{ArgStruct, ChordStruct};
 use crate::flow::step::res::ActionAssessStruct;
 
 pub mod arg;
@@ -26,11 +26,15 @@ pub enum Error {
 }
 
 pub struct StepRunner {
+    chord: Arc<ChordStruct>,
     action_vec: Arc<TailDropVec<(String, Box<dyn Action>)>>,
 }
 
 impl StepRunner {
-    pub async fn new(arg: &mut ArgStruct<'_, '_>) -> Result<StepRunner, Error> {
+    pub async fn new(
+        chord: Arc<ChordStruct>,
+        arg: &mut ArgStruct<'_, '_>,
+    ) -> Result<StepRunner, Error> {
         trace!("step new {}", arg.id());
         let obj = arg.flow().step_obj(arg.id().step());
         let aid_vec: Vec<String> = obj.iter().map(|(aid, _)| aid.to_string()).collect();
@@ -39,17 +43,17 @@ impl StepRunner {
         for aid in aid_vec {
             arg.aid(aid.as_str());
             let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
-            let action = arg
-                .chord()
+            let action = chord
                 .creator(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
-                .create(arg)
+                .create(chord.as_ref(), arg)
                 .await
                 .map_err(|e| Create(arg.id().step().to_string(), aid.to_string(), e))?;
             action_vec.push((aid.to_string(), action));
         }
 
         Ok(StepRunner {
+            chord,
             action_vec: Arc::new(TailDropVec::from(action_vec)),
         })
     }
@@ -63,8 +67,11 @@ impl StepRunner {
             let key: &str = aid;
             let action: &Box<dyn Action> = action;
             arg.aid(key);
-            let explain = action.explain(arg).await.unwrap_or(Value::Null);
-            let value = action.execute(arg).await;
+            let explain = action
+                .explain(self.chord.as_ref(), arg)
+                .await
+                .unwrap_or(Value::Null);
+            let value = action.execute(self.chord.as_ref(), arg).await;
             match &value {
                 Ok(v) => {
                     arg.context_mut()

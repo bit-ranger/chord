@@ -22,7 +22,7 @@ serde = { version = "1.0" }
 itertools = "0.10.4"
 futures = { version = "0.3.24" }
 log = { version = "0.4.14", features = ["std"] }
-reqwest = { version = "0.11.8", features = ['stream'], optional = true }
+reqwest = { version = "0.11.12", features = ['stream'], optional = true }
 md5 = { version = "0.7.0", optional = true }
 redis = { version = "0.21.6", features = ["tokio-comp"], optional = true }
 rbatis = { version = "3.1.14", optional = true, default-features = false, features = ["default_mode", "all-database", "upper_case_sql_keyword", "runtime-tokio-rustls"] }

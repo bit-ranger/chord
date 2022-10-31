@@ -25,7 +25,7 @@ conf.pre.step.install = {
                 prefix,
                 "install"
             ],
-            value_to_json: false
+            parse_json_str: false
         }
     }
 
@@ -50,7 +50,7 @@ step.step1 = {
                 "test",
                 "{{obj var.case}}"
             ],
-            value_to_json: true
+            parse_json_str: true
         }
     },
 

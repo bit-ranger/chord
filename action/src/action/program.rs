@@ -62,8 +62,8 @@ impl Action for AttachProgram {
         match last_line {
             None => Ok(Box::new(Value::Null)),
             Some(last_line) => {
-                let value_to_json = args["value_to_json"].as_bool().unwrap_or(false);
-                if value_to_json {
+                let parse_json_str = args["parse_json_str"].as_bool().unwrap_or(false);
+                if parse_json_str {
                     let value: Value = from_str(last_line)?;
                     Ok(Box::new(value))
                 } else {

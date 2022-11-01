@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use log::{debug, error, info, trace, warn};
 
-use chord_core::action::{Action, Chord, Id, Scope};
+use chord_core::action::{Action, Chord, Id, Asset};
 use chord_core::collection::TailDropVec;
 use chord_core::step::StepState;
 use chord_core::value::Value;
@@ -11,7 +11,7 @@ use res::StepAssessStruct;
 use Error::*;
 
 use crate::flow::step::arg::{ArgStruct, ChordStruct};
-use crate::flow::step::res::ActionAssessStruct;
+use crate::flow::step::res::{ActionAssessStruct, ActionState};
 
 pub mod arg;
 pub mod res;
@@ -61,7 +61,7 @@ impl StepRunner {
     pub async fn run(&self, arg: &mut ArgStruct<'_, '_>) -> StepAssessStruct {
         trace!("step run {}", arg.id());
         let start = Utc::now();
-        let mut assess_vec = Vec::with_capacity(self.action_vec.len());
+        let mut asset_vec = Vec::with_capacity(self.action_vec.len());
         let mut success = true;
         for (aid, action) in self.action_vec.iter() {
             let key: &str = aid;
@@ -76,14 +76,14 @@ impl StepRunner {
                 Ok(v) => {
                     arg.context_mut()
                         .data_mut()
-                        .insert(key.to_string(), v.as_value().clone());
-                    let assess = action_assess_create(aid, explain, value);
-                    assess_vec.push(assess);
+                        .insert(key.to_string(), v.to_value());
+                    let assess = action_assess_flat(aid, explain, value);
+                    asset_vec.extend(assess);
                 }
 
                 Err(_) => {
-                    let assess = action_assess_create(aid, explain, value);
-                    assess_vec.push(assess);
+                    let assess = action_assess_flat(aid, explain, value);
+                    asset_vec.extend(assess);
                     success = false;
                     break;
                 }
@@ -91,27 +91,27 @@ impl StepRunner {
         }
 
         if success {
-            for ass in assess_vec.iter() {
-                if let StepState::Ok(v) = ass.state() {
+            for ass in asset_vec.iter() {
+                if let ActionState::Ok(v) = ass.state() {
                     debug!(
                         "{}:\n{}\n>>> {}",
                         ass.id(),
                         explain_string(ass.explain()),
-                        v.as_value()
+                        v.to_value()
                     );
                 }
             }
             info!("step Ok   {}", arg.id());
         } else {
-            for ass in assess_vec.iter() {
-                if let StepState::Ok(v) = ass.state() {
+            for ass in asset_vec.iter() {
+                if let ActionState::Ok(v) = ass.state() {
                     warn!(
                         "{}:\n{}\n>>> {}",
                         ass.id(),
                         explain_string(ass.explain()),
-                        v.as_value(),
+                        v.to_value()
                     );
-                } else if let StepState::Err(e) = ass.state() {
+                } else if let ActionState::Err(e) = ass.state() {
                     error!(
                         "{}:\n{}\n>>> {}",
                         ass.id(),
@@ -123,23 +123,42 @@ impl StepRunner {
             error!("step Err {}", arg.id());
         }
 
-        StepAssessStruct::new(Clone::clone(arg.id()), start, Utc::now(), assess_vec)
+        StepAssessStruct::new(Clone::clone(arg.id()), start, Utc::now(), asset_vec)
     }
 }
 
-fn action_assess_create(
+fn action_assess_flat(
     aid: &str,
     explain: Value,
-    value: Result<Box<dyn Scope>, chord_core::action::Error>,
-) -> ActionAssessStruct {
+    value: Result<Asset, chord_core::action::Error>,
+) -> Vec<ActionAssessStruct> {
     return if let Err(_) = value.as_ref() {
-        ActionAssessStruct::new(
+        vec![ActionAssessStruct::new(
             aid.to_string(),
             explain,
-            StepState::Err(value.err().unwrap()),
-        )
+            ActionState::Err(value.err().unwrap()),
+        )]
     } else {
-        ActionAssessStruct::new(aid.to_string(), explain, StepState::Ok(value.unwrap()))
+        match value.unwrap() {
+            Asset::Value(v) => {
+                vec![
+                    ActionAssessStruct::new(aid.to_string(), explain, ActionState::Ok(Asset::Value(v)))
+                ]
+            }
+            Asset::Data(d) => {
+                vec![
+                    ActionAssessStruct::new(aid.to_string(), explain, ActionState::Ok(Asset::Data(d)))
+                ]
+            }
+            Asset::Frames(f) => {
+                f.into_iter()
+                    .map(|fi|
+                        ActionAssessStruct::new(fi.id().to_string(),
+                                                explain.clone(),
+                                                ActionState::Ok(Asset::Frames(vec![fi]))))
+                    .collect()
+            }
+        }
     };
 }
 
@@ -150,3 +169,4 @@ fn explain_string(exp: &Value) -> String {
         exp.to_string()
     }
 }
+

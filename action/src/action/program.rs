@@ -1,5 +1,6 @@
 use log::trace;
 
+
 use chord_core::action::prelude::*;
 use chord_core::future::process::{Child, Command};
 
@@ -36,9 +37,9 @@ impl AttachProgram {
 impl Action for AttachProgram {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         let mut command = program_command(&args)?;
         trace!("program attach command {:?}", command);
@@ -60,15 +61,15 @@ impl Action for AttachProgram {
         let last_line = out.lines().last();
 
         match last_line {
-            None => Ok(Box::new(Value::Null)),
+            None => Ok(Asset::Value(Value::Null)),
             Some(last_line) => {
                 let parse_json_str = args["parse_json_str"].as_bool().unwrap_or(false);
                 if parse_json_str {
                     let value: Value = from_str(last_line)?;
-                    Ok(Box::new(value))
+                    Ok(Asset::Value(value))
                 } else {
                     let value: Value = Value::String(last_line.to_string());
-                    Ok(Box::new(value))
+                    Ok(Asset::Value(value))
                 }
             }
         }
@@ -93,16 +94,16 @@ impl DetachProgram {
 impl Action for DetachProgram {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
 
         let mut command = program_command(&args)?;
         trace!("detach command {:?}", command);
         let child = command.spawn()?;
         trace!("detach pid {:?}", child.id());
-        Ok(Box::new(ChildHolder::new(child)))
+        Ok(Asset::Data(Box::new(ChildHolder::new(child))))
     }
 
     async fn explain(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Value, Error> {
@@ -126,7 +127,7 @@ impl ChildHolder {
     }
 }
 
-impl Scope for ChildHolder {
+impl Data for ChildHolder {
     fn as_value(&self) -> &Value {
         &self.value
     }

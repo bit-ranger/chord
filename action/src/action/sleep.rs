@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+
 use chord_core::action::prelude::*;
 use chord_core::future::time::sleep;
 
@@ -26,9 +27,9 @@ struct Sleep {}
 impl Action for Sleep {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let sec = arg.args()?;
         if sec.is_null() {
             return Err(err!("100", "sleep must > 0"));
@@ -46,6 +47,6 @@ impl Action for Sleep {
         }
 
         sleep(Duration::from_secs(sec)).await;
-        return Ok(Box::new(Value::Null));
+        return Ok(Asset::Value(Value::Null));
     }
 }

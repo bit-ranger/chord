@@ -1,3 +1,4 @@
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -23,14 +24,14 @@ struct Crypto {}
 impl Action for Crypto {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         run(arg).await
     }
 }
 
-async fn run(arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+async fn run(arg: &dyn Arg) -> Result<Asset, Error> {
     let args = arg.args()?;
     let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 
@@ -40,7 +41,7 @@ async fn run(arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
         "md5" => {
             let digest = md5::compute(from);
             let digest = format!("{:x}", digest);
-            return Ok(Box::new(Value::String(digest)));
+            return Ok(Asset::Value(Value::String(digest)));
         }
         _ => Err(err!("102", format!("unsupported {}", by))),
     };

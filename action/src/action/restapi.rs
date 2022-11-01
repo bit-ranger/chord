@@ -5,6 +5,7 @@ use std::str::FromStr;
 use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Client, Method, Response, Url};
 
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -37,9 +38,9 @@ struct RestapiAction {
 impl Action for RestapiAction {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         run(self.client.clone(), arg).await
     }
 
@@ -90,12 +91,12 @@ impl Action for RestapiAction {
     }
 }
 
-async fn run(client: Client, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+async fn run(client: Client, arg: &dyn Arg) -> Result<Asset, Error> {
     let value = run0(client, arg).await?;
-    Ok(Box::new(value))
+    Ok(Asset::Value(value))
 }
 
-async fn run0(client: Client, arg: &dyn Arg) -> std::result::Result<Value, Error> {
+async fn run0(client: Client, arg: &dyn Arg) -> Result<Value, Error> {
     let args = arg.args()?;
 
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;

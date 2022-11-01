@@ -1,5 +1,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
+
 use chord_core::action::prelude::*;
 
 pub struct CountCreator {}
@@ -32,10 +33,10 @@ struct Count {
 impl Action for Count {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
-        _arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
-        Ok(Box::new(Value::Number(Number::from(
+        chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Asset, Error> {
+        Ok(Asset::Value(Value::Number(Number::from(
             self.num.fetch_add(self.incr, Ordering::SeqCst),
         ))))
     }

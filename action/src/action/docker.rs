@@ -1,6 +1,7 @@
 use std::borrow::{Borrow, BorrowMut};
 use std::sync::Arc;
 
+
 use chord_core::action::prelude::*;
 use chord_core::future::sync::RwLock;
 use chord_util::docker::container::Arg as DkArg;
@@ -77,9 +78,9 @@ struct ImageWrapper(Image);
 impl Action for ImageWrapper {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         let cmd = &args["cmd"];
 
@@ -121,13 +122,13 @@ impl Action for ImageWrapper {
             let parse_json_str = args["parse_json_str"].as_bool().unwrap_or(false);
             if parse_json_str {
                 let value: Value = from_str(tail_lines.join("").as_str())?;
-                Ok(Box::new(value))
+                Ok(Asset::Value(value))
             } else {
                 let value: Value = Value::String(tail_lines.join(""));
-                Ok(Box::new(value))
+                Ok(Asset::Value(value))
             }
         } else {
-            Ok(Box::new(Value::Null))
+            Ok(Asset::Value(Value::Null))
         }
     }
 }

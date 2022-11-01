@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use chord_core::case::{CaseAssess, CaseId, CaseState};
+use chord_core::case::{CaseAsset, CaseId, CaseState};
 use chord_core::value::Value;
 
 use crate::flow::case::arg::CaseIdStruct;
@@ -33,7 +33,7 @@ impl CaseAssessStruct {
     }
 }
 
-impl CaseAssess for CaseAssessStruct {
+impl CaseAsset for CaseAssessStruct {
     fn id(&self) -> &dyn CaseId {
         self.id.as_ref()
     }

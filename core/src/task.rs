@@ -26,7 +26,7 @@ impl TaskState {
     }
 }
 
-pub trait TaskAssess: Sync + Send {
+pub trait TaskAsset: Sync + Send {
     fn id(&self) -> &dyn TaskId;
 
     fn start(&self) -> DateTime<Utc>;

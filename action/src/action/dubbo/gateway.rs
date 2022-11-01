@@ -6,6 +6,7 @@ use log::{debug, info, trace};
 use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Body, Client, Method, Response, Url};
 
+
 use chord_core::action::prelude::*;
 use chord_core::future::io::{AsyncBufReadExt, BufReader, Lines};
 use chord_core::future::process::{Child, ChildStdout, Command};
@@ -198,9 +199,9 @@ struct Dubbo {
 impl Action for Dubbo {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         let method_long = args["method"]
             .as_str()
@@ -242,7 +243,7 @@ impl Action for Dubbo {
         trace!("invoke response {}, {}", invoke_str, &value);
         let value = &value;
         if value["success"].as_bool().unwrap_or(false) {
-            return Ok(Box::new(value["data"].clone()));
+            return Ok(Asset::Value(value["data"].clone()));
         }
 
         return Err(err!(

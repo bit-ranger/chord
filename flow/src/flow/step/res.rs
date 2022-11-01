@@ -1,20 +1,42 @@
 use chrono::{DateTime, Utc};
 
-use chord_core::action::Id;
+use chord_core::action::{Asset, Id};
 use chord_core::collection::TailDropVec;
-use chord_core::step::{StepAssess, StepState};
+use chord_core::step::{StepAsset, StepState};
 use chord_core::value::{Map, Value};
 
 use crate::flow::step::arg::IdStruct;
 
+pub enum ActionState {
+    Ok(Asset),
+    Err(chord_core::action::Error),
+}
+
+impl ActionState {
+    #[warn(dead_code)]
+    pub fn is_ok(&self) -> bool {
+        match self {
+            ActionState::Ok(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_err(&self) -> bool {
+        match self {
+            ActionState::Err(_) => true,
+            _ => false,
+        }
+    }
+}
+
 pub struct ActionAssessStruct {
     aid: String,
     explain: Value,
-    state: StepState,
+    state: ActionState,
 }
 
 impl ActionAssessStruct {
-    pub fn new(aid: String, explain: Value, state: StepState) -> ActionAssessStruct {
+    pub fn new(aid: String, explain: Value, state: ActionState) -> ActionAssessStruct {
         ActionAssessStruct {
             aid,
             explain,
@@ -30,7 +52,7 @@ impl ActionAssessStruct {
         &self.explain
     }
 
-    pub fn state(&self) -> &StepState {
+    pub fn state(&self) -> &ActionState {
         &self.state
     }
 }
@@ -57,9 +79,9 @@ impl StepAssessStruct {
 
         for ast in action_assess_vec.iter() {
             em.insert(ast.aid.to_string(), ast.explain.clone());
-            if let StepState::Ok(s) = ast.state() {
-                sm.insert(ast.id().to_string(), s.as_value().clone());
-            } else if let StepState::Err(e) = ast.state() {
+            if let ActionState::Ok(s) = ast.state() {
+                sm.insert(ast.id().to_string(), s.to_value());
+            } else if let ActionState::Err(e) = ast.state() {
                 sm.insert(ast.id().to_string(), Value::String(e.to_string()));
             }
         }
@@ -67,13 +89,17 @@ impl StepAssessStruct {
         let explain = Value::Object(em);
 
         let state = if action_assess_vec.is_empty() {
-            StepState::Ok(Box::new(Value::Object(Map::new())))
+            StepState::Ok(Value::Object(Map::new()))
         } else {
-            let last_is_err = (&action_assess_vec).last().unwrap().state.is_err();
-            if last_is_err {
-                action_assess_vec.pop().unwrap().state
+            let last_state = &action_assess_vec.last().unwrap().state;
+            if last_state.is_err() {
+                if let ActionState::Err(e) = action_assess_vec.pop().unwrap().state {
+                    StepState::Err(e)
+                } else {
+                    unreachable!()
+                }
             } else {
-                StepState::Ok(Box::new(Value::Object(sm)))
+                StepState::Ok(Value::Object(sm))
             }
         };
 
@@ -88,7 +114,7 @@ impl StepAssessStruct {
     }
 }
 
-impl StepAssess for StepAssessStruct {
+impl StepAsset for StepAssessStruct {
     fn id(&self) -> &dyn Id {
         &self.id
     }

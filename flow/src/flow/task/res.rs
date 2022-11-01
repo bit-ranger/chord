@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use chord_core::task::{StageAssess, StageState, TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAssess, StageState, TaskAsset, TaskId, TaskState};
 
 use crate::flow::task::arg::TaskIdSimple;
 
@@ -29,7 +29,7 @@ impl TaskAssessStruct {
     }
 }
 
-impl TaskAssess for TaskAssessStruct {
+impl TaskAsset for TaskAssessStruct {
     fn id(&self) -> &dyn TaskId {
         self.id.as_ref()
     }

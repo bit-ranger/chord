@@ -1,5 +1,5 @@
 use chord_core::action::prelude::*;
-use chord_core::action::Context;
+
 
 pub struct LetCreator {}
 
@@ -40,7 +40,7 @@ impl Context for ContextStruct {
 
 #[async_trait]
 impl Action for Let {
-    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let mut lets = Map::new();
         if arg.args_raw().is_object() {
             let mut new_ctx = ContextStruct {
@@ -51,9 +51,9 @@ impl Action for Let {
                 new_ctx.data_mut().insert(k.clone(), rvr.clone());
                 lets.insert(k.clone(), rvr);
             }
-            Ok(Box::new(Value::Object(lets)))
+            Ok(Asset::Value(Value::Object(lets)))
         } else {
-            Ok(Box::new(arg.args()?))
+            Ok(Asset::Value(arg.args()?))
         }
     }
 }

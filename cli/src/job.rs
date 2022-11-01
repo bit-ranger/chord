@@ -13,7 +13,7 @@ use chord_core::future::path::is_dir;
 use chord_core::future::task::spawn;
 use chord_core::input::JobLoader;
 use chord_core::output::{DateTime, JobReporter, Utc};
-use chord_core::task::{TaskAssess, TaskId, TaskState};
+use chord_core::task::{TaskAsset, TaskId, TaskState};
 use chord_core::value::Value;
 use chord_flow::{App, TaskIdSimple};
 use Error::*;
@@ -49,7 +49,7 @@ pub async fn run<P: AsRef<Path>>(
     exec_id: String,
     job_path: P,
     job_path_is_task: bool,
-) -> Result<Vec<Box<dyn TaskAssess>>, Error> {
+) -> Result<Vec<Box<dyn TaskAsset>>, Error> {
     let task_state_vec = if job_path_is_task {
         task_path_run_to_vec(
             app,
@@ -86,7 +86,7 @@ async fn job_path_run_recur(
     exec_id: String,
     root_path: PathBuf,
     job_sub_path: PathBuf,
-) -> Result<Vec<Box<dyn TaskAssess>>, Error> {
+) -> Result<Vec<Box<dyn TaskAsset>>, Error> {
     let job_path = root_path.join(job_sub_path.clone());
     let job_path_str = job_path.to_str().unwrap();
     trace!("job path start {}", job_path_str);
@@ -127,7 +127,7 @@ async fn job_path_run_recur(
     }
     sub_name_vec.sort();
 
-    let mut task_assess_vec: Vec<Box<dyn TaskAssess>> = Vec::new();
+    let mut task_assess_vec: Vec<Box<dyn TaskAsset>> = Vec::new();
 
     for sub_name in sub_name_vec {
         let child_sub_path = job_sub_path.join(sub_name.as_str());
@@ -207,7 +207,7 @@ async fn task_path_run_to_vec(
     exec_id: String,
     root_path: PathBuf,
     task_sub_path: PathBuf,
-) -> Result<Vec<Box<dyn TaskAssess>>, Error> {
+) -> Result<Vec<Box<dyn TaskAsset>>, Error> {
     Ok(vec![
         task_path_run(
             app,
@@ -237,7 +237,7 @@ async fn task_path_run(
     exec_id: String,
     root_path: PathBuf,
     task_sub_path: PathBuf,
-) -> Box<dyn TaskAssess> {
+) -> Box<dyn TaskAsset> {
     let mut task_id = task_sub_path.iter().map(|p| p.to_str().unwrap()).join(".");
     if task_id.is_empty() {
         task_id = root_path
@@ -264,7 +264,7 @@ async fn task_path_run_scope(
     job_reporter: Arc<dyn JobReporter>,
     task_path: PathBuf,
     id: Arc<TaskIdSimple>,
-) -> Box<dyn TaskAssess> {
+) -> Box<dyn TaskAsset> {
     trace!("task path start {}", task_path.to_str().unwrap());
     let start = Utc::now();
     let task_assess =
@@ -293,7 +293,7 @@ async fn task_path_run_do<P: AsRef<Path>>(
     app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
-) -> Result<Box<dyn TaskAssess>, Error> {
+) -> Result<Box<dyn TaskAsset>, Error> {
     let task_path = Path::new(task_path.as_ref());
     let flow = chord_input::flow::load(task_path, "task")
         .await
@@ -330,7 +330,7 @@ struct JobTaskAssess {
     state: TaskState,
 }
 
-impl TaskAssess for JobTaskAssess {
+impl TaskAsset for JobTaskAssess {
     fn id(&self) -> &dyn TaskId {
         self.id.as_ref()
     }

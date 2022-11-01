@@ -2,7 +2,6 @@ use rlua::prelude::LuaError;
 use rlua::{ToLua, UserData, UserDataMethods};
 
 use chord_core::action::prelude::*;
-use chord_core::action::{Context, Id};
 use chord_core::future::runtime::Handle;
 
 use crate::err;
@@ -84,7 +83,7 @@ impl Arg for ArgStruct {
 
 #[async_trait]
 impl Action for LuaAction {
-    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let context = arg.context().data().clone();
         let id = arg.id().clone();
         let code = arg
@@ -101,7 +100,7 @@ fn execute(
     code: String,
     chord: &dyn Chord,
     context: Map,
-) -> Result<Box<dyn Scope>, Error> {
+) -> Result<Asset, Error> {
     let rt = rlua::Lua::new();
     rt.set_memory_limit(Some(1024000));
     rt.context(|lua| {
@@ -143,13 +142,13 @@ fn execute(
     })
 }
 
-fn eval(lua: rlua::Context, code: &str) -> Result<Box<dyn Scope>, Error> {
+fn eval(lua: rlua::Context, code: &str) -> Result<Asset, Error> {
     let chunk = lua.load(code);
     let result: rlua::Result<rlua::Value> = chunk.eval();
     match result {
         Ok(v) => {
             let v: Value = to_serde_value(&v)?;
-            Ok(Box::new(v))
+            Ok(Asset::Value(v))
         }
         Err(e) => Err(err!("101", format!("{}", e))),
     }
@@ -238,12 +237,12 @@ impl UserData for ActionUserData {
             };
             let handle = Handle::current();
             let _ = handle.enter();
-            let scope = futures::executor::block_on(
+            let asset = futures::executor::block_on(
                 this.action.execute(this.chord.as_ref(), &mut play_arg),
             )
             .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
-            let value = scope.as_value();
-            let lua_value = to_lua_value(lua_ctx, value);
+            let value = asset.to_value();
+            let lua_value = to_lua_value(lua_ctx, &value);
             Ok(lua_value)
         });
     }

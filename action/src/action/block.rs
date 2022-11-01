@@ -1,5 +1,6 @@
 use std::mem::replace;
 
+
 use chord_core::action::prelude::*;
 use chord_core::collection::TailDropVec;
 
@@ -116,7 +117,7 @@ struct Block {
 
 #[async_trait]
 impl Action for Block {
-    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
@@ -137,10 +138,10 @@ impl Action for Block {
 
         let scope_vec = TailDropVec::from(scope_vec);
         let mut value = Map::new();
-        for (aid, scope) in scope_vec.iter() {
-            value.insert(aid.to_string(), scope.as_value().clone());
+        for (aid, asset) in scope_vec.iter() {
+            value.insert(aid.to_string(), asset.to_value());
         }
 
-        Ok(Box::new(Value::Object(value)))
+        Ok(Asset::Value(Value::Object(value)))
     }
 }

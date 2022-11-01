@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -54,9 +55,9 @@ struct Cdylib {
 impl Action for Cdylib {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let action_run: Symbol<fn(args: *const c_char) -> *mut c_char> =
             unsafe { self.lib.lib.get(b"run")? };
         let mut ar = Map::new();
@@ -71,6 +72,6 @@ impl Action for Cdylib {
         let av: *mut c_char = action_run(ar.as_ptr());
         let av = unsafe { CStr::from_ptr(av) };
         let av: Value = from_str(av.to_str()?)?;
-        Ok(Box::new(av))
+        Ok(Asset::Value(av))
     }
 }

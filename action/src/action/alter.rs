@@ -1,5 +1,5 @@
 use chord_core::action::prelude::*;
-use chord_core::action::Context;
+
 
 use crate::err;
 
@@ -44,9 +44,9 @@ impl Context for ContextStruct {
 impl Action for Alter {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         let obj = args
             .as_object()
@@ -57,6 +57,6 @@ impl Action for Alter {
                 .insert(k.to_string(), v.clone());
         }
 
-        Ok(Box::new(Value::Null))
+        Ok(Asset::Value(Value::Null))
     }
 }

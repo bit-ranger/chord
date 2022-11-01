@@ -4,7 +4,7 @@ use futures::future::join_all;
 use handlebars::RenderError;
 use log::{error, info, trace, warn};
 
-use chord_core::case::{CaseAssess, CaseState};
+use chord_core::case::{CaseAsset, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::future::task::{spawn, JoinError, JoinHandle};
@@ -12,8 +12,8 @@ use chord_core::future::time::timeout;
 use chord_core::input::{StageLoader, TaskLoader};
 use chord_core::output::Utc;
 use chord_core::output::{StageReporter, TaskReporter};
-use chord_core::step::{StepAssess, StepState};
-use chord_core::task::{StageAssess, StageState, TaskAssess, TaskId, TaskState};
+use chord_core::step::{StepAsset, StepState};
+use chord_core::task::{StageAssess, StageState, TaskAsset, TaskId, TaskState};
 use chord_core::value::{json, Map, Value};
 use res::TaskAssessStruct;
 
@@ -64,7 +64,7 @@ pub struct TaskRunner {
 
     pre_ctx: Option<Arc<Map>>,
     #[allow(dead_code)]
-    pre_assess: Option<Box<dyn CaseAssess>>,
+    pre_assess: Option<Box<dyn CaseAsset>>,
     #[allow(dead_code)]
     pre_step_vec: Option<Arc<TailDropVec<(String, StepRunner)>>>,
 
@@ -116,7 +116,7 @@ impl TaskRunner {
         self.id.clone()
     }
 
-    pub async fn run(mut self) -> Box<dyn TaskAssess> {
+    pub async fn run(mut self) -> Box<dyn TaskAsset> {
         trace!("task run  {}", self.id);
         let start = Utc::now();
 
@@ -459,10 +459,10 @@ impl TaskRunner {
         &mut self,
         case_vec: Vec<(String, Value)>,
         concurrency: usize,
-    ) -> Vec<Box<dyn CaseAssess>> {
+    ) -> Vec<Box<dyn CaseAsset>> {
         let ca_vec = self.case_arg_vec(case_vec);
 
-        let mut case_join_result_vec = Vec::<Result<Box<dyn CaseAssess>, JoinError>>::new();
+        let mut case_join_result_vec = Vec::<Result<Box<dyn CaseAsset>, JoinError>>::new();
         let mut futures = vec![];
         for ca in ca_vec {
             let f = case_spawn(self.app.clone(), ca);
@@ -524,12 +524,12 @@ async fn pre_arg(
     ))
 }
 
-async fn pre_ctx_create(sa_vec: &Vec<Box<dyn StepAssess>>) -> Map {
+async fn pre_ctx_create(sa_vec: &Vec<Box<dyn StepAsset>>) -> Map {
     let mut pre_ctx = Map::new();
     pre_ctx.insert("step".to_owned(), Value::Object(Map::new()));
     for sa in sa_vec.iter() {
         if let StepState::Ok(pv) = sa.state() {
-            pre_ctx["step"][sa.id().step()] = pv.as_value().clone();
+            pre_ctx["step"][sa.id().step()] = pv.clone();
         }
     }
     pre_ctx
@@ -567,15 +567,15 @@ async fn step_vec_create(
     Ok(step_vec)
 }
 
-async fn case_run(flow_ctx: &dyn App, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run(flow_ctx: &dyn App, case_arg: CaseArgStruct) -> Box<dyn CaseAsset> {
     Box::new(case::run(flow_ctx, case_arg).await)
 }
 
-fn case_spawn(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> JoinHandle<Box<dyn CaseAssess>> {
+fn case_spawn(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> JoinHandle<Box<dyn CaseAsset>> {
     spawn(case_run_arc(flow_ctx, case_arg))
 }
 
-async fn case_run_arc(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> Box<dyn CaseAssess> {
+async fn case_run_arc(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> Box<dyn CaseAsset> {
     CTX_ID
         .scope(
             case_arg.id().to_string(),

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use chord_core::case::CaseId;
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
-use chord_core::step::{StepAssess, StepState};
+use chord_core::step::{StepAsset, StepState};
 use chord_core::task::TaskId;
 use chord_core::value::Map;
 use chord_core::value::Value;
@@ -135,7 +135,7 @@ impl CaseArgStruct {
     pub async fn step_assess_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
         if let StepState::Ok(sv) = step_assess.state() {
             if let Value::Object(reg) = self.render_ctx.data_mut() {
-                reg["step"][sid] = sv.as_value().clone();
+                reg["step"][sid] = sv.clone();
             }
         }
     }

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 
-use chord_core::case::{CaseAssess, CaseState};
+use chord_core::case::{CaseAsset, CaseState};
 use chord_core::flow::Flow;
 use chord_core::future::fs::{create_dir_all, metadata, read_dir, remove_file, rename, DirEntry};
 use chord_core::future::path::exists;
@@ -14,7 +14,7 @@ use chord_core::output::JobReporter;
 use chord_core::output::StageReporter;
 use chord_core::output::{async_trait, TaskReporter};
 use chord_core::step::StepState;
-use chord_core::task::{StageAssess, TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAssess, TaskAsset, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
 
 pub struct CsvJobReporter {
@@ -111,7 +111,7 @@ impl TaskReporter for CsvTaskReporter {
         Ok(())
     }
 
-    async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+    async fn end(&mut self, task_assess: &dyn TaskAsset) -> Result<(), Error> {
         let task_state_view = match task_assess.state() {
             TaskState::Ok => "O",
             TaskState::Err(_) => "E",
@@ -165,7 +165,7 @@ impl StageReporter for CsvStageReporter {
         Ok(())
     }
 
-    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
+    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAsset>>) -> Result<(), Error> {
         if ca_vec.is_empty() {
             return Ok(());
         }
@@ -214,7 +214,7 @@ fn create_head(step_id_vec: Vec<&str>) -> Vec<String> {
 
 async fn report<W: std::io::Write>(
     writer: &mut Writer<W>,
-    ca_vec: &Vec<Box<dyn CaseAssess>>,
+    ca_vec: &Vec<Box<dyn CaseAsset>>,
     header: &Vec<String>,
 ) -> Result<(), Error> {
     if ca_vec.len() == 0 {
@@ -228,7 +228,7 @@ async fn report<W: std::io::Write>(
     return Ok(());
 }
 
-fn to_value_vec(ca: &dyn CaseAssess, header: &Vec<String>) -> Vec<String> {
+fn to_value_vec(ca: &dyn CaseAsset, header: &Vec<String>) -> Vec<String> {
     let mut value_vec: Vec<String> = Vec::new();
     let empty = &vec![];
     let pa_vec = match ca.state() {
@@ -266,7 +266,7 @@ fn to_value_vec(ca: &dyn CaseAssess, header: &Vec<String>) -> Vec<String> {
             match pa.state() {
                 StepState::Ok(v) => {
                     step_value.push(String::from("O"));
-                    step_value.push(to_csv_string(v.as_value()));
+                    step_value.push(to_csv_string(v));
                     step_value.push(to_csv_string(pa.explain()));
                 }
                 StepState::Err(e) => {

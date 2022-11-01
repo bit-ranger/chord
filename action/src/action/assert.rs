@@ -1,3 +1,4 @@
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -27,14 +28,14 @@ impl Action for Assert {
         Ok(Value::String(raw.to_string()))
     }
 
-    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let raw = arg.args_raw();
         let raw = raw.as_str().ok_or(err!("100", "illegal assert"))?.trim();
         let assert_tpl = format!("{{{{{cond}}}}}", cond = raw);
         let ctx = arg.context();
         let result = chord.render(ctx, &Value::String(assert_tpl))?;
         if result.eq("true") {
-            Ok(Box::new(Value::Bool(true)))
+            Ok(Asset::Value(Value::Bool(true)))
         } else {
             Err(err!("100", "false"))
         }

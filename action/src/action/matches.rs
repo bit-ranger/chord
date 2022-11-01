@@ -1,3 +1,4 @@
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -58,7 +59,7 @@ impl Creator for MatchCreator {
 
 #[async_trait]
 impl Action for Match {
-    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let map = arg
             .args_raw()
             .as_object()
@@ -85,6 +86,6 @@ impl Action for Match {
             }
         }
 
-        Ok(Box::new(Value::Null))
+        Ok(Asset::Value(Value::Null))
     }
 }

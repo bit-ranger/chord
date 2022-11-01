@@ -1,5 +1,6 @@
 use redis::{Client, Value as RedisValue};
 
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -40,9 +41,9 @@ struct Redis {
 impl Action for Redis {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
@@ -56,7 +57,7 @@ impl Action for Redis {
     }
 }
 
-async fn run0(arg: &dyn Arg, client: &Client) -> Result<Box<dyn Scope>, Error> {
+async fn run0(arg: &dyn Arg, client: &Client) -> Result<Asset, Error> {
     let args = arg.args()?;
     let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 
@@ -87,5 +88,5 @@ async fn run0(arg: &dyn Arg, client: &Client) -> Result<Box<dyn Scope>, Error> {
         RedisValue::Okay => Value::String("OK".to_string()),
         _ => Value::Array(vec![]),
     };
-    return Ok(Box::new(result));
+    return Ok(Asset::Value(result));
 }

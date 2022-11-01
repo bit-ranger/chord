@@ -3,7 +3,7 @@ use log::{info, trace, warn};
 
 use chord_core::case::CaseState;
 use chord_core::collection::TailDropVec;
-use chord_core::step::StepAssess;
+use chord_core::step::StepAsset;
 use res::CaseAssessStruct;
 
 use crate::flow::case::arg::CaseArgStruct;
@@ -16,7 +16,7 @@ pub mod res;
 pub async fn run(flow_ctx: &dyn App, mut arg: CaseArgStruct) -> CaseAssessStruct {
     trace!("case run  {}", arg.id());
     let start = Utc::now();
-    let mut step_assess_vec = Vec::<Box<dyn StepAssess>>::new();
+    let mut step_assess_vec = Vec::<Box<dyn StepAsset>>::new();
     let step_vec = arg.step_vec().clone();
 
     for (step_id, step_runner) in step_vec.iter() {

@@ -23,11 +23,11 @@ struct Log {}
 impl Action for Log {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         info!("{}", args);
-        return Ok(Box::new(Value::Null));
+        return Ok(Asset::Value(Value::Null));
     }
 }

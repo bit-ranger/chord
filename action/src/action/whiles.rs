@@ -1,3 +1,4 @@
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -58,7 +59,7 @@ impl Creator for WhileCreator {
 
 #[async_trait]
 impl Action for While {
-    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let cond_raw = arg
             .args_raw()
             .as_object()
@@ -87,6 +88,6 @@ impl Action for While {
             }
         }
 
-        Ok(Box::new(Value::Null))
+        Ok(Asset::Value(Value::Null))
     }
 }

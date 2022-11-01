@@ -1,3 +1,4 @@
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -23,9 +24,9 @@ struct Url {}
 impl Action for Url {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 
@@ -34,11 +35,11 @@ impl Action for Url {
         return match by {
             "encode" => {
                 let to = urlencoding::encode(from);
-                Ok(Box::new(Value::String(to)))
+                Ok(Asset::Value(Value::String(to)))
             }
             "decode" => {
                 let to = urlencoding::decode(from)?;
-                Ok(Box::new(Value::String(to)))
+                Ok(Asset::Value(Value::String(to)))
             }
             _ => Err(err!("102", format!("unsupported {}", by))),
         };

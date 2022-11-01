@@ -3,6 +3,7 @@ use rbatis::crud::CRUD;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 
+
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -40,9 +41,9 @@ struct Database {
 impl Action for Database {
     async fn execute(
         &self,
-        _chord: &dyn Chord,
+        chord: &dyn Chord,
         arg: &mut dyn Arg,
-    ) -> Result<Box<dyn Scope>, Error> {
+    ) -> Result<Asset, Error> {
         run(&self, arg).await
     }
 }
@@ -53,7 +54,7 @@ async fn create_rb(url: &str) -> Result<Rbatis, Error> {
     Ok(rb)
 }
 
-async fn run(obj: &Database, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+async fn run(obj: &Database, arg: &dyn Arg) -> Result<Asset, Error> {
     let args = arg.args()?;
     return match obj.rb.as_ref() {
         Some(r) => run0(arg, r).await,
@@ -66,7 +67,7 @@ async fn run(obj: &Database, arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
     };
 }
 
-async fn run0(arg: &dyn Arg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
+async fn run0(arg: &dyn Arg, rb: &Rbatis) -> Result<Asset, Error> {
     let args = arg.args()?;
     let sql = args["sql"].as_str().ok_or(err!("101", "missing sql"))?;
     let sql = sql.trim();
@@ -101,7 +102,7 @@ async fn run0(arg: &dyn Arg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
         map.insert(String::from("records"), Value::Array(page.records));
         let page = Value::Object(map);
         trace!("select: {} >>> {}", arg.id(), page);
-        return Ok(Box::new(page));
+        return Ok(Asset::Value(page));
     } else {
         let exec = rb.exec(sql, vec![]).await?;
         let mut map = Map::new();
@@ -120,6 +121,6 @@ async fn run0(arg: &dyn Arg, rb: &Rbatis) -> Result<Box<dyn Scope>, Error> {
         }
         let exec = Value::Object(map);
         trace!("exec: {} >>> {}", arg.id(), exec);
-        return Ok(Box::new(exec));
+        return Ok(Asset::Value(exec));
     }
 }

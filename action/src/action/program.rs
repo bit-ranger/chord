@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use log::trace;
 
+use chord_core::action::{DateTime, Frame, Utc};
 use chord_core::action::prelude::*;
 use chord_core::future::process::{Child, Command};
 
@@ -57,19 +60,33 @@ impl Action for AttachProgram {
         }
 
         let out = format!("{}{}", std_out, std_err);
-        let last_line = out.lines().last();
+        let lines: Vec<&str> = out.lines().collect();
 
-        match last_line {
-            None => Ok(Asset::Value(Value::Null)),
-            Some(last_line) => {
-                let parse_json_str = args["parse_json_str"].as_bool().unwrap_or(false);
-                if parse_json_str {
-                    let value: Value = from_str(last_line)?;
-                    Ok(Asset::Value(value))
-                } else {
-                    let value: Value = Value::String(last_line.to_string());
-                    Ok(Asset::Value(value))
+        let parse_last_rows_count = args["parse_last_rows_count"].as_u64().unwrap_or(0);
+        if parse_last_rows_count < 1 {
+            Ok(Asset::Value(Value::String(out)))
+        } else {
+            let begin = if lines.len() as u64 - parse_last_rows_count > 0 {
+                (lines.len() as u64 - parse_last_rows_count) as usize
+            } else {
+                0
+            };
+
+            let tail = lines[begin..lines.len()].join("\n");
+            let tail_json: Value = from_str(&tail)?;
+            if let Value::Object(map) = &tail_json {
+                if map.get("chord_report_frames").is_some() {
+                    let frames = map.get("frames");
+                    if let Some(frames) = frames {
+                        if let Value::Array(vec) = frames {
+                            let frames: Vec<Box<dyn Frame>> = vec.iter().map(value_to_frame).collect();
+                            return Ok(Asset::Frames(frames));
+                        }
+                    }
                 }
+                return Ok(Asset::Value(tail_json));
+            } else {
+                return Ok(Asset::Value(tail_json));
             }
         }
     }
@@ -78,6 +95,44 @@ impl Action for AttachProgram {
         let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))
+    }
+}
+
+fn value_to_frame(value: &Value) -> Box<dyn Frame> {
+    let frame = ProgramFrame {
+        id: value["id"].as_str().unwrap_or("").to_string(),
+        start: value["start"].as_str().map_or(Utc::now(), |t| DateTime::from_str(t).unwrap_or(Utc::now())),
+        end: value["end"].as_str().map_or(Utc::now(), |t| DateTime::from_str(t).unwrap_or(Utc::now())),
+        data: value["data"].clone(),
+    };
+    Box::new(frame)
+}
+
+struct ProgramFrame {
+    id: String,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    data: Value,
+}
+
+
+impl Data for ProgramFrame {
+    fn to_value(&self) -> Value {
+        self.data.clone()
+    }
+}
+
+impl Frame for ProgramFrame {
+    fn id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    fn start(&self) -> DateTime<Utc> {
+        self.start
+    }
+
+    fn end(&self) -> DateTime<Utc> {
+        self.end
     }
 }
 

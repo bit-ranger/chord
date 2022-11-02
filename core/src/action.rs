@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 pub use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+pub use chrono::{DateTime, Utc};
 
 use crate::case::CaseId;
 use crate::value::Map;

@@ -72,17 +72,21 @@ impl StepRunner {
                 .await
                 .unwrap_or(Value::Null);
             let value = action.execute(self.chord.as_ref(), arg).await;
-            match &value {
-                Ok(v) => {
-                    arg.context_mut()
-                        .data_mut()
-                        .insert(key.to_string(), v.to_value());
-                    let assess = action_assess_flat(aid, explain, value);
-                    asset_vec.extend(assess);
+            match value {
+                Ok(_) => {
+                    let asset = action_asset_flat(aid, explain, value);
+                    for ass in asset.iter() {
+                        if let ActionState::Ok(v) = ass.state() {
+                            arg.context_mut()
+                                .data_mut()
+                                .insert(ass.id().to_string(), v.to_value());
+                        }
+                    }
+                    asset_vec.extend(asset);
                 }
 
                 Err(_) => {
-                    let assess = action_assess_flat(aid, explain, value);
+                    let assess = action_asset_flat(aid, explain, value);
                     asset_vec.extend(assess);
                     success = false;
                     break;
@@ -127,7 +131,7 @@ impl StepRunner {
     }
 }
 
-fn action_assess_flat(
+fn action_asset_flat(
     aid: &str,
     explain: Value,
     value: Result<Asset, chord_core::action::Error>,
@@ -153,9 +157,9 @@ fn action_assess_flat(
             Asset::Frames(f) => {
                 f.into_iter()
                     .map(|fi|
-                        ActionAssessStruct::new(fi.id().to_string(),
+                        ActionAssessStruct::new(format!("{}_{}", aid, fi.id().to_string()),
                                                 explain.clone(),
-                                                ActionState::Ok(Asset::Frames(vec![fi]))))
+                                                ActionState::Ok(Asset::Data(Box::new(fi.to_value())))))
                     .collect()
             }
         }

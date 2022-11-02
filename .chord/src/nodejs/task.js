@@ -50,13 +50,13 @@ step.step1 = {
                 "test",
                 "{{obj var.case}}"
             ],
-            parse_last_rows_count: 99999
+            parse_last_rows_count: 1
         }
     },
 
     state: {
         assert: `
-        (eq value.case_args.foo "bar")
+        (eq value_id-0.case_args.foo "bar")
         `
     }
 }

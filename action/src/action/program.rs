@@ -59,14 +59,13 @@ impl Action for AttachProgram {
             ));
         }
 
-        let out = format!("{}{}", std_out, std_err);
-        let lines: Vec<&str> = out.lines().collect();
+        let lines: Vec<&str> = std_out.lines().collect();
 
         let parse_last_rows_count = args["parse_last_rows_count"].as_u64().unwrap_or(0);
         if parse_last_rows_count < 1 {
-            Ok(Asset::Value(Value::String(out)))
+            Ok(Asset::Value(Value::String(std_out)))
         } else {
-            let begin = if lines.len() as u64 - parse_last_rows_count > 0 {
+            let begin = if lines.len() as u64 > parse_last_rows_count {
                 (lines.len() as u64 - parse_last_rows_count) as usize
             } else {
                 0

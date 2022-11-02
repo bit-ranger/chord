@@ -75,7 +75,8 @@ impl Action for AttachProgram {
             let tail = lines[begin..lines.len()].join("\n");
             let tail_json: Value = from_str(&tail)?;
             if let Value::Object(map) = &tail_json {
-                if map.get("chord_report_frames").is_some() {
+                let version = map["chord_report_version"].as_str();
+                if version.is_some() && version.unwrap().eq("1.0") {
                     let frames = map.get("frames");
                     if let Some(frames) = frames {
                         if let Value::Array(vec) = frames {

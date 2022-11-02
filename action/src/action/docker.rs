@@ -1,7 +1,6 @@
 use std::borrow::{Borrow, BorrowMut};
 use std::sync::Arc;
 
-
 use chord_core::action::prelude::*;
 use chord_core::future::sync::RwLock;
 use chord_util::docker::container::Arg as DkArg;
@@ -78,7 +77,7 @@ struct ImageWrapper(Image);
 impl Action for ImageWrapper {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         let args = arg.args()?;

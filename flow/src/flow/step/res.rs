@@ -13,7 +13,7 @@ pub enum ActionState {
 }
 
 impl ActionState {
-    #[warn(dead_code)]
+    #[allow(dead_code)]
     pub fn is_ok(&self) -> bool {
         match self {
             ActionState::Ok(_) => true,

@@ -55,12 +55,12 @@ pub trait Context: Sync + Send {
 
 
 pub trait Data: Sync + Send {
-    fn as_value(&self) -> &Value;
+    fn to_value(&self) -> Value;
 }
 
 impl Data for Value {
-    fn as_value(&self) -> &Value {
-        &self
+    fn to_value(&self) -> Value {
+        self.clone()
     }
 }
 
@@ -88,10 +88,10 @@ impl Asset {
                 v.clone()
             }
             Asset::Data(d) => {
-                d.as_value().clone()
+                d.to_value()
             }
             Asset::Frames(fs) => {
-                Value::Array(fs.iter().map(|f| f.as_value().clone()).collect())
+                Value::Array(fs.iter().map(|f| f.to_value()).collect())
             }
         }
     }

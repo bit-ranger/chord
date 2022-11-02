@@ -1,6 +1,5 @@
-use mongodb::bson::{to_document, Document};
-use mongodb::{options::ClientOptions, Client};
-
+use mongodb::{Client, options::ClientOptions};
+use mongodb::bson::{Document, to_document};
 
 use chord_core::action::prelude::*;
 use chord_core::value::from_str;
@@ -28,7 +27,7 @@ struct Mongodb {}
 impl Action for Mongodb {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         run(arg).await

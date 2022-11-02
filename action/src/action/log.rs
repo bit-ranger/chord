@@ -23,7 +23,7 @@ struct Log {}
 impl Action for Log {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         let args = arg.args()?;

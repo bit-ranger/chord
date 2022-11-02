@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use dynamic_reload::{DynamicReload, Lib, PlatformName, Search, Symbol};
 
-
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -55,7 +54,7 @@ struct Cdylib {
 impl Action for Cdylib {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         let action_run: Symbol<fn(args: *const c_char) -> *mut c_char> =

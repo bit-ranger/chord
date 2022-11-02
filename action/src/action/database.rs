@@ -3,7 +3,6 @@ use rbatis::crud::CRUD;
 use rbatis::plugin::page::{Page, PageRequest};
 use rbatis::rbatis::Rbatis;
 
-
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -41,7 +40,7 @@ struct Database {
 impl Action for Database {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         run(&self, arg).await

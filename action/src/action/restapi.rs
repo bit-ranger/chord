@@ -2,9 +2,8 @@ use std::borrow::Borrow;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Client, Method, Response, Url};
-
+use reqwest::header::{HeaderName, HeaderValue};
 
 use chord_core::action::prelude::*;
 
@@ -38,7 +37,7 @@ struct RestapiAction {
 impl Action for RestapiAction {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         run(self.client.clone(), arg).await

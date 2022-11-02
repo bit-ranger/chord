@@ -1,14 +1,14 @@
+use std::error::Error as StdError;
 use std::sync::Arc;
 
 use chrono::Utc;
 use log::{debug, error, info, trace, warn};
 
-use chord_core::action::{Action, Chord, Id, Asset};
+use chord_core::action::{Action, Asset, Chord, Id};
 use chord_core::collection::TailDropVec;
-use chord_core::step::StepState;
 use chord_core::value::Value;
-use res::StepAssessStruct;
 use Error::*;
+use res::StepAssessStruct;
 
 use crate::flow::step::arg::{ArgStruct, ChordStruct};
 use crate::flow::step::res::{ActionAssessStruct, ActionState};
@@ -22,7 +22,7 @@ pub enum Error {
     Unsupported(String),
 
     #[error("action `{0}.{1}` create:\n{1}")]
-    Create(String, String, Box<dyn std::error::Error + Sync + Send>),
+    Create(String, String, Box<dyn StdError + Sync + Send>),
 }
 
 pub struct StepRunner {

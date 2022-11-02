@@ -1,6 +1,5 @@
 use redis::{Client, Value as RedisValue};
 
-
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -41,7 +40,7 @@ struct Redis {
 impl Action for Redis {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         return match self.client.as_ref() {
@@ -50,7 +49,7 @@ impl Action for Redis {
                 let args = arg.args()?;
                 let url = args["url"].as_str().ok_or(err!("101", "missing url"))?;
 
-                let client = redis::Client::open(url)?;
+                let client = Client::open(url)?;
                 run0(arg, &client).await
             }
         };

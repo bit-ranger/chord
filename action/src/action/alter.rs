@@ -1,6 +1,5 @@
 use chord_core::action::prelude::*;
 
-
 use crate::err;
 
 pub struct AlterCreator {}
@@ -44,7 +43,7 @@ impl Context for ContextStruct {
 impl Action for Alter {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         let args = arg.args()?;

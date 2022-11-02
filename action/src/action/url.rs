@@ -1,4 +1,3 @@
-
 use chord_core::action::prelude::*;
 
 use crate::err;
@@ -24,7 +23,7 @@ struct Url {}
 impl Action for Url {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         let args = arg.args()?;

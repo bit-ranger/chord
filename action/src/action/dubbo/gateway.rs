@@ -3,16 +3,15 @@ use std::process::Stdio;
 use std::str::FromStr;
 
 use log::{debug, info, trace};
-use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Body, Client, Method, Response, Url};
-
+use reqwest::header::{HeaderName, HeaderValue};
 
 use chord_core::action::prelude::*;
 use chord_core::future::io::{AsyncBufReadExt, BufReader, Lines};
 use chord_core::future::process::{Child, ChildStdout, Command};
 use chord_core::future::sync::RwLock;
 use chord_core::future::task::spawn;
-use chord_core::value::{to_string, Deserialize, Serialize};
+use chord_core::value::{Deserialize, Serialize, to_string};
 
 use crate::err;
 
@@ -199,7 +198,7 @@ struct Dubbo {
 impl Action for Dubbo {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         let args = arg.args()?;

@@ -1,6 +1,5 @@
 use log::trace;
 
-
 use chord_core::action::prelude::*;
 use chord_core::future::process::{Child, Command};
 
@@ -37,7 +36,7 @@ impl AttachProgram {
 impl Action for AttachProgram {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         let args = arg.args()?;
@@ -94,7 +93,7 @@ impl DetachProgram {
 impl Action for DetachProgram {
     async fn execute(
         &self,
-        chord: &dyn Chord,
+        _chord: &dyn Chord,
         arg: &mut dyn Arg,
     ) -> Result<Asset, Error> {
         let args = arg.args()?;
@@ -114,22 +113,20 @@ impl Action for DetachProgram {
 }
 
 struct ChildHolder {
-    value: Value,
     child: Child,
 }
 
 impl ChildHolder {
     fn new(child: Child) -> ChildHolder {
         ChildHolder {
-            value: Value::Number(Number::from(child.id().unwrap())),
             child,
         }
     }
 }
 
 impl Data for ChildHolder {
-    fn as_value(&self) -> &Value {
-        &self.value
+    fn to_value(&self) -> Value {
+        Value::Number(Number::from(self.child.id().unwrap()))
     }
 }
 

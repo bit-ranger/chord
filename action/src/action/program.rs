@@ -79,7 +79,10 @@ impl Action for AttachProgram {
                     let frames = map.get("frames");
                     if let Some(frames) = frames {
                         if let Value::Array(vec) = frames {
-                            let frames: Vec<Box<dyn Frame>> = vec.iter().map(value_to_frame).collect();
+                            let frames: Vec<Box<dyn Frame>> = vec.iter()
+                                .enumerate()
+                                .map(|(i, v)| value_to_frame(i, v))
+                                .collect();
                             return Ok(Asset::Frames(frames));
                         }
                     }
@@ -98,9 +101,9 @@ impl Action for AttachProgram {
     }
 }
 
-fn value_to_frame(value: &Value) -> Box<dyn Frame> {
+fn value_to_frame(idx: usize, value: &Value) -> Box<dyn Frame> {
     let frame = ProgramFrame {
-        id: value["id"].as_str().unwrap_or("").to_string(),
+        id: value["id"].as_str().map_or(idx.to_string(), |v| v.to_string()),
         start: value["start"].as_str().map_or(Utc::now(), |t| DateTime::from_str(t).unwrap_or(Utc::now())),
         end: value["end"].as_str().map_or(Utc::now(), |t| DateTime::from_str(t).unwrap_or(Utc::now())),
         data: value["data"].clone(),

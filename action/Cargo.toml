@@ -27,7 +27,7 @@ md5 = { version = "0.7.0", optional = true }
 redis = { version = "0.22.1", features = ["tokio-comp"], optional = true }
 rbatis = { version = "3.1.14", optional = true, default-features = false, features = ["default_mode", "all-database", "upper_case_sql_keyword", "runtime-tokio-rustls"] }
 mongodb = { version = "2.3.1", default-features = false, features = ["tokio-runtime"], optional = true }
-urlencoding = { version = "1.3.3", optional = true }
+urlencoding = { version = "2.1.2", optional = true }
 dynamic_reload = { version = "0.4.0", optional = true }
 rlua = { version = "0.19.4", optional = true }
 dirs = "4.0.0"

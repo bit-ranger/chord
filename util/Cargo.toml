@@ -18,6 +18,6 @@ repository = "https://github.com/bit-ranger/chord"
 chord-core = { path = "../core", version = "0.1.21" }
 serde = { version = "1.0" }
 reqwest = { version = "0.11.12", features = ['stream'] }
-futures = "0.3.24"
+futures = "0.3.25"
 log = { version = "0.4.14", features = ["std"] }
 thiserror = "1.0"

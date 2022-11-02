@@ -24,7 +24,7 @@ chord-input = { path = "../input", version = "0.1.21" }
 chord-util = { path = "../util", version = "0.1.21" }
 tokio = { version = "1.21", features = ["fs", "time", "tracing", "process", "macros"] }
 serde = { version = "1.0" }
-futures = "0.3.24"
+futures = "0.3.25"
 itertools = "0.10.5"
 log = { version = "0.4.14", features = ["std"] }
 flume = "0.10.14"

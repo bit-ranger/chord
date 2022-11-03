@@ -98,7 +98,7 @@ impl StepRunner {
             for ass in asset_vec.iter() {
                 if let ActionState::Ok(v) = ass.state() {
                     debug!(
-                        "{}:\n{}\n>>> {}",
+                        "{}:\n{}\n>>>\n{}",
                         ass.id(),
                         explain_string(ass.explain()),
                         v.to_value()
@@ -110,14 +110,14 @@ impl StepRunner {
             for ass in asset_vec.iter() {
                 if let ActionState::Ok(v) = ass.state() {
                     warn!(
-                        "{}:\n{}\n>>> {}",
+                        "{}:\n{}\n>>>\n{}",
                         ass.id(),
                         explain_string(ass.explain()),
                         v.to_value()
                     );
                 } else if let ActionState::Err(e) = ass.state() {
                     error!(
-                        "{}:\n{}\n>>> {}",
+                        "{}:\n{}\n>>>\n{}",
                         ass.id(),
                         explain_string(ass.explain()),
                         e
@@ -146,21 +146,22 @@ fn action_asset_flat(
         match value.unwrap() {
             Asset::Value(v) => {
                 vec![
-                    ActionAssessStruct::new(aid.to_string(), explain, ActionState::Ok(Asset::Value(v)))
+                    ActionAssessStruct::new(aid.to_string(),
+                                            explain,
+                                            ActionState::Ok(Asset::Value(v)))
                 ]
             }
             Asset::Data(d) => {
                 vec![
-                    ActionAssessStruct::new(aid.to_string(), explain, ActionState::Ok(Asset::Data(d)))
+                    ActionAssessStruct::new(aid.to_string(),
+                                            explain,
+                                            ActionState::Ok(Asset::Data(d)))
                 ]
             }
             Asset::Frames(f) => {
-                f.into_iter()
-                    .map(|fi|
-                        ActionAssessStruct::new(format!("{}_{}", aid, fi.id().to_string()),
-                                                explain.clone(),
-                                                ActionState::Ok(Asset::Data(Box::new(fi.to_value())))))
-                    .collect()
+                vec![ActionAssessStruct::new(aid.to_string(),
+                                             explain.clone(),
+                                             ActionState::Ok(Asset::Frames(f)))]
             }
         }
     };

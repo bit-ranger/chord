@@ -57,7 +57,7 @@ step.step1 = {
 
     state: {
         assert: `
-        (eq value_id-0.case_args.foo "bar")
+        (eq value.0.data.case_args.foo "bar")
         `
     }
 }

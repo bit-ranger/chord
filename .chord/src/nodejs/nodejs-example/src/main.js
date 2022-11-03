@@ -7,7 +7,6 @@ let case_args = JSON.parse(argv[2]);
 let hash = sha1(argv);
 
 let result = {
-    chord_report_version: "1.0",
     frames: [
         {
             id: "id-0",

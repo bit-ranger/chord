@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::time::{Duration, UNIX_EPOCH};
 
 use log::trace;
 
@@ -123,13 +123,19 @@ impl Action for AttachProgram {
 fn value_to_frame(idx: usize, value: &Value) -> Box<dyn Frame> {
     let frame = ProgramFrame {
         id: value["id"].as_str().map_or(idx.to_string(), |v| v.to_string()),
-        start: value["start"].as_str().map_or(Utc::now(), |t| DateTime::from_str(t).unwrap_or(Utc::now())),
-        end: value["end"].as_str().map_or(Utc::now(), |t| DateTime::from_str(t).unwrap_or(Utc::now())),
+        start: value["start"].as_u64().map_or(DateTime::<Utc>::from(UNIX_EPOCH), timestamp_to_utc),
+        end: value["end"].as_u64().map_or(DateTime::<Utc>::from(UNIX_EPOCH), timestamp_to_utc),
         data: value["data"].clone(),
     };
     Box::new(frame)
 }
 
+fn timestamp_to_utc(timestamp: u64) -> DateTime<Utc> {
+    let d = UNIX_EPOCH + Duration::from_millis(timestamp);
+    DateTime::<Utc>::from(d)
+}
+
+#[derive(Serialize)]
 struct ProgramFrame {
     id: String,
     start: DateTime<Utc>,
@@ -140,7 +146,12 @@ struct ProgramFrame {
 
 impl Data for ProgramFrame {
     fn to_value(&self) -> Value {
-        self.data.clone()
+        json!({
+            "id": self.id,
+            "start": self.start,
+            "end": self.end,
+            "data": self.data
+        })
     }
 }
 

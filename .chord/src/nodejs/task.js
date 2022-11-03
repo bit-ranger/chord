@@ -25,7 +25,7 @@ conf.pre.step.install = {
                 prefix,
                 "install"
             ],
-            parse_last_rows_count: 0
+            content_type: "text/plain"
         }
     }
 
@@ -50,7 +50,8 @@ step.step1 = {
                 "test",
                 "{{obj var.case}}"
             ],
-            parse_last_rows_count: 1
+            boundary: "----content-output----",
+            content_type: "application/chord-frame-1.0"
         }
     },
 

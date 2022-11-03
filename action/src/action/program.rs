@@ -49,8 +49,10 @@ impl Action for AttachProgram {
 
         let std_out = String::from_utf8_lossy(&output.stdout).to_string();
         let std_err = String::from_utf8_lossy(&output.stderr).to_string();
-        trace!("stdout:\n{}", std_out);
-        trace!("stderr:\n{}", std_err);
+        trace!("stdout");
+        trace!("{}", std_out);
+        trace!("stderr");
+        trace!("{}", std_err);
 
         if !output.status.success() {
             return Err(err!(
@@ -60,22 +62,36 @@ impl Action for AttachProgram {
         }
 
         let lines: Vec<&str> = std_out.lines().collect();
-
-        let parse_last_rows_count = args["parse_last_rows_count"].as_u64().unwrap_or(0);
-        if parse_last_rows_count < 1 {
-            Ok(Asset::Value(Value::String(std_out)))
-        } else {
-            let begin = if lines.len() as u64 > parse_last_rows_count {
-                (lines.len() as u64 - parse_last_rows_count) as usize
+        let boundary = args["boundary"].as_str();
+        let content = if let Some(b) = boundary {
+            let found = lines.iter().enumerate().rfind(|(_i, e)| e.starts_with(b));
+            if let Some((i, _e)) = found {
+                let start = i + 1;
+                if start < lines.len() {
+                    (&lines[start..]).to_vec()
+                } else {
+                    vec![]
+                }
             } else {
-                0
-            };
+                lines
+            }
+        } else {
+            lines
+        };
 
-            let tail = lines[begin..lines.len()].join("\n");
-            let tail_json: Value = from_str(&tail)?;
-            if let Value::Object(map) = &tail_json {
-                let version = map["chord_report_version"].as_str();
-                if version.is_some() && version.unwrap().eq("1.0") {
+        let content_type = args["content_type"].as_str().unwrap_or("text/plain");
+
+        match content_type {
+            "application/json" => {
+                let tail = content.join("\n");
+                let tail_json: Value = from_str(&tail)?;
+                return Ok(Asset::Value(tail_json));
+            }
+
+            "application/chord-frame-1.0" => {
+                let tail = content.join("\n");
+                let tail_json: Value = from_str(&tail)?;
+                if let Value::Object(map) = &tail_json {
                     let frames = map.get("frames");
                     if let Some(frames) = frames {
                         if let Value::Array(vec) = frames {
@@ -87,9 +103,12 @@ impl Action for AttachProgram {
                         }
                     }
                 }
+
                 return Ok(Asset::Value(tail_json));
-            } else {
-                return Ok(Asset::Value(tail_json));
+            }
+
+            _ => {
+                Ok(Asset::Value(Value::String(std_out)))
             }
         }
     }

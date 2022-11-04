@@ -6,7 +6,7 @@ use log::{debug, error, info, trace, warn};
 
 use chord_core::action::{Action, Asset, Chord, Id};
 use chord_core::collection::TailDropVec;
-use chord_core::step::ActionState;
+use chord_core::step::{ActionAsset, ActionState};
 use chord_core::value::Value;
 use Error::*;
 use res::StepAssessStruct;
@@ -166,3 +166,13 @@ fn explain_string(exp: &Value) -> String {
     }
 }
 
+pub fn action_asset_to_value(action_asset: &dyn ActionAsset) -> Value {
+    match action_asset.state() {
+        ActionState::Ok(v) => {
+            v.to_value()
+        }
+        ActionState::Err(e) => {
+            Value::String(e.to_string())
+        }
+    }
+}

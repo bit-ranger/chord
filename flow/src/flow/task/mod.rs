@@ -13,7 +13,7 @@ use chord_core::future::time::timeout;
 use chord_core::input::{StageLoader, TaskLoader};
 use chord_core::output::{StageReporter, TaskReporter};
 use chord_core::output::Utc;
-use chord_core::step::{ActionState, StepAsset, StepState};
+use chord_core::step::{StepAsset, StepState};
 use chord_core::task::{StageAssess, StageState, TaskAsset, TaskId, TaskState};
 use chord_core::value::{json, Map, Value};
 use res::TaskAssessStruct;
@@ -22,8 +22,8 @@ use crate::CTX_ID;
 use crate::flow::assign_by_render;
 use crate::flow::case;
 use crate::flow::case::arg::{CaseArgStruct, CaseIdStruct};
+use crate::flow::step::{action_asset_to_value, StepRunner};
 use crate::flow::step::arg::{ArgStruct, ChordStruct};
-use crate::flow::step::StepRunner;
 use crate::flow::task::arg::TaskIdSimple;
 use crate::flow::task::Error::*;
 use crate::flow::task::res::StageAssessStruct;
@@ -530,19 +530,16 @@ async fn pre_ctx_create(sa_vec: &Vec<Box<dyn StepAsset>>) -> Map {
     pre_ctx.insert("step".to_owned(), Value::Object(Map::new()));
     for sa in sa_vec.iter() {
         if let StepState::Ok(av) = sa.state() {
-            let mut am = vec![];
+            let mut am = Map::new();
             for a in av.iter() {
-                if let ActionState::Ok(v) = a.state() {
-                    am.push(v.to_value());
-                } else if let ActionState::Err(e) = a.state() {
-                    am.push(Value::String(e.to_string()));
-                }
+                am.insert(a.id().to_string(), action_asset_to_value(a.as_ref()));
             }
-            pre_ctx["step"][sa.id().step()] = Value::Array(am);
+            pre_ctx["step"][sa.id().step()] = Value::Object(am);
         }
     }
     pre_ctx
 }
+
 
 async fn step_vec_create(
     app: &dyn App,

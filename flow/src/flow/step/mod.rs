@@ -1,17 +1,18 @@
 use std::error::Error as StdError;
 use std::sync::Arc;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use log::{debug, error, info, trace, warn};
 
 use chord_core::action::{Action, Asset, Chord, Id};
 use chord_core::collection::TailDropVec;
+use chord_core::step::ActionState;
 use chord_core::value::Value;
 use Error::*;
 use res::StepAssessStruct;
 
 use crate::flow::step::arg::{ArgStruct, ChordStruct};
-use crate::flow::step::res::{ActionAssessStruct, ActionState};
+use crate::flow::step::res::ActionAssetStruct;
 
 pub mod arg;
 pub mod res;
@@ -71,23 +72,23 @@ impl StepRunner {
                 .explain(self.chord.as_ref(), arg)
                 .await
                 .unwrap_or(Value::Null);
+            let start = Utc::now();
             let value = action.execute(self.chord.as_ref(), arg).await;
+            let end = Utc::now();
             match value {
                 Ok(_) => {
-                    let asset = action_asset_flat(aid, explain, value);
-                    for ass in asset.iter() {
-                        if let ActionState::Ok(v) = ass.state() {
-                            arg.context_mut()
-                                .data_mut()
-                                .insert(ass.id().to_string(), v.to_value());
-                        }
+                    let asset = action_asset(aid, start, end, explain, value);
+                    if let ActionState::Ok(v) = asset.state() {
+                        arg.context_mut()
+                            .data_mut()
+                            .insert(asset.id().to_string(), v.to_value());
                     }
-                    asset_vec.extend(asset);
+                    asset_vec.push(asset);
                 }
 
                 Err(_) => {
-                    let assess = action_asset_flat(aid, explain, value);
-                    asset_vec.extend(assess);
+                    let asset = action_asset(aid, start, end, explain, value);
+                    asset_vec.push(asset);
                     success = false;
                     break;
                 }
@@ -131,40 +132,30 @@ impl StepRunner {
     }
 }
 
-fn action_asset_flat(
+fn action_asset(
     aid: &str,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
     explain: Value,
     value: Result<Asset, chord_core::action::Error>,
-) -> Vec<ActionAssessStruct> {
-    return if let Err(_) = value.as_ref() {
-        vec![ActionAssessStruct::new(
-            aid.to_string(),
-            explain,
-            ActionState::Err(value.err().unwrap()),
-        )]
-    } else {
-        match value.unwrap() {
-            Asset::Value(v) => {
-                vec![
-                    ActionAssessStruct::new(aid.to_string(),
-                                            explain,
-                                            ActionState::Ok(Asset::Value(v)))
-                ]
-            }
-            Asset::Data(d) => {
-                vec![
-                    ActionAssessStruct::new(aid.to_string(),
-                                            explain,
-                                            ActionState::Ok(Asset::Data(d)))
-                ]
-            }
-            Asset::Frames(f) => {
-                vec![ActionAssessStruct::new(aid.to_string(),
-                                             explain.clone(),
-                                             ActionState::Ok(Asset::Frames(f)))]
-            }
+) -> ActionAssetStruct {
+    match value {
+        Ok(a) => {
+            ActionAssetStruct::new(aid.to_string(),
+                                   start,
+                                   end,
+                                   explain,
+                                   ActionState::Ok(a),
+            )
         }
-    };
+        Err(e) => {
+            ActionAssetStruct::new(aid.to_string(),
+                                   start,
+                                   end,
+                                   explain,
+                                   ActionState::Err(e))
+        }
+    }
 }
 
 fn explain_string(exp: &Value) -> String {

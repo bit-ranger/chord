@@ -91,17 +91,12 @@ impl Action for AttachProgram {
             "application/chord-frame-1.0" => {
                 let tail = content.join("\n");
                 let tail_json: Value = from_str(&tail)?;
-                if let Value::Object(map) = &tail_json {
-                    let frames = map.get("frames");
-                    if let Some(frames) = frames {
-                        if let Value::Array(vec) = frames {
-                            let frames: Vec<Box<dyn Frame>> = vec.iter()
-                                .enumerate()
-                                .map(|(i, v)| value_to_frame(i, v))
-                                .collect();
-                            return Ok(Asset::Frames(frames));
-                        }
-                    }
+                if let Value::Array(vec) = tail_json {
+                    let frames: Vec<Box<dyn Frame>> = vec.iter()
+                        .enumerate()
+                        .map(|(i, v)| value_to_frame(i, v))
+                        .collect();
+                    return Ok(Asset::Frames(frames));
                 }
 
                 return Ok(Asset::Value(tail_json));

@@ -1,44 +1,27 @@
 use chrono::{DateTime, Utc};
 
-use chord_core::action::{Asset, Id};
+use chord_core::action::Id;
 use chord_core::collection::TailDropVec;
-use chord_core::step::{StepAsset, StepState};
-use chord_core::value::{Map, Value};
+use chord_core::step::{ActionAsset, ActionState, StepAsset, StepState};
+use chord_core::value::Value;
 
 use crate::flow::step::arg::IdStruct;
 
-pub enum ActionState {
-    Ok(Asset),
-    Err(chord_core::action::Error),
-}
-
-impl ActionState {
-    #[allow(dead_code)]
-    pub fn is_ok(&self) -> bool {
-        match self {
-            ActionState::Ok(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_err(&self) -> bool {
-        match self {
-            ActionState::Err(_) => true,
-            _ => false,
-        }
-    }
-}
-
-pub struct ActionAssessStruct {
+pub struct ActionAssetStruct {
     aid: String,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
     explain: Value,
     state: ActionState,
 }
 
-impl ActionAssessStruct {
-    pub fn new(aid: String, explain: Value, state: ActionState) -> ActionAssessStruct {
-        ActionAssessStruct {
+
+impl ActionAssetStruct {
+    pub fn new(aid: String, start: DateTime<Utc>, end: DateTime<Utc>, explain: Value, state: ActionState) -> ActionAssetStruct {
+        ActionAssetStruct {
             aid,
+            start,
+            end,
             explain,
             state,
         }
@@ -57,13 +40,33 @@ impl ActionAssessStruct {
     }
 }
 
+impl ActionAsset for ActionAssetStruct {
+    fn id(&self) -> &str {
+        self.id()
+    }
+
+    fn start(&self) -> DateTime<Utc> {
+        self.start
+    }
+
+    fn end(&self) -> DateTime<Utc> {
+        self.end
+    }
+
+    fn explain(&self) -> &Value {
+        self.explain()
+    }
+
+    fn state(&self) -> &ActionState {
+        self.state()
+    }
+}
+
+
 pub struct StepAssessStruct {
     id: IdStruct,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
-    #[allow(dead_code)]
-    action_assess_vec: TailDropVec<ActionAssessStruct>,
-    explain: Value,
     state: StepState,
 }
 
@@ -72,43 +75,28 @@ impl StepAssessStruct {
         id: IdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
-        mut action_assess_vec: Vec<ActionAssessStruct>,
+        action_assess_vec: Vec<ActionAssetStruct>,
     ) -> StepAssessStruct {
-        let mut em = Map::new();
-        let mut sm = Map::new();
+        let last_state_is_err = (&action_assess_vec).last().unwrap().state.is_err();
 
-        for ast in action_assess_vec.iter() {
-            em.insert(ast.aid.to_string(), ast.explain.clone());
-            if let ActionState::Ok(s) = ast.state() {
-                sm.insert(ast.id().to_string(), s.to_value());
-            } else if let ActionState::Err(e) = ast.state() {
-                sm.insert(ast.id().to_string(), Value::String(e.to_string()));
-            }
-        }
+        let aav: Vec<Box<dyn ActionAsset>> = action_assess_vec
+            .into_iter()
+            .map(
+                |a| Box::new(a) as Box<dyn ActionAsset>
+            )
+            .collect();
 
-        let explain = Value::Object(em);
 
-        let state = if action_assess_vec.is_empty() {
-            StepState::Ok(Value::Object(Map::new()))
+        let state = if last_state_is_err {
+            StepState::Fail(TailDropVec::from(aav))
         } else {
-            let last_state = &action_assess_vec.last().unwrap().state;
-            if last_state.is_err() {
-                if let ActionState::Err(e) = action_assess_vec.pop().unwrap().state {
-                    StepState::Err(e)
-                } else {
-                    unreachable!()
-                }
-            } else {
-                StepState::Ok(Value::Object(sm))
-            }
+            StepState::Ok(TailDropVec::from(aav))
         };
 
         StepAssessStruct {
             id,
             start,
             end,
-            action_assess_vec: TailDropVec::from(action_assess_vec),
-            explain,
             state,
         }
     }
@@ -125,10 +113,6 @@ impl StepAsset for StepAssessStruct {
 
     fn end(&self) -> DateTime<Utc> {
         self.end
-    }
-
-    fn explain(&self) -> &Value {
-        &self.explain
     }
 
     fn state(&self) -> &StepState {

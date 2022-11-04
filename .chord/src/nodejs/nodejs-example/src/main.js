@@ -6,19 +6,17 @@ let case_args = JSON.parse(argv[2]);
 
 let hash = sha1(argv);
 
-let result = {
-    frames: [
-        {
-            id: "id-0",
-            start: Date.now(),
-            end: Date.now(),
-            data: {
-                argv: argv,
-                case_args: case_args,
-                hash: hash
-            }
+let result = [
+    {
+        id: "id-0",
+        start: Date.now(),
+        end: Date.now(),
+        data: {
+            argv: argv,
+            case_args: case_args,
+            hash: hash
         }
-    ]
-}
+    }
+];
 console.log("----content-output----");
 console.log(JSON.stringify(result));

@@ -7,13 +7,13 @@ use csv::Writer;
 
 use chord_core::case::{CaseAsset, CaseState};
 use chord_core::flow::Flow;
-use chord_core::future::fs::{create_dir_all, metadata, read_dir, remove_file, rename, DirEntry};
+use chord_core::future::fs::{create_dir_all, DirEntry, metadata, read_dir, remove_file, rename};
 use chord_core::future::path::exists;
+use chord_core::output::{async_trait, TaskReporter};
 use chord_core::output::Error;
 use chord_core::output::JobReporter;
 use chord_core::output::StageReporter;
-use chord_core::output::{async_trait, TaskReporter};
-use chord_core::step::StepState;
+use chord_core::step::{ActionState, StepState};
 use chord_core::task::{StageAssess, TaskAsset, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
 
@@ -148,7 +148,13 @@ impl CsvStageReporter {
             from_path(report_file, with_bom, !fixed_step).await?;
 
         let head = if fixed_step {
-            create_head(flow.stage_step_id_vec(stage_id))
+            let mut columns = vec![];
+            for sid in flow.stage_step_id_vec(stage_id) {
+                for (k, _v) in flow.step_obj(sid) {
+                    columns.push(format!("{}_{}", sid, k));
+                }
+            }
+            create_head(columns)
         } else {
             create_head(vec![])
         };
@@ -192,7 +198,7 @@ async fn from_path<P: AsRef<Path>>(
         .from_writer(file))
 }
 
-fn create_head(step_id_vec: Vec<&str>) -> Vec<String> {
+fn create_head(step_id_vec: Vec<String>) -> Vec<String> {
     let mut vec: Vec<String> = vec![];
     vec.push(String::from("id"));
     vec.push(String::from("case_state"));
@@ -212,7 +218,7 @@ fn create_head(step_id_vec: Vec<&str>) -> Vec<String> {
     vec
 }
 
-async fn report<W: std::io::Write>(
+async fn report<W: Write>(
     writer: &mut Writer<W>,
     ca_vec: &Vec<Box<dyn CaseAsset>>,
     header: &Vec<String>,
@@ -231,7 +237,7 @@ async fn report<W: std::io::Write>(
 fn to_value_vec(ca: &dyn CaseAsset, header: &Vec<String>) -> Vec<String> {
     let mut value_vec: Vec<String> = Vec::new();
     let empty = &vec![];
-    let pa_vec = match ca.state() {
+    let sa_vec = match ca.state() {
         CaseState::Ok(pa_vec) => pa_vec,
         CaseState::Fail(pa_vec) => pa_vec,
         _ => empty,
@@ -260,24 +266,30 @@ fn to_value_vec(ca: &dyn CaseAsset, header: &Vec<String>) -> Vec<String> {
     case_value.push(ca.end().format("%T").to_string());
     value_vec.append(&mut case_value);
 
-    if !pa_vec.is_empty() {
-        for pa in pa_vec.iter() {
-            let mut step_value = Vec::with_capacity(6);
-            match pa.state() {
-                StepState::Ok(v) => {
-                    step_value.push(String::from("O"));
-                    step_value.push(to_csv_string(v));
-                    step_value.push(to_csv_string(pa.explain()));
+    if !sa_vec.is_empty() {
+        for sa in sa_vec.iter() {
+            let aa_vec = match sa.state() {
+                StepState::Ok(aa_vec) => aa_vec,
+                StepState::Fail(aa_vec) => aa_vec
+            };
+            for aa in aa_vec.iter() {
+                let mut action_value = Vec::with_capacity(6);
+                match aa.state() {
+                    ActionState::Ok(v) => {
+                        action_value.push(String::from("O"));
+                        action_value.push(to_csv_string(&v.to_value()));
+                        action_value.push(to_csv_string(aa.explain()));
+                    }
+                    ActionState::Err(e) => {
+                        action_value.push(String::from("E"));
+                        action_value.push(String::from(format!("{}", e)));
+                        action_value.push(to_csv_string(aa.explain()));
+                    }
                 }
-                StepState::Err(e) => {
-                    step_value.push(String::from("E"));
-                    step_value.push(String::from(format!("{}", e)));
-                    step_value.push(to_csv_string(pa.explain()));
-                }
+                action_value.push(aa.start().format("%T").to_string());
+                action_value.push(aa.end().format("%T").to_string());
+                value_vec.append(&mut action_value);
             }
-            step_value.push(pa.start().format("%T").to_string());
-            step_value.push(pa.end().format("%T").to_string());
-            value_vec.append(&mut step_value);
         }
     }
 

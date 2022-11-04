@@ -12,7 +12,7 @@ use chord_core::output::{async_trait, Error};
 use chord_core::output::{StageReporter, TaskReporter};
 use chord_core::output::JobReporter;
 use chord_core::step::{StepAsset, StepState};
-use chord_core::task::{StageAssess, TaskAsset, TaskId, TaskState};
+use chord_core::task::{StageAsset, TaskAsset, TaskId, TaskState};
 use chord_core::value::{json, to_value, Value};
 use chord_core::value::{Deserialize, Serialize};
 
@@ -100,12 +100,12 @@ impl TaskReporter for WebhookTaskReporter {
         Ok(())
     }
 
-    async fn end(&mut self, task_assess: &dyn TaskAsset) -> Result<(), Error> {
+    async fn end(&mut self, task_asset: &dyn TaskAsset) -> Result<(), Error> {
         let task_data = ta_doc(
             self.task_id.as_ref(),
-            task_assess.start(),
-            task_assess.end(),
-            task_assess.state(),
+            task_asset.start(),
+            task_asset.end(),
+            task_asset.state(),
         );
         data_send(
             self.client.clone(),
@@ -170,7 +170,7 @@ impl StageReporter for WebhookStageReporter {
             .await
     }
 
-    async fn end(&mut self, _: &dyn StageAssess) -> Result<(), Error> {
+    async fn end(&mut self, _: &dyn StageAsset) -> Result<(), Error> {
         Ok(())
     }
 }

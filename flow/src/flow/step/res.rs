@@ -63,23 +63,23 @@ impl ActionAsset for ActionAssetStruct {
 }
 
 
-pub struct StepAssessStruct {
+pub struct StepAssetStruct {
     id: IdStruct,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: StepState,
 }
 
-impl StepAssessStruct {
+impl StepAssetStruct {
     pub fn new(
         id: IdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
-        action_assess_vec: Vec<ActionAssetStruct>,
-    ) -> StepAssessStruct {
-        let last_state_is_err = (&action_assess_vec).last().unwrap().state.is_err();
+        action_asset_vec: Vec<ActionAssetStruct>,
+    ) -> StepAssetStruct {
+        let last_state_is_err = (&action_asset_vec).last().unwrap().state.is_err();
 
-        let aav: Vec<Box<dyn ActionAsset>> = action_assess_vec
+        let aav: Vec<Box<dyn ActionAsset>> = action_asset_vec
             .into_iter()
             .map(
                 |a| Box::new(a) as Box<dyn ActionAsset>
@@ -93,7 +93,7 @@ impl StepAssessStruct {
             StepState::Ok(TailDropVec::from(aav))
         };
 
-        StepAssessStruct {
+        StepAssetStruct {
             id,
             start,
             end,
@@ -102,7 +102,7 @@ impl StepAssessStruct {
     }
 }
 
-impl StepAsset for StepAssessStruct {
+impl StepAsset for StepAssetStruct {
     fn id(&self) -> &dyn Id {
         &self.id
     }

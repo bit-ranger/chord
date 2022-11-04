@@ -11,7 +11,7 @@ use chord_core::value::Value;
 
 use crate::flow::step::{action_asset_to_value, StepRunner};
 use crate::flow::step::arg::ArgStruct;
-use crate::flow::step::res::StepAssessStruct;
+use crate::flow::step::res::StepAssetStruct;
 use crate::model::app::App;
 use crate::model::app::RenderContext;
 
@@ -132,8 +132,8 @@ impl CaseArgStruct {
         )
     }
 
-    pub async fn step_assess_register(&mut self, sid: &str, step_assess: &StepAssessStruct) {
-        if let StepState::Ok(av) = step_assess.state() {
+    pub async fn step_asset_register(&mut self, sid: &str, step_asset: &StepAssetStruct) {
+        if let StepState::Ok(av) = step_asset.state() {
             if let Value::Object(reg) = self.render_ctx.data_mut() {
                 let mut am = Map::new();
                 for a in av.iter() {

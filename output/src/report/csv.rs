@@ -14,7 +14,7 @@ use chord_core::output::Error;
 use chord_core::output::JobReporter;
 use chord_core::output::StageReporter;
 use chord_core::step::{ActionState, StepState};
-use chord_core::task::{StageAssess, TaskAsset, TaskId, TaskState};
+use chord_core::task::{StageAsset, TaskAsset, TaskId, TaskState};
 use chord_core::value::{to_string_pretty, Value};
 
 pub struct CsvJobReporter {
@@ -103,7 +103,7 @@ impl TaskReporter for CsvTaskReporter {
             self.flow.clone(),
             self.with_bom,
         )
-        .await?;
+            .await?;
         Ok(Box::new(reporter))
     }
 
@@ -111,8 +111,8 @@ impl TaskReporter for CsvTaskReporter {
         Ok(())
     }
 
-    async fn end(&mut self, task_assess: &dyn TaskAsset) -> Result<(), Error> {
-        let task_state_view = match task_assess.state() {
+    async fn end(&mut self, task_asset: &dyn TaskAsset) -> Result<(), Error> {
+        let task_state_view = match task_asset.state() {
             TaskState::Ok => "O",
             TaskState::Err(_) => "E",
             TaskState::Fail(_) => "F",
@@ -178,7 +178,7 @@ impl StageReporter for CsvStageReporter {
         return Ok(report(&mut self.writer, ca_vec, &self.head).await?);
     }
 
-    async fn end(&mut self, _: &dyn StageAssess) -> Result<(), Error> {
+    async fn end(&mut self, _: &dyn StageAsset) -> Result<(), Error> {
         self.writer.flush()?;
         Ok(())
     }

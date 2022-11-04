@@ -52,7 +52,7 @@ impl StageState {
     }
 }
 
-pub trait StageAssess: Sync + Send {
+pub trait StageAsset: Sync + Send {
     fn id(&self) -> &str;
 
     fn start(&self) -> DateTime<Utc>;

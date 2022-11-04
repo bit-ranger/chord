@@ -7,7 +7,7 @@ use chord_core::value::Value;
 
 use crate::flow::case::arg::CaseIdStruct;
 
-pub struct CaseAssessStruct {
+pub struct CaseAssetStruct {
     id: Arc<CaseIdStruct>,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
@@ -15,15 +15,15 @@ pub struct CaseAssessStruct {
     state: CaseState,
 }
 
-impl CaseAssessStruct {
+impl CaseAssetStruct {
     pub fn new(
         id: Arc<CaseIdStruct>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         data: Value,
         state: CaseState,
-    ) -> CaseAssessStruct {
-        CaseAssessStruct {
+    ) -> CaseAssetStruct {
+        CaseAssetStruct {
             id,
             start,
             end,
@@ -33,7 +33,7 @@ impl CaseAssessStruct {
     }
 }
 
-impl CaseAsset for CaseAssessStruct {
+impl CaseAsset for CaseAssetStruct {
     fn id(&self) -> &dyn CaseId {
         self.id.as_ref()
     }

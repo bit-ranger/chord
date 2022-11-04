@@ -5,7 +5,7 @@ pub use chrono::{DateTime, Utc};
 
 use crate::case::CaseAsset;
 use crate::flow::Flow;
-use crate::task::{StageAssess, TaskAsset, TaskId};
+use crate::task::{StageAsset, TaskAsset, TaskId};
 
 pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
@@ -24,14 +24,14 @@ pub trait TaskReporter: Sync + Send {
 
     async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error>;
 
-    async fn end(&mut self, task_assess: &dyn TaskAsset) -> Result<(), Error>;
+    async fn end(&mut self, task_asset: &dyn TaskAsset) -> Result<(), Error>;
 }
 
 #[async_trait]
 pub trait StageReporter: Sync + Send {
     async fn start(&mut self, time: DateTime<Utc>) -> Result<(), Error>;
 
-    async fn report(&mut self, case_assess_vec: &Vec<Box<dyn CaseAsset>>) -> Result<(), Error>;
+    async fn report(&mut self, case_asset_vec: &Vec<Box<dyn CaseAsset>>) -> Result<(), Error>;
 
-    async fn end(&mut self, task_assess: &dyn StageAssess) -> Result<(), Error>;
+    async fn end(&mut self, task_asset: &dyn StageAsset) -> Result<(), Error>;
 }

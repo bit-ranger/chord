@@ -9,7 +9,7 @@ use chord_core::collection::TailDropVec;
 use chord_core::step::{ActionAsset, ActionState};
 use chord_core::value::Value;
 use Error::*;
-use res::StepAssessStruct;
+use res::StepAssetStruct;
 
 use crate::flow::step::arg::{ArgStruct, ChordStruct};
 use crate::flow::step::res::ActionAssetStruct;
@@ -59,7 +59,7 @@ impl StepRunner {
         })
     }
 
-    pub async fn run(&self, arg: &mut ArgStruct<'_, '_>) -> StepAssessStruct {
+    pub async fn run(&self, arg: &mut ArgStruct<'_, '_>) -> StepAssetStruct {
         trace!("step run {}", arg.id());
         let start = Utc::now();
         let mut asset_vec = Vec::with_capacity(self.action_vec.len());
@@ -128,7 +128,7 @@ impl StepRunner {
             error!("step Err {}", arg.id());
         }
 
-        StepAssessStruct::new(Clone::clone(arg.id()), start, Utc::now(), asset_vec)
+        StepAssetStruct::new(Clone::clone(arg.id()), start, Utc::now(), asset_vec)
     }
 }
 

@@ -54,6 +54,9 @@ enum Error {
 
     #[error("step `{0}` create:\n{1}")]
     Step(String, Box<dyn StdError + Sync + Send>),
+
+    #[error("{0}")]
+    Unknown(String)
 }
 
 #[derive()]
@@ -396,7 +399,7 @@ impl TaskRunner {
         match stage_asset.state() {
             StageState::Ok => Ok(()),
             StageState::Fail(_) => Ok(()),
-            StageState::Err(_) => unreachable!(),
+            StageState::Err(e) => Err(Unknown(e.to_string())),
         }
     }
 

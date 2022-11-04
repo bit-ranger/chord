@@ -5,6 +5,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use csv::Writer;
 
+use chord_core::action::Asset;
 use chord_core::case::{CaseAsset, CaseState};
 use chord_core::flow::Flow;
 use chord_core::future::fs::{create_dir_all, DirEntry, metadata, read_dir, remove_file, rename};
@@ -137,27 +138,20 @@ impl CsvStageReporter {
         dir: P,
         task_id: Arc<dyn TaskId>,
         stage_id: &str,
-        flow: Arc<Flow>,
+        _flow: Arc<Flow>,
         with_bom: bool,
     ) -> Result<CsvStageReporter, Error> {
-        let fixed_step = true;
-
         let dir = PathBuf::from(dir.as_ref());
         let report_file = dir.join(format!("{}.{}.csv", task_id.task(), stage_id));
         let mut writer: Writer<std::fs::File> =
-            from_path(report_file, with_bom, !fixed_step).await?;
+            from_path(report_file, with_bom, false).await?;
 
-        let head = if fixed_step {
-            let mut columns = vec![];
-            for sid in flow.stage_step_id_vec(stage_id) {
-                for (k, _v) in flow.step_obj(sid) {
-                    columns.push(format!("{}_{}", sid, k));
-                }
-            }
-            create_head(columns)
-        } else {
-            create_head(vec![])
-        };
+        let head = vec![
+            "task", "stage", "case", "step", "action", "frame", "layer", "start", "end", "state", "value", "explain",
+        ]
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
         writer.write_record(&head)?;
 
         let report = CsvStageReporter { writer, head };
@@ -198,25 +192,6 @@ async fn from_path<P: AsRef<Path>>(
         .from_writer(file))
 }
 
-fn create_head(step_id_vec: Vec<String>) -> Vec<String> {
-    let mut vec: Vec<String> = vec![];
-    vec.push(String::from("id"));
-    vec.push(String::from("case_state"));
-    vec.push(String::from("case_value"));
-    vec.push(String::from("case_data"));
-    vec.push(String::from("case_start"));
-    vec.push(String::from("case_end"));
-
-    for step_id in step_id_vec {
-        vec.push(format!("{}_state", step_id));
-        vec.push(format!("{}_value", step_id));
-        vec.push(format!("{}_explain", step_id));
-        vec.push(format!("{}_start", step_id));
-        vec.push(format!("{}_end", step_id));
-    }
-
-    vec
-}
 
 async fn report<W: Write>(
     writer: &mut Writer<W>,
@@ -228,79 +203,167 @@ async fn report<W: Write>(
     }
 
     for sv in ca_vec.iter().map(|ca| to_value_vec(ca.as_ref(), header)) {
-        writer.write_record(&sv)?
+        for v in sv {
+            writer.write_record(&v)?
+        }
     }
     writer.flush()?;
     return Ok(());
 }
 
-fn to_value_vec(ca: &dyn CaseAsset, header: &Vec<String>) -> Vec<String> {
-    let mut value_vec: Vec<String> = Vec::new();
-    let empty = &vec![];
-    let sa_vec = match ca.state() {
-        CaseState::Ok(pa_vec) => pa_vec,
-        CaseState::Fail(pa_vec) => pa_vec,
-        _ => empty,
-    };
-
-    let mut case_value = Vec::with_capacity(6);
-    case_value.push(ca.id().to_string());
+fn to_value_vec(ca: &dyn CaseAsset, _header: &Vec<String>) -> Vec<Vec<String>> {
+    let mut result_vec: Vec<Vec<String>> = Vec::new();
     match ca.state() {
-        CaseState::Ok(_) => {
-            case_value.push(String::from("O"));
-            case_value.push(String::from(""));
-            case_value.push(to_csv_string(ca.data()));
-        }
-        CaseState::Err(e) => {
-            case_value.push(String::from("E"));
-            case_value.push(String::from(format!("{}", e)));
-            case_value.push(to_csv_string(ca.data()));
-        }
-        CaseState::Fail(_) => {
-            case_value.push(String::from("F"));
-            case_value.push(String::from(""));
-            case_value.push(to_csv_string(ca.data()));
-        }
-    }
-    case_value.push(ca.start().format("%T").to_string());
-    case_value.push(ca.end().format("%T").to_string());
-    value_vec.append(&mut case_value);
+        CaseState::Ok(sa_vec)
+        | CaseState::Fail(sa_vec) => {
+            for sa in sa_vec.iter() {
+                match sa.state() {
+                    StepState::Ok(aa_vec)
+                    | StepState::Fail(aa_vec) => {
+                        for aa in aa_vec.iter() {
+                            match aa.state() {
+                                ActionState::Ok(a) => {
+                                    match a {
+                                        Asset::Value(v) => {
+                                            let aar = vec![
+                                                sa.id().case_id().task_id().task().to_string(),
+                                                sa.id().case_id().stage_id().to_string(),
+                                                sa.id().case_id().case().to_string(),
+                                                sa.id().step().to_string(),
+                                                aa.id().to_string(),
+                                                "".to_string(),
+                                                "action".to_string(),
+                                                aa.start().format("%T").to_string(),
+                                                aa.end().format("%T").to_string(),
+                                                "O".to_string(),
+                                                to_csv_string(v),
+                                                to_csv_string(aa.explain()),
+                                            ];
+                                            result_vec.push(aar);
+                                        }
+                                        Asset::Data(d) => {
+                                            let aar = vec![
+                                                sa.id().case_id().task_id().task().to_string(),
+                                                sa.id().case_id().stage_id().to_string(),
+                                                sa.id().case_id().case().to_string(),
+                                                sa.id().step().to_string(),
+                                                aa.id().to_string(),
+                                                "".to_string(),
+                                                "action".to_string(),
+                                                aa.start().format("%T").to_string(),
+                                                aa.end().format("%T").to_string(),
+                                                "O".to_string(),
+                                                to_csv_string(&d.to_value()),
+                                                to_csv_string(aa.explain()),
+                                            ];
+                                            result_vec.push(aar);
+                                        }
+                                        Asset::Frames(fv) => {
+                                            for f in fv {
+                                                let aar = vec![
+                                                    sa.id().case_id().task_id().task().to_string(),
+                                                    sa.id().case_id().stage_id().to_string(),
+                                                    sa.id().case_id().case().to_string(),
+                                                    sa.id().step().to_string(),
+                                                    aa.id().to_string(),
+                                                    f.id().to_string(),
+                                                    "frame".to_string(),
+                                                    f.start().format("%T").to_string(),
+                                                    f.end().format("%T").to_string(),
+                                                    "O".to_string(),
+                                                    to_csv_string(&f.to_value()),
+                                                    "".to_string(),
+                                                ];
+                                                result_vec.push(aar);
+                                            }
 
-    if !sa_vec.is_empty() {
-        for sa in sa_vec.iter() {
-            let aa_vec = match sa.state() {
-                StepState::Ok(aa_vec) => aa_vec,
-                StepState::Fail(aa_vec) => aa_vec
-            };
-            for aa in aa_vec.iter() {
-                let mut action_value = Vec::with_capacity(6);
-                match aa.state() {
-                    ActionState::Ok(v) => {
-                        action_value.push(String::from("O"));
-                        action_value.push(to_csv_string(&v.to_value()));
-                        action_value.push(to_csv_string(aa.explain()));
+                                            let aar = vec![
+                                                sa.id().case_id().task_id().task().to_string(),
+                                                sa.id().case_id().stage_id().to_string(),
+                                                sa.id().case_id().case().to_string(),
+                                                sa.id().step().to_string(),
+                                                aa.id().to_string(),
+                                                "".to_string(),
+                                                "action".to_string(),
+                                                aa.start().format("%T").to_string(),
+                                                aa.end().format("%T").to_string(),
+                                                "O".to_string(),
+                                                "".to_string(),
+                                                to_csv_string(aa.explain()),
+                                            ];
+                                            result_vec.push(aar);
+                                        }
+                                    }
+                                }
+                                ActionState::Err(e) => {
+                                    let aar = vec![
+                                        sa.id().case_id().task_id().task().to_string(),
+                                        sa.id().case_id().stage_id().to_string(),
+                                        sa.id().case_id().case().to_string(),
+                                        sa.id().step().to_string(),
+                                        aa.id().to_string(),
+                                        "".to_string(),
+                                        "action".to_string(),
+                                        aa.start().format("%T").to_string(),
+                                        aa.end().format("%T").to_string(),
+                                        "E".to_string(),
+                                        e.to_string(),
+                                        to_csv_string(aa.explain()),
+                                    ];
+                                    result_vec.push(aar);
+                                }
+                            }
+                        }
                     }
-                    ActionState::Err(e) => {
-                        action_value.push(String::from("E"));
-                        action_value.push(String::from(format!("{}", e)));
-                        action_value.push(to_csv_string(aa.explain()));
-                    }
-                }
-                action_value.push(aa.start().format("%T").to_string());
-                action_value.push(aa.end().format("%T").to_string());
-                value_vec.append(&mut action_value);
+                };
+
+                let sas = match sa.state() {
+                    StepState::Ok(_) => "O".to_string(),
+                    StepState::Fail(_) => "F".to_string(),
+                };
+                let sar = vec![
+                    sa.id().case_id().task_id().task().to_string(),
+                    sa.id().case_id().stage_id().to_string(),
+                    sa.id().case_id().case().to_string(),
+                    sa.id().step().to_string(),
+                    "".to_string(),
+                    "".to_string(),
+                    "step".to_string(),
+                    sa.start().format("%T").to_string(),
+                    sa.end().format("%T").to_string(),
+                    sas,
+                    "".to_string(),
+                    "".to_string(),
+                ];
+                result_vec.push(sar);
             }
         }
-    }
 
-    if header.len() > value_vec.len() {
-        let vacancy = header.len() - value_vec.len();
-        for _ in 0..vacancy {
-            value_vec.push(String::new());
-        }
-    }
+        CaseState::Err(_) => {}
+    };
+    let cas = match ca.state() {
+        CaseState::Ok(_) => "O".to_string(),
+        CaseState::Err(_) => "E".to_string(),
+        CaseState::Fail(_) => "F".to_string(),
+    };
 
-    value_vec
+    let car = vec![
+        ca.id().task_id().to_string(),
+        ca.id().stage_id().to_string(),
+        ca.id().case().to_string(),
+        "".to_string(),
+        "".to_string(),
+        "".to_string(),
+        "case".to_string(),
+        ca.start().format("%T").to_string(),
+        ca.end().format("%T").to_string(),
+        cas,
+        "".to_string(),
+        "".to_string(),
+    ];
+    result_vec.push(car);
+
+    result_vec
 }
 
 fn to_csv_string(explain: &Value) -> String {

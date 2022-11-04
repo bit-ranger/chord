@@ -16,7 +16,17 @@ let result = [
             case_args: case_args,
             hash: hash
         }
-    }
+    },
+    {
+        id: "id-1",
+        start: Date.now(),
+        end: Date.now(),
+        data: {
+            argv: argv,
+            case_args: case_args,
+            hash: hash
+        }
+    },
 ];
 console.log("----content-output----");
 console.log(JSON.stringify(result));

@@ -4,9 +4,9 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use log::{debug, error, info, trace, warn};
 
-use chord_core::action::{Action, Asset, Chord, Id};
+use chord_core::action::{Action, Asset, Chord};
 use chord_core::collection::TailDropVec;
-use chord_core::step::{ActionAsset, ActionState};
+use chord_core::step::{ActionAsset, ActionState, StepId};
 use chord_core::value::Value;
 use Error::*;
 use res::StepAssetStruct;
@@ -36,20 +36,20 @@ impl StepRunner {
         chord: Arc<ChordStruct>,
         arg: &mut ArgStruct<'_, '_>,
     ) -> Result<StepRunner, Error> {
-        trace!("step new {}", arg.id());
-        let obj = arg.flow().step_obj(arg.id().step());
+        trace!("step new {}", arg.step_id());
+        let obj = arg.flow().step_obj(arg.step_id().step());
         let aid_vec: Vec<String> = obj.iter().map(|(aid, _)| aid.to_string()).collect();
         let mut action_vec = Vec::with_capacity(obj.len());
 
         for aid in aid_vec {
             arg.aid(aid.as_str());
-            let func = arg.flow().step_action_func(arg.id().step(), aid.as_str());
+            let func = arg.flow().step_action_func(arg.step_id().step(), aid.as_str());
             let action = chord
                 .creator(func.into())
                 .ok_or_else(|| Unsupported(func.into()))?
                 .create(chord.as_ref(), arg)
                 .await
-                .map_err(|e| Create(arg.id().step().to_string(), aid.to_string(), e))?;
+                .map_err(|e| Create(arg.step_id().step().to_string(), aid.to_string(), e))?;
             action_vec.push((aid.to_string(), action));
         }
 
@@ -60,7 +60,7 @@ impl StepRunner {
     }
 
     pub async fn run(&self, arg: &mut ArgStruct<'_, '_>) -> StepAssetStruct {
-        trace!("step run {}", arg.id());
+        trace!("step run {}", arg.step_id());
         let start = Utc::now();
         let mut asset_vec = Vec::with_capacity(self.action_vec.len());
         let mut success = true;
@@ -106,7 +106,7 @@ impl StepRunner {
                     );
                 }
             }
-            info!("step Ok   {}", arg.id());
+            info!("step Ok   {}", arg.step_id());
         } else {
             for ass in asset_vec.iter() {
                 if let ActionState::Ok(v) = ass.state() {
@@ -125,10 +125,10 @@ impl StepRunner {
                     );
                 }
             }
-            error!("step Err {}", arg.id());
+            error!("step Err {}", arg.step_id());
         }
 
-        StepAssetStruct::new(Clone::clone(arg.id()), start, Utc::now(), asset_vec)
+        StepAssetStruct::new(Clone::clone(arg.step_id()), start, Utc::now(), asset_vec)
     }
 }
 

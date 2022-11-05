@@ -9,18 +9,19 @@ use chord_core::action::{Context, Id};
 use chord_core::action::{Creator, Error};
 use chord_core::case::CaseId;
 use chord_core::flow::Flow;
+use chord_core::step::StepId;
 use chord_core::value::{Map, Value};
 
+use crate::{App, flow};
 use crate::model::app::RenderContext;
-use crate::{flow, App};
 
 #[derive(Clone)]
-pub struct IdStruct {
+pub struct StepIdStruct {
     step: String,
     case_id: Arc<dyn CaseId>,
 }
 
-impl Id for IdStruct {
+impl StepId for StepIdStruct {
     fn step(&self) -> &str {
         self.step.as_str()
     }
@@ -28,18 +29,34 @@ impl Id for IdStruct {
     fn case_id(&self) -> &dyn CaseId {
         self.case_id.as_ref()
     }
+}
 
+impl Display for StepIdStruct {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(format!("{}-{}", self.case_id, self.step).as_str())
+    }
+}
+
+
+#[derive(Clone)]
+pub struct ActionIdStruct {
+    aid: String,
+    step_id: StepIdStruct,
+}
+
+impl Id for ActionIdStruct {
     fn clone(&self) -> Box<dyn Id> {
         let id = Clone::clone(self);
         Box::new(id)
     }
 }
 
-impl Display for IdStruct {
+impl Display for ActionIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}", self.case_id, self.step).as_str())
+        f.write_str(format!("{}-{}", self.step_id, self.aid).as_str())
     }
 }
+
 
 pub struct ChordStruct {
     creator_map: Arc<HashMap<String, Box<dyn Creator>>>,
@@ -81,8 +98,8 @@ pub struct ArgStruct<'a, 'f> {
     app: &'a dyn App,
     flow: &'f Flow,
     context: ContextStruct,
-    id: IdStruct,
-    aid: String,
+    step_id: StepIdStruct,
+    action_id: ActionIdStruct,
 }
 
 impl<'a, 'f> ArgStruct<'a, 'f> {
@@ -95,7 +112,7 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
     ) -> ArgStruct<'a, 'f> {
         let context = ContextStruct { ctx: context };
 
-        let id = IdStruct {
+        let step_id = StepIdStruct {
             case_id,
             step: step_id,
         };
@@ -104,19 +121,25 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
             app,
             flow,
             context,
-            id,
-            aid: "".to_string(),
+            step_id: step_id.clone(),
+            action_id: ActionIdStruct {
+                aid: "".to_string(),
+                step_id,
+            },
         };
 
         return run_arg;
     }
 
-    pub fn id(self: &ArgStruct<'a, 'f>) -> &IdStruct {
-        return &self.id;
+    pub fn step_id(self: &ArgStruct<'a, 'f>) -> &StepIdStruct {
+        return &self.step_id;
     }
 
     pub fn aid(&mut self, aid: &str) {
-        self.aid = aid.to_string();
+        self.action_id = ActionIdStruct {
+            aid: aid.to_string(),
+            step_id: self.step_id.clone(),
+        }
     }
 
     pub fn context_mut(&mut self) -> &mut dyn Context {
@@ -130,7 +153,7 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
 
 impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
     fn id(&self) -> &dyn Id {
-        &self.id
+        &self.action_id
     }
 
     fn context(&self) -> &dyn Context {
@@ -139,7 +162,7 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
 
     fn args_raw(&self) -> &Value {
         self.flow
-            .step_action_args(self.id().step(), self.aid.as_str())
+            .step_action_args(self.step_id().step(), self.action_id.aid.as_str())
     }
 
     fn args(&self) -> Result<Value, Error> {

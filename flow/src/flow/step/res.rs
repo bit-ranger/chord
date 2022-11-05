@@ -1,11 +1,10 @@
 use chrono::{DateTime, Utc};
 
-use chord_core::action::Id;
 use chord_core::collection::TailDropVec;
-use chord_core::step::{ActionAsset, ActionState, StepAsset, StepState};
+use chord_core::step::{ActionAsset, ActionState, StepAsset, StepId, StepState};
 use chord_core::value::Value;
 
-use crate::flow::step::arg::IdStruct;
+use crate::flow::step::arg::StepIdStruct;
 
 pub struct ActionAssetStruct {
     aid: String,
@@ -64,7 +63,7 @@ impl ActionAsset for ActionAssetStruct {
 
 
 pub struct StepAssetStruct {
-    id: IdStruct,
+    id: StepIdStruct,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: StepState,
@@ -72,7 +71,7 @@ pub struct StepAssetStruct {
 
 impl StepAssetStruct {
     pub fn new(
-        id: IdStruct,
+        id: StepIdStruct,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         action_asset_vec: Vec<ActionAssetStruct>,
@@ -103,7 +102,7 @@ impl StepAssetStruct {
 }
 
 impl StepAsset for StepAssetStruct {
-    fn id(&self) -> &dyn Id {
+    fn id(&self) -> &dyn StepId {
         &self.id
     }
 

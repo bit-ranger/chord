@@ -3,7 +3,6 @@ use std::fmt::Display;
 pub use async_trait::async_trait;
 pub use chrono::{DateTime, Utc};
 
-use crate::case::CaseId;
 use crate::value::Map;
 use crate::value::Value;
 
@@ -38,10 +37,6 @@ pub mod prelude {
 }
 
 pub trait Id: Sync + Send + Display {
-    fn step(&self) -> &str;
-
-    fn case_id(&self) -> &dyn CaseId;
-
     fn clone(&self) -> Box<dyn Id>;
 }
 
@@ -66,7 +61,6 @@ impl Data for Value {
 
 
 pub trait Frame: Data {
-
     fn id(&self) -> &str;
 
     fn start(&self) -> DateTime<Utc>;
@@ -78,7 +72,7 @@ pub trait Frame: Data {
 pub enum Asset {
     Value(Value),
     Data(Box<dyn Data>),
-    Frames(Vec<Box<dyn Frame>>)
+    Frames(Vec<Box<dyn Frame>>),
 }
 
 impl Asset {
@@ -95,7 +89,6 @@ impl Asset {
             }
         }
     }
-
 }
 
 pub trait Chord: Sync + Send {

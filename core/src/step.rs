@@ -1,8 +1,17 @@
+use std::fmt::Display;
+
 use chrono::{DateTime, Utc};
 
-use crate::action::{Asset, Id};
+use crate::action::Asset;
+use crate::case::CaseId;
 use crate::collection::TailDropVec;
 use crate::value::Value;
+
+pub trait StepId: Sync + Send + Display {
+    fn step(&self) -> &str;
+
+    fn case_id(&self) -> &dyn CaseId;
+}
 
 pub enum ActionState {
     Ok(Asset),
@@ -60,7 +69,7 @@ impl StepState {
 }
 
 pub trait StepAsset: Sync + Send {
-    fn id(&self) -> &dyn Id;
+    fn id(&self) -> &dyn StepId;
 
     fn start(&self) -> DateTime<Utc>;
 

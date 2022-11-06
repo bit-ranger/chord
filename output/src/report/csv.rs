@@ -172,7 +172,7 @@ impl StageReporter for CsvStageReporter {
         return Ok(report(&mut self.writer, ca_vec, &self.head).await?);
     }
 
-    async fn end(&mut self, sa: &dyn StageAsset) -> Result<(), Error> {
+    async fn end(&mut self, _sa: &dyn StageAsset) -> Result<(), Error> {
         self.writer.flush()?;
         Ok(())
     }

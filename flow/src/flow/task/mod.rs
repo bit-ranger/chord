@@ -328,14 +328,14 @@ impl TaskRunner {
     async fn stage_run_round(&mut self, stage_id: &str) -> Result<(), Error> {
         let concurrency = self.flow.stage_concurrency(stage_id);
         let round_max = self.flow.stage_round(stage_id);
-        let mut round_count = 0;
+        let mut round_count = 1;
         loop {
             self.stage_round_no = round_count;
             self.stage_run_once(stage_id, concurrency).await?;
-            round_count += 1;
             if round_count >= round_max {
                 break;
             }
+            round_count += 1;
         }
         return Ok(());
     }
@@ -555,8 +555,8 @@ async fn step_vec_create(
     let case_id = Arc::new(CaseIdStruct::new(
         task_id,
         Arc::new("create".to_string()),
-        Arc::new("0".to_string()),
-        "0".to_string(),
+        Arc::new("1".to_string()),
+        "pre".to_string(),
     ));
     for sid in step_id_vec {
         let mut arg = ArgStruct::new(

@@ -21,11 +21,7 @@ struct Url {}
 
 #[async_trait]
 impl Action for Url {
-    async fn execute(
-        &self,
-        _chord: &dyn Chord,
-        arg: &mut dyn Arg,
-    ) -> Result<Asset, Error> {
+    async fn execute(&self, _chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 
@@ -34,11 +30,11 @@ impl Action for Url {
         return match by {
             "encode" => {
                 let to = urlencoding::encode(from);
-                Ok(Asset::Value(Value::String(to)))
+                Ok(Asset::Value(Value::String(to.to_string())))
             }
             "decode" => {
                 let to = urlencoding::decode(from)?;
-                Ok(Asset::Value(Value::String(to)))
+                Ok(Asset::Value(Value::String(to.to_string())))
             }
             _ => Err(err!("102", format!("unsupported {}", by))),
         };

@@ -1,24 +1,23 @@
 use chord_core::action::prelude::*;
-use chord_core::action::Context;
 
 use crate::err;
 
-pub struct SetPlayer {}
+pub struct AlterCreator {}
 
-impl SetPlayer {
-    pub async fn new(_: Option<Value>) -> Result<SetPlayer, Error> {
-        Ok(SetPlayer {})
+impl AlterCreator {
+    pub async fn new(_: Option<Value>) -> Result<AlterCreator, Error> {
+        Ok(AlterCreator {})
     }
 }
 
 #[async_trait]
-impl Player for SetPlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        Ok(Box::new(Set {}))
+impl Creator for AlterCreator {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        Ok(Box::new(Alter {}))
     }
 }
 
-struct Set {}
+struct Alter {}
 
 #[derive(Clone)]
 struct ContextStruct {
@@ -41,18 +40,22 @@ impl Context for ContextStruct {
 }
 
 #[async_trait]
-impl Action for Set {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+impl Action for Alter {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         let obj = args
             .as_object()
-            .ok_or(err!("100", "set must be a object"))?;
+            .ok_or(err!("100", "alter must be a object"))?;
         for (k, v) in obj {
             arg.context_mut()
                 .data_mut()
                 .insert(k.to_string(), v.clone());
         }
 
-        Ok(Box::new(Value::Null))
+        Ok(Asset::Value(Value::Null))
     }
 }

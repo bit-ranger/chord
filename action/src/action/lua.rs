@@ -2,22 +2,21 @@ use rlua::prelude::LuaError;
 use rlua::{ToLua, UserData, UserDataMethods};
 
 use chord_core::action::prelude::*;
-use chord_core::action::{Context, Id};
 use chord_core::future::runtime::Handle;
 
 use crate::err;
 
-pub struct LuaPlayer {}
+pub struct LuaCreator {}
 
-impl LuaPlayer {
-    pub async fn new(_: Option<Value>) -> Result<LuaPlayer, Error> {
-        Ok(LuaPlayer {})
+impl LuaCreator {
+    pub async fn new(_: Option<Value>) -> Result<LuaCreator, Error> {
+        Ok(LuaCreator {})
     }
 }
 
 #[async_trait]
-impl Player for LuaPlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for LuaCreator {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(LuaAction {}))
     }
 }
@@ -27,7 +26,7 @@ struct LuaAction {}
 struct ActionUserData {
     id: Box<dyn Id>,
     action: Box<dyn Action>,
-    combo: Box<dyn Combo>,
+    chord: Box<dyn Chord>,
 }
 
 #[derive(Clone)]
@@ -54,7 +53,6 @@ struct ArgStruct {
     id: Box<dyn Id>,
     args: Value,
     context: ContextStruct,
-    combo: Box<dyn Combo>,
 }
 
 impl Arg for ArgStruct {
@@ -70,6 +68,10 @@ impl Arg for ArgStruct {
         &self.args
     }
 
+    fn args_init(&self) -> Option<&Value> {
+        None
+    }
+
     fn context(&self) -> &dyn Context {
         &self.context
     }
@@ -77,24 +79,11 @@ impl Arg for ArgStruct {
     fn context_mut(&mut self) -> &mut dyn Context {
         &mut self.context
     }
-
-    fn render(&self, _: &dyn Context, raw: &Value) -> Result<Value, Error> {
-        Ok(raw.clone())
-    }
-
-    fn combo(&self) -> &dyn Combo {
-        self.combo.as_ref()
-    }
-
-    fn is_static(&self, _: &Value) -> bool {
-        true
-    }
 }
 
 #[async_trait]
 impl Action for LuaAction {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
-        let combo = arg.combo().clone();
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let context = arg.context().data().clone();
         let id = arg.id().clone();
         let code = arg
@@ -102,44 +91,43 @@ impl Action for LuaAction {
             .as_str()
             .ok_or(err!("100", "missing lua"))?
             .to_string();
-        execute(id, code, combo, context)
+        execute(id, code, chord, context)
     }
 }
 
 fn execute(
     id: Box<dyn Id>,
     code: String,
-    combo: Box<dyn Combo>,
+    chord: &dyn Chord,
     context: Map,
-) -> Result<Box<dyn Scope>, Error> {
+) -> Result<Asset, Error> {
     let rt = rlua::Lua::new();
     rt.set_memory_limit(Some(1024000));
     rt.context(|lua| {
+        let chord: Box<dyn Chord> = chord.clone();
         let action_fn =
             lua.create_function_mut(move |_c, (name, param): (rlua::String, rlua::Value)| {
                 let name = name.to_str().unwrap();
                 let id = id.clone();
-                let combo = combo.clone();
-
-                let action = combo
-                    .action(name)
+                let action = chord
+                    .creator(name)
                     .ok_or(err!("110", "unsupported action"))
                     .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
                 let play_arg = ArgStruct {
                     id: id.clone(),
-                    combo: combo.clone(),
                     args: to_serde_value(&param)
                         .map_err(|e| LuaError::RuntimeError(e.to_string()))?,
                     context: ContextStruct { map: Map::new() },
                 };
                 let handle = Handle::current();
                 let _ = handle.enter();
-                let play = futures::executor::block_on(action.action(&play_arg)).unwrap();
+                let play =
+                    futures::executor::block_on(action.create(chord.as_ref(), &play_arg)).unwrap();
 
                 Ok(ActionUserData {
                     id,
                     action: play,
-                    combo,
+                    chord: chord.clone(),
                 })
             })?;
 
@@ -154,13 +142,13 @@ fn execute(
     })
 }
 
-fn eval(lua: rlua::Context, code: &str) -> Result<Box<dyn Scope>, Error> {
+fn eval(lua: rlua::Context, code: &str) -> Result<Asset, Error> {
     let chunk = lua.load(code);
     let result: rlua::Result<rlua::Value> = chunk.eval();
     match result {
         Ok(v) => {
             let v: Value = to_serde_value(&v)?;
-            Ok(Box::new(v))
+            Ok(Asset::Value(v))
         }
         Err(e) => Err(err!("101", format!("{}", e))),
     }
@@ -244,16 +232,17 @@ impl UserData for ActionUserData {
         methods.add_method("run", |lua_ctx, this, param: rlua::Value| {
             let mut play_arg = ArgStruct {
                 id: this.id.clone(),
-                combo: this.combo.clone(),
                 args: to_serde_value(&param).map_err(|e| LuaError::RuntimeError(e.to_string()))?,
                 context: ContextStruct { map: Map::new() },
             };
             let handle = Handle::current();
             let _ = handle.enter();
-            let scope = futures::executor::block_on(this.action.run(&mut play_arg))
-                .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
-            let value = scope.as_value();
-            let lua_value = to_lua_value(lua_ctx, value);
+            let asset = futures::executor::block_on(
+                this.action.execute(this.chord.as_ref(), &mut play_arg),
+            )
+            .map_err(|e| LuaError::RuntimeError(e.to_string()))?;
+            let value = asset.to_value();
+            let lua_value = to_lua_value(lua_ctx, &value);
             Ok(lua_value)
         });
     }

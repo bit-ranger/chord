@@ -11,8 +11,8 @@ use ReportError::*;
 
 #[cfg(feature = "report_csv")]
 mod csv;
-#[cfg(feature = "report_webhook")]
-mod webhook;
+// #[cfg(feature = "report_webhook")]
+// mod webhook;
 
 #[derive(thiserror::Error, Debug)]
 enum ReportError {
@@ -60,27 +60,27 @@ impl DefaultJobReporter {
                             exec_id.to_string(),
                             v["with_bom"].as_bool().unwrap_or(true),
                         )
-                        .await?;
+                            .await?;
                         return Ok(DefaultJobReporter {
                             delegate: Box::new(factory),
                         });
                     }
-                    #[cfg(feature = "report_webhook")]
-                    "webhook" => {
-                        let v = c[kind].borrow();
-                        let factory = webhook::WebhookJobReporter::new(
-                            v["url"]
-                                .as_str()
-                                .ok_or(ConfLostEntry("report.webhook.url".into()))?
-                                .to_string(),
-                            name.to_string(),
-                            exec_id.to_string(),
-                        )
-                        .await?;
-                        return Ok(DefaultJobReporter {
-                            delegate: Box::new(factory),
-                        });
-                    }
+                    // #[cfg(feature = "report_webhook")]
+                    // "webhook" => {
+                    //     let v = c[kind].borrow();
+                    //     let factory = webhook::WebhookJobReporter::new(
+                    //         v["url"]
+                    //             .as_str()
+                    //             .ok_or(ConfLostEntry("report.webhook.url".into()))?
+                    //             .to_string(),
+                    //         name.to_string(),
+                    //         exec_id.to_string(),
+                    //     )
+                    //     .await?;
+                    //     return Ok(DefaultJobReporter {
+                    //         delegate: Box::new(factory),
+                    //     });
+                    // }
                     other => {
                         return Err(Box::new(ConfInvalid("kind".to_string(), other.to_string())))
                     }

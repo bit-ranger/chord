@@ -1,22 +1,22 @@
-use mongodb::bson::{to_document, Document};
-use mongodb::{options::ClientOptions, Client};
+use mongodb::{Client, options::ClientOptions};
+use mongodb::bson::{Document, to_document};
 
 use chord_core::action::prelude::*;
 use chord_core::value::from_str;
 
 use crate::err;
 
-pub struct MongodbPlayer {}
+pub struct MongodbCreator {}
 
-impl MongodbPlayer {
-    pub async fn new(_: Option<Value>) -> Result<MongodbPlayer, Error> {
-        Ok(MongodbPlayer {})
+impl MongodbCreator {
+    pub async fn new(_: Option<Value>) -> Result<MongodbCreator, Error> {
+        Ok(MongodbCreator {})
     }
 }
 
 #[async_trait]
-impl Player for MongodbPlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for MongodbCreator {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Mongodb {}))
     }
 }
@@ -25,12 +25,16 @@ struct Mongodb {}
 
 #[async_trait]
 impl Action for Mongodb {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Asset, Error> {
         run(arg).await
     }
 }
 
-async fn run(arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
+async fn run(arg: &dyn Arg) -> Result<Asset, Error> {
     let args = arg.args()?;
     let url = args["url"].as_str().ok_or(err!("100", "missing url"))?;
     let database = args["database"]
@@ -59,7 +63,7 @@ async fn run(arg: &dyn Arg) -> Result<Box<dyn Scope>, Error> {
                     let doc_vec: Vec<Document> =
                         arr.iter().map(|v| to_document(v).unwrap()).collect();
                     collection.insert_many(doc_vec, None).await?;
-                    return Ok(Box::new(Value::Null));
+                    return Ok(Asset::Value(Value::Null));
                 }
                 _ => Err(err!("105", "illegal arg")),
             }

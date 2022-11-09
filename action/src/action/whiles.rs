@@ -1,33 +1,44 @@
+
 use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct WhilePlayer {}
+pub struct WhileCreator {}
 
-impl WhilePlayer {
-    pub async fn new(_: Option<Value>) -> Result<WhilePlayer, Error> {
-        Ok(WhilePlayer {})
+impl WhileCreator {
+    pub async fn new(_: Option<Value>) -> Result<WhileCreator, Error> {
+        Ok(WhileCreator {})
     }
 }
 
 struct While {}
 
-struct ArgStruct<'a> {
+struct ArgStruct<'a, 'c> {
     origin: &'a mut dyn Arg,
     cond: String,
+    chord: &'c dyn Chord,
 }
 
-impl<'o> Arg for ArgStruct<'o> {
+impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
     fn id(&self) -> &dyn Id {
         self.origin.id()
     }
 
     fn args(&self) -> Result<Value, Error> {
-        self.render(self.context(), self.args_raw())
+        self.chord.render(self.context(), self.args_raw())
     }
 
     fn args_raw(&self) -> &Value {
         &self.origin.args_raw()[self.cond.as_str()]
+    }
+
+    fn args_init(&self) -> Option<&Value> {
+        let raw = self.args_raw();
+        if let Value::Object(obj) = raw {
+            obj.get("__init__")
+        } else {
+            None
+        }
     }
 
     fn context(&self) -> &dyn Context {
@@ -37,30 +48,18 @@ impl<'o> Arg for ArgStruct<'o> {
     fn context_mut(&mut self) -> &mut dyn Context {
         self.origin.context_mut()
     }
-
-    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
-        self.origin.render(context, raw)
-    }
-
-    fn combo(&self) -> &dyn Combo {
-        self.origin.combo()
-    }
-
-    fn is_static(&self, raw: &Value) -> bool {
-        self.origin.is_static(raw)
-    }
 }
 
 #[async_trait]
-impl Player for WhilePlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for WhileCreator {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(While {}))
     }
 }
 
 #[async_trait]
 impl Action for While {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let cond_raw = arg
             .args_raw()
             .as_object()
@@ -71,24 +70,24 @@ impl Action for While {
         let cond = Value::String(cond_tpl);
 
         loop {
-            let cv = arg.render(arg.context(), &cond)?;
+            let cv = chord.render(arg.context(), &cond)?;
             if cv.is_string() && cv.as_str().unwrap().eq("true") {
                 let mut arg = ArgStruct {
                     origin: arg,
                     cond: cond_raw.to_string(),
+                    chord,
                 };
-                let bf = arg
-                    .combo()
-                    .action("block")
+                let bf = chord
+                    .creator("block")
                     .ok_or(err!("101", "missing `block` action"))?
-                    .action(&arg)
+                    .create(chord, &arg)
                     .await?;
-                bf.run(&mut arg).await?;
+                bf.execute(chord, &mut arg).await?;
             } else {
                 break;
             }
         }
 
-        Ok(Box::new(Value::Null))
+        Ok(Asset::Value(Value::Null))
     }
 }

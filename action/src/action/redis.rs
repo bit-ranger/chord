@@ -4,29 +4,30 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct RedisPlayer {}
+pub struct RedisCreator {}
 
-impl RedisPlayer {
-    pub async fn new(_: Option<Value>) -> Result<RedisPlayer, Error> {
-        Ok(RedisPlayer {})
+impl RedisCreator {
+    pub async fn new(_: Option<Value>) -> Result<RedisCreator, Error> {
+        Ok(RedisCreator {})
     }
 }
 
 #[async_trait]
-impl Player for RedisPlayer {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let args_raw = arg.args_raw();
-        let url = &args_raw["url"];
-        if url.is_string() {
-            if arg.is_static(url) {
-                let url = arg.render(arg.context(), url)?;
+impl Creator for RedisCreator {
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let args_init = arg.args_init();
+        if let Some(args_init) = args_init {
+            let url = &args_init["url"];
+            if url.is_string() {
+                let url = chord.render(arg.context(), url)?;
                 let url = url.as_str().ok_or(err!("100", "invalid url"))?;
-                let client = redis::Client::open(url)?;
+                let client = Client::open(url)?;
                 return Ok(Box::new(Redis {
                     client: Some(client),
                 }));
             }
         }
+
         return Ok(Box::new(Redis { client: None }));
     }
 }
@@ -37,21 +38,25 @@ struct Redis {
 
 #[async_trait]
 impl Action for Redis {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Asset, Error> {
         return match self.client.as_ref() {
             Some(r) => run0(arg, r).await,
             None => {
                 let args = arg.args()?;
                 let url = args["url"].as_str().ok_or(err!("101", "missing url"))?;
 
-                let client = redis::Client::open(url)?;
+                let client = Client::open(url)?;
                 run0(arg, &client).await
             }
         };
     }
 }
 
-async fn run0(arg: &dyn Arg, client: &Client) -> Result<Box<dyn Scope>, Error> {
+async fn run0(arg: &dyn Arg, client: &Client) -> Result<Asset, Error> {
     let args = arg.args()?;
     let cmd = args["cmd"].as_str().ok_or(err!("102", "missing cmd"))?;
 
@@ -82,5 +87,5 @@ async fn run0(arg: &dyn Arg, client: &Client) -> Result<Box<dyn Scope>, Error> {
         RedisValue::Okay => Value::String("OK".to_string()),
         _ => Value::Array(vec![]),
     };
-    return Ok(Box::new(result));
+    return Ok(Asset::Value(result));
 }

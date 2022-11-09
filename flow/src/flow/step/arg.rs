@@ -2,23 +2,26 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use chord_core::action::{Arg, Combo};
+use handlebars::Handlebars;
+
+use chord_core::action::{Arg, Chord};
 use chord_core::action::{Context, Id};
-use chord_core::action::{Error, Player};
+use chord_core::action::{Creator, Error};
 use chord_core::case::CaseId;
 use chord_core::flow::Flow;
+use chord_core::step::StepId;
 use chord_core::value::{Map, Value};
 
+use crate::{App, flow};
 use crate::model::app::RenderContext;
-use crate::{flow, App};
 
 #[derive(Clone)]
-pub struct IdStruct {
+pub struct StepIdStruct {
     step: String,
     case_id: Arc<dyn CaseId>,
 }
 
-impl Id for IdStruct {
+impl StepId for StepIdStruct {
     fn step(&self) -> &str {
         self.step.as_str()
     }
@@ -26,42 +29,77 @@ impl Id for IdStruct {
     fn case_id(&self) -> &dyn CaseId {
         self.case_id.as_ref()
     }
+}
 
+impl Display for StepIdStruct {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(format!("{}-{}", self.case_id, self.step).as_str())
+    }
+}
+
+
+#[derive(Clone)]
+pub struct ActionIdStruct {
+    aid: String,
+    step_id: StepIdStruct,
+}
+
+impl Id for ActionIdStruct {
     fn clone(&self) -> Box<dyn Id> {
         let id = Clone::clone(self);
         Box::new(id)
     }
 }
 
-impl Display for IdStruct {
+impl Display for ActionIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(format!("{}-{}", self.case_id, self.step).as_str())
+        f.write_str(format!("{}-{}", self.step_id, self.aid).as_str())
     }
 }
 
-#[derive(Clone)]
-pub struct ComboStruct {
-    player_map: Arc<HashMap<String, Box<dyn Player>>>,
+
+pub struct ChordStruct {
+    creator_map: Arc<HashMap<String, Box<dyn Creator>>>,
+    app: Arc<dyn App>,
 }
 
-impl Combo for ComboStruct {
-    fn action(&self, action: &str) -> Option<&dyn Player> {
-        self.player_map.get(action).map(|a| a.as_ref())
+impl ChordStruct {
+    pub fn new(app: Arc<dyn App>) -> ChordStruct {
+        ChordStruct {
+            creator_map: app.get_creator_map().clone(),
+            app,
+        }
     }
 
-    fn clone(&self) -> Box<dyn Combo> {
-        let combo = Clone::clone(self);
-        Box::new(combo)
+    fn render(handlebars: &Handlebars, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        let mut val = raw.clone();
+        let rc = RenderContext::wraps(context.data())?;
+        flow::render_value(handlebars, &rc, &mut val)?;
+        Ok(val)
+    }
+}
+
+impl Chord for ChordStruct {
+    fn creator(&self, action: &str) -> Option<&dyn Creator> {
+        let creator_op = self.creator_map.get(action);
+        creator_op.map(|a| a.as_ref())
+    }
+
+    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
+        ChordStruct::render(self.app.get_handlebars(), context, raw)
+    }
+
+    fn clone(&self) -> Box<dyn Chord> {
+        Box::new(ChordStruct::new(self.app.clone()))
     }
 }
 
 pub struct ArgStruct<'a, 'f> {
     app: &'a dyn App,
-    combo: ComboStruct,
     flow: &'f Flow,
     context: ContextStruct,
-    id: IdStruct,
-    aid: String,
+    step_id: StepIdStruct,
+    action_id: ActionIdStruct,
 }
 
 impl<'a, 'f> ArgStruct<'a, 'f> {
@@ -72,35 +110,36 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
         case_id: Arc<dyn CaseId>,
         step_id: String,
     ) -> ArgStruct<'a, 'f> {
-        let combo = ComboStruct {
-            player_map: app.get_player_map().clone(),
-        };
-
         let context = ContextStruct { ctx: context };
 
-        let id = IdStruct {
+        let step_id = StepIdStruct {
             case_id,
             step: step_id,
         };
 
         let run_arg = ArgStruct {
             app,
-            combo,
             flow,
             context,
-            id,
-            aid: "".to_string(),
+            step_id: step_id.clone(),
+            action_id: ActionIdStruct {
+                aid: "".to_string(),
+                step_id,
+            },
         };
 
         return run_arg;
     }
 
-    pub fn id(self: &ArgStruct<'a, 'f>) -> &IdStruct {
-        return &self.id;
+    pub fn step_id(self: &ArgStruct<'a, 'f>) -> &StepIdStruct {
+        return &self.step_id;
     }
 
     pub fn aid(&mut self, aid: &str) {
-        self.aid = aid.to_string();
+        self.action_id = ActionIdStruct {
+            aid: aid.to_string(),
+            step_id: self.step_id.clone(),
+        }
     }
 
     pub fn context_mut(&mut self) -> &mut dyn Context {
@@ -114,7 +153,7 @@ impl<'a, 'f> ArgStruct<'a, 'f> {
 
 impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
     fn id(&self) -> &dyn Id {
-        &self.id
+        &self.action_id
     }
 
     fn context(&self) -> &dyn Context {
@@ -123,32 +162,24 @@ impl<'a, 'f> Arg for ArgStruct<'a, 'f> {
 
     fn args_raw(&self) -> &Value {
         self.flow
-            .step_action_args(self.id().step(), self.aid.as_str())
-    }
-
-    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
-        let mut val = raw.clone();
-        let rc = RenderContext::wraps(context.data())?;
-        flow::render_value(self.app.get_handlebars(), &rc, &mut val)?;
-        Ok(val)
+            .step_action_args(self.step_id().step(), self.action_id.aid.as_str())
     }
 
     fn args(&self) -> Result<Value, Error> {
-        self.render(&self.context, self.args_raw())
-    }
-
-    fn combo(&self) -> &dyn Combo {
-        &self.combo
-    }
-
-    fn is_static(&self, raw: &Value) -> bool {
-        let mut val = raw.clone();
-        let rc = RenderContext::wraps(Value::Null).unwrap();
-        flow::render_value(self.app.get_handlebars(), &rc, &mut val).is_ok()
+        ChordStruct::render(&self.app.get_handlebars(), &self.context, self.args_raw())
     }
 
     fn context_mut(&mut self) -> &mut dyn Context {
         &mut self.context
+    }
+
+    fn args_init(&self) -> Option<&Value> {
+        let raw = self.args_raw();
+        if let Value::Object(obj) = raw {
+            obj.get("__init__")
+        } else {
+            None
+        }
     }
 }
 

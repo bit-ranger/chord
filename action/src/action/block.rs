@@ -1,28 +1,39 @@
 use std::mem::replace;
 
+
 use chord_core::action::prelude::*;
 use chord_core::collection::TailDropVec;
 
 use crate::err;
 
-struct ArgStruct<'o, 'c> {
+struct ArgStruct<'o, 'c, 'ch> {
     block: &'o dyn Arg,
     context: &'c mut Box<ContextStruct>,
     aid: String,
     action: String,
+    chord: &'ch dyn Chord,
 }
 
-impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
+impl<'o, 'c, 'ch> Arg for ArgStruct<'o, 'c, 'ch> {
     fn id(&self) -> &dyn Id {
         self.block.id()
     }
 
     fn args(&self) -> Result<Value, Error> {
-        self.block.render(self.context(), self.args_raw())
+        self.chord.render(self.context(), self.args_raw())
     }
 
     fn args_raw(&self) -> &Value {
         &self.block.args_raw()[&self.aid][&self.action]
+    }
+
+    fn args_init(&self) -> Option<&Value> {
+        let raw = self.args_raw();
+        if let Value::Object(obj) = raw {
+            obj.get("__init__")
+        } else {
+            None
+        }
     }
 
     fn context(&self) -> &dyn Context {
@@ -31,18 +42,6 @@ impl<'o, 'c> Arg for ArgStruct<'o, 'c> {
 
     fn context_mut(&mut self) -> &mut dyn Context {
         self.context.as_mut()
-    }
-
-    fn render(&self, context: &dyn Context, raw: &Value) -> Result<Value, Error> {
-        self.block.render(context, raw)
-    }
-
-    fn combo(&self) -> &dyn Combo {
-        self.block.combo()
-    }
-
-    fn is_static(&self, raw: &Value) -> bool {
-        self.block.is_static(raw)
     }
 }
 
@@ -66,17 +65,17 @@ impl Context for ContextStruct {
     }
 }
 
-pub struct BlockPlayer {}
+pub struct BlockCreator {}
 
-impl BlockPlayer {
-    pub async fn new(_: Option<Value>) -> Result<BlockPlayer, Error> {
-        Ok(BlockPlayer {})
+impl BlockCreator {
+    pub async fn new(_: Option<Value>) -> Result<BlockCreator, Error> {
+        Ok(BlockCreator {})
     }
 }
 
 #[async_trait]
-impl Player for BlockPlayer {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for BlockCreator {
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let map = args_raw.as_object().unwrap();
         let mut context = Box::new(ContextStruct {
@@ -94,13 +93,13 @@ impl Player for BlockPlayer {
                 context: &mut context,
                 aid: aid.to_string(),
                 action: action.to_string(),
+                chord,
             };
 
-            let action_obj = arg
-                .combo()
-                .action(action.into())
+            let action_obj = chord
+                .creator(action.into())
                 .ok_or_else(|| err!("100", "unsupported action"))?
-                .action(&mut create_arg)
+                .create(chord, &mut create_arg)
                 .await
                 .map_err(|_| err!("100", "create error"))?;
             action_vec.push((aid.to_string(), action.to_string(), action_obj));
@@ -118,7 +117,7 @@ struct Block {
 
 #[async_trait]
 impl Action for Block {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let mut context = Box::new(ContextStruct {
             data: arg.context().data().clone(),
         });
@@ -129,8 +128,9 @@ impl Action for Block {
                 context: &mut context,
                 aid: aid.to_string(),
                 action: action.to_string(),
+                chord,
             };
-            let v = action_obj.run(&mut run).await?;
+            let v = action_obj.execute(chord, &mut run).await?;
             scope_vec.push((aid.to_string(), v));
         }
 
@@ -138,10 +138,10 @@ impl Action for Block {
 
         let scope_vec = TailDropVec::from(scope_vec);
         let mut value = Map::new();
-        for (aid, scope) in scope_vec.iter() {
-            value.insert(aid.to_string(), scope.as_value().clone());
+        for (aid, asset) in scope_vec.iter() {
+            value.insert(aid.to_string(), asset.to_value());
         }
 
-        Ok(Box::new(Value::Object(value)))
+        Ok(Asset::Value(Value::Object(value)))
     }
 }

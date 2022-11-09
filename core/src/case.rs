@@ -3,7 +3,7 @@ use std::fmt::Display;
 use chrono::{DateTime, Utc};
 
 use crate::collection::TailDropVec;
-use crate::step::StepAssess;
+use crate::step::StepAsset;
 use crate::task::TaskId;
 use crate::value::Value;
 
@@ -19,7 +19,7 @@ pub trait CaseId: Sync + Send + Display {
     fn task_id(&self) -> &dyn TaskId;
 }
 
-pub trait CaseAssess: Sync + Send {
+pub trait CaseAsset: Sync + Send {
     fn id(&self) -> &dyn CaseId;
 
     fn start(&self) -> DateTime<Utc>;
@@ -32,9 +32,9 @@ pub trait CaseAssess: Sync + Send {
 }
 
 pub enum CaseState {
-    Ok(TailDropVec<Box<dyn StepAssess>>),
+    Ok(TailDropVec<Box<dyn StepAsset>>),
     Err(Box<Error>),
-    Fail(TailDropVec<Box<dyn StepAssess>>),
+    Fail(TailDropVec<Box<dyn StepAsset>>),
 }
 
 impl CaseState {

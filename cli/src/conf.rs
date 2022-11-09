@@ -38,7 +38,7 @@ impl Config {
                     "dir": home_dir.join("output").to_str().unwrap().to_string()
                 }
             },
-           "player": {
+           "creator": {
                "dubbo": {
                    "mode": "gateway",
                    "gateway": {
@@ -81,8 +81,8 @@ impl Config {
         return target_level;
     }
 
-    pub fn player(&self) -> Option<&Value> {
-        self.conf.get("player")
+    pub fn creator(&self) -> Option<&Value> {
+        self.conf.get("creator")
     }
 
     pub fn loader(&self) -> Option<&Value> {

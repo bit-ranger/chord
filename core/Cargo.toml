@@ -18,12 +18,12 @@ repository = "https://github.com/bit-ranger/chord"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 chrono = { version = "0.4.19", features = ["serde"] }
-async-trait = "0.1.57"
-regex = "1.6.0"
+async-trait = "0.1.58"
+regex = "1.7.0"
 lazy_static = "1.4.0"
-itertools = "0.10.0"
+itertools = "0.10.5"
 thiserror = "1.0"
-tokio = { version = "1.20", features = ["fs", "time", "tracing", "process", "macros", "rt", "io-util", "sync"] }
+tokio = { version = "1.21", features = ["fs", "time", "tracing", "process", "macros", "rt", "io-util", "sync"] }
 
 
 [target.'cfg(linux)'.dependencies]

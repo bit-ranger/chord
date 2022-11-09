@@ -1,21 +1,24 @@
+use std::time::{Duration, UNIX_EPOCH};
+
 use log::trace;
 
+use chord_core::action::{DateTime, Frame, Utc};
 use chord_core::action::prelude::*;
 use chord_core::future::process::{Child, Command};
 
 use crate::err;
 
-pub struct ProgramPlayer {}
+pub struct ProgramCreator {}
 
-impl ProgramPlayer {
-    pub async fn new(_: Option<Value>) -> Result<ProgramPlayer, Error> {
-        Ok(ProgramPlayer {})
+impl ProgramCreator {
+    pub async fn new(_: Option<Value>) -> Result<ProgramCreator, Error> {
+        Ok(ProgramCreator {})
     }
 }
 
 #[async_trait]
-impl Player for ProgramPlayer {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for ProgramCreator {
+    async fn create(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         match args_raw["detach"].as_bool().unwrap_or(false) {
             true => Ok(Box::new(DetachProgram::new(&args_raw)?)),
@@ -34,7 +37,11 @@ impl AttachProgram {
 
 #[async_trait]
 impl Action for AttachProgram {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         let mut command = program_command(&args)?;
         trace!("program attach command {:?}", command);
@@ -42,8 +49,10 @@ impl Action for AttachProgram {
 
         let std_out = String::from_utf8_lossy(&output.stdout).to_string();
         let std_err = String::from_utf8_lossy(&output.stderr).to_string();
-        trace!("stdout:\n{}", std_out);
-        trace!("stderr:\n{}", std_err);
+        trace!("stdout");
+        trace!("{}", std_out);
+        trace!("stderr");
+        trace!("{}", std_err);
 
         if !output.status.success() {
             return Err(err!(
@@ -52,28 +61,106 @@ impl Action for AttachProgram {
             ));
         }
 
-        let out = format!("{}{}", std_out, std_err);
-        let last_line = out.lines().last();
-
-        match last_line {
-            None => Ok(Box::new(Value::Null)),
-            Some(last_line) => {
-                let value_to_json = args["value_to_json"].as_bool().unwrap_or(false);
-                if value_to_json {
-                    let value: Value = from_str(last_line)?;
-                    Ok(Box::new(value))
+        let lines: Vec<&str> = std_out.lines().collect();
+        let boundary = args["boundary"].as_str();
+        let content = if let Some(b) = boundary {
+            let found = lines.iter().enumerate().rfind(|(_i, e)| e.starts_with(b));
+            if let Some((i, _e)) = found {
+                let start = i + 1;
+                if start < lines.len() {
+                    (&lines[start..]).to_vec()
                 } else {
-                    let value: Value = Value::String(last_line.to_string());
-                    Ok(Box::new(value))
+                    vec![]
                 }
+            } else {
+                lines
+            }
+        } else {
+            lines
+        };
+
+        let content_type = args["content_type"].as_str().unwrap_or("text/plain");
+
+        match content_type {
+            "application/json" => {
+                let tail = content.join("\n");
+                let tail_json: Value = from_str(&tail)?;
+                return Ok(Asset::Value(tail_json));
+            }
+
+            "application/chord-frame-1.0" => {
+                let tail = content.join("\n");
+                let tail_json: Value = from_str(&tail)?;
+                if let Value::Array(vec) = tail_json {
+                    let frames: Vec<Box<dyn Frame>> = vec.iter()
+                        .enumerate()
+                        .map(|(i, v)| value_to_frame(i, v))
+                        .collect();
+                    return Ok(Asset::Frames(frames));
+                }
+
+                return Ok(Asset::Value(tail_json));
+            }
+
+            _ => {
+                Ok(Asset::Value(Value::String(std_out)))
             }
         }
     }
 
-    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
+    async fn explain(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Value, Error> {
         let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))
+    }
+}
+
+fn value_to_frame(idx: usize, value: &Value) -> Box<dyn Frame> {
+    let frame = ProgramFrame {
+        id: value["id"].as_str().map_or(idx.to_string(), |v| v.to_string()),
+        start: value["start"].as_u64().map_or(DateTime::<Utc>::from(UNIX_EPOCH), timestamp_to_utc),
+        end: value["end"].as_u64().map_or(DateTime::<Utc>::from(UNIX_EPOCH), timestamp_to_utc),
+        data: value["data"].clone(),
+    };
+    Box::new(frame)
+}
+
+fn timestamp_to_utc(timestamp: u64) -> DateTime<Utc> {
+    let d = UNIX_EPOCH + Duration::from_millis(timestamp);
+    DateTime::<Utc>::from(d)
+}
+
+#[derive(Serialize)]
+struct ProgramFrame {
+    id: String,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    data: Value,
+}
+
+
+impl Data for ProgramFrame {
+    fn to_value(&self) -> Value {
+        json!({
+            "id": self.id,
+            "start": self.start,
+            "end": self.end,
+            "data": self.data
+        })
+    }
+}
+
+impl Frame for ProgramFrame {
+    fn id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    fn start(&self) -> DateTime<Utc> {
+        self.start
+    }
+
+    fn end(&self) -> DateTime<Utc> {
+        self.end
     }
 }
 
@@ -87,17 +174,21 @@ impl DetachProgram {
 
 #[async_trait]
 impl Action for DetachProgram {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
 
         let mut command = program_command(&args)?;
         trace!("detach command {:?}", command);
         let child = command.spawn()?;
         trace!("detach pid {:?}", child.id());
-        Ok(Box::new(ChildHolder::new(child)))
+        Ok(Asset::Data(Box::new(ChildHolder::new(child))))
     }
 
-    async fn explain(&self, arg: &dyn Arg) -> Result<Value, Error> {
+    async fn explain(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Value, Error> {
         let args = arg.args()?;
         let command = program_command_explain(&args)?;
         Ok(Value::String(command))
@@ -105,22 +196,20 @@ impl Action for DetachProgram {
 }
 
 struct ChildHolder {
-    value: Value,
     child: Child,
 }
 
 impl ChildHolder {
     fn new(child: Child) -> ChildHolder {
         ChildHolder {
-            value: Value::Number(Number::from(child.id().unwrap())),
             child,
         }
     }
 }
 
-impl Scope for ChildHolder {
-    fn as_value(&self) -> &Value {
-        &self.value
+impl Data for ChildHolder {
+    fn to_value(&self) -> Value {
+        Value::Number(Number::from(self.child.id().unwrap()))
     }
 }
 

@@ -19,12 +19,12 @@ smoking.step.step1 = {
         while: {
             "(lt cnt 10)": {
                 set0: {
-                    set: {
+                    alter: {
                         cnt: "{{num (num_add cnt 1)}}"
                     }
                 },
                 log1: {
-                    log: "{{num cnt}}"
+                    log: "counting {{num cnt}}"
                 }
             }
         }

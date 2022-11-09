@@ -2,17 +2,17 @@ use chord_core::action::prelude::*;
 
 use crate::err;
 
-pub struct UrlPlayer {}
+pub struct UrlCreator {}
 
-impl UrlPlayer {
-    pub async fn new(_: Option<Value>) -> Result<UrlPlayer, Error> {
-        Ok(UrlPlayer {})
+impl UrlCreator {
+    pub async fn new(_: Option<Value>) -> Result<UrlCreator, Error> {
+        Ok(UrlCreator {})
     }
 }
 
 #[async_trait]
-impl Player for UrlPlayer {
-    async fn action(&self, _: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for UrlCreator {
+    async fn create(&self, _chord: &dyn Chord, _arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         Ok(Box::new(Url {}))
     }
 }
@@ -21,7 +21,7 @@ struct Url {}
 
 #[async_trait]
 impl Action for Url {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(&self, _chord: &dyn Chord, arg: &mut dyn Arg) -> Result<Asset, Error> {
         let args = arg.args()?;
         let by = args["by"].as_str().ok_or(err!("100", "missing by"))?;
 
@@ -30,11 +30,11 @@ impl Action for Url {
         return match by {
             "encode" => {
                 let to = urlencoding::encode(from);
-                Ok(Box::new(Value::String(to)))
+                Ok(Asset::Value(Value::String(to.to_string())))
             }
             "decode" => {
                 let to = urlencoding::decode(from)?;
-                Ok(Box::new(Value::String(to)))
+                Ok(Asset::Value(Value::String(to.to_string())))
             }
             _ => Err(err!("102", format!("unsupported {}", by))),
         };

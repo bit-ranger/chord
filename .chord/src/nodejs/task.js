@@ -25,7 +25,7 @@ conf.pre.step.install = {
                 prefix,
                 "install"
             ],
-            value_to_json: false
+            content_type: "text/plain"
         }
     }
 
@@ -50,13 +50,14 @@ step.step1 = {
                 "test",
                 "{{obj var.case}}"
             ],
-            value_to_json: true
+            boundary: "----content-output----",
+            content_type: "application/chord-frame-1.0"
         }
     },
 
     state: {
         assert: `
-        (eq value.case_args.foo "bar")
+        (eq value.0.data.case_args.foo case.foo)
         `
     }
 }

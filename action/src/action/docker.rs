@@ -27,19 +27,19 @@ impl Docker {
 }
 
 #[async_trait]
-impl Player for Docker {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
-        let player = self.actual.read().await;
-        let player_ref = player.borrow();
-        if player_ref.is_some() {
-            return player_ref.as_ref().unwrap().action(arg).await;
+impl Creator for Docker {
+    async fn create(&self, chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+        let creator = self.actual.read().await;
+        let creator_ref = creator.borrow();
+        if creator_ref.is_some() {
+            return creator_ref.as_ref().unwrap().create(chord, arg).await;
         } else {
-            drop(player);
+            drop(creator);
             let mut guard = self.actual.write().await;
             let guard = guard.borrow_mut();
-            let new_player = DockerActual::new(self.address.clone()).await?;
-            let action = new_player.action(arg).await?;
-            guard.replace(new_player);
+            let new_creator = DockerActual::new(self.address.clone()).await?;
+            let action = new_creator.create(chord, arg).await?;
+            guard.replace(new_creator);
             return Ok(action);
         }
     }
@@ -58,8 +58,8 @@ impl DockerActual {
 }
 
 #[async_trait]
-impl Player for DockerActual {
-    async fn action(&self, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
+impl Creator for DockerActual {
+    async fn create(&self, _chord: &dyn Chord, arg: &dyn Arg) -> Result<Box<dyn Action>, Error> {
         let args_raw = arg.args_raw();
         let image = args_raw["image"]
             .as_str()
@@ -75,7 +75,11 @@ struct ImageWrapper(Image);
 
 #[async_trait]
 impl Action for ImageWrapper {
-    async fn run(&self, arg: &mut dyn Arg) -> Result<Box<dyn Scope>, Error> {
+    async fn execute(
+        &self,
+        _chord: &dyn Chord,
+        arg: &mut dyn Arg,
+    ) -> Result<Asset, Error> {
         let args = arg.args()?;
         let cmd = &args["cmd"];
 
@@ -114,16 +118,16 @@ impl Action for ImageWrapper {
             .collect();
 
         if tail_lines.len() > 0 {
-            let value_to_json = args["value_to_json"].as_bool().unwrap_or(false);
-            if value_to_json {
+            let parse_json_str = args["parse_json_str"].as_bool().unwrap_or(false);
+            if parse_json_str {
                 let value: Value = from_str(tail_lines.join("").as_str())?;
-                Ok(Box::new(value))
+                Ok(Asset::Value(value))
             } else {
                 let value: Value = Value::String(tail_lines.join(""));
-                Ok(Box::new(value))
+                Ok(Asset::Value(value))
             }
         } else {
-            Ok(Box::new(Value::Null))
+            Ok(Asset::Value(Value::Null))
         }
     }
 }

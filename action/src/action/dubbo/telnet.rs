@@ -5,12 +5,12 @@ use futures::io::{AsyncReadExt, AsyncWriteExt};
 use log::trace;
 use std::str::FromStr;
 
-pub struct DubboPlayer {
+pub struct DubboCreator {
     address: String,
 }
 
-impl DubboPlayer {
-    pub async fn new(config: Option<Value>) -> Result<DubboPlayer, Error> {
+impl DubboCreator {
+    pub async fn new(config: Option<Value>) -> Result<DubboCreator, Error> {
         if config.is_none() {
             return Err(err!("dubbo", "missing dubbo.config"));
         }
@@ -20,15 +20,15 @@ impl DubboPlayer {
         let address = config["telnet"]["address"]
             .as_str()
             .ok_or(err!("010", "missing telnet.address"))?;
-        Ok(DubboPlayer {
+        Ok(DubboCreator {
             address: address.to_owned(),
         })
     }
 }
 
 #[async_trait]
-impl Player for DubboPlayer {
-    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Player>, Error> {
+impl Creator for DubboCreator {
+    async fn create(&self, _: &dyn Arg) -> Result<Box<dyn Creator>, Error> {
         Ok(Box::new(Dubbo {
             address: self.address.clone(),
         }))
@@ -40,7 +40,7 @@ struct Dubbo {
 }
 
 #[async_trait]
-impl Player for Dubbo {
+impl Creator for Dubbo {
     async fn run(&self, arg: &dyn RunArg) -> Result<Box<dyn Scope>, Error> {
         let mut stream = TcpStream::connect(self.address.as_str())
             .await
@@ -63,7 +63,7 @@ impl Player for Dubbo {
             Value::Array(aw_vec) => {
                 let mut ar_vec: Vec<Value> = vec![];
                 for aw in aw_vec {
-                    let ar = arg.render_value(aw)?;
+                    let ar = chord.render_value(aw)?;
                     ar_vec.push(ar);
                 }
                 ar_vec

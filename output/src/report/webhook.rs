@@ -3,16 +3,16 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use log::{info, trace, warn};
-use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Client, Method, RequestBuilder, Response, Url};
+use reqwest::header::{HeaderName, HeaderValue};
 
-use chord_core::case::{CaseAssess, CaseState};
+use chord_core::case::{CaseAsset, CaseState};
 use chord_core::flow::Flow;
-use chord_core::output::JobReporter;
 use chord_core::output::{async_trait, Error};
 use chord_core::output::{StageReporter, TaskReporter};
-use chord_core::step::{StepAssess, StepState};
-use chord_core::task::{StageAssess, TaskAssess, TaskId, TaskState};
+use chord_core::output::JobReporter;
+use chord_core::step::{StepAsset, StepState};
+use chord_core::task::{StageAsset, TaskAsset, TaskId, TaskState};
 use chord_core::value::{json, to_value, Value};
 use chord_core::value::{Deserialize, Serialize};
 
@@ -35,7 +35,7 @@ impl JobReporter for WebhookJobReporter {
             self.index.clone(),
             task_id,
         )
-        .await?;
+            .await?;
         Ok(Box::new(reporter))
     }
 }
@@ -96,16 +96,16 @@ impl TaskReporter for WebhookTaskReporter {
             self.index.as_str(),
             task_data,
         )
-        .await?;
+            .await?;
         Ok(())
     }
 
-    async fn end(&mut self, task_assess: &dyn TaskAssess) -> Result<(), Error> {
+    async fn end(&mut self, task_asset: &dyn TaskAsset) -> Result<(), Error> {
         let task_data = ta_doc(
             self.task_id.as_ref(),
-            task_assess.start(),
-            task_assess.end(),
-            task_assess.state(),
+            task_asset.start(),
+            task_asset.end(),
+            task_asset.state(),
         );
         data_send(
             self.client.clone(),
@@ -113,7 +113,7 @@ impl TaskReporter for WebhookTaskReporter {
             self.index.as_str(),
             task_data,
         )
-        .await?;
+            .await?;
         Ok(())
     }
 }
@@ -144,7 +144,7 @@ impl StageReporter for WebhookStageReporter {
         Ok(())
     }
 
-    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAssess>>) -> Result<(), Error> {
+    async fn report(&mut self, ca_vec: &Vec<Box<dyn CaseAsset>>) -> Result<(), Error> {
         let mut data_vec: Vec<Data> = vec![];
         for ca in ca_vec {
             let ca_data = ca_doc(ca.as_ref());
@@ -167,10 +167,10 @@ impl StageReporter for WebhookStageReporter {
             self.index.as_str(),
             data_vec,
         )
-        .await
+            .await
     }
 
-    async fn end(&mut self, _: &dyn StageAssess) -> Result<(), Error> {
+    async fn end(&mut self, _: &dyn StageAsset) -> Result<(), Error> {
         Ok(())
     }
 }
@@ -201,7 +201,7 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
             TaskState::Fail(_) => "F",
             TaskState::Err(_) => "E",
         }
-        .to_owned(),
+            .to_owned(),
         value: match ts {
             TaskState::Ok => Value::Null,
             TaskState::Fail(_) => Value::Null,
@@ -210,7 +210,7 @@ fn ta_doc(task_id: &dyn TaskId, start: DateTime<Utc>, end: DateTime<Utc>, ts: &T
     }
 }
 
-fn ca_doc(ca: &dyn CaseAssess) -> Data {
+fn ca_doc(ca: &dyn CaseAsset) -> Data {
     Data {
         id: ca.id().to_string(),
         id_in_layer: ca.id().case().to_string(),
@@ -223,7 +223,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
             CaseState::Fail(_) => "F",
             CaseState::Err(_) => "E",
         }
-        .to_owned(),
+            .to_owned(),
         value: match ca.state() {
             CaseState::Ok(_) => Value::Null,
             CaseState::Fail(_) => Value::Null,
@@ -232,7 +232,7 @@ fn ca_doc(ca: &dyn CaseAssess) -> Data {
     }
 }
 
-fn sa_doc(sa: &dyn StepAssess) -> Data {
+fn sa_doc(sa: &dyn StepAsset) -> Data {
     Data {
         id: sa.id().to_string(),
         id_in_layer: sa.id().step().to_owned(),
@@ -242,12 +242,18 @@ fn sa_doc(sa: &dyn StepAssess) -> Data {
         elapse: (sa.end() - sa.start()).num_milliseconds() as usize,
         state: match sa.state() {
             StepState::Ok(_) => "O",
-            StepState::Err(_) => "E",
+            StepState::Fail(_) => "F",
         }
-        .to_owned(),
+            .to_owned(),
         value: match sa.state() {
-            StepState::Ok(scope) => scope.as_value().clone(),
-            StepState::Err(e) => Value::String(e.to_string()),
+            StepState::Ok(_av) => {
+                //todo
+                Value::Null
+            }
+            StepState::Fail(_av) => {
+                //todo
+                Value::Null
+            }
         },
     }
 }

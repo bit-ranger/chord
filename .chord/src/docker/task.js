@@ -17,7 +17,7 @@ step.step1 = {
     value: {
         docker: {
             image: "ubuntu:20.04",
-            value_to_json: true,
+            parse_json_str: true,
             cmd: [
                 "echo",
                 `{    "size": 100,    "from": 0,    "sort": {        "elapse": {            "order": "desc"        }    },    "query": {        "bool": {            "must": [                {                    "term": {                        "layer": "case"                    }                }            ]        }    }}`

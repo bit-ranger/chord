@@ -2,25 +2,25 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use chord_core::task::{StageAssess, StageState, TaskAssess, TaskId, TaskState};
+use chord_core::task::{StageAsset, StageState, TaskAsset, TaskId, TaskState};
 
 use crate::flow::task::arg::TaskIdSimple;
 
-pub struct TaskAssessStruct {
+pub struct TaskAssetStruct {
     id: Arc<TaskIdSimple>,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: TaskState,
 }
 
-impl TaskAssessStruct {
+impl TaskAssetStruct {
     pub fn new(
         id: Arc<TaskIdSimple>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         state: TaskState,
-    ) -> TaskAssessStruct {
-        TaskAssessStruct {
+    ) -> TaskAssetStruct {
+        TaskAssetStruct {
             id,
             start,
             end,
@@ -29,7 +29,7 @@ impl TaskAssessStruct {
     }
 }
 
-impl TaskAssess for TaskAssessStruct {
+impl TaskAsset for TaskAssetStruct {
     fn id(&self) -> &dyn TaskId {
         self.id.as_ref()
     }
@@ -47,21 +47,21 @@ impl TaskAssess for TaskAssessStruct {
     }
 }
 
-pub struct StageAssessStruct {
+pub struct StageAssetStruct {
     id: String,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: StageState,
 }
 
-impl StageAssessStruct {
+impl StageAssetStruct {
     pub fn new(
         id: String,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         state: StageState,
-    ) -> StageAssessStruct {
-        StageAssessStruct {
+    ) -> StageAssetStruct {
+        StageAssetStruct {
             id,
             start,
             end,
@@ -70,7 +70,7 @@ impl StageAssessStruct {
     }
 }
 
-impl StageAssess for StageAssessStruct {
+impl StageAsset for StageAssetStruct {
     fn id(&self) -> &str {
         self.id.as_str()
     }

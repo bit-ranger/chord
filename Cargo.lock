@@ -470,7 +470,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chord-action"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "chord-core",
  "chord-util",
@@ -491,7 +491,7 @@ dependencies = [
 
 [[package]]
 name = "chord-cli"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "async-recursion",
  "chord-action",
@@ -513,7 +513,7 @@ dependencies = [
 
 [[package]]
 name = "chord-core"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "async-trait",
  "chrono",
@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "chord-flow"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "chord-core",
  "chrono",
@@ -544,7 +544,7 @@ dependencies = [
 
 [[package]]
 name = "chord-input"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "chord-core",
  "chrono",
@@ -556,7 +556,7 @@ dependencies = [
 
 [[package]]
 name = "chord-output"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "async-trait",
  "chord-core",
@@ -572,7 +572,7 @@ dependencies = [
 
 [[package]]
 name = "chord-util"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "chord-core",
  "futures",
@@ -584,7 +584,7 @@ dependencies = [
 
 [[package]]
 name = "chord-web"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "actix-web",
  "async-trait",

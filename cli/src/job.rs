@@ -7,6 +7,7 @@ use futures::future::join_all;
 use itertools::Itertools;
 use log::error;
 use log::trace;
+use tracing::{Instrument, trace_span};
 
 use chord_core::flow::{Flow, ID_PATTERN};
 use chord_core::future::fs::read_dir;
@@ -16,7 +17,7 @@ use chord_core::input::JobLoader;
 use chord_core::output::{DateTime, JobReporter, Utc};
 use chord_core::task::{TaskAsset, TaskId, TaskState};
 use chord_core::value::Value;
-use chord_flow::{App, TaskIdSimple};
+use chord_flow::{App, TaskIdStruct};
 use Error::*;
 
 #[derive(thiserror::Error, Debug)]
@@ -249,7 +250,7 @@ async fn task_path_run(
             .unwrap()
             .to_string();
     }
-    let id = Arc::new(TaskIdSimple::new(exec_id, task_id.to_owned()));
+    let id = Arc::new(TaskIdStruct::new(exec_id, task_id.to_owned()));
     let task_path = root_path.join(task_sub_path);
     chord_flow::CTX_ID
         .scope(
@@ -264,7 +265,7 @@ async fn task_path_run_scope(
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
     task_path: PathBuf,
-    id: Arc<TaskIdSimple>,
+    id: Arc<TaskIdStruct>,
 ) -> Box<dyn TaskAsset> {
     trace!("task path start {}", task_path.to_str().unwrap());
     let start = Utc::now();
@@ -290,7 +291,7 @@ async fn task_path_run_scope(
 
 async fn task_path_run_do<P: AsRef<Path>>(
     task_path: P,
-    task_id: Arc<TaskIdSimple>,
+    task_id: Arc<TaskIdStruct>,
     app: Arc<dyn App>,
     job_loader: Arc<dyn JobLoader>,
     job_reporter: Arc<dyn JobReporter>,
@@ -319,13 +320,14 @@ async fn task_path_run_do<P: AsRef<Path>>(
     //runner
     let task_asset = chord_flow::TaskRunner::new(loader, reporter, app, flow, task_id.clone())
         .run()
+        .instrument(trace_span!("task", id=task_id.to_string()))
         .await;
 
     Ok(task_asset)
 }
 
 struct JobTaskAsset {
-    id: Arc<TaskIdSimple>,
+    id: Arc<TaskIdStruct>,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
     state: TaskState,

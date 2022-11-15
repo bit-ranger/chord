@@ -7,10 +7,10 @@ use crate::case::CaseId;
 use crate::collection::TailDropVec;
 use crate::value::Value;
 
-pub trait StepId: Sync + Send + Display {
-    fn step(&self) -> &str;
+pub trait ActionId: Sync + Send + Display {
+    fn step(&self) -> &dyn StepId;
 
-    fn case_id(&self) -> &dyn CaseId;
+    fn action(&self) -> &str;
 }
 
 pub enum ActionState {
@@ -44,6 +44,13 @@ pub trait ActionAsset: Sync + Send {
     fn explain(&self) -> &Value;
 
     fn state(&self) -> &ActionState;
+}
+
+
+pub trait StepId: Sync + Send + Display {
+    fn case(&self) -> &dyn CaseId;
+
+    fn step(&self) -> &str;
 }
 
 

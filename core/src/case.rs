@@ -4,19 +4,15 @@ use chrono::{DateTime, Utc};
 
 use crate::collection::TailDropVec;
 use crate::step::StepAsset;
-use crate::task::TaskId;
+use crate::task::{StageId, TaskId};
 use crate::value::Value;
 
 pub type Error = Box<dyn std::error::Error + Sync + Send>;
 
 pub trait CaseId: Sync + Send + Display {
+    fn stage(&self) -> &dyn StageId;
+
     fn case(&self) -> &str;
-
-    fn exec_id(&self) -> &str;
-
-    fn stage_id(&self) -> &str;
-
-    fn task_id(&self) -> &dyn TaskId;
 }
 
 pub trait CaseAsset: Sync + Send {

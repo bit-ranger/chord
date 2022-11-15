@@ -3,9 +3,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use dirs;
+use itertools::Itertools;
 use structopt::StructOpt;
-use tracing::instrument;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing::Level;
 
 use chord_action::CreatorComposite;
 use chord_core::future::path::is_dir;
@@ -14,6 +14,7 @@ use chord_core::value::Value;
 use chord_input::load::DefaultJobLoader;
 use chord_output::report::DefaultJobReporter;
 
+use crate::Chord::Run;
 use crate::conf::Config;
 use crate::job::dir_is_task_path;
 use crate::RunError::{InputNotDir, TaskErr, TaskFail};
@@ -62,8 +63,8 @@ enum RunError {
     #[error("action factory error:\n{0}")]
     ActionFactory(chord_core::action::Error),
 
-    // #[error("log error:\n{0}")]
-    // Logger(logger::Error),
+    #[error("log error:\n{0}")]
+    Logger(String),
 
     #[error("job error:\n{0}")]
     JobErr(job::Error),
@@ -78,12 +79,9 @@ enum RunError {
 
 #[chord_core::future::main]
 async fn main() -> Result<(), RunError> {
-    tracing_subscriber::registry()
-        .with(fmt::layer())
-        .init();
     let opt = Chord::from_args();
     match opt {
-        Chord::Run {
+        Run {
             job_name,
             exec_id,
             input,
@@ -126,9 +124,14 @@ async fn run(
         println!("config loaded: {}", config);
     }
 
-    // let log = logger::Log::new(config.log_level())
-    //     .await
-    //     .map_err(|e| Logger(e))?;
+    tracing_subscriber::fmt()
+        .with_max_level(Level::WARN)
+        .with_env_filter(config.log_level()
+            .iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .join(","))
+        .try_init()
+        .map_err(|e| RunError::Logger(e.to_string()))?;
 
     let path_is_task = dir_is_task_path(input_dir.to_path_buf()).await;
     let job_loader = DefaultJobLoader::new(config.loader(), input_dir.clone(), path_is_task)
@@ -148,7 +151,7 @@ async fn run(
             .map_err(|e| RunError::ActionFactory(e))?
             .into(),
     )
-    .await;
+        .await;
     let task_state_vec = job::run(
         app,
         job_loader,
@@ -157,8 +160,8 @@ async fn run(
         input_dir,
         path_is_task,
     )
-    .await
-    .map_err(|e| RunError::JobErr(e))?;
+        .await
+        .map_err(|e| RunError::JobErr(e))?;
     // log.drop().await;
     let et = task_state_vec.iter().filter(|t| !t.state().is_ok()).nth(0);
     return match et {

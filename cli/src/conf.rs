@@ -22,7 +22,6 @@ impl Config {
             "log": {
                 "dir": home_dir.join("output").to_str().unwrap().to_string(),
                 "level": {
-                    "root": "warn",
                     "chord": "trace"
                 }
             },

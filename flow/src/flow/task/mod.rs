@@ -4,9 +4,9 @@ use std::sync::Arc;
 use futures::future::join_all;
 use handlebars::RenderError;
 use log::{error, info, trace, warn};
-use tracing::{info_span, Instrument, trace_span};
+use tracing::{Instrument, trace_span};
 
-use chord_core::case::{CaseAsset, CaseId, CaseState};
+use chord_core::case::{CaseAsset, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::future::task::{JoinError, JoinHandle, spawn};

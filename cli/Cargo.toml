@@ -36,4 +36,4 @@ dirs = "4.0.0"
 async-recursion = "1.0.0"
 colored = "2"
 thiserror = "1.0"
-chrono = { version = "0.4.19", features = ["serde"] }
+chrono = { version = "0.4.23", features = ["serde"] }

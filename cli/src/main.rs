@@ -128,7 +128,7 @@ async fn run(
     if verbose {
         let format = fmt::format()
             .with_level(true)
-            .with_target(true)
+            .with_target(false)
             .with_thread_ids(true)
             .with_thread_names(true)
             .pretty();
@@ -141,7 +141,9 @@ async fn run(
     } else {
         let format = fmt::format()
             .with_level(true)
-            .with_target(true)
+            .with_target(false)
+            .with_source_location(true)
+            .with_line_number(true)
             .with_thread_ids(false)
             .with_thread_names(false)
             .compact();

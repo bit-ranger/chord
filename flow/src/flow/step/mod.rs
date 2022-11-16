@@ -75,7 +75,7 @@ impl StepRunner {
                 .unwrap_or(Value::Null);
             let start = Utc::now();
             let value = action.execute(self.chord.as_ref(), arg)
-                .instrument(error_span!("action", id=key))
+                .instrument(error_span!("action", action=key))
                 .await;
             let end = Utc::now();
             match value {

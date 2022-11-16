@@ -6,7 +6,7 @@ use handlebars::RenderError;
 use log::{error, info, trace, warn};
 use tracing::{error_span, Instrument};
 
-use chord_core::case::{CaseAsset, CaseId, CaseState};
+use chord_core::case::{CaseAsset, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::future::time::timeout;
@@ -120,7 +120,14 @@ impl TaskRunner {
         self.id.clone()
     }
 
-    pub async fn run(mut self) -> Box<dyn TaskAsset> {
+    pub async fn run(self) -> Box<dyn TaskAsset> {
+        let task_id = self.id.to_string();
+        self.run0()
+            .instrument(error_span!("task", task=task_id))
+            .await
+    }
+
+    async fn run0(mut self) -> Box<dyn TaskAsset> {
         trace!("task run");
         let start = Utc::now();
 
@@ -345,9 +352,8 @@ impl TaskRunner {
                 stage_id.to_string(),
                 round_count.to_string(),
             ));
-            let id = format!("{}-{}", stage_id, round_count);
             self.stage_run_once(stage, concurrency)
-                .instrument(error_span!("stage", id))
+                .instrument(error_span!("stage", stage=format!("{}-{}", stage_id, round_count)))
                 .await?;
             if round_count >= round_max {
                 break;
@@ -596,12 +602,10 @@ async fn case_run(flow_ctx: &dyn App, case_arg: CaseArgStruct) -> Box<dyn CaseAs
 
 
 async fn case_run_arc(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> Box<dyn CaseAsset> {
-    let id = format!("{}", case_arg.id().case());
     CTX_ID
         .scope(
             case_arg.id().to_string(),
             case_run(flow_ctx.as_ref(), case_arg),
         )
-        .instrument(error_span!("case", id))
         .await
 }

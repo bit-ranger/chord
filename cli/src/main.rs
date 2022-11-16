@@ -6,6 +6,7 @@ use dirs;
 use itertools::Itertools;
 use structopt::StructOpt;
 use tracing::Level;
+use tracing_subscriber::fmt;
 
 use chord_action::CreatorComposite;
 use chord_core::future::path::is_dir;
@@ -124,7 +125,14 @@ async fn run(
         println!("config loaded: {}", config);
     }
 
+    let format = fmt::format()
+        .with_level(true)
+        .with_target(true)
+        .with_thread_ids(false)
+        .with_thread_names(false)
+        .pretty();
     tracing_subscriber::fmt()
+        .event_format(format)
         .with_max_level(Level::WARN)
         .with_env_filter(config.log_level()
             .iter()

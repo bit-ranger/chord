@@ -7,7 +7,6 @@ use futures::future::join_all;
 use itertools::Itertools;
 use log::error;
 use log::trace;
-use tracing::{error_span, Instrument};
 
 use chord_core::flow::{Flow, ID_PATTERN};
 use chord_core::future::fs::read_dir;
@@ -320,7 +319,6 @@ async fn task_path_run_do<P: AsRef<Path>>(
     //runner
     let task_asset = chord_flow::TaskRunner::new(loader, reporter, app, flow, task_id.clone())
         .run()
-        .instrument(error_span!("task", id=task_id.to_string()))
         .await;
 
     Ok(task_asset)

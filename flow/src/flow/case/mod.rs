@@ -2,7 +2,7 @@ use chrono::Utc;
 use log::{info, trace, warn};
 use tracing::{error_span, Instrument};
 
-use chord_core::case::CaseState;
+use chord_core::case::{CaseId, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::step::StepAsset;
 use res::CaseAssetStruct;
@@ -14,7 +14,14 @@ use crate::model::app::App;
 pub mod arg;
 pub mod res;
 
-pub async fn run(flow_ctx: &dyn App, mut arg: CaseArgStruct) -> CaseAssetStruct {
+pub async fn run(flow_ctx: &dyn App, arg: CaseArgStruct) -> CaseAssetStruct {
+    let trace_id = format!("{}", arg.id().case());
+    run0(flow_ctx, arg)
+        .instrument(error_span!("case", case=trace_id))
+        .await
+}
+
+async fn run0(flow_ctx: &dyn App, mut arg: CaseArgStruct) -> CaseAssetStruct {
     trace!("case run");
     let start = Utc::now();
     let mut step_asset_vec = Vec::<Box<dyn StepAsset>>::new();
@@ -26,7 +33,7 @@ pub async fn run(flow_ctx: &dyn App, mut arg: CaseArgStruct) -> CaseAssetStruct 
         let mut step_arg = arg.step_arg_create(step_id, flow_ctx);
 
         let step_asset = step_runner.run(&mut step_arg)
-            .instrument(error_span!("step", id=step_id))
+            .instrument(error_span!("step", step=step_id))
             .await;
 
         if !step_asset.state().is_ok() {

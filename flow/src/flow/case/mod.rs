@@ -1,6 +1,6 @@
 use chrono::Utc;
 use log::{info, trace, warn};
-use tracing::{Instrument, trace_span};
+use tracing::{error_span, Instrument};
 
 use chord_core::case::CaseState;
 use chord_core::collection::TailDropVec;
@@ -26,7 +26,7 @@ pub async fn run(flow_ctx: &dyn App, mut arg: CaseArgStruct) -> CaseAssetStruct 
         let mut step_arg = arg.step_arg_create(step_id, flow_ctx);
 
         let step_asset = step_runner.run(&mut step_arg)
-            .instrument(trace_span!("step", id=step_id))
+            .instrument(error_span!("step", id=step_id))
             .await;
 
         if !step_asset.state().is_ok() {

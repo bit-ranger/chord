@@ -4,12 +4,11 @@ use std::sync::Arc;
 use futures::future::join_all;
 use handlebars::RenderError;
 use log::{error, info, trace, warn};
-use tracing::{Instrument, trace_span};
+use tracing::{error_span, Instrument};
 
-use chord_core::case::{CaseAsset, CaseState};
+use chord_core::case::{CaseAsset, CaseId, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
-use chord_core::future::task::{JoinError, JoinHandle, spawn};
 use chord_core::future::time::timeout;
 use chord_core::input::{StageLoader, TaskLoader};
 use chord_core::output::{StageReporter, TaskReporter};
@@ -348,7 +347,7 @@ impl TaskRunner {
             ));
             let id = format!("{}-{}", stage_id, round_count);
             self.stage_run_once(stage, concurrency)
-                .instrument(trace_span!("stage", id))
+                .instrument(error_span!("stage", id))
                 .await?;
             if round_count >= round_max {
                 break;
@@ -484,25 +483,21 @@ impl TaskRunner {
     ) -> Vec<Box<dyn CaseAsset>> {
         let ca_vec = self.case_arg_vec(stage, case_vec);
 
-        let mut case_join_result_vec = Vec::<Result<Box<dyn CaseAsset>, JoinError>>::new();
+        let mut case_asset_vec = Vec::<Box<dyn CaseAsset>>::new();
         let mut futures = vec![];
         for ca in ca_vec {
-            let f = case_spawn(self.app.clone(), ca);
+            let f = case_run_arc(self.app.clone(), ca);
             futures.push(f);
             if futures.len() >= concurrency {
                 let case_asset = join_all(futures.split_off(0)).await;
-                case_join_result_vec.extend(case_asset);
+                case_asset_vec.extend(case_asset);
             }
         }
         if !futures.is_empty() {
             let case_asset = join_all(futures).await;
-            case_join_result_vec.extend(case_asset);
+            case_asset_vec.extend(case_asset);
         }
 
-        let mut case_asset_vec = Vec::with_capacity(case_join_result_vec.len());
-        for res in case_join_result_vec {
-            case_asset_vec.push(res.unwrap());
-        }
         case_asset_vec
     }
 
@@ -594,22 +589,19 @@ async fn step_vec_create(
 }
 
 async fn case_run(flow_ctx: &dyn App, case_arg: CaseArgStruct) -> Box<dyn CaseAsset> {
-    let id = case_arg.id().to_string();
     let cas = case::run(flow_ctx, case_arg)
-        .instrument(trace_span!("case", id))
         .await;
     Box::new(cas)
 }
 
-fn case_spawn(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> JoinHandle<Box<dyn CaseAsset>> {
-    spawn(case_run_arc(flow_ctx, case_arg))
-}
 
 async fn case_run_arc(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> Box<dyn CaseAsset> {
+    let id = format!("{}", case_arg.id().case());
     CTX_ID
         .scope(
             case_arg.id().to_string(),
             case_run(flow_ctx.as_ref(), case_arg),
         )
+        .instrument(error_span!("case", id))
         .await
 }

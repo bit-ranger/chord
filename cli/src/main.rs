@@ -125,21 +125,36 @@ async fn run(
         println!("config loaded: {}", config);
     }
 
-    let format = fmt::format()
-        .with_level(true)
-        .with_target(true)
-        .with_thread_ids(false)
-        .with_thread_names(false)
-        .pretty();
-    tracing_subscriber::fmt()
-        .event_format(format)
-        .with_max_level(Level::WARN)
-        .with_env_filter(config.log_level()
-            .iter()
-            .map(|(k, v)| format!("{}={}", k, v))
-            .join(","))
-        .try_init()
-        .map_err(|e| RunError::Logger(e.to_string()))?;
+    if verbose {
+        let format = fmt::format()
+            .with_level(true)
+            .with_target(true)
+            .with_thread_ids(true)
+            .with_thread_names(true)
+            .pretty();
+        tracing_subscriber::fmt()
+            .event_format(format)
+            .with_max_level(Level::TRACE)
+            // .with_env_filter("chord=trace")
+            .try_init()
+            .map_err(|e| RunError::Logger(e.to_string()))?;
+    } else {
+        let format = fmt::format()
+            .with_level(true)
+            .with_target(true)
+            .with_thread_ids(false)
+            .with_thread_names(false)
+            .compact();
+        tracing_subscriber::fmt()
+            .event_format(format)
+            .with_max_level(Level::WARN)
+            .with_env_filter(config.log_level()
+                .iter()
+                .map(|(k, v)| format!("{}={}", k, v))
+                .join(","))
+            .try_init()
+            .map_err(|e| RunError::Logger(e.to_string()))?;
+    };
 
     let path_is_task = dir_is_task_path(input_dir.to_path_buf()).await;
     let job_loader = DefaultJobLoader::new(config.loader(), input_dir.clone(), path_is_task)

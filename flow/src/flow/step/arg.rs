@@ -26,7 +26,7 @@ impl StepId for StepIdStruct {
         self.step.as_str()
     }
 
-    fn case_id(&self) -> &dyn CaseId {
+    fn case(&self) -> &dyn CaseId {
         self.case_id.as_ref()
     }
 }

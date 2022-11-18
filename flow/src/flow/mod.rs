@@ -5,11 +5,11 @@ use std::sync::Arc;
 use handlebars::{Handlebars, RenderError};
 use log::trace;
 
-use chord_core::action::prelude::Map;
 use chord_core::action::Creator;
+use chord_core::action::prelude::Map;
 use chord_core::future::task::task_local;
 use chord_core::value::{from_str, Value};
-pub use task::arg::TaskIdSimple;
+pub use task::arg::TaskIdStruct;
 pub use task::TaskRunner;
 
 use crate::model::app::{App, AppStruct, RenderContext};

@@ -7,8 +7,9 @@ pub type Error = Box<dyn std::error::Error + Sync + Send>;
 pub trait TaskId: Sync + Send + Display {
     fn task(&self) -> &str;
 
-    fn exec_id(&self) -> &str;
+    fn exec(&self) -> &str;
 }
+
 
 pub enum TaskState {
     Ok,
@@ -36,6 +37,15 @@ pub trait TaskAsset: Sync + Send {
     fn state(&self) -> &TaskState;
 }
 
+
+pub trait StageId: Sync + Send + Display {
+    fn task(&self) -> &dyn TaskId;
+
+    fn stage(&self) -> &str;
+
+    fn exec(&self) -> &str;
+}
+
 pub enum StageState {
     Ok,
     Fail(String),
@@ -53,7 +63,7 @@ impl StageState {
 }
 
 pub trait StageAsset: Sync + Send {
-    fn id(&self) -> &str;
+    fn id(&self) -> &dyn StageId;
 
     fn start(&self) -> DateTime<Utc>;
 

@@ -5,7 +5,7 @@ use chord_core::case::CaseId;
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::step::{StepAsset, StepState};
-use chord_core::task::TaskId;
+use chord_core::task::StageId;
 use chord_core::value::Map;
 use chord_core::value::Value;
 
@@ -17,24 +17,18 @@ use crate::model::app::RenderContext;
 
 #[derive(Clone)]
 pub struct CaseIdStruct {
-    task_id: Arc<dyn TaskId>,
-    stage_id: Arc<String>,
-    exec_id: Arc<String>,
+    stage: Arc<dyn StageId>,
     case: String,
 }
 
 impl CaseIdStruct {
     pub fn new(
-        task_id: Arc<dyn TaskId>,
-        stage_id: Arc<String>,
-        exec_id: Arc<String>,
-        case_id: String,
+        stage: Arc<dyn StageId>,
+        case: String,
     ) -> CaseIdStruct {
         CaseIdStruct {
-            task_id,
-            stage_id,
-            exec_id,
-            case: case_id,
+            stage,
+            case,
         }
     }
 }
@@ -44,16 +38,9 @@ impl CaseId for CaseIdStruct {
         self.case.as_str()
     }
 
-    fn exec_id(&self) -> &str {
-        self.exec_id.as_str()
-    }
 
-    fn stage_id(&self) -> &str {
-        self.stage_id.as_str()
-    }
-
-    fn task_id(&self) -> &dyn TaskId {
-        self.task_id.as_ref()
+    fn stage(&self) -> &dyn StageId {
+        self.stage.as_ref()
     }
 }
 
@@ -61,8 +48,8 @@ impl Display for CaseIdStruct {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(
             format!(
-                "{}-{}-{}-{}",
-                self.task_id, self.stage_id, self.exec_id, self.case
+                "{}-{}",
+                self.stage, self.case
             )
             .as_str(),
         )
@@ -84,12 +71,10 @@ impl CaseArgStruct {
         data: Value,
         pre_ctx: Option<Arc<Map>>,
         def_ctx: Option<Arc<Map>>,
-        task_id: Arc<dyn TaskId>,
-        stage_id: Arc<String>,
-        case_exec_id: Arc<String>,
-        case_id: String,
+        stage_id: Arc<dyn StageId>,
+        case: String,
     ) -> CaseArgStruct {
-        let id = Arc::new(CaseIdStruct::new(task_id, stage_id, case_exec_id, case_id));
+        let id = Arc::new(CaseIdStruct::new(stage_id, case));
 
         let mut render_data: Map = Map::new();
         render_data.insert("__meta__".to_owned(), Value::Object(flow.meta().clone()));

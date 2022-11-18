@@ -147,7 +147,7 @@ impl CsvStageReporter {
             from_path(report_file, with_bom, false).await?;
 
         let head = vec![
-            "task", "stage", "case", "case_exec", "step", "action", "frame", "layer", "start", "end", "state", "value", "explain",
+            "task", "stage", "stage_exec", "case", "step", "action", "frame", "layer", "start", "end", "state", "value", "explain",
         ]
             .into_iter()
             .map(|s| s.to_string())
@@ -226,10 +226,10 @@ fn to_value_vec(ca: &dyn CaseAsset, _header: &Vec<String>) -> Vec<Vec<String>> {
                                     match a {
                                         Asset::Value(v) => {
                                             let aar = vec![
-                                                sa.id().case_id().task_id().task().to_string(),
-                                                sa.id().case_id().stage_id().to_string(),
-                                                sa.id().case_id().case().to_string(),
-                                                sa.id().case_id().exec_id().to_string(),
+                                                sa.id().case().stage().task().task().to_string(),
+                                                sa.id().case().stage().stage().to_string(),
+                                                sa.id().case().stage().exec().to_string(),
+                                                sa.id().case().case().to_string(),
                                                 sa.id().step().to_string(),
                                                 aa.id().to_string(),
                                                 "".to_string(),
@@ -244,10 +244,10 @@ fn to_value_vec(ca: &dyn CaseAsset, _header: &Vec<String>) -> Vec<Vec<String>> {
                                         }
                                         Asset::Data(d) => {
                                             let aar = vec![
-                                                sa.id().case_id().task_id().task().to_string(),
-                                                sa.id().case_id().stage_id().to_string(),
-                                                sa.id().case_id().case().to_string(),
-                                                sa.id().case_id().exec_id().to_string(),
+                                                sa.id().case().stage().task().task().to_string(),
+                                                sa.id().case().stage().stage().to_string(),
+                                                sa.id().case().stage().exec().to_string(),
+                                                sa.id().case().case().to_string(),
                                                 sa.id().step().to_string(),
                                                 aa.id().to_string(),
                                                 "".to_string(),
@@ -263,10 +263,10 @@ fn to_value_vec(ca: &dyn CaseAsset, _header: &Vec<String>) -> Vec<Vec<String>> {
                                         Asset::Frames(fv) => {
                                             for f in fv {
                                                 let aar = vec![
-                                                    sa.id().case_id().task_id().task().to_string(),
-                                                    sa.id().case_id().stage_id().to_string(),
-                                                    sa.id().case_id().case().to_string(),
-                                                    sa.id().case_id().exec_id().to_string(),
+                                                    sa.id().case().stage().task().task().to_string(),
+                                                    sa.id().case().stage().stage().to_string(),
+                                                    sa.id().case().stage().exec().to_string(),
+                                                    sa.id().case().case().to_string(),
                                                     sa.id().step().to_string(),
                                                     aa.id().to_string(),
                                                     f.id().to_string(),
@@ -281,10 +281,10 @@ fn to_value_vec(ca: &dyn CaseAsset, _header: &Vec<String>) -> Vec<Vec<String>> {
                                             }
 
                                             let aar = vec![
-                                                sa.id().case_id().task_id().task().to_string(),
-                                                sa.id().case_id().stage_id().to_string(),
-                                                sa.id().case_id().case().to_string(),
-                                                sa.id().case_id().exec_id().to_string(),
+                                                sa.id().case().stage().task().task().to_string(),
+                                                sa.id().case().stage().stage().to_string(),
+                                                sa.id().case().stage().exec().to_string(),
+                                                sa.id().case().case().to_string(),
                                                 sa.id().step().to_string(),
                                                 aa.id().to_string(),
                                                 "".to_string(),
@@ -301,10 +301,10 @@ fn to_value_vec(ca: &dyn CaseAsset, _header: &Vec<String>) -> Vec<Vec<String>> {
                                 }
                                 ActionState::Err(e) => {
                                     let aar = vec![
-                                        sa.id().case_id().task_id().task().to_string(),
-                                        sa.id().case_id().stage_id().to_string(),
-                                        sa.id().case_id().case().to_string(),
-                                        sa.id().case_id().exec_id().to_string(),
+                                        sa.id().case().stage().task().task().to_string(),
+                                        sa.id().case().stage().stage().to_string(),
+                                        sa.id().case().stage().exec().to_string(),
+                                        sa.id().case().case().to_string(),
                                         sa.id().step().to_string(),
                                         aa.id().to_string(),
                                         "".to_string(),
@@ -327,10 +327,10 @@ fn to_value_vec(ca: &dyn CaseAsset, _header: &Vec<String>) -> Vec<Vec<String>> {
                     StepState::Fail(_) => "F".to_string(),
                 };
                 let sar = vec![
-                    sa.id().case_id().task_id().task().to_string(),
-                    sa.id().case_id().stage_id().to_string(),
-                    sa.id().case_id().case().to_string(),
-                    sa.id().case_id().exec_id().to_string(),
+                    sa.id().case().stage().task().task().to_string(),
+                    sa.id().case().stage().stage().to_string(),
+                    sa.id().case().stage().exec().to_string(),
+                    sa.id().case().case().to_string(),
                     sa.id().step().to_string(),
                     "".to_string(),
                     "".to_string(),
@@ -354,10 +354,10 @@ fn to_value_vec(ca: &dyn CaseAsset, _header: &Vec<String>) -> Vec<Vec<String>> {
     };
 
     let car = vec![
-        ca.id().task_id().task().to_string(),
-        ca.id().stage_id().to_string(),
+        ca.id().stage().task().task().to_string(),
+        ca.id().stage().stage().to_string(),
+        ca.id().stage().exec().to_string(),
         ca.id().case().to_string(),
-        ca.id().exec_id().to_string(),
         "".to_string(),
         "".to_string(),
         "".to_string(),

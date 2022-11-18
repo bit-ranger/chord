@@ -12,9 +12,7 @@ chord - async parallel task executor
 
     cargo install chord-cli
 
-### download
 
-    https://github.com/bit-ranger/chord/releases
 
 ### run
 
@@ -30,10 +28,14 @@ chord - async parallel task executor
 
 [restapi](https://github.com/bit-ranger/chord/tree/master/.chord/src/restapi)
 
-### example
+### examples
 
-[example](https://github.com/bit-ranger/chord/tree/master/.chord/job)
+[examples](https://github.com/bit-ranger/chord/tree/master/.chord/src)
 
 ### workflow
 
-[github action](https://github.com/bit-ranger/chord/blob/master/.github/workflows/master.yml)
+[workflow](https://github.com/bit-ranger/chord/blob/master/.github/workflows/master.yml)
+
+### actions
+
+[actions](https://github.com/bit-ranger/chord/actions)

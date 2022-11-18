@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use log::{debug, error, info, trace, warn};
+use tracing::{error_span, Instrument};
 
 use chord_core::action::{Action, Asset, Chord};
 use chord_core::collection::TailDropVec;
@@ -36,7 +37,7 @@ impl StepRunner {
         chord: Arc<ChordStruct>,
         arg: &mut ArgStruct<'_, '_>,
     ) -> Result<StepRunner, Error> {
-        trace!("step new {}", arg.step_id());
+        trace!("step new");
         let obj = arg.flow().step_obj(arg.step_id().step());
         let aid_vec: Vec<String> = obj.iter().map(|(aid, _)| aid.to_string()).collect();
         let mut action_vec = Vec::with_capacity(obj.len());
@@ -60,7 +61,7 @@ impl StepRunner {
     }
 
     pub async fn run(&self, arg: &mut ArgStruct<'_, '_>) -> StepAssetStruct {
-        trace!("step run {}", arg.step_id());
+        trace!("step run");
         let start = Utc::now();
         let mut asset_vec = Vec::with_capacity(self.action_vec.len());
         let mut success = true;
@@ -73,7 +74,9 @@ impl StepRunner {
                 .await
                 .unwrap_or(Value::Null);
             let start = Utc::now();
-            let value = action.execute(self.chord.as_ref(), arg).await;
+            let value = action.execute(self.chord.as_ref(), arg)
+                .instrument(error_span!("action", action=key))
+                .await;
             let end = Utc::now();
             match value {
                 Ok(_) => {
@@ -106,7 +109,7 @@ impl StepRunner {
                     );
                 }
             }
-            info!("step Ok   {}", arg.step_id());
+            info!("step Ok");
         } else {
             for ass in asset_vec.iter() {
                 if let ActionState::Ok(v) = ass.state() {
@@ -125,7 +128,7 @@ impl StepRunner {
                     );
                 }
             }
-            error!("step Err {}", arg.step_id());
+            error!("step Err");
         }
 
         StepAssetStruct::new(Clone::clone(arg.step_id()), start, Utc::now(), asset_vec)

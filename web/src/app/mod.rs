@@ -1,13 +1,15 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 
+use actix_web::{App, get, HttpResponse, HttpServer, post, Responder, ResponseError};
 use actix_web::body::BoxBody;
 use actix_web::http::header::{HeaderName, HeaderValue};
 use actix_web::http::StatusCode;
 use actix_web::web::Json;
-use actix_web::{get, post, App, HttpResponse, HttpServer, Responder, ResponseError};
 use bean::component::HasComponent;
 use bean::container;
+use itertools::Itertools;
+use tracing::Level;
 use validator::{ValidationErrors, ValidationErrorsKind};
 
 use chord_core::value::json;
@@ -18,7 +20,6 @@ use crate::ctl::job;
 use crate::ctl::job::Val;
 
 pub mod conf;
-mod logger;
 
 #[derive(thiserror::Error)]
 pub enum Error {
@@ -26,7 +27,7 @@ pub enum Error {
     Config(chord_input::conf::Error),
 
     #[error("log error:\n{0}")]
-    Logger(logger::Error),
+    Logger(String),
 
     #[error("job error:\n{0}")]
     Job(job::Error),
@@ -120,10 +121,17 @@ container!(Web {ConfigImpl, job::CtlImpl});
 pub async fn init(data: Value) -> Result<(), Error> {
     let config = Arc::new(ConfigImpl::new(data));
 
-    let log_file_path = config.log_dir().join("web.log");
-    let _log_handler = logger::init(config.log_level(), &log_file_path)
-        .await
-        .map_err(|e| Error::Logger(e))?;
+    let file_appender = tracing_appender::rolling::daily(config.log_dir(), "web.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    tracing_subscriber::fmt()
+        .with_max_level(Level::WARN)
+        .with_env_filter(config.log_level()
+            .iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .join(","))
+        .with_writer(non_blocking)
+        .try_init()
+        .map_err(|e| Error::Logger(e.to_string()))?;
 
     let job_ctl = Arc::new(
         job::CtlImpl::new(config.clone())

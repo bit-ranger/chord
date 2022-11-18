@@ -12,9 +12,7 @@ chord - async parallel task executor
 
     cargo install chord-cli
 
-### download
 
-    https://github.com/bit-ranger/chord/releases
 
 ### run
 

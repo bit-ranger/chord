@@ -20,7 +20,7 @@ serde = { version = "1.0" }
 chrono = { version = "0.4.23", features = ["serde"] }
 itertools = { version = "0.10.5" }
 log = { version = "0.4.14", features = ["std"] }
-async-trait = "0.1.58"
+async-trait = "0.1.60"
 futures = "0.3.25"
 csv = { version = "1.1.5", optional = true }
 reqwest = { version = "0.11.13", features = ['stream'], optional = true }

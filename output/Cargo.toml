@@ -23,7 +23,7 @@ log = { version = "0.4.14", features = ["std"] }
 async-trait = "0.1.61"
 futures = "0.3.25"
 csv = { version = "1.1.5", optional = true }
-reqwest = { version = "0.11.13", features = ['stream'], optional = true }
+reqwest = { version = "0.11.14", features = ['stream'], optional = true }
 thiserror = "1.0"
 
 [features]

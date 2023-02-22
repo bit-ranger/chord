@@ -25,6 +25,8 @@ mod docker;
 mod dubbo;
 #[cfg(feature = "act_lua")]
 mod lua;
+#[cfg(feature = "act_quickjs")]
+mod quickjs;
 #[cfg(feature = "act_mongodb")]
 mod mongodb;
 #[cfg(feature = "act_program")]
@@ -92,6 +94,9 @@ impl CreatorComposite {
 
         #[cfg(feature = "act_lua")]
         register!(table, config_ref, "lua", lua::LuaCreator::new);
+
+        #[cfg(feature = "act_quickjs")]
+        register!(table, config_ref, "quickjs", quickjs::QuickjsCreator::new);
 
         #[cfg(feature = "act_program")]
         register!(table, config_ref, "program", program::ProgramCreator::new);

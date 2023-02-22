@@ -31,7 +31,8 @@ urlencoding = { version = "2.1.2", optional = true }
 dynamic_reload = { version = "0.4.0", optional = true }
 rlua = { version = "0.19.4", optional = true }
 dirs = "4.0.0"
-
+quickjs_runtime = { version = "0.8", optional = true }
+hirofa_utils = { version = "0.5", optional = true }
 
 [features]
 default = []
@@ -47,5 +48,6 @@ act_docker = ["chord-util"]
 act_lua = ["rlua"]
 act_shell = []
 act_program = []
+act_quickjs = ['quickjs_runtime', "hirofa_utils"]
 
 

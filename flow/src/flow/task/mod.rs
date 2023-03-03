@@ -11,23 +11,23 @@ use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::future::time::timeout;
 use chord_core::input::{StageLoader, TaskLoader};
-use chord_core::output::{StageReporter, TaskReporter};
 use chord_core::output::Utc;
+use chord_core::output::{StageReporter, TaskReporter};
 use chord_core::step::{StepAsset, StepState};
 use chord_core::task::{StageAsset, StageId, StageState, TaskAsset, TaskId, TaskState};
 use chord_core::value::{json, Map, Value};
 use res::TaskAssetStruct;
 
-use crate::CTX_ID;
 use crate::flow::assign_by_render;
 use crate::flow::case;
 use crate::flow::case::arg::{CaseArgStruct, CaseIdStruct};
-use crate::flow::step::{action_asset_to_value, StepRunner};
 use crate::flow::step::arg::{ArgStruct, ChordStruct};
+use crate::flow::step::{action_asset_to_value, StepRunner};
 use crate::flow::task::arg::{StageIdStruct, TaskIdStruct};
-use crate::flow::task::Error::*;
 use crate::flow::task::res::StageAssetStruct;
+use crate::flow::task::Error::*;
 use crate::model::app::{App, RenderContext};
+use crate::CTX_ID;
 
 pub mod arg;
 pub mod res;
@@ -123,7 +123,7 @@ impl TaskRunner {
     pub async fn run(self) -> Box<dyn TaskAsset> {
         let task_id = self.id.to_string();
         self.run0()
-            .instrument(error_span!("task", task=task_id))
+            .instrument(error_span!("task", task = task_id))
             .await
     }
 
@@ -177,7 +177,7 @@ impl TaskRunner {
                     )),
                     self.chord.clone(),
                 )
-                    .await;
+                .await;
                 if let Err(e) = pre_step_vec {
                     error!("task Err");
                     return Box::new(TaskAssetStruct::new(
@@ -195,7 +195,7 @@ impl TaskRunner {
                     self.def_ctx.clone(),
                     pre_step_vec.clone(),
                 )
-                    .await;
+                .await;
                 if let Err(e) = pre_arg {
                     error!("task Err");
                     return Box::new(TaskAssetStruct::new(
@@ -298,8 +298,7 @@ impl TaskRunner {
             .collect();
         for state_id in stage_id_vec {
             trace!("stage run");
-            self.stage_run(state_id.as_str())
-                .await?;
+            self.stage_run(state_id.as_str()).await?;
             if let StageState::Fail(_) = self.stage_state {
                 if "stage_fail" == self.flow.stage_break_on(state_id.as_str()) {
                     break;
@@ -325,10 +324,11 @@ impl TaskRunner {
             Arc::new(StageIdStruct::new(
                 self.id.clone(),
                 stage_id.to_string(),
-                "0".to_string())),
+                "0".to_string(),
+            )),
             self.chord.clone(),
         )
-            .await?;
+        .await?;
         self.step_vec = Arc::new(TailDropVec::from(action_vec));
 
         let duration = self.flow.stage_duration(stage_id);
@@ -353,7 +353,10 @@ impl TaskRunner {
                 round_count.to_string(),
             ));
             self.stage_run_once(stage, concurrency)
-                .instrument(error_span!("stage", stage=format!("{}-{}", stage_id, round_count)))
+                .instrument(error_span!(
+                    "stage",
+                    stage = format!("{}-{}", stage_id, round_count)
+                ))
                 .await?;
             if round_count >= round_max {
                 break;
@@ -363,7 +366,11 @@ impl TaskRunner {
         return Ok(());
     }
 
-    async fn stage_run_once(&mut self, stage: Arc<StageIdStruct>, concurrency: usize) -> Result<(), Error> {
+    async fn stage_run_once(
+        &mut self,
+        stage: Arc<StageIdStruct>,
+        concurrency: usize,
+    ) -> Result<(), Error> {
         trace!("stage run");
         let start = Utc::now();
 
@@ -385,7 +392,12 @@ impl TaskRunner {
             .map_err(|e| Reporter("stage".to_string(), stage.to_string(), e))?;
 
         let result = self
-            .stage_run_io(stage.clone(), loader.as_mut(), reporter.as_mut(), concurrency)
+            .stage_run_io(
+                stage.clone(),
+                loader.as_mut(),
+                reporter.as_mut(),
+                concurrency,
+            )
             .await;
 
         let stage_asset = if let Err(e) = result {
@@ -450,12 +462,11 @@ impl TaskRunner {
                 };
             }
 
-            trace!(
-                "stage load data, {}",
-                case_data_vec.len()
-            );
+            trace!("stage load data, {}", case_data_vec.len());
 
-            let case_asset_vec = self.case_data_vec_run(stage.clone(), case_data_vec, concurrency).await;
+            let case_asset_vec = self
+                .case_data_vec_run(stage.clone(), case_data_vec, concurrency)
+                .await;
             let first_fail = case_asset_vec.iter().find(|ca| !ca.state().is_ok());
             if first_fail.is_some() {
                 let cause_case = first_fail.unwrap();
@@ -507,7 +518,11 @@ impl TaskRunner {
         case_asset_vec
     }
 
-    fn case_arg_vec<'p>(&self, stage: Arc<StageIdStruct>, data: Vec<(String, Value)>) -> Vec<CaseArgStruct> {
+    fn case_arg_vec<'p>(
+        &self,
+        stage: Arc<StageIdStruct>,
+        data: Vec<(String, Value)>,
+    ) -> Vec<CaseArgStruct> {
         let vec = data
             .into_iter()
             .map(|(id, d)| {
@@ -563,7 +578,6 @@ async fn pre_ctx_create(sa_vec: &Vec<Box<dyn StepAsset>>) -> Map {
     pre_ctx
 }
 
-
 async fn step_vec_create(
     app: &dyn App,
     flow: &Flow,
@@ -572,10 +586,7 @@ async fn step_vec_create(
     chord: Arc<ChordStruct>,
 ) -> Result<Vec<(String, StepRunner)>, Error> {
     let mut step_vec = vec![];
-    let fake_case_id = Arc::new(CaseIdStruct::new(
-        stage,
-        "0".to_string(),
-    ));
+    let fake_case_id = Arc::new(CaseIdStruct::new(stage, "0".to_string()));
     for sid in step_id_vec {
         let mut arg = ArgStruct::new(
             app,
@@ -595,11 +606,9 @@ async fn step_vec_create(
 }
 
 async fn case_run(flow_ctx: &dyn App, case_arg: CaseArgStruct) -> Box<dyn CaseAsset> {
-    let cas = case::run(flow_ctx, case_arg)
-        .await;
+    let cas = case::run(flow_ctx, case_arg).await;
     Box::new(cas)
 }
-
 
 async fn case_run_arc(flow_ctx: Arc<dyn App>, case_arg: CaseArgStruct) -> Box<dyn CaseAsset> {
     CTX_ID

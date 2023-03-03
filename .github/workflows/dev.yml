@@ -139,7 +139,43 @@ jobs:
           path: |
             target/release/chord.exe
             target/release/chord-web.exe
-      
+
+  windows-gnu:
+    runs-on: windows-2022
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: env-prepare
+        run: |
+          rustup update
+          rustup default stable-x86_64-pc-windows-gnu
+
+      - name: chord-build-cache-simple
+        uses: actions/cache@v2
+        with:
+          key: build-target-windows-gnu-simple-${{ hashFiles('Cargo.lock') }}
+          path: |
+            ./target
+
+      - name: chord-build-simple
+        run: |
+          chmod -R 777 $PWD
+          cargo --version
+          cargo build --all-features --verbose --release
+
+
+      - name: chord-target-upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: x86_64-pc-windows-gnu
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            target/release/chord.exe
+            target/release/chord-web.exe
+  
   
   macos:
     runs-on: macos-11

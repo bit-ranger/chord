@@ -23,7 +23,7 @@ chord-core = { path = "../core", version = "0.1.22" }
 chord-input = { path = "../input", version = "0.1.22" }
 chord-util = { path = "../util", version = "0.1.22" }
 
-tokio = { version = "1.25", features = ["fs", "time", "tracing", "process", "macros"] }
+tokio = { version = "1.26", features = ["fs", "time", "tracing", "process", "macros"] }
 serde = { version = "1.0" }
 futures = "0.3.26"
 itertools = "0.10.5"

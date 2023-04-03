@@ -506,7 +506,7 @@ dependencies = [
  "dirs",
  "dynamic_reload",
  "futures",
- "hirofa_utils",
+ "hirofa_utils 0.6.1",
  "itertools",
  "log",
  "md5",
@@ -1491,6 +1491,27 @@ dependencies = [
  "linked-hash-map",
  "log",
  "num_cpus",
+ "serde",
+ "serde_json",
+ "simple-logging",
+ "string_cache",
+ "thread-id",
+ "tokio",
+]
+
+[[package]]
+name = "hirofa_utils"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b56c902f8603ed9ce6deb7d7a164a81f8cb1f69c75f9eb736caf3311b6d18f92"
+dependencies = [
+ "either",
+ "futures",
+ "lazy_static",
+ "linked-hash-map",
+ "log",
+ "num_cpus",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "simple-logging",
@@ -2628,7 +2649,7 @@ checksum = "719ba8500178b166bb95e16c5f40e3f9b808be6c5b2e26db9dc60b0425273d73"
 dependencies = [
  "backtrace",
  "futures",
- "hirofa_utils",
+ "hirofa_utils 0.5.7",
  "lazy_static",
  "libquickjs-sys",
  "log",

@@ -28,7 +28,7 @@ tokio = { version = "1.26", features = ["fs", "time", "tracing", "process", "mac
 log = { version = "0.4.14", features = ["std"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.16", features = ['env-filter'] }
-futures = "0.3.26"
+futures = "0.3.27"
 itertools = "0.10.5"
 flume = "0.10.14"
 structopt = "0.3"
@@ -36,4 +36,4 @@ dirs = "4.0.0"
 async-recursion = "1.0.2"
 colored = "2"
 thiserror = "1.0"
-chrono = { version = "0.4.23", features = ["serde"] }
+chrono = { version = "0.4.24", features = ["serde"] }

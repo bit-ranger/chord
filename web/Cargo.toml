@@ -25,14 +25,14 @@ chord-util = { path = "../util", version = "0.1.22" }
 
 tokio = { version = "1.26", features = ["fs", "time", "tracing", "process", "macros"] }
 serde = { version = "1.0" }
-futures = "0.3.26"
+futures = "0.3.27"
 itertools = "0.10.5"
 log = { version = "0.4.14", features = ["std"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.16", features = ['env-filter'] }
 tracing-appender = "0.2"
 flume = "0.10.14"
-actix-web = "4.3.0"
+actix-web = "4.3.1"
 validator = { version = "0.16", features = ["derive"] }
 lazy_static = "1.4.0"
 url = "2.3.1"
@@ -42,4 +42,4 @@ async-trait = "0.1.67"
 bean = "0.1.4"
 dirs = "4.0.0"
 thiserror = "1.0"
-chrono = { version = "0.4.23", features = ["serde"] }
+chrono = { version = "0.4.24", features = ["serde"] }

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use log::{debug, error, info, trace, warn};
-use tracing::{error_span, Instrument};
+use tracing::{debug_span, Instrument};
 
 use chord_core::action::{Action, Asset, Chord};
 use chord_core::collection::TailDropVec;
@@ -75,7 +75,7 @@ impl StepRunner {
                 .unwrap_or(Value::Null);
             let start = Utc::now();
             let value = action.execute(self.chord.as_ref(), arg)
-                .instrument(error_span!("action", action=key))
+                .instrument(debug_span!("action", action=key))
                 .await;
             let end = Utc::now();
             match value {

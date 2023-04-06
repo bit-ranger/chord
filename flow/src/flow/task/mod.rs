@@ -4,30 +4,30 @@ use std::sync::Arc;
 use futures::future::join_all;
 use handlebars::RenderError;
 use log::{error, info, trace, warn};
-use tracing::{error_span, Instrument};
+use tracing::{debug_span, Instrument};
 
 use chord_core::case::{CaseAsset, CaseState};
 use chord_core::collection::TailDropVec;
 use chord_core::flow::Flow;
 use chord_core::future::time::timeout;
 use chord_core::input::{StageLoader, TaskLoader};
-use chord_core::output::Utc;
 use chord_core::output::{StageReporter, TaskReporter};
+use chord_core::output::Utc;
 use chord_core::step::{StepAsset, StepState};
 use chord_core::task::{StageAsset, StageId, StageState, TaskAsset, TaskId, TaskState};
 use chord_core::value::{json, Map, Value};
 use res::TaskAssetStruct;
 
+use crate::CTX_ID;
 use crate::flow::assign_by_render;
 use crate::flow::case;
 use crate::flow::case::arg::{CaseArgStruct, CaseIdStruct};
-use crate::flow::step::arg::{ArgStruct, ChordStruct};
 use crate::flow::step::{action_asset_to_value, StepRunner};
+use crate::flow::step::arg::{ArgStruct, ChordStruct};
 use crate::flow::task::arg::{StageIdStruct, TaskIdStruct};
-use crate::flow::task::res::StageAssetStruct;
 use crate::flow::task::Error::*;
+use crate::flow::task::res::StageAssetStruct;
 use crate::model::app::{App, RenderContext};
-use crate::CTX_ID;
 
 pub mod arg;
 pub mod res;
@@ -123,7 +123,7 @@ impl TaskRunner {
     pub async fn run(self) -> Box<dyn TaskAsset> {
         let task_id = self.id.to_string();
         self.run0()
-            .instrument(error_span!("task", task = task_id))
+            .instrument(debug_span!("task", task = task_id))
             .await
     }
 
@@ -353,7 +353,7 @@ impl TaskRunner {
                 round_count.to_string(),
             ));
             self.stage_run_once(stage, concurrency)
-                .instrument(error_span!(
+                .instrument(debug_span!(
                     "stage",
                     stage = format!("{}-{}", stage_id, round_count)
                 ))

@@ -33,7 +33,7 @@ itertools = "0.10.5"
 flume = "0.10.14"
 structopt = "0.3"
 dirs = "5.0.0"
-async-recursion = "1.0.2"
+async-recursion = "1.0.4"
 colored = "2"
 thiserror = "1.0"
 chrono = { version = "0.4.24", features = ["serde"] }

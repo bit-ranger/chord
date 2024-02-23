@@ -10,7 +10,7 @@ on:
     branches: [ dev ]
 
 jobs:
-  test:
+  cr:
     runs-on: ubuntu-latest
     steps:
       - name: ChatGPT CodeReviewer

@@ -40,6 +40,6 @@ regex = "1.7.1"
 structopt = "0.3"
 async-trait = "0.1.73"
 bean = "0.1.4"
-dirs = "5.0.0"
+dirs = "5.0.1"
 thiserror = "1.0"
 chrono = { version = "0.4.26", features = ["serde"] }

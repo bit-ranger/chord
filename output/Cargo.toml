@@ -18,7 +18,7 @@ repository = "https://github.com/bit-ranger/chord"
 chord-core = { path = "../core", version = "0.1.22" }
 serde = { version = "1.0" }
 chrono = { version = "0.4.26", features = ["serde"] }
-itertools = { version = "0.10.5" }
+itertools = { version = "0.12.1" }
 log = { version = "0.4.14", features = ["std"] }
 async-trait = "0.1.73"
 futures = "0.3.27"
